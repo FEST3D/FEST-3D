@@ -13,16 +13,14 @@ People involved
 ---------------
 
 ### Advisors:
-- Dr. Santanu Ghosh
-
-  Assistant Professor
-  Aerospace Department
+- Dr. Santanu Ghosh  
+  Assistant Professor  
+  Aerospace Department  
   Indian Institute of Technology Madras
 
 ### Code contributors:
-- Anant Girdhar (@anantgirdhar)
-
-  Student (Senior Year)
-  Aerospace Engineering (B.Tech.)
+- Anant Girdhar  
+  Student (Senior Year)  
+  Aerospace Engineering (B.Tech.)  
   anant.girdhar@gmail.com
 
