@@ -3,8 +3,8 @@ cfd-iitm
 
 Computational Fluid Dynamics, Indian Institute of Technology Madras
 
-This repository is used to develop a basic solver. This solver is to be used in
-various academic projects by the CFD group at IIT-M.
+This repository is used to develop a basic solver. This solver is to be used
+in various academic projects by the CFD group at IIT-M.
 
 The documentation for the project is provided in the docs directory. 
 
@@ -19,7 +19,7 @@ People involved
   Indian Institute of Technology Madras
 
 ### Code contributors:
-- Anant Girdhar
+- [Anant Girdhar](@anantgirdhar)
   Student (Senior Year)
   Aerospace Engineering (B.Tech.)
   anant.girdhar@gmail.com
