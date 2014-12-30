@@ -36,6 +36,9 @@
 *.swo
 *.swp
 
+# Temp files
+*~
+
 
 # TeX Files
 
