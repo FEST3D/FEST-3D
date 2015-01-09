@@ -119,3 +119,6 @@ if [ -f $ex ]; then
 fi
 
 unalias compile_fortran
+
+echo | tee -a $log
+echo 'End of run script.' | tee -a $log
