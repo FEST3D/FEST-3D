@@ -1,7 +1,9 @@
-# SOLVER OUTPUT FILES
+# SOLVER FILES
 *.fvtk
 *.vtk
 out
+
+config.md
 
 # FORTRAN and C++
 
