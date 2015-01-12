@@ -1,3 +1,8 @@
+# SOLVER OUTPUT FILES
+*.fvtk
+*.vtk
+out
+
 # FORTRAN and C++
 
 # Compiled Object files
