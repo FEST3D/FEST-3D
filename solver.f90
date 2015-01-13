@@ -1,6 +1,7 @@
 module solver
 
-    use global, only: CONFIG_FILE_UNIT, FILE_NAME_LENGTH, STRING_BUFFER_LENGTH
+    use global, only: CONFIG_FILE_UNIT, FILE_NAME_LENGTH, &
+            STRING_BUFFER_LENGTH, SCHEME_NAME_LENGTH
     use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
     use string
     use grid, only: imx, jmx, setup_grid, destroy_grid
@@ -10,11 +11,12 @@ module solver
             density_inf, x_speed_inf, y_speed_inf, pressure_inf, gm, R_gas, &
             x_a, y_a, setup_state, destroy_state, set_ghost_cell_data, &
             compute_sound_speeds
-    use van_leer, only: setup_scheme, destroy_scheme, compute_residue
+    include "use_scheme_files.inc"
     
     implicit none
     private
 
+    character(len=SCHEME_NAME_LENGTH) :: scheme
     real, public :: CFL
     character, public :: time_stepping_method
     real :: tolerance
@@ -95,6 +97,12 @@ module solver
             read(CONFIG_FILE_UNIT, *)
             
             ! Read the parameters from the file
+
+            call get_next_token(buf)
+            read(buf, *) scheme
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='scheme = ' + scheme)
+
             call get_next_token(buf)
             read(buf, *) CFL
             call dmsg(5, 'solver', 'read_config_file', &
@@ -419,7 +427,7 @@ module solver
             resnorm_previous = resnorm_current
             call set_ghost_cell_data()
             call compute_sound_speeds()
-            residue = compute_residue()
+            call compute_residue()
             call dmsg(1, 'solver', 'step', 'Residue computed.')
             call compute_time_step()
             call update_solution()
@@ -429,6 +437,8 @@ module solver
             end if
 
         end subroutine step
+
+        include "scheme_selector.inc"
 
         subroutine compute_residue_norm()
 

@@ -3,6 +3,9 @@ CONFIG FILE
 
 # SOLVER SPECIFIC
 
+## Scheme: van_leer or ldfss0
+van_leer
+
 ## CFL
 0.5
 
