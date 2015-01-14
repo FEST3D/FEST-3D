@@ -290,7 +290,6 @@ module solver
             
             delta_t = 2. / lmxsum
             delta_t = delta_t * volume * CFL
-            !TODO: Confirm that delta_t needs volume and CFL
 
         end subroutine compute_local_time_step
 
