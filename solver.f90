@@ -22,7 +22,7 @@ module solver
     real :: tolerance
     integer, public :: max_iters
     real, public, dimension(:, :, :), allocatable :: residue
-    real, public :: resnorm_current, resnorm_0, resnorm_previous
+    real, public :: resnorm_current, resnorm_0
     real, public, dimension(:, :), allocatable :: delta_t
     integer, public :: iter
 
@@ -218,10 +218,8 @@ module solver
 
             iter = 0
             residue = 0.
-            !TODO: Better way to initialize resnorms??
-            resnorm_current = 0.1
-            resnorm_previous = 1e6
-            resnorm_0 = 0.1
+            resnorm_current = 1.
+            resnorm_0 = 1.
 
         end subroutine initmisc
 
@@ -424,7 +422,6 @@ module solver
             call dmsg(1, 'solver', 'step')
 
             iter = iter + 1
-            resnorm_previous = resnorm_current
             call set_ghost_cell_data()
             call compute_sound_speeds()
             call compute_residue()
@@ -472,12 +469,8 @@ module solver
             
             call dmsg(1, 'solver', 'converged')
 
-            !TODO: Does this condition need to be changed to a 
-            !difference type condition?
             if (resnorm_current / resnorm_0 < tolerance) then
-                if (resnorm_current / resnorm_previous < tolerance) then
-                    c = .TRUE.
-                end if
+                c = .TRUE.
             end if
             c = .FALSE.
 
