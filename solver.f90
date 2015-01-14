@@ -306,10 +306,10 @@ module solver
             
             call dmsg(1, 'solver', 'compute_global_time_step')
 
-            !TODO: Implement global time stepping
-
-            print *, 'Global time stepping is currently not implemented.'
-            stop
+            call compute_local_time_step()
+            ! The global time step is the minimum of all the local time
+            ! steps.
+            delta_t = minval(delta_t)
 
         end subroutine compute_global_time_step
 
