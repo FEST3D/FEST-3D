@@ -22,7 +22,7 @@ module solver
     real :: tolerance
     integer, public :: max_iters
     real, public, dimension(:, :, :), allocatable :: residue
-    real, public :: resnorm_current, resnorm_0
+    real, public :: resnorm, resnorm_0
     real, public, dimension(:, :), allocatable :: delta_t
     integer, public :: iter
 
@@ -218,7 +218,7 @@ module solver
 
             iter = 0
             residue = 0.
-            resnorm_current = 1.
+            resnorm = 1.
             resnorm_0 = 1.
 
         end subroutine initmisc
@@ -429,7 +429,7 @@ module solver
             call update_solution()
             call compute_residue_norm()
             if (iter .eq. 1) then
-                resnorm_0 = resnorm_current
+                resnorm_0 = resnorm
             end if
 
         end subroutine step
@@ -442,7 +442,7 @@ module solver
             
             call dmsg(1, 'solver', 'compute_residue_norm')
 
-            resnorm_current = sum(sqrt( &
+            resnorm = sum(sqrt( &
                     (residue(:, :, 1) / &
                         (density_inf * x_speed_inf)) ** 2. + &
                     (residue(:, :, 2) / &
@@ -468,7 +468,7 @@ module solver
             
             call dmsg(1, 'solver', 'converged')
 
-            if (resnorm_current / resnorm_0 < tolerance) then
+            if (resnorm / resnorm_0 < tolerance) then
                 c = .TRUE.
             end if
             c = .FALSE.
