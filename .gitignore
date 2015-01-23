@@ -4,6 +4,7 @@
 *.fvtk
 *.vtk
 out
+resnorms
 
 # Config file
 config.md
