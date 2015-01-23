@@ -41,6 +41,12 @@ config.md
 *.app
 
 
+# PYTHON
+
+# Compiled files
+*.pyc
+
+
 # VIM Files
 
 # Swap files
