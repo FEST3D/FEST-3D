@@ -12,7 +12,7 @@ if ls output*.*vtk 1> /dev/null 2>&1; then
     backup_dir="$output_dir`date +%Y%m%d%H%M%S`"
     mkdir $backup_dir
     mv output*.*vtk $backup_dir/
-    echo "Previous output files moved to $backup_dir""."
+    echo "Previous output files moved to $backup_dir""." | tee -a $log
 fi
 
 if [ -f $ex ]; then
