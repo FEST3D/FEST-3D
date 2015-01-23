@@ -1,7 +1,7 @@
 module solver
 
     use global, only: CONFIG_FILE_UNIT, FILE_NAME_LENGTH, &
-            STRING_BUFFER_LENGTH, SCHEME_NAME_LENGTH
+            STRING_BUFFER_LENGTH, SCHEME_NAME_LENGTH, RESNORM_FILE_UNIT
     use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
     use string
     use grid, only: imx, jmx, setup_grid, destroy_grid
@@ -193,6 +193,7 @@ module solver
             call allocate_memory()
             call initmisc()
             call setup_scheme()
+            open(RESNORM_FILE_UNIT, file='resnorms')
 
         end subroutine setup_solver
 
@@ -207,6 +208,7 @@ module solver
             call destroy_state()
             call destroy_geometry()
             call destroy_grid()
+            close(RESNORM_FILE_UNIT)
 
         end subroutine destroy_solver
 
@@ -431,6 +433,7 @@ module solver
             if (iter .eq. 1) then
                 resnorm_0 = resnorm
             end if
+            write(RESNORM_FILE_UNIT, *) resnorm
 
         end subroutine step
 

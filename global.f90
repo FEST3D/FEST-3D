@@ -17,5 +17,6 @@ module global
     integer, parameter :: GRID_FILE_UNIT = 2
     integer, parameter :: STATE_FILE_UNIT = 10
     integer, parameter :: OUT_FILE_UNIT = 20
+    integer, parameter :: RESNORM_FILE_UNIT = 21
 
 end module global
