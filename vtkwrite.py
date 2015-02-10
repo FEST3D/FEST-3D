@@ -92,7 +92,7 @@ def read_data(filename, gridsize):
 def writevtk(grid, gridsize, data, filename, comment):
     '''Writes the grid and data in vtk format'''
 
-    f = open(filename, 'w')
+    f = open(filename + '.part', 'w')
 
     imx, jmx = gridsize
     num_points = imx * jmx
@@ -174,6 +174,9 @@ def writevtk(grid, gridsize, data, filename, comment):
         f.write('\n')
 
     f.close()
+
+    # Rename the file: remove the .part from the end.
+    os.rename(filename + '.part', filename)
 
 def translate_fortran_to_vtk(gridfile, datafile, opfilename, filecomment):
     (grid, gridsize) = parse_grid(gridfile)

@@ -547,7 +547,7 @@ module state
             
             call dmsg(1, 'state', 'writestate')
 
-            open(OUT_FILE_UNIT, file=outfile)
+            open(OUT_FILE_UNIT, file=outfile + '.part')
 
             write(OUT_FILE_UNIT, *) 'CELLDATA'
             write(OUT_FILE_UNIT, *) 'Density'
@@ -574,6 +574,8 @@ module state
             end do
             
             close(OUT_FILE_UNIT)
+
+            call rename(outfile + '.part', outfile)
 
         end subroutine writestate
 
