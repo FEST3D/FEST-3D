@@ -3,7 +3,7 @@
 # Output Files
 *.fvtk
 *.vtk
-out
+out*
 resnorms
 
 # Config file
