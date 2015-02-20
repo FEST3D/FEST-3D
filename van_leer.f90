@@ -12,15 +12,32 @@ module van_leer
     implicit none
     private
 
+    real, dimension(:, :), allocatable :: x_M_perp_left, x_M_perp_right
+    real, dimension(:, :), allocatable :: y_M_perp_left, y_M_perp_right
+    real, dimension(:, :), allocatable :: x_alpha_plus, x_alpha_minus
+    real, dimension(:, :), allocatable :: y_alpha_plus, y_alpha_minus
+    real, dimension(:, :), allocatable :: x_beta_left, x_beta_right
+    real, dimension(:, :), allocatable :: y_beta_left, y_beta_right
     real, dimension(:, :), allocatable :: x_c_plus, x_c_minus
     real, dimension(:, :), allocatable :: y_c_plus, y_c_minus
     real, dimension(:, :), allocatable :: x_scrD_plus, x_scrD_minus
     real, dimension(:, :), allocatable :: y_scrD_plus, y_scrD_minus
 
-    ! Public methods
+    ! Public members
     public :: setup_scheme
     public :: destroy_scheme
+    public :: get_residue
+
+    ! Public members which can be used in schemes derived from Van Leer
+    public :: compute_xi_face_quantities
+    public :: compute_eta_face_quantities
     public :: compute_residue
+    public :: x_M_perp_left, x_M_perp_right
+    public :: y_M_perp_left, y_M_perp_right
+    public :: x_beta_left, x_beta_right
+    public :: y_beta_left, y_beta_right
+    public :: x_c_plus, x_c_minus
+    public :: y_c_plus, y_c_minus
 
     contains
 
@@ -30,6 +47,43 @@ module van_leer
 
             call dmsg(1, 'van_leer', 'setup_scheme')
 
+            call alloc(x_M_perp_left, 1, imx, 1, jmx-1, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'x_M_perp_left.')
+            call alloc(x_M_perp_right, 1, imx, 1, jmx-1, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'x_M_perp_right.')
+            call alloc(y_M_perp_left, 1, imx-1, 1, jmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'y_M_perp_left.')
+            call alloc(y_M_perp_right, 1, imx-1, 1, jmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'y_M_perp_right.')
+
+            call alloc(x_alpha_plus, 1, imx, 1, jmx-1, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'x_alpha_plus.')
+            call alloc(x_alpha_minus, 1, imx, 1, jmx-1, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'x_alpha_minus.')
+            call alloc(y_alpha_plus, 1, imx-1, 1, jmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'y_alpha_plus.')
+            call alloc(y_alpha_minus, 1, imx-1, 1, jmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'y_alpha_minus.')
+
+            call alloc(x_beta_left, 1, imx, 1, jmx-1, &
+                    errmsg='Error: Unable to allocate memory for x_beta_left.')
+            call alloc(x_beta_right, 1, imx, 1, jmx-1, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'x_beta_right.')
+            call alloc(y_beta_left, 1, imx-1, 1, jmx, &
+                    errmsg='Error: Unable to allocate memory for y_beta_left.')
+            call alloc(y_beta_right, 1, imx-1, 1, jmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'y_beta_right.')
+
             call alloc(x_c_plus, 1, imx, 1, jmx-1, &
                     errmsg='Error: Unable to allocate memory for x_c_plus.')
             call alloc(x_c_minus, 1, imx, 1, jmx-1, &
@@ -38,6 +92,7 @@ module van_leer
                     errmsg='Error: Unable to allocate memory for y_c_plus.')
             call alloc(y_c_minus, 1, imx-1, 1, jmx, &
                     errmsg='Error: Unable to allocate memory for y_c_minus.')
+
             call alloc(x_scrD_plus, 1, imx, 1, jmx-1, &
                     errmsg='Error: Unable to allocate memory for x_scrD_plus.')
             call alloc(x_scrD_minus, 1, imx, 1, jmx-1, &
@@ -57,10 +112,26 @@ module van_leer
 
             call dmsg(1, 'van_leer', 'destroy_scheme')
 
+            call dealloc(x_M_perp_left)
+            call dealloc(x_M_perp_right)
+            call dealloc(y_M_perp_left)
+            call dealloc(y_M_perp_right)
+
+            call dealloc(x_alpha_plus)
+            call dealloc(x_alpha_minus)
+            call dealloc(y_alpha_plus)
+            call dealloc(y_alpha_minus)
+
+            call dealloc(x_beta_left)
+            call dealloc(x_beta_right)
+            call dealloc(y_beta_left)
+            call dealloc(y_beta_right)
+
             call dealloc(x_c_plus)
             call dealloc(x_c_minus)
             call dealloc(y_c_plus)
             call dealloc(y_c_minus)
+
             call dealloc(x_scrD_plus)
             call dealloc(x_scrD_minus)
             call dealloc(y_scrD_plus)
@@ -77,31 +148,30 @@ module van_leer
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(imx, jmx-1) :: x_M_perp
-            real, dimension(imx, jmx-1) :: x_alpha_plus, x_alpha_minus, x_beta
             real, dimension(imx, jmx-1) :: M_plus, M_minus
             real, dimension(imx, jmx-1) :: D_plus, D_minus
 
             call dmsg(1, 'van_leer', 'compute_xi_face_quantities')
 
             ! Compute the '+' direction quantities
-            x_M_perp = xi_face_normal_speeds('+') / x_a
-            x_alpha_plus = 0.5 * (1.0 + sign(1.0, x_M_perp))
-            x_beta = -max(0, 1 - floor(abs(x_M_perp)))
-            M_plus = 0.25 * ((1. + x_M_perp) ** 2.)
-            D_plus = 0.25 * ((1. + x_M_perp) ** 2.) * (2. - x_M_perp)
-            x_c_plus = (x_alpha_plus * (1.0 + x_beta) * x_M_perp) - &
-                    x_beta * M_plus
-            x_scrD_plus = (x_alpha_plus * (1. + x_beta)) - (x_beta * D_plus)
+            x_M_perp_left = xi_face_normal_speeds('+') / x_a
+            x_alpha_plus = 0.5 * (1.0 + sign(1.0, x_M_perp_left))
+            x_beta_left = -max(0, 1 - floor(abs(x_M_perp_left)))
+            M_plus = 0.25 * ((1. + x_M_perp_left) ** 2.)
+            D_plus = 0.25 * ((1. + x_M_perp_left) ** 2.) * (2. - x_M_perp_left)
+            x_c_plus = (x_alpha_plus * (1.0 + x_beta_left) * x_M_perp_left) - &
+                    x_beta_left * M_plus
+            x_scrD_plus = (x_alpha_plus * (1. + x_beta_left)) - &
+                    (x_beta_left * D_plus)
 
             !print *, 'x_a: ', x_a
             if (any(isnan(x_a))) stop
             !print *, 'x_M_perp: ', x_M_perp
-            if (any(isnan(x_M_perp))) stop
+            if (any(isnan(x_M_perp_left))) stop
             !print *, 'x_alpha_plus: ', x_alpha_plus
             if (any(isnan(x_alpha_plus))) stop
             !print *, 'x_beta: ', x_beta
-            if (any(isnan(x_beta))) stop
+            if (any(isnan(x_beta_left))) stop
             !print *, 'M_plus: ', M_plus
             if (any(isnan(M_plus))) stop
             !print *, 'D_plus: ', D_plus
@@ -112,22 +182,22 @@ module van_leer
             if (any(isnan(x_scrD_plus))) stop
 
             ! Compute the '-' direction quantities
-            x_M_perp = xi_face_normal_speeds('-') / x_a
-            x_alpha_minus = 0.5 * (1.0 - sign(1.0, x_M_perp))
-            x_beta = -max(0, 1 - floor(abs(x_M_perp)))
-            M_minus = - 0.25 * ((1 - x_M_perp) ** 2.)
-            D_minus = 0.25 * ((1 - x_M_perp) ** 2.) * (2. + x_M_perp)
-            x_c_minus = (x_alpha_minus * (1.0 + x_beta) * x_M_perp) - &
-                    (x_beta * M_minus)
-            x_scrD_minus = (x_alpha_minus * (1.0 + x_beta)) - &
-                    (x_beta * D_minus)
+            x_M_perp_right = xi_face_normal_speeds('-') / x_a
+            x_alpha_minus = 0.5 * (1.0 - sign(1.0, x_M_perp_right))
+            x_beta_right = -max(0, 1 - floor(abs(x_M_perp_right)))
+            M_minus = - 0.25 * ((1 - x_M_perp_right) ** 2.)
+            D_minus = 0.25 * ((1 - x_M_perp_right) ** 2.) * (2. + x_M_perp_right)
+            x_c_minus = (x_alpha_minus * (1.0 + x_beta_right) * &
+                    x_M_perp_right) - (x_beta_right * M_minus)
+            x_scrD_minus = (x_alpha_minus * (1.0 + x_beta_right)) - &
+                    (x_beta_right * D_minus)
 
             !print *, 'x_M_perp: ', x_M_perp
-            if (any(isnan(x_M_perp))) stop
+            if (any(isnan(x_M_perp_right))) stop
             !print *, 'x_alpha_minus: ', x_alpha_minus
             if (any(isnan(x_alpha_minus))) stop
             !print *, 'x_beta: ', x_beta
-            if (any(isnan(x_beta))) stop
+            if (any(isnan(x_beta_right))) stop
             !print *, 'M_minus: ', M_minus
             if (any(isnan(M_minus))) stop
             !print *, 'D_minus: ', D_minus
@@ -202,33 +272,33 @@ module van_leer
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(imx-1, jmx) :: y_M_perp
-            real, dimension(imx-1, jmx) :: y_alpha_plus, y_alpha_minus, y_beta
             real, dimension(imx-1, jmx) :: M_plus, M_minus
             real, dimension(imx-1, jmx) :: D_plus, D_minus
 
             call dmsg(1, 'van_leer', 'compute_eta_face_quantities')
 
             ! Compute the '+' direction quantities
-            y_M_perp = eta_face_normal_speeds('+') / y_a
-            y_alpha_plus = 0.5 * (1.0 + sign(1.0, y_M_perp))
-            y_beta = -max(0, 1 - floor(abs(y_M_perp)))
-            M_plus = 0.25 * ((1. + y_M_perp) ** 2.)
-            D_plus = 0.25 * ((1. + y_M_perp) ** 2.) * (2. - y_M_perp)
-            y_c_plus = (y_alpha_plus * (1.0 + y_beta) * y_M_perp) - &
-                    y_beta * M_plus
-            y_scrD_plus = (y_alpha_plus * (1. + y_beta)) - (y_beta * D_plus)
+            y_M_perp_left = eta_face_normal_speeds('+') / y_a
+            y_alpha_plus = 0.5 * (1.0 + sign(1.0, y_M_perp_left))
+            y_beta_left = -max(0, 1 - floor(abs(y_M_perp_left)))
+            M_plus = 0.25 * ((1. + y_M_perp_left) ** 2.)
+            D_plus = 0.25 * ((1. + y_M_perp_left) ** 2.) * (2. - y_M_perp_left)
+            y_c_plus = (y_alpha_plus * (1.0 + y_beta_left) * y_M_perp_left) - &
+                    y_beta_left * M_plus
+            y_scrD_plus = (y_alpha_plus * (1. + y_beta_left)) - &
+                    (y_beta_left * D_plus)
 
             ! Compute the '-' direction quantities
-            y_M_perp = eta_face_normal_speeds('-') / y_a
-            y_alpha_minus = 0.5 * (1.0 - sign(1.0, y_M_perp))
-            y_beta = -max(0, 1 - floor(abs(y_M_perp)))
-            M_minus = - 0.25 * ((1 - y_M_perp) ** 2.)
-            D_minus = 0.25 * ((1 - y_M_perp) ** 2.) * (2. + y_M_perp)
-            y_c_minus = (y_alpha_minus * (1.0 + y_beta) * y_M_perp) - &
-                    (y_beta * M_minus)
-            y_scrD_minus = (y_alpha_minus * (1.0 + y_beta)) - &
-                    (y_beta * D_minus)
+            y_M_perp_right = eta_face_normal_speeds('-') / y_a
+            y_alpha_minus = 0.5 * (1.0 - sign(1.0, y_M_perp_right))
+            y_beta_right = -max(0, 1 - floor(abs(y_M_perp_right)))
+            M_minus = - 0.25 * ((1 - y_M_perp_right) ** 2.)
+            D_minus = 0.25 * ((1 - y_M_perp_right) ** 2.) * &
+                    (2. + y_M_perp_right)
+            y_c_minus = (y_alpha_minus * (1.0 + y_beta_right) * &
+                    y_M_perp_right) - (y_beta_right * M_minus)
+            y_scrD_minus = (y_alpha_minus * (1.0 + y_beta_right)) - &
+                    (y_beta_right * D_minus)
             call dmsg(1, 'van_leer', 'compute_eta_face_quantities', 'Ended')
 
         end subroutine compute_eta_face_quantities
@@ -303,7 +373,6 @@ module van_leer
 
             call dmsg(1, 'van_leer', 'compute_residue')
 
-            call compute_xi_face_quantities()
             F_plus = compute_F_plus()
             F_minus = compute_F_minus()
             !print *, 'F_plus: ', F_plus
@@ -311,7 +380,6 @@ module van_leer
             !print *, 'F_minus: ', F_minus
             if (any(isnan(F_minus))) stop
 
-            call compute_eta_face_quantities()
             G_plus = compute_G_plus()
             G_minus = compute_G_minus()
             !print *, 'G_plus: ', G_plus
@@ -329,5 +397,20 @@ module van_leer
                     - G_minus(1:imx-1, 1:jmx-1, :)
 
         end function compute_residue
+
+        function get_residue() result(residue)
+            !-----------------------------------------------------------
+            ! Return the VL residue
+            !-----------------------------------------------------------
+            
+            implicit none
+            real, dimension(imx-1, jmx-1, 4) :: residue
+
+            call compute_xi_face_quantities()
+            call compute_eta_face_quantities()
+
+            residue = compute_residue()
+
+        end function get_residue
 
 end module van_leer
