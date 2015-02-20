@@ -22,9 +22,9 @@ subroutine compute_residue()
     implicit none
     select case (scheme)
         case ("van_leer")
-            residue = compute_residue_van_leer()
+            residue = get_residue_van_leer()
         case ("ldfss0")
-            residue = compute_residue_ldfss0()
+            residue = get_residue_ldfss0()
     end select
 end subroutine compute_residue
 
