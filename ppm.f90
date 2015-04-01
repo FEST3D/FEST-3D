@@ -21,6 +21,7 @@ module ppm
     public :: setup_scheme
     public :: destroy_scheme
     public :: compute_ppm_states
+    public :: output_data
     public :: x_qp_left, x_qp_right
     public :: y_qp_left, y_qp_right
 
@@ -327,5 +328,113 @@ module ppm
             call reset_eta_edge_values()
 
         end subroutine compute_ppm_states
+
+        subroutine output_data(filename)
+            implicit none
+            character(len=*), intent(in) :: filename
+            integer :: i, j
+            open(71, file=filename)
+            write(71, *) 'density'
+            write(71, *) 'xi_left'
+            do j = 1, jmx-1
+                do i = 0, imx+1
+                    write(71, *) x_qp_left(i, j, 1)
+                end do
+            end do
+            write(71, *) 'xi_right'
+            do j = 1, jmx-1
+                do i = 0, imx+1
+                    write(71, *) x_qp_right(i, j, 1)
+                end do
+            end do
+            write(71, *) 'eta_left'
+            do j = 0, jmx+1
+                do i = 1, imx-1
+                    write(71, *) y_qp_left(i, j, 1)
+                end do
+            end do
+            write(71, *) 'eta_right'
+            do j = 0, jmx+1
+                do i = 1, imx-1
+                    write(71, *) y_qp_right(i, j, 1)
+                end do
+            end do
+            write(71, *) 'x_speed'
+            write(71, *) 'xi_left'
+            do j = 1, jmx-1
+                do i = 0, imx+1
+                    write(71, *) x_qp_left(i, j, 2)
+                end do
+            end do
+            write(71, *) 'xi_right'
+            do j = 1, jmx-1
+                do i = 0, imx+1
+                    write(71, *) x_qp_right(i, j, 2)
+                end do
+            end do
+            write(71, *) 'eta_left'
+            do j = 0, jmx+1
+                do i = 1, imx-1
+                    write(71, *) y_qp_left(i, j, 2)
+                end do
+            end do
+            write(71, *) 'eta_right'
+            do j = 0, jmx+1
+                do i = 1, imx-1
+                    write(71, *) y_qp_right(i, j, 2)
+                end do
+            end do
+            write(71, *) 'y_speed'
+            write(71, *) 'xi_left'
+            do j = 1, jmx-1
+                do i = 0, imx+1
+                    write(71, *) x_qp_left(i, j, 3)
+                end do
+            end do
+            write(71, *) 'xi_right'
+            do j = 1, jmx-1
+                do i = 0, imx+1
+                    write(71, *) x_qp_right(i, j, 3)
+                end do
+            end do
+            write(71, *) 'eta_left'
+            do j = 0, jmx+1
+                do i = 1, imx-1
+                    write(71, *) y_qp_left(i, j, 3)
+                end do
+            end do
+            write(71, *) 'eta_right'
+            do j = 0, jmx+1
+                do i = 1, imx-1
+                    write(71, *) y_qp_right(i, j, 3)
+                end do
+            end do
+            write(71, *) 'pressure'
+            write(71, *) 'xi_left'
+            do j = 1, jmx-1
+                do i = 0, imx+1
+                    write(71, *) x_qp_left(i, j, 4)
+                end do
+            end do
+            write(71, *) 'xi_right'
+            do j = 1, jmx-1
+                do i = 0, imx+1
+                    write(71, *) x_qp_right(i, j, 4)
+                end do
+            end do
+            write(71, *) 'eta_left'
+            do j = 0, jmx+1
+                do i = 1, imx-1
+                    write(71, *) y_qp_left(i, j, 4)
+                end do
+            end do
+            write(71, *) 'eta_right'
+            do j = 0, jmx+1
+                do i = 1, imx-1
+                    write(71, *) y_qp_right(i, j, 4)
+                end do
+            end do
+            close(71)
+        end subroutine output_data
 
 end module ppm
