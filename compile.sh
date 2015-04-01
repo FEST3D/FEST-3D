@@ -5,6 +5,7 @@ log='out'
 
 alias compile_fortran="gfortran -Wall -Wextra -Wconversion "\
 "-Wno-compare-reals "\
+"-fdefault-real-8 "\
 "-Waliasing "\
 "-Wsurprising "\
 "-Wintrinsic-shadow "\
