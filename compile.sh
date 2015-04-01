@@ -35,6 +35,7 @@ filelist="
     grid
     geometry
     state
+    ppm
     face_interpolant
     van_leer
     ldfss0

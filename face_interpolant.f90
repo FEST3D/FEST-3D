@@ -1,11 +1,21 @@
 module face_interpolant
 
+    use global, only: INTERPOLANT_NAME_LENGTH
     use utils, only: alloc, dealloc, dmsg
     use grid, only: imx, jmx
     use state, only: qp, gm
+    use ppm, only: setup_scheme_ppm => setup_scheme, &
+            destroy_scheme_ppm => destroy_scheme, &
+            compute_ppm_states, &
+            x_qp_left_ppm => x_qp_left, &
+            x_qp_right_ppm => x_qp_right, &
+            y_qp_left_ppm => y_qp_left, &
+            y_qp_right_ppm => y_qp_right
 
     implicit none
     private
+
+    character(len=INTERPOLANT_NAME_LENGTH) :: interpolant
 
     real, dimension(:, :, :), allocatable, target :: x_qp_left, x_qp_right
     real, dimension(:, :, :), allocatable, target :: y_qp_left, y_qp_right
@@ -19,6 +29,7 @@ module face_interpolant
     real, dimension(:, :), pointer :: y_pressure_left, y_pressure_right
 
     ! Public members
+    public :: interpolant
     public :: setup_interpolant_scheme
     public :: destroy_interpolant_scheme
     public :: compute_face_interpolant
@@ -86,6 +97,18 @@ module face_interpolant
 
         subroutine setup_interpolant_scheme()
             implicit none
+            select case (interpolant)
+                case ("none")
+                    ! Do nothing
+                    continue
+                case ("ppm")
+                    call setup_scheme_ppm()
+                case default
+                    call dmsg(5, 'state_interpolant', &
+                            'setup_interpolant_scheme', &
+                            'Interpolant not recognized.')
+                    stop
+            end select
             call allocate_memory()
             call link_aliases()
         end subroutine setup_interpolant_scheme
@@ -131,6 +154,18 @@ module face_interpolant
             implicit none
             call unlink_aliases()
             call deallocate_memory()
+            select case (interpolant)
+                case ("none")
+                    ! Do nothing
+                    continue
+                case ("ppm")
+                    call destroy_scheme_ppm()
+                case default
+                    call dmsg(5, 'state_interpolant', &
+                            'destroy_interpolant_scheme', &
+                            'Interpolant not recognized.')
+                    stop
+            end select
         end subroutine destroy_interpolant_scheme
 
         subroutine extrapolate_cell_averages_to_faces()
@@ -143,7 +178,21 @@ module face_interpolant
 
         subroutine compute_face_interpolant()
             implicit none
-            call extrapolate_cell_averages_to_faces()
+            select case (interpolant)
+                case ("none")
+                    call extrapolate_cell_averages_to_faces()
+                case ("ppm")
+                    call compute_ppm_states()
+                    x_qp_left(:, :, :) = x_qp_left_ppm(1:imx, :, :)
+                    x_qp_right(:, :, :) = x_qp_right_ppm(1:imx, :, :)
+                    y_qp_left(:, :, :) = y_qp_left_ppm(:, 1:jmx, :)
+                    y_qp_right(:, :, :) = y_qp_right_ppm(:, 1:jmx, :)
+                case default
+                    call dmsg(5, 'state_interpolant', &
+                            'compute_face_interpolant', &
+                            'Interpolant not recognized.')
+                    stop
+            end select
         end subroutine compute_face_interpolant
 
         function x_sound_speed_left()

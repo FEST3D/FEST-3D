@@ -10,7 +10,7 @@ module solver
     use state, only: qp, qp_inf, density, x_speed, y_speed, pressure, &
             density_inf, x_speed_inf, y_speed_inf, pressure_inf, gm, R_gas, &
             setup_state, destroy_state, set_ghost_cell_data
-    use face_interpolant, only: &
+    use face_interpolant, only: interpolant, &
             x_sound_speed_left, x_sound_speed_right, &
             y_sound_speed_left, y_sound_speed_right
     use scheme, only: scheme_name, residue, setup_scheme, destroy_scheme, &
@@ -103,6 +103,11 @@ module solver
             read(buf, *) scheme_name
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='scheme_name = ' + scheme_name)
+
+            call get_next_token(buf)
+            read(buf, *) interpolant
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='interpolant = ' + interpolant)
 
             call get_next_token(buf)
             read(buf, *) CFL

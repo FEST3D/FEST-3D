@@ -6,6 +6,9 @@ CONFIG FILE
 ## Scheme: van_leer or ldfss0
 van_leer
 
+## Higher order extension: none or ppm
+ppm
+
 ## CFL
 0.5
 
