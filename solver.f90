@@ -1,7 +1,7 @@
 module solver
 
-    use global, only: CONFIG_FILE_UNIT, FILE_NAME_LENGTH, &
-            STRING_BUFFER_LENGTH, SCHEME_NAME_LENGTH, RESNORM_FILE_UNIT
+    use global, only: CONFIG_FILE_UNIT, RESNORM_FILE_UNIT, FILE_NAME_LENGTH, &
+            STRING_BUFFER_LENGTH
     use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
     use string
     use grid, only: imx, jmx, setup_grid, destroy_grid
@@ -11,17 +11,19 @@ module solver
             density_inf, x_speed_inf, y_speed_inf, pressure_inf, gm, R_gas, &
             x_a, y_a, setup_state, destroy_state, set_ghost_cell_data, &
             compute_sound_speeds
-    include "use_scheme_files.inc"
+    use face_interpolant, only: &
+            x_sound_speed_left, x_sound_speed_right, &
+            y_sound_speed_left, y_sound_speed_right
+    use scheme, only: scheme_name, residue, setup_scheme, destroy_scheme, &
+            compute_residue
     
     implicit none
     private
 
-    character(len=SCHEME_NAME_LENGTH) :: scheme
     real, public :: CFL
     character, public :: time_stepping_method
     real :: tolerance
     integer, public :: max_iters
-    real, public, dimension(:, :, :), allocatable :: residue
     real, public :: resnorm, resnorm_0
     real, public, dimension(:, :), allocatable :: delta_t
     integer, public :: iter
@@ -99,9 +101,9 @@ module solver
             ! Read the parameters from the file
 
             call get_next_token(buf)
-            read(buf, *) scheme
+            read(buf, *) scheme_name
             call dmsg(5, 'solver', 'read_config_file', &
-                    msg='scheme = ' + scheme)
+                    msg='scheme_name = ' + scheme_name)
 
             call get_next_token(buf)
             read(buf, *) CFL
@@ -191,8 +193,8 @@ module solver
             call setup_state(free_stream_density, free_stream_x_speed, &
                     free_stream_y_speed, free_stream_pressure, state_load_file)
             call allocate_memory()
-            call initmisc()
             call setup_scheme()
+            call initmisc()
             open(RESNORM_FILE_UNIT, file='resnorms')
 
         end subroutine setup_solver
@@ -219,7 +221,6 @@ module solver
             call dmsg(1, 'solver', 'initmisc')
 
             iter = 0
-            residue = 0.
             resnorm = 1.
             resnorm_0 = 1.
 
@@ -242,8 +243,6 @@ module solver
             
             call dmsg(1, 'solver', 'allocate_memory')
 
-            call alloc(residue, 1, imx-1, 1, jmx-1, 1, 4, &
-                    errmsg='Error: Unable to allocate memory for residue.')
             call alloc(delta_t, 1, imx-1, 1, jmx-1, &
                     errmsg='Error: Unable to allocate memory for delta_t.')
 
@@ -436,8 +435,6 @@ module solver
             write(RESNORM_FILE_UNIT, *) resnorm
 
         end subroutine step
-
-        include "scheme_selector.inc"
 
         subroutine compute_residue_norm()
 
