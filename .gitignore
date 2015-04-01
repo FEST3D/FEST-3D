@@ -40,6 +40,11 @@ config.md
 *.out
 *.app
 
+# Python
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
 
 # VIM Files
 
