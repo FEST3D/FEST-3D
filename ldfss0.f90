@@ -6,8 +6,6 @@ module ldfss0
     use utils, only: alloc, dealloc, dmsg
     use grid, only: imx, jmx
     use geometry, only: xnx, xny, ynx, yny, xA, yA
-    use state, only: qp, pressure, density, x_speed, y_speed, gm, R_gas, &
-            x_a, y_a, xi_face_normal_speeds, eta_face_normal_speeds
     use van_leer, only: setup_scheme_VL => setup_scheme, &
             destroy_scheme_VL => destroy_scheme, &
             compute_residue_VL => compute_residue, &

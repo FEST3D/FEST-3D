@@ -32,10 +32,6 @@ module state
     real, public, pointer :: pressure_inf
     ! Supersonic flag
     logical :: supersonic_flag
-    ! Speed of sound at xi faces
-    real, public, dimension(:, :), allocatable :: x_a
-    ! Speed of sound at eta faces
-    real, public, dimension(:, :), allocatable :: y_a
     ! Ratio of specific heats (gamma)
     real, public :: gm
     ! Specific gas constant
@@ -45,7 +41,6 @@ module state
     public :: setup_state
     public :: destroy_state
     public :: set_ghost_cell_data
-    public :: compute_sound_speeds
     public :: xi_face_normal_speeds
     public :: eta_face_normal_speeds
     public :: writestate
@@ -99,10 +94,6 @@ module state
             call alloc(qp, 0, imx, 0, jmx, 1, 4, &
                     errmsg='Error: Unable to allocate memory for state ' // &
                         'variable qp.')
-            call alloc(x_a, 1, imx, 1, jmx-1, &
-                    errmsg='Error: Unable to allocate memory for x_a.')
-            call alloc(y_a, 1, imx-1, 1, jmx, &
-                    errmsg='Error: Unable to allocate memory for y_a.')
         end subroutine allocate_memory
 
         subroutine deallocate_memory()
@@ -112,8 +103,6 @@ module state
             call dmsg(1, 'state', 'deallocate_memory')
 
             call dealloc(qp)
-            call dealloc(x_a)
-            call dealloc(y_a)
 
         end subroutine deallocate_memory
 
@@ -323,51 +312,6 @@ module state
             a = sqrt(gm * pressure_inf / density_inf)
 
         end function sound_speed_inf
-
-        subroutine compute_sound_speeds()
-            !-----------------------------------------------------------
-            ! Compute the speed of sound at each cell face
-            !-----------------------------------------------------------
-
-            implicit none
-            real, dimension(0:imx, 0:jmx) :: sound_speed
-            
-            call dmsg(1, 'state', 'compute_sound_speeds')
-
-            ! Compute the sound speed at each cell center
-            sound_speed(:, :) = sqrt(gm * pressure(:, :) / density(:, :))
-            if (any(sound_speed /= sound_speed)) then
-                call dmsg(5, 'state', 'compute_sound_speeds', &
-                        msg='Error: NaN detected in sound_speed.')
-            end if
-            call compute_sound_speed_at_xi_faces(sound_speed)
-            call compute_sound_speed_at_eta_faces(sound_speed)
-
-        end subroutine compute_sound_speeds
-
-        subroutine compute_sound_speed_at_xi_faces(sound_speed)
-            implicit none
-            real, dimension(0:imx, 0:jmx), intent(in) :: sound_speed
-            
-            call dmsg(1, 'state', 'compute_sound_speed_at_xi_faces')
-
-            x_a(:, :) = 0.5 * &
-                    (sound_speed(0:imx-1, 1:jmx-1) + &
-                        sound_speed(1:imx, 1:jmx-1))
-            if (any(isnan(x_a)) .or. any(x_a < 0)) stop
-        end subroutine compute_sound_speed_at_xi_faces
-
-        subroutine compute_sound_speed_at_eta_faces(sound_speed)
-            implicit none
-            real, dimension(0:imx, 0:jmx), intent(in) :: sound_speed
-            
-            call dmsg(1, 'state', 'compute_sound_speed_at_eta_faces')
-
-            y_a(:, :) = 0.5 * &
-                    (sound_speed(1:imx-1, 0:jmx-1) + &
-                        sound_speed(1:imx-1, 1:jmx))
-            if (any(isnan(y_a)) .or. any(y_a < 0)) stop
-        end subroutine compute_sound_speed_at_eta_faces
 
         subroutine set_supersonic_flag()
             !-----------------------------------------------------------

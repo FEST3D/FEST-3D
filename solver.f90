@@ -9,8 +9,7 @@ module solver
             destroy_geometry
     use state, only: qp, qp_inf, density, x_speed, y_speed, pressure, &
             density_inf, x_speed_inf, y_speed_inf, pressure_inf, gm, R_gas, &
-            x_a, y_a, setup_state, destroy_state, set_ghost_cell_data, &
-            compute_sound_speeds
+            setup_state, destroy_state, set_ghost_cell_data
     use face_interpolant, only: &
             x_sound_speed_left, x_sound_speed_right, &
             y_sound_speed_left, y_sound_speed_right
@@ -430,7 +429,6 @@ module solver
 
             iter = iter + 1
             call set_ghost_cell_data()
-            call compute_sound_speeds()
             call compute_residue()
             call dmsg(1, 'solver', 'step', 'Residue computed.')
             call compute_time_step()
