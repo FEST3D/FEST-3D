@@ -35,6 +35,7 @@ filelist="
     grid
     geometry
     state
+    face_interpolant
     van_leer
     ldfss0
     solver
