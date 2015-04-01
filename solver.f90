@@ -432,12 +432,12 @@ module solver
             
             call dmsg(1, 'solver', 'step')
 
-            iter = iter + 1
             call set_ghost_cell_data()
             call compute_residue()
             call dmsg(1, 'solver', 'step', 'Residue computed.')
             call compute_time_step()
             call update_solution()
+            iter = iter + 1
             call compute_residue_norm()
             if (iter .eq. 1) then
                 resnorm_0 = resnorm
