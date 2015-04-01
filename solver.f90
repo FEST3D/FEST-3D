@@ -260,29 +260,36 @@ module solver
 
             implicit none
             real, dimension(imx-1, jmx-1) :: lmx1, lmx2, lmx3, lmx4, lmxsum
+            real, dimension(imx, jmx-1) :: x_sound_speed_avg
+            real, dimension(imx-1, jmx) :: y_sound_speed_avg
             
             call dmsg(1, 'solver', 'compute_local_time_step')
+
+            x_sound_speed_avg = 0.5 * &
+                    (x_sound_speed_left() + x_sound_speed_right())
+            y_sound_speed_avg = 0.5 * &
+                    (y_sound_speed_left() + y_sound_speed_right())
 
             ! For left face
             lmx1(:, :) = abs( &
                     (x_speed(1:imx-1, 1:jmx-1) * xnx(1:imx-1, 1:jmx-1)) + &
                     (y_speed(1:imx-1, 1:jmx-1) * xny(1:imx-1, 1:jmx-1))) + &
-                    x_a(1:imx-1, 1:jmx-1)
+                    x_sound_speed_avg(1:imx-1, 1:jmx-1)
             ! For bottom face
             lmx2(:, :) = abs( &
                     (x_speed(1:imx-1, 1:jmx-1) * ynx(1:imx-1, 1:jmx-1)) + &
                     (y_speed(1:imx-1, 1:jmx-1) * yny(1:imx-1, 1:jmx-1))) + &
-                    y_a(1:imx-1, 1:jmx-1)
+                    y_sound_speed_avg(1:imx-1, 1:jmx-1)
             ! For right face
             lmx3(:, :) = abs( &
                     (x_speed(1:imx-1, 1:jmx-1) * xnx(2:imx, 1:jmx-1)) + &
                     (y_speed(1:imx-1, 1:jmx-1) * xny(2:imx, 1:jmx-1))) + &
-                    x_a(2:imx, 1:jmx-1)
+                    x_sound_speed_avg(2:imx, 1:jmx-1)
             ! For top face
             lmx4(:, :) = abs( &
                     (x_speed(1:imx-1, 1:jmx-1) * ynx(1:imx-1, 2:jmx)) + &
                     (y_speed(1:imx-1, 1:jmx-1) * yny(1:imx-1, 2:jmx))) + &
-                    y_a(1:imx-1, 2:jmx)
+                    y_sound_speed_avg(1:imx-1, 2:jmx)
             
             lmxsum(:, :) = (xA(1:imx-1, 1:jmx-1) * lmx1) + &
                     (yA(1:imx-1, 1:jmx-1) * lmx2) + &
