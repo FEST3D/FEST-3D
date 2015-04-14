@@ -7,7 +7,7 @@ CONFIG FILE
 van_leer
 
 ## Higher order extension: none or ppm
-ppm
+none
 
 ## CFL
 0.5
@@ -22,11 +22,11 @@ l
 bumpgrid.txt
 
 ## State Load File ('~' for no load file)
-### output00001.fvtk
+###load.fvtk
 ~
 
 ## Max Iterations
-5001
+5000
 
 ## Debug level: Most detail (1) to least detail (5)
 3
