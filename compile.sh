@@ -40,6 +40,7 @@ filelist="
     face_interpolant
     van_leer
     ldfss0
+    hlle
     scheme
     solver
 "

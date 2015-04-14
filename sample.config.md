@@ -3,7 +3,7 @@ CONFIG FILE
 
 # SOLVER SPECIFIC
 
-## Scheme: van_leer or ldfss0
+## Scheme: van_leer / ldfss0 / hlle
 van_leer
 
 ## Higher order extension: none or ppm

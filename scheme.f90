@@ -13,6 +13,10 @@ module scheme
             setup_scheme_ldfss0 => setup_scheme, &
             destroy_scheme_ldfss0 => destroy_scheme, &
             get_residue_ldfss0 => get_residue
+    use hlle, only: &
+            setup_scheme_hlle => setup_scheme, &
+            destroy_scheme_hlle => destroy_scheme, &
+            get_residue_hlle => get_residue
 
     implicit none
     private
@@ -46,6 +50,8 @@ module scheme
                     call setup_scheme_van_leer()
                 case ("ldfss0")
                     call setup_scheme_ldfss0()
+                case ("hlle")
+                    call setup_scheme_hlle()
                 case default
                     call dmsg(5, 'scheme', 'setup_scheme', &
                             'Scheme not recognized.')
@@ -67,6 +73,8 @@ module scheme
                     call destroy_scheme_van_leer
                 case ("ldfss0")
                     call destroy_scheme_ldfss0()
+                case ("hlle")
+                    call destroy_scheme_hlle()
                 case default
                     call dmsg(5, 'scheme', 'destroy_scheme', &
                             'Scheme not recognized.')
@@ -87,6 +95,8 @@ module scheme
                     residue = get_residue_van_leer()
                 case ("ldfss0")
                     residue = get_residue_ldfss0()
+                case ("hlle")
+                    residue = get_residue_hlle()
                 case default
                     call dmsg(5, 'scheme', 'compute_residue', &
                             'Scheme not recognized.')
