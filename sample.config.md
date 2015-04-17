@@ -25,6 +25,10 @@ bumpgrid.txt
 ## Max Iterations
 5001
 
+## Checkpoint iter (dump data after how many iterations)
+## (Enter 0 to turn checkpointing off)
+100
+
 ## Debug level: Most detail (1) to least detail (5)
 3
 

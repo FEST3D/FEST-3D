@@ -10,7 +10,7 @@ module solver
     use state, only: qp, qp_inf, density, x_speed, y_speed, pressure, &
             density_inf, x_speed_inf, y_speed_inf, pressure_inf, gm, R_gas, &
             x_a, y_a, setup_state, destroy_state, set_ghost_cell_data, &
-            compute_sound_speeds
+            compute_sound_speeds, writestate
     include "use_scheme_files.inc"
     
     implicit none
@@ -21,6 +21,7 @@ module solver
     character, public :: time_stepping_method
     real :: tolerance
     integer, public :: max_iters
+    integer, public :: checkpoint_iter
     real, public, dimension(:, :, :), allocatable :: residue
     real, public :: resnorm, resnorm_0
     real, public, dimension(:, :), allocatable :: delta_t
@@ -134,6 +135,11 @@ module solver
                     msg='max_iters = ' + max_iters)
 
             call get_next_token(buf)
+            read(buf, *) checkpoint_iter
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='checkpoint_iter = ' + checkpoint_iter)
+
+            call get_next_token(buf)
             read(buf, *) DEBUG_LEVEL
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='DEBUG_LEVEL = ' + DEBUG_LEVEL)
@@ -194,6 +200,7 @@ module solver
             call initmisc()
             call setup_scheme()
             open(RESNORM_FILE_UNIT, file='resnorms')
+            call checkpoint()  ! Create an initial dump fil
 
         end subroutine setup_solver
 
@@ -410,6 +417,26 @@ module solver
 
         end subroutine update_solution
 
+        subroutine checkpoint()
+            !-----------------------------------------------------------
+            ! Create a checkpoint dump file if the time has come
+            !-----------------------------------------------------------
+
+            implicit none
+
+            character(len=FILE_NAME_LENGTH) :: filename
+
+            if (checkpoint_iter .ne. 0) then
+                if (mod(iter, checkpoint_iter) == 0) then
+                    write(filename, '(A,I5.5,A)') 'output', iter, '.fvtk'
+                    call writestate(filename)
+                    call dmsg(3, 'solver', 'checkpoint', &
+                            'Checkpoint created at iteration: ' + iter)
+                end if
+            end if
+
+        end subroutine checkpoint
+
         subroutine step()
             !-----------------------------------------------------------
             ! Perform one time step iteration
@@ -434,6 +461,7 @@ module solver
                 resnorm_0 = resnorm
             end if
             write(RESNORM_FILE_UNIT, *) resnorm
+            call checkpoint()
 
         end subroutine step
 
