@@ -3,8 +3,11 @@ CONFIG FILE
 
 # SOLVER SPECIFIC
 
-## Scheme: van_leer or ldfss0
+## Scheme: van_leer / ldfss0 / hlle
 van_leer
+
+## Higher order extension: none or ppm
+none
 
 ## CFL
 0.5
@@ -19,11 +22,15 @@ l
 bumpgrid.txt
 
 ## State Load File ('~' for no load file)
-### output00001.fvtk
+###load.fvtk
 ~
 
 ## Max Iterations
-5001
+5000
+
+## Checkpoint iter (dump data after how many iterations)
+### (Enter 0 to turn checkpointing off)
+100
 
 ## Debug level: Most detail (1) to least detail (5)
 3

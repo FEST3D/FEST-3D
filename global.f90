@@ -10,6 +10,7 @@ module global
     ! String buffer lengths
     integer, parameter :: FILE_NAME_LENGTH = 32
     integer, parameter :: SCHEME_NAME_LENGTH = 16
+    integer, parameter :: INTERPOLANT_NAME_LENGTH = 4
     integer, parameter :: STRING_BUFFER_LENGTH = 128
     integer, parameter :: ERROR_MESSAGE_LENGTH = 256
     ! File unit numbers

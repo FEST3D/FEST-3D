@@ -5,6 +5,7 @@ log='out'
 
 alias compile_fortran="gfortran -Wall -Wextra -Wconversion "\
 "-Wno-compare-reals "\
+"-fdefault-real-8 "\
 "-Waliasing "\
 "-Wsurprising "\
 "-Wintrinsic-shadow "\
@@ -35,8 +36,12 @@ filelist="
     grid
     geometry
     state
+    ppm
+    face_interpolant
     van_leer
     ldfss0
+    hlle
+    scheme
     solver
 "
 
