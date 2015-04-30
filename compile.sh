@@ -39,6 +39,7 @@ filelist="
     ppm
     face_interpolant
     van_leer
+    ausm
     ldfss0
     hlle
     scheme

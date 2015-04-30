@@ -9,6 +9,10 @@ module scheme
             setup_scheme_van_leer => setup_scheme, &
             destroy_scheme_van_leer => destroy_scheme, &
             get_residue_van_leer => get_residue
+    use ausm, only: &
+            setup_scheme_ausm => setup_scheme, &
+            destroy_scheme_ausm => destroy_scheme, &
+            get_residue_ausm => get_residue
     use ldfss0, only: &
             setup_scheme_ldfss0 => setup_scheme, &
             destroy_scheme_ldfss0 => destroy_scheme, &
@@ -48,6 +52,8 @@ module scheme
             select case (scheme_name)
                 case ("van_leer")
                     call setup_scheme_van_leer()
+                case ("ausm")
+                    call setup_scheme_ausm()
                 case ("ldfss0")
                     call setup_scheme_ldfss0()
                 case ("hlle")
@@ -71,6 +77,8 @@ module scheme
             select case (scheme_name)
                 case ("van_leer")
                     call destroy_scheme_van_leer
+                case ("ausm")
+                    call destroy_scheme_ausm()
                 case ("ldfss0")
                     call destroy_scheme_ldfss0()
                 case ("hlle")
@@ -93,6 +101,8 @@ module scheme
             select case (scheme_name)
                 case ("van_leer")
                     residue = get_residue_van_leer()
+                case ("ausm")
+                    residue = get_residue_ausm()
                 case ("ldfss0")
                     residue = get_residue_ldfss0()
                 case ("hlle")
