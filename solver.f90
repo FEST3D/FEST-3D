@@ -27,6 +27,7 @@ module solver
     real, public :: resnorm, resnorm_0
     real, public, dimension(:, :), allocatable :: delta_t
     integer, public :: iter
+    real :: sim_clock
 
     ! Public methods
     public :: setup_solver
@@ -231,6 +232,7 @@ module solver
             
             call dmsg(1, 'solver', 'initmisc')
 
+            sim_clock = 0.
             iter = 0
             resnorm = 1.
             resnorm_0 = 1.
@@ -358,6 +360,30 @@ module solver
 
         end subroutine compute_time_step
 
+        subroutine update_simulation_clock
+            !-----------------------------------------------------------
+            ! Update the simulation clock
+            !
+            ! It is sometimes useful to know what the simulation time is
+            ! at every iteration so that a comparison with an analytical
+            ! solution is possible. Since, the global timesteps used may
+            ! not be uniform, we need to track this explicitly.
+            !
+            ! Of course, it makes sense to track this only if the time 
+            ! stepping is global and not local. If the time stepping is
+            ! local, the simulation clock is set to -1. If it is global
+            ! it is incremented according to the time step found.
+            !-----------------------------------------------------------
+
+            implicit none
+            if (time_stepping_method .eq. 'g' .and. sim_clock >= 0.) then
+                sim_clock = sim_clock + minval(delta_t)
+            else if (time_stepping_method .eq. 'l') then
+                sim_clock = -1
+            end if
+
+        end subroutine update_simulation_clock
+
         subroutine update_solution()
             !-----------------------------------------------------------
             ! Update the solution using the residue and time step
@@ -439,7 +465,7 @@ module solver
             if (checkpoint_iter .ne. 0) then
                 if (mod(iter, checkpoint_iter) == 0) then
                     write(filename, '(A,I5.5,A)') 'output', iter, '.fvtk'
-                    call writestate(filename)
+                    call writestate(filename, 'Simulation clock: ' + sim_clock)
                     call dmsg(3, 'solver', 'checkpoint', &
                             'Checkpoint created at iteration: ' + iter)
                 end if
@@ -464,6 +490,7 @@ module solver
             call dmsg(1, 'solver', 'step', 'Residue computed.')
             call compute_time_step()
             call update_solution()
+            call update_simulation_clock()
             iter = iter + 1
             call compute_residue_norm()
             if (iter .eq. 1) then
