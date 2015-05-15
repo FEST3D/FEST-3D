@@ -51,25 +51,39 @@ def read_data(filename, gridsize):
     label = None
     curr_data_type = ''
     curr_dim = 0
-    
+
+    # The first line is a comment
+    d['Comment'] = raw.pop(0).strip()
+    d['CELL_DATA'] = {}
+    d['POINT_DATA'] = {}
+
     for l in raw:
         l = l.strip()
-        # Use the label to create a new dataset in the dictionary
+        # Use the label to create a new dataset in the appropriate dictionary
         if l.upper() == 'CELLDATA':
-            curr_data_type = 'cell'
+            # A new CELLDATA dataset was found
+            curr_data_type = 'CELL_DATA'
+            # The previous data set has ended
+            # Convert it to a numpy array and reset label
             if label is not None:
-                d[label] = np.array(d[label])
+                d[curr_data_type][label] = np.array(d[curr_data_type][label])
             label = ''
             continue
         elif l.upper() == 'POINTDATA':
-            curr_data_type = 'point'
+            # A new POINTDATA dataset was found
+            curr_data_type = 'POINT_DATA'
+            # The previous data set has ended
+            # Convert it to a numpy array and reset label
             if label is not None:
-                d[label] = np.array(d[label])
+                d[curr_data_type][label] = np.array(d[curr_data_type][label])
             label = ''
             continue
         if not label:
+            # No label is currently set
+            # Also, the current line does not indicate the start of a new 
+            # dataset. So this must be a new label.
             label = l
-            d[label] = []
+            d[curr_data_type][label] = []
             continue
         # Read in the data
         p = l
@@ -85,11 +99,11 @@ def read_data(filename, gridsize):
             p[k] = float(p[k])
         if curr_dim == 1:
             p = p[0]
-        d[label].append(p)
-    d[label] = np.array(d[label])
+        d[curr_data_type][label].append(p)
+    d[curr_data_type][label] = np.array(d[curr_data_type][label])
     return d
 
-def writevtk(grid, gridsize, data, filename, comment):
+def writevtk(grid, gridsize, data, filename, comment=None):
     '''Writes the grid and data in vtk format'''
 
     f = open(filename + '.part', 'w')
@@ -100,7 +114,11 @@ def writevtk(grid, gridsize, data, filename, comment):
 
     # Write Header
     f.write('# vtk DataFile Version 3.1\n')
-    f.write(comment)
+    comment = data.get('Comment', comment)
+    if comment:
+        f.write(comment)
+    else:
+        f.write('Glomar response.')
     f.write('\n')
     f.write('ASCII\n')
     f.write('DATASET UNSTRUCTURED_GRID\n')
@@ -144,11 +162,11 @@ def writevtk(grid, gridsize, data, filename, comment):
     f.write('\n')
 
     # Write Celldatasets
-    f.write('CELL_DATA ')
-    f.write(str(num_cells))
-    f.write('\n')
-    for key in data.keys():
-        if isinstance(data[key][0], np.ndarray):
+    for key in data['CELL_DATA']:
+        f.write('CELL_DATA ')
+        f.write(str(num_cells))
+        f.write('\n')
+        if isinstance(data['CELL_DATA'][key][0], np.ndarray):
             f.write('VECTORS ')
             f.write(key)
             f.write(' FLOAT\n')
@@ -157,7 +175,7 @@ def writevtk(grid, gridsize, data, filename, comment):
             f.write(key)
             f.write(' FLOAT\n')
             f.write('LOOKUP_TABLE default\n')
-        for elem in data[key]:
+        for elem in data['CELL_DATA'][key]:
             if not isinstance(elem, np.ndarray):
                 # It is scalar data
                 f.write(str(elem))

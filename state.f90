@@ -8,7 +8,8 @@ module state
     ! version assumes the grid is in atmost two dimensions. 
     !-------------------------------------------------------------------
     
-    use global, only: FILE_NAME_LENGTH, STATE_FILE_UNIT, OUT_FILE_UNIT
+    use global, only: FILE_NAME_LENGTH, STATE_FILE_UNIT, OUT_FILE_UNIT, &
+            DESCRIPTION_STRING_LENGTH
     use utils, only: alloc, dealloc, dmsg
     use string
     use grid, only: imx, jmx
@@ -480,18 +481,27 @@ module state
 
         end subroutine init_state_with_infinity_values
 
-        subroutine writestate(outfile)
+        subroutine writestate(outfile, comment)
             !-----------------------------------------------------------
             ! Write the state of the system to a file
             !-----------------------------------------------------------
 
             implicit none
             character(len=FILE_NAME_LENGTH), intent(in) :: outfile
+            character(len=DESCRIPTION_STRING_LENGTH), optional, intent(in) :: &
+                    comment
             integer :: i, j
             
             call dmsg(1, 'state', 'writestate')
 
             open(OUT_FILE_UNIT, file=outfile + '.part')
+
+            if (present(comment)) then
+                write(OUT_FILE_UNIT, *) & 
+                        trim('cfd-iitm output (' + comment + ')')
+            else
+                write(OUT_FILE_UNIT, *) trim('cfd-iitm output')
+            end if
 
             write(OUT_FILE_UNIT, *) 'CELLDATA'
             write(OUT_FILE_UNIT, *) 'Density'
@@ -540,6 +550,9 @@ module state
             call dmsg(1, 'state', 'readstate')
 
             open(STATE_FILE_UNIT, file=state_file)
+
+            ! Skip the initial comment
+            read(STATE_FILE_UNIT, *)
 
             ! Skip the section header
             read(STATE_FILE_UNIT, *)
