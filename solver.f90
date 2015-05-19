@@ -53,7 +53,7 @@ module solver
             integer :: ios
 
             do
-                read(CONFIG_FILE_UNIT, *, iostat=ios) buf
+                read(CONFIG_FILE_UNIT, '(A)', iostat=ios) buf
                 if (ios /= 0) then
                     print *, 'Error while reading config file.'
                     print *, 'Current buffer length is set to: ', &
