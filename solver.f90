@@ -21,6 +21,7 @@ module solver
 
     real, public :: CFL
     character, public :: time_stepping_method
+    real, public :: global_time_step
     real :: tolerance
     integer, public :: max_iters
     integer, public :: checkpoint_iter
@@ -90,6 +91,7 @@ module solver
             character(len=FILE_NAME_LENGTH) :: config_file = "config.md"
             integer, parameter :: CONFIG_FILE_UNIT = 1
             character(len=STRING_BUFFER_LENGTH) :: buf
+            integer :: ios
 
             call dmsg(1, 'solver', 'read_config_file')
             
@@ -117,9 +119,15 @@ module solver
                     msg='CFL = ' + CFL)
 
             call get_next_token(buf)
-            read(buf, *) time_stepping_method
+            read(buf, *, iostat=ios) time_stepping_method, global_time_step
+            if (ios /= 0) then
+                read(buf, *) time_stepping_method
+                global_time_step = -1
+            end if
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='time_stepping_method = ' + time_stepping_method)
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='global_time_step = ' + global_time_step)
 
             call get_next_token(buf)
             read(buf, *) tolerance
@@ -327,10 +335,14 @@ module solver
             
             call dmsg(1, 'solver', 'compute_global_time_step')
 
-            call compute_local_time_step()
-            ! The global time step is the minimum of all the local time
-            ! steps.
-            delta_t = minval(delta_t)
+            if (global_time_step > 0) then
+                delta_t = global_time_step
+            else
+                call compute_local_time_step()
+                ! The global time step is the minimum of all the local time
+                ! steps.
+                delta_t = minval(delta_t)
+            end if
 
         end subroutine compute_global_time_step
 
