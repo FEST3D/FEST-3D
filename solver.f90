@@ -89,7 +89,6 @@ module solver
             character(len=FILE_NAME_LENGTH), intent(out) :: grid_file
             character(len=FILE_NAME_LENGTH), intent(out) :: state_load_file
             character(len=FILE_NAME_LENGTH) :: config_file = "config.md"
-            integer, parameter :: CONFIG_FILE_UNIT = 1
             character(len=STRING_BUFFER_LENGTH) :: buf
             integer :: ios
 
