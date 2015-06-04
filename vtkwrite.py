@@ -162,10 +162,11 @@ def writevtk(grid, gridsize, data, filename, comment=None):
     f.write('\n')
 
     # Write Celldatasets
-    for key in data['CELL_DATA']:
-        f.write('CELL_DATA ')
-        f.write(str(num_cells))
-        f.write('\n')
+    f.write('CELL_DATA ')
+    f.write(str(num_cells))
+    f.write('\n')
+    #for key in data['CELL_DATA']:
+    for key in ['Density', 'Pressure', 'Velocity']:
         if isinstance(data['CELL_DATA'][key][0], np.ndarray):
             f.write('VECTORS ')
             f.write(key)
@@ -174,7 +175,7 @@ def writevtk(grid, gridsize, data, filename, comment=None):
             f.write('SCALARS ')
             f.write(key)
             f.write(' FLOAT\n')
-            f.write('LOOKUP_TABLE default\n')
+        f.write('LOOKUP_TABLE default\n')
         for elem in data['CELL_DATA'][key]:
             if not isinstance(elem, np.ndarray):
                 # It is scalar data
