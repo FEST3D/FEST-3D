@@ -24,8 +24,7 @@ People involved
   Aerospace Engineering (B.Tech.)  
   anant.girdhar@gmail.com
 
-### Code contributors:
-- Rakesh Ramakrishnan
+- Rakesh Ramakrishnan  
   Student (Senior Year)  
   Aerospace Engineering (Dual Degree)  
   rakeshramakrishnan92@gmail.com
