@@ -1,0 +1,4 @@
+set term x11 1 noraise
+set logscale y
+plot "resnorms" w l 
+pause 5; refresh; reread;
