@@ -30,7 +30,7 @@ module solver
     real, dimension(:, :, :), allocatable :: qp_n, dEdx_1, dEdx_2, dEdx_3
     real :: tolerance
     integer, public :: max_iters
-    integer, public :: checkpoint_iter
+    integer, public :: checkpoint_iter, checkpoint_iter_count
     real, public :: resnorm, resnorm_0
     real, public, dimension(:, :), allocatable :: delta_t
     integer, public :: iter
@@ -245,6 +245,7 @@ module solver
             call setup_scheme()
             call initmisc()
             open(RESNORM_FILE_UNIT, file='resnorms')
+            checkpoint_iter_count = 0
             call checkpoint()  ! Create an initial dump fil
 
         end subroutine setup_solver
@@ -640,7 +641,8 @@ module solver
 
             if (checkpoint_iter .ne. 0) then
                 if (mod(iter, checkpoint_iter) == 0) then
-                    write(filename, '(A,I5.5,A)') 'output', iter, '.fvtk'
+                    write(filename, '(A,I5.5,A)') 'output', checkpoint_iter_count, '.fvtk'
+                    checkpoint_iter_count = checkpoint_iter_count + 1
                     call writestate(filename, 'Simulation clock: ' + sim_clock)
                     call dmsg(3, 'solver', 'checkpoint', &
                             'Checkpoint created at iteration: ' + iter)
