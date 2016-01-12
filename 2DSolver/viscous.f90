@@ -167,6 +167,35 @@ module viscous
           + (y_T_face(1:imx-1, 2:jmx) * yny(1:imx-1,2:jmx) * yA(1:imx-1,2:jmx)) &
           ) / vol
 
+        ! Ghost cells same as interior
+        gradu_x(0, 1:jmx-1) = gradu_x(1, 1:jmx-1)
+        gradu_y(0, 1:jmx-1) = gradu_y(1, 1:jmx-1)
+        gradv_x(0, 1:jmx-1) = gradv_x(1, 1:jmx-1)
+        gradv_y(0, 1:jmx-1) = gradv_y(1, 1:jmx-1)
+        gradT_x(0, 1:jmx-1) = gradT_x(1, 1:jmx-1)
+        gradT_y(0, 1:jmx-1) = gradT_y(1, 1:jmx-1)
+
+        gradu_x(imx, 1:jmx-1) = gradu_x(imx - 1, 1:jmx-1)
+        gradu_y(imx, 1:jmx-1) = gradu_y(imx - 1, 1:jmx-1)
+        gradv_x(imx, 1:jmx-1) = gradv_x(imx - 1, 1:jmx-1)
+        gradv_y(imx, 1:jmx-1) = gradv_y(imx - 1, 1:jmx-1)
+        gradT_x(imx, 1:jmx-1) = gradT_x(imx - 1, 1:jmx-1)
+        gradT_y(imx, 1:jmx-1) = gradT_y(imx - 1, 1:jmx-1)
+
+        gradu_x(1:imx-1, 0) = gradu_x(1:imx-1, 1)
+        gradu_y(1:imx-1, 0) = gradu_y(1:imx-1, 1)
+        gradv_x(1:imx-1, 0) = gradv_x(1:imx-1, 1)
+        gradv_y(1:imx-1, 0) = gradv_y(1:imx-1, 1)
+        gradT_x(1:imx-1, 0) = gradT_x(1:imx-1, 1)
+        gradT_y(1:imx-1, 0) = gradT_y(1:imx-1, 1)
+
+        gradu_x(1:imx-1, jmx) = gradu_x(1:imx-1, jmx - 1)
+        gradu_y(1:imx-1, jmx) = gradu_y(1:imx-1, jmx - 1)
+        gradv_x(1:imx-1, jmx) = gradv_x(1:imx-1, jmx - 1)
+        gradv_y(1:imx-1, jmx) = gradv_y(1:imx-1, jmx - 1)
+        gradT_x(1:imx-1, jmx) = gradT_x(1:imx-1, jmx - 1)
+        gradT_y(1:imx-1, jmx) = gradT_y(1:imx-1, jmx - 1)
+
     end subroutine compute_gradients_cell_centre
 
     subroutine compute_viscous_face_fluxes(Flux_p, f_dir)
