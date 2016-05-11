@@ -29,3 +29,8 @@ People involved
   Aerospace Engineering (Dual Degree)  
   rakeshramakrishnan92@gmail.com
 
+- R D Teja
+  Student (Senior Year)  
+  Aerospace Engineering (B. Tech.)  
+  rdarmateja@gmail.com
+
