@@ -3,7 +3,7 @@
 ex='iitm_cfd_solver.out'
 log='out'
 
-alias compile_fortran="gfortran -Wall -Wextra -Wconversion "\
+alias compile_fortran="mpif90 -O3 -Wall -Wextra -Wconversion "\
 "-Wno-compare-reals "\
 "-fdefault-real-8 "\
 "-Waliasing "\
@@ -29,20 +29,27 @@ fi
 # If the corresponding module file is missing, there is some issue.
 # Stop compiling.
 
+# Insert ppm after state. De comment lines in face_interpolant
+# Insert ausm, ldfss0 and hlle adter van_leer. Decomment lines in
+# scheme
+
 filelist="
     global
     utils
+    layout
+    bitwise
     string
     grid
     geometry
     state
     ppm
+    muscl
     face_interpolant
     van_leer
-    ausm
-    ldfss0
-    hlle
+    viscous
     scheme
+    parallel
+    boundary_conditions
     solver
 "
 
@@ -87,7 +94,7 @@ function output_todo {
     echo 'Check correctness of write_interface.py' | tee -a $log
     echo | tee -a $log
     echo 'TODO:' | tee -a $log
-    grep --exclude-dir=docs --exclude={run.sh,compile.sh,out} \
+    grep -rn --exclude-dir={docs,results*} --exclude={run.sh,compile.sh,out} \
             'TODO' * | tee -a $log
 }
 

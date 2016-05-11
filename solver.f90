@@ -1,20 +1,30 @@
 module solver
 
     use global, only: CONFIG_FILE_UNIT, RESNORM_FILE_UNIT, FILE_NAME_LENGTH, &
-            STRING_BUFFER_LENGTH
+            STRING_BUFFER_LENGTH, INTERPOLANT_NAME_LENGTH
     use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
     use string
-    use grid, only: imx, jmx, setup_grid, destroy_grid
-    use geometry, only: xnx, xny, ynx, yny, xA, yA, volume, setup_geometry, &
-            destroy_geometry
-    use state, only: qp, qp_inf, density, x_speed, y_speed, pressure, &
-            density_inf, x_speed_inf, y_speed_inf, pressure_inf, gm, R_gas, &
-            setup_state, destroy_state, set_ghost_cell_data, writestate
+    use grid, only: imx, jmx, kmx, setup_grid, destroy_grid
+    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, &
+            xA, yA, zA, volume, setup_geometry, destroy_geometry
+    use state, only: n_var, qp, qp_inf, density, x_speed, y_speed, z_speed, &
+            pressure, density_inf, x_speed_inf, y_speed_inf, z_speed_inf, pressure_inf, &
+            gm, R_gas, setup_state, destroy_state, writestate_vtk, &
+            mu_ref, T_ref, Sutherland_temp, Pr
     use face_interpolant, only: interpolant, &
-            x_sound_speed_left, x_sound_speed_right, &
-            y_sound_speed_left, y_sound_speed_right
+            x_qp_left, x_qp_right, &
+            y_qp_left, y_qp_right, &
+            z_qp_left, z_qp_right, compute_face_interpolant, &
+            extrapolate_cell_averages_to_faces
     use scheme, only: scheme_name, residue, setup_scheme, destroy_scheme, &
-            compute_residue
+            compute_fluxes, compute_residue, F_p, G_p, H_p
+    use boundary_conditions, only: setup_boundary_conditions, &
+            apply_boundary_conditions, set_wall_bc_at_faces, &
+            destroy_boundary_conditions
+    use viscous, only: compute_viscous_fluxes
+    use layout, only: process_id, grid_file_buf, bc_file, &
+    get_process_data, read_layout_file
+    use parallel, only: allocate_buffer_cells,send_recv
     
     implicit none
     private
@@ -22,13 +32,26 @@ module solver
     real, public :: CFL
     character, public :: time_stepping_method
     real, public :: global_time_step
+    character(len=INTERPOLANT_NAME_LENGTH) :: time_step_accuracy
+    real, dimension(:, :, :, :), allocatable :: qp_n, dEdx_1, dEdx_2, dEdx_3
     real :: tolerance
     integer, public :: max_iters
-    integer, public :: checkpoint_iter
+    integer, public :: checkpoint_iter, checkpoint_iter_count
     real, public :: resnorm, resnorm_0
-    real, public, dimension(:, :), allocatable :: delta_t
+    real, public :: cont_resnorm, cont_resnorm_0, x_mom_resnorm, &
+        x_mom_resnorm_0, y_mom_resnorm, y_mom_resnorm_0, z_mom_resnorm, &
+        z_mom_resnorm_0, energy_resnorm, energy_resnorm_0
+    real, public, dimension(:, :, :), allocatable :: delta_t
     integer, public :: iter
     real :: sim_clock
+    real :: speed_inf
+
+    real, dimension(:), allocatable, target :: qp_temp
+    real, pointer :: density_temp, x_speed_temp, &
+                                         y_speed_temp, z_speed_temp, &
+                                         pressure_temp
+    real, dimension(:, :, :), pointer :: mass_residue, x_mom_residue, &
+                             y_mom_residue, z_mom_residue, energy_residue
 
     ! Public methods
     public :: setup_solver
@@ -81,11 +104,12 @@ module solver
 
         subroutine read_config_file(free_stream_density, &
                 free_stream_x_speed, free_stream_y_speed, &
-                free_stream_pressure, grid_file, state_load_file)
+                free_stream_z_speed, free_stream_pressure, &
+                grid_file, state_load_file)
 
             implicit none
             real, intent(out) :: free_stream_density, free_stream_x_speed, &
-                    free_stream_y_speed, free_stream_pressure
+                    free_stream_y_speed, free_stream_z_speed, free_stream_pressure
             character(len=FILE_NAME_LENGTH), intent(out) :: grid_file
             character(len=FILE_NAME_LENGTH), intent(out) :: state_load_file
             character(len=FILE_NAME_LENGTH) :: config_file = "config.md"
@@ -109,6 +133,7 @@ module solver
 
             call get_next_token(buf)
             read(buf, *) interpolant
+            interpolant = trim(interpolant)
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='interpolant = ' + interpolant)
 
@@ -127,6 +152,11 @@ module solver
                     msg='time_stepping_method = ' + time_stepping_method)
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='global_time_step = ' + global_time_step)
+
+            call get_next_token(buf)
+            read(buf, *) time_step_accuracy
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='time_step_accuracy  = ' + time_step_accuracy)
 
             call get_next_token(buf)
             read(buf, *) tolerance
@@ -167,6 +197,11 @@ module solver
             read(buf, *) R_gas
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='R_gas = ' + R_gas)
+            
+            call get_next_token(buf)
+            read(buf, *) n_var
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='Number of variables = ' + n_var)
 
             call get_next_token(buf)
             read(buf, *) free_stream_density
@@ -184,9 +219,34 @@ module solver
                     msg='free_stream_y_speed = ' + free_stream_y_speed)
 
             call get_next_token(buf)
+            read(buf, *) free_stream_z_speed
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='free_stream_z_speed = ' + free_stream_z_speed)
+
+            call get_next_token(buf)
             read(buf, *) free_stream_pressure
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='free_stream_pressure = ' + free_stream_pressure)
+
+            call get_next_token(buf)
+            read(buf, *) mu_ref
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='mu_reference = ' + mu_ref)
+
+            call get_next_token(buf)
+            read(buf, *) T_ref
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='T_reference = ' + T_ref)
+
+            call get_next_token(buf)
+            read(buf, *) Sutherland_temp
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='Sutherland temperature = ' + Sutherland_temp)
+
+            call get_next_token(buf)
+            read(buf, *) Pr
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='Prandtl Number = ' + Pr)
 
             close(CONFIG_FILE_UNIT)
 
@@ -196,25 +256,38 @@ module solver
             
             implicit none
             real :: free_stream_density
-            real :: free_stream_x_speed, free_stream_y_speed
+            real :: free_stream_x_speed, free_stream_y_speed, free_stream_z_speed
             real :: free_stream_pressure
             character(len=FILE_NAME_LENGTH) :: grid_file
             character(len=FILE_NAME_LENGTH) :: state_load_file
-            
+            character(len=FILE_NAME_LENGTH) :: resnorm_file
             call dmsg(1, 'solver', 'setup_solver')
-
+            call get_process_data() ! parallel calls
+            call read_layout_file(process_id) ! reads layout file calls
+            
             call read_config_file(free_stream_density, free_stream_x_speed, &
-                    free_stream_y_speed, free_stream_pressure, grid_file, &
-                    state_load_file)
-            call setup_grid(grid_file)
+                    free_stream_y_speed, free_stream_z_speed, &
+                    free_stream_pressure, grid_file, state_load_file)
+            call setup_grid(grid_file_buf)
             call setup_geometry()
             call setup_state(free_stream_density, free_stream_x_speed, &
-                    free_stream_y_speed, free_stream_pressure, state_load_file)
+                    free_stream_y_speed, free_stream_z_speed, &
+                    free_stream_pressure, state_load_file)
+            call setup_boundary_conditions(bc_file)
             call allocate_memory()
+            call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
+            call link_aliases_solver()
             call initmisc()
-            open(RESNORM_FILE_UNIT, file='resnorms')
-            call checkpoint()  ! Create an initial dump fil
+            !resnorm_file = 'resnorms'//process_id
+            !write(filename, '(A,I2.2,A,I5.5,A)') 'results/process_',process_id,'/output', checkpoint_iter_count, '.vtk'
+            write(resnorm_file, '(A,I2.2,A)') 'results/process_',process_id,'/resnorms'
+            open(RESNORM_FILE_UNIT, file=resnorm_file)
+            write(RESNORM_FILE_UNIT, *) 'resnorm continuity_resnorm', &
+                ' x_mom_resnorm y_mom_resnorm z_mom_resnorm energy_resnorm'
+            checkpoint_iter_count = 0
+            call checkpoint()  ! Create an initial dump file
+            call dmsg(1, 'solver', 'setup_solver', 'Setup solver complete')
 
         end subroutine setup_solver
 
@@ -226,6 +299,7 @@ module solver
 
             call destroy_scheme()
             call deallocate_misc()
+            call unlink_aliases_solver()
             call destroy_state()
             call destroy_geometry()
             call destroy_grid()
@@ -252,10 +326,47 @@ module solver
             
             call dmsg(1, 'solver', 'deallocate_misc')
 
-            call dealloc(residue)
             call dealloc(delta_t)
 
+            select case (time_step_accuracy)
+                case ("none")
+                    ! Do nothing
+                    continue
+                case ("RK4")
+                    call destroy_RK4_time_step()
+                case default
+                    call dmsg(5, 'solver', 'time_setup_deallocate_memory', &
+                                'time step accuracy not recognized.')
+                    stop
+            end select
+
         end subroutine deallocate_misc
+
+        subroutine destroy_RK4_time_step()
+    
+            implicit none
+
+            call dealloc(qp_n)
+            call dealloc(dEdx_1)
+            call dealloc(dEdx_2)
+            call dealloc(dEdx_3)
+
+        end subroutine destroy_RK4_time_step
+
+        subroutine setup_RK4_time_step()
+    
+            implicit none
+
+            call alloc(qp_n, 0, imx, 0, jmx, 0, kmx, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for qp_n.')
+            call alloc(dEdx_1, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for dEdx_1.')
+            call alloc(dEdx_2, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for dEdx_2.')
+            call alloc(dEdx_3, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for dEdx_3.')
+
+        end subroutine setup_RK4_time_step
 
         subroutine allocate_memory()
 
@@ -263,10 +374,62 @@ module solver
             
             call dmsg(1, 'solver', 'allocate_memory')
 
-            call alloc(delta_t, 1, imx-1, 1, jmx-1, &
+            call alloc(delta_t, 1, imx-1, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for delta_t.')
+            call alloc(qp_temp, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for qp_temp.')
+
+            select case (time_step_accuracy)
+                case ("none")
+                    ! Do nothing
+                    continue
+                case ("RK4")
+                    call setup_RK4_time_step()
+                case default
+                    call dmsg(5, 'solver', 'time_setup_allocate_memory', &
+                                'time step accuracy not recognized.')
+                    stop
+            end select
 
         end subroutine allocate_memory
+
+        subroutine unlink_aliases_solver()
+
+            implicit none
+
+            nullify(density_temp)
+            nullify(x_speed_temp)
+            nullify(y_speed_temp)
+            nullify(z_speed_temp)
+            nullify(pressure_temp)
+
+            nullify(mass_residue)
+            nullify(x_mom_residue)
+            nullify(y_mom_residue)
+            nullify(z_mom_residue)
+            nullify(energy_residue)
+
+        end subroutine unlink_aliases_solver
+
+        subroutine link_aliases_solver()
+
+            implicit none
+
+            call dmsg(1, 'solver', 'link_aliases_solver')
+
+            density_temp => qp_temp(1)
+            x_speed_temp => qp_temp(2)
+            y_speed_temp => qp_temp(3)
+            z_speed_temp => qp_temp(4)
+            pressure_temp => qp_temp(5)
+            
+            mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 1)
+            x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 2)
+            y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 3)
+            z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 4)
+            energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 5)
+
+        end subroutine link_aliases_solver
 
         subroutine compute_local_time_step()
             !-----------------------------------------------------------
@@ -279,45 +442,92 @@ module solver
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(imx-1, jmx-1) :: lmx1, lmx2, lmx3, lmx4, lmxsum
-            real, dimension(imx, jmx-1) :: x_sound_speed_avg
-            real, dimension(imx-1, jmx) :: y_sound_speed_avg
-            
+
+            real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
+            real :: x_sound_speed_avg, y_sound_speed_avg, z_sound_speed_avg
+            integer :: i, j, k
+
             call dmsg(1, 'solver', 'compute_local_time_step')
 
-            x_sound_speed_avg = 0.5 * &
-                    (x_sound_speed_left() + x_sound_speed_right())
-            y_sound_speed_avg = 0.5 * &
-                    (y_sound_speed_left() + y_sound_speed_right())
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+               ! For orientation, refer to the report. The standard i,j,k 
+               ! direction are marked. All orientation notations are w.r.t 
+               ! to the perspective shown in the image.
 
-            ! For left face
-            lmx1(:, :) = abs( &
-                    (x_speed(1:imx-1, 1:jmx-1) * xnx(1:imx-1, 1:jmx-1)) + &
-                    (y_speed(1:imx-1, 1:jmx-1) * xny(1:imx-1, 1:jmx-1))) + &
-                    x_sound_speed_avg(1:imx-1, 1:jmx-1)
-            ! For bottom face
-            lmx2(:, :) = abs( &
-                    (x_speed(1:imx-1, 1:jmx-1) * ynx(1:imx-1, 1:jmx-1)) + &
-                    (y_speed(1:imx-1, 1:jmx-1) * yny(1:imx-1, 1:jmx-1))) + &
-                    y_sound_speed_avg(1:imx-1, 1:jmx-1)
-            ! For right face
-            lmx3(:, :) = abs( &
-                    (x_speed(1:imx-1, 1:jmx-1) * xnx(2:imx, 1:jmx-1)) + &
-                    (y_speed(1:imx-1, 1:jmx-1) * xny(2:imx, 1:jmx-1))) + &
-                    x_sound_speed_avg(2:imx, 1:jmx-1)
-            ! For top face
-            lmx4(:, :) = abs( &
-                    (x_speed(1:imx-1, 1:jmx-1) * ynx(1:imx-1, 2:jmx)) + &
-                    (y_speed(1:imx-1, 1:jmx-1) * yny(1:imx-1, 2:jmx))) + &
-                    y_sound_speed_avg(1:imx-1, 2:jmx)
+               ! Faces with lower index
+               x_sound_speed_avg = 0.5 * (sqrt(gm * x_qp_left(i, j, k, 5) / &
+                                                    x_qp_left(i, j, k, 1)) + &
+                                          sqrt(gm * x_qp_right(i, j, k, 5) / &
+                                                    x_qp_right(i, j, k, 1)) )
+               y_sound_speed_avg = 0.5 * (sqrt(gm * y_qp_left(i, j, k, 5) / &
+                                                    y_qp_left(i, j, k, 1)) + &
+                                          sqrt(gm * y_qp_right(i, j, k, 5) / &
+                                                    y_qp_right(i, j, k, 1)) )
+               z_sound_speed_avg = 0.5 * (sqrt(gm * z_qp_left(i, j, k, 5) / &
+                                                    z_qp_left(i, j, k, 1)) + &
+                                          sqrt(gm * z_qp_right(i, j, k, 5) / &
+                                                    z_qp_right(i, j, k, 1)) )
+               
+               ! For left face: i.e., lower index face along xi direction
+               lmx1 = abs( &
+                    (x_speed(i, j, k) * xnx(i, j, k)) + &
+                    (y_speed(i, j, k) * xny(i, j, k)) + &
+                    (z_speed(i, j, k) * xnz(i, j, k))) + &
+                    x_sound_speed_avg
+               ! For front face, i.e., lower index face along eta direction
+               lmx2 = abs( &
+                    (x_speed(i, j, k) * ynx(i, j, k)) + &
+                    (y_speed(i, j, k) * yny(i, j, k)) + &
+                    (z_speed(i, j, k) * ynz(i, j, k))) + &
+                    y_sound_speed_avg
+               ! For bottom face, i.e., lower index face along zeta direction
+               lmx3 = abs( &
+                    (x_speed(i, j, k) * znx(i, j, k)) + &
+                    (y_speed(i, j, k) * zny(i, j, k)) + &
+                    (z_speed(i, j, k) * znz(i, j, k))) + &
+                    z_sound_speed_avg
+
+               ! Faces with higher index
+               x_sound_speed_avg = 0.5 * (sqrt(gm * x_qp_left(i+1,j,k,5) / x_qp_left(i+1,j,k,1)) + &
+                                          sqrt(gm * x_qp_right(i+1,j,k,5) / x_qp_right(i+1,j,k,1)) )
+               y_sound_speed_avg = 0.5 * (sqrt(gm * y_qp_left(i,j+1,k,5) / y_qp_left(i,j+1,k,1)) + &
+                                          sqrt(gm * y_qp_right(i,j+1,k,5) / y_qp_right(i,j+1,k,1)) )
+               z_sound_speed_avg = 0.5 * (sqrt(gm * z_qp_left(i,j,k+1,5) / z_qp_left(i,j,k+1,1)) + &
+                                          sqrt(gm * z_qp_right(i,j,k+1,5) / z_qp_right(i,j,k+1,1)) )
+               
+               ! For right face, i.e., higher index face along xi direction
+               lmx4 = abs( &
+                    (x_speed(i+1, j, k) * xnx(i+1, j, k)) + &
+                    (y_speed(i+1, j, k) * xny(i+1, j, k)) + &
+                    (z_speed(i+1, j, k) * xnz(i+1, j, k))) + &
+                    x_sound_speed_avg
+               ! For back face, i.e., higher index face along eta direction
+               lmx5 = abs( &
+                    (x_speed(i, j+1, k) * ynx(i, j+1, k)) + &
+                    (y_speed(i, j+1, k) * yny(i, j+1, k)) + &
+                    (z_speed(i, j+1, k) * ynz(i, j+1, k))) + &
+                    y_sound_speed_avg
+               ! For top face, i.e., higher index face along zeta direction
+               lmx6 = abs( &
+                    (x_speed(i, j, k+1) * znx(i, j, k+1)) + &
+                    (y_speed(i, j, k+1) * zny(i, j, k+1)) + &
+                    (z_speed(i, j, k+1) * znz(i, j, k+1))) + &
+                    z_sound_speed_avg
+
+               lmxsum = (xA(i, j, k) * lmx1) + &
+                        (yA(i, j, k) * lmx2) + &
+                        (zA(i, j, k) * lmx3) + &
+                        (xA(i+1, j, k) * lmx4) + &
+                        (yA(i, j+1, k) * lmx5) + &
+                        (zA(i, j, k+1) * lmx6)
             
-            lmxsum(:, :) = (xA(1:imx-1, 1:jmx-1) * lmx1) + &
-                    (yA(1:imx-1, 1:jmx-1) * lmx2) + &
-                    (xA(2:imx, 1:jmx-1) * lmx3) + &
-                    (yA(1:imx-1, 2:jmx) * lmx4)
-            
-            delta_t = 2. / lmxsum
-            delta_t = delta_t * volume * CFL
+               delta_t(i, j, k) = 1. / lmxsum
+               delta_t(i, j, k) = delta_t(i, j, k) * volume(i, j, k) * CFL
+              end do
+             end do
+            end do
 
         end subroutine compute_local_time_step
 
@@ -395,71 +605,263 @@ module solver
 
         end subroutine update_simulation_clock
 
+        subroutine get_next_solution()
+
+            implicit none
+
+            select case (time_step_accuracy)
+                case ("none")
+                    call update_solution()
+                case ("RK4")
+                    call RK4_update_solution()
+                case default
+                    call dmsg(5, 'solver', 'get_next solution', &
+                                'time step accuracy not recognized.')
+                    stop
+            end select
+
+        end subroutine get_next_solution
+
+        subroutine RK4_update_solution()
+
+            implicit none
+            integer :: i, j, k
+
+            ! qp at various stages is not stored but over written
+            ! The residue multiplied by the inverse of the jacobian
+            ! is stored for the final update equation
+
+            ! Stage 1 is identical to stage (n)
+            ! Store qp(n)
+            qp_n = qp
+            dEdx_1 = get_residue_primitive()
+            
+            ! Stage 2
+            ! Not computing delta_t since qp(1) = qp(n)
+            ! Update solution will over write qp
+            delta_t = 0.5 * delta_t  ! delta_t(1)
+            call update_solution()
+
+            ! Stage 3
+            call sub_step()
+       !    call apply_boundary_conditions()
+       !    call compute_residue()
+       !    call compute_time_step() ! delta_t(2)
+            dEdx_2 = get_residue_primitive()
+            delta_t = 0.5 * delta_t
+            call update_solution()
+
+            ! Stage 4
+            call sub_step()
+        !   call apply_boundary_conditions()
+        !   call compute_residue()
+        !   call compute_time_step() ! delta_t(3)
+            dEdx_3 = get_residue_primitive()
+            call update_solution()
+            ! qp now is qp_4
+
+            ! Use qp(4)
+            call sub_step()
+       !    call apply_boundary_conditions()
+       !    call compute_residue()
+       !    call compute_time_step() ! delta_t(4)
+
+            ! Calculating dEdx_4 in-situ and updating the solution
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+                density_temp  = qp_n(i, j, k, 1) - &
+                               (((dEdx_1(i, j, k, 1) / 6.0) + &
+                                 (dEdx_2(i, j, k, 1) / 3.0) + &
+                                 (dEdx_3(i, j, k, 1) / 3.0) + &
+                                 (mass_residue(i, j, k) / 6.0)) * &
+                                delta_t(i, j, k) / volume(i, j, k))
+                x_speed_temp = qp_n(i, j, k, 2) - &
+                               (((dEdx_1(i, j, k, 2) / 6.0) + &
+                                 (dEdx_2(i, j, k, 2) / 3.0) + &
+                                 (dEdx_3(i, j, k, 2) / 3.0) + &
+                                 (( (-1 * x_speed(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( x_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
+                                ) * delta_t(i, j, k) / volume(i, j, k))
+                y_speed_temp = qp_n(i, j, k, 3) - &
+                               (((dEdx_1(i, j, k, 3) / 6.0) + &
+                                 (dEdx_2(i, j, k, 3) / 3.0) + &
+                                 (dEdx_3(i, j, k, 3) / 3.0) + &
+                                 (( (-1 * y_speed(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( y_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
+                                ) * delta_t(i, j, k) / volume(i, j, k))
+                z_speed_temp = qp_n(i, j, k, 4) - &
+                               (((dEdx_1(i, j, k, 4) / 6.0) + &
+                                 (dEdx_2(i, j, k, 4) / 3.0) + &
+                                 (dEdx_3(i, j, k, 4) / 3.0) + &
+                                 (( (-1 * z_speed(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( z_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
+                                ) * delta_t(i, j, k) / volume(i, j, k))
+                pressure_temp = qp_n(i, j, k, 5) - &
+                               (((dEdx_1(i, j, k, 5) / 6.0) + &
+                                 (dEdx_2(i, j, k, 5) / 3.0) + &
+                                 (dEdx_3(i, j, k, 5) / 3.0) + &
+                                 (( (0.5 * (gm - 1.) * ( x_speed(i, j, k) ** 2. + &
+                                                         y_speed(i, j, k) ** 2. + &
+                                                         z_speed(i, j, k) ** 2.) * &
+                                                        mass_residue(i, j, k)) + &
+                       (- (gm - 1.) * x_speed(i, j, k) * x_mom_residue(i, j, k)) + &
+                       (- (gm - 1.) * y_speed(i, j, k) * y_mom_residue(i, j, k)) + &
+                       (- (gm - 1.) * z_speed(i, j, k) * z_mom_residue(i, j, k)) + &
+                       ((gm - 1.) * energy_residue(i, j, k)) ) / 6.0) &
+                                ) * delta_t(i, j, k) / volume(i, j, k))
+            
+                density(i, j, k) = density_temp
+                x_speed(i, j, k) = x_speed_temp
+                y_speed(i, j, k) = y_speed_temp
+                z_speed(i, j, k) = z_speed_temp
+                pressure(i, j, k) = pressure_temp
+              end do
+             end do
+            end do
+
+            if (any(density < 0) .or. any(pressure < 0)) then
+                call dmsg(5, 'solver', 'update_solution', &
+                        'ERROR: Some density or pressure is negative.')
+            end if
+
+        end subroutine RK4_update_solution
+
+        function get_residue_primitive() result(dEdx)
+
+            implicit none
+
+            real, dimension(1:imx-1, 1:jmx-1, 1:kmx-1, n_var) :: dEdx
+      !     integer, dimension(1:4) :: dEsize
+      !     integer, dimension(1:3) :: ressize
+
+      !     dEsize = shape(dEdx)
+      !     ressize = shape(mass_residue)
+
+      !     print *, dEsize(1), dEsize(2), dEsize(3), dEsize(4)
+      !     print *, ressize(1), ressize(2), ressize(3)
+      !     (1:imx-1, 1:jmx-1, 1:kmx-1)
+            dEdx(:, :, :, 1) = mass_residue
+            dEdx(:, :, :, 2) = ( (-1 * x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
+                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
+                                     mass_residue) + &
+                             ( x_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
+            dEdx(:, :, :, 3) = ( (-1 * y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
+                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
+                                     mass_residue) + &
+                             ( y_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
+            dEdx(:, :, :, 4) = ( (-1 * z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
+                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
+                                     mass_residue) + &
+                             ( z_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
+            dEdx(:, :, :, 5) = ( (0.5 * (gm - 1.) * ( x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2. + &
+                                                      y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2. + &
+                                                      z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2.) * &
+                                                    mass_residue) + &
+                       (- (gm - 1.) * x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * x_mom_residue) + &
+                       (- (gm - 1.) * y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * y_mom_residue) + &
+                       (- (gm - 1.) * z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * z_mom_residue) + &
+                       ((gm - 1.) * energy_residue) )
+
+        end function get_residue_primitive
+
         subroutine update_solution()
             !-----------------------------------------------------------
             ! Update the solution using the residue and time step
             !-----------------------------------------------------------
 
             implicit none
-            !real, dimension(4, 4) :: psi_inv
-            !integer :: i, j
-            real, dimension(0:imx, 0:jmx, 4) :: qp_temp
+            integer :: i, j, k
             
             call dmsg(1, 'solver', 'update_solution')
 
-!            do j = 1, jmx - 1
-!                do i = 1, imx - 1
-!                    print *, 'Location: ', i, j
-!                    psi_inv = transpose(reshape((/ &
-!                            1., 0., 0., 0., &
-!                            - x_speed(i, j) / density(i, j), &
-!                                1. / density(i, j), 0., 0., &
-!                            - y_speed(i, j) / density(i, j), &
-!                                0., 1. / density(i, j), 0., &
-!                            0., 0., 0., gm - 1 &
-!                            /), shape(psi_inv)))
-!                    if (any(abs(residue(i, j, :)) > 1e-6)) then
-!                        print *, 'old qp: ', qp(i, j, :)
-!                        print *, 'psi_inv: ', psi_inv
-!                        print *, 'residue: ', residue(i, j, :)
-!                        print *, 'delta_t: ', delta_t(i, j)
-!                        print *, 'volume: ', volume(i, j)
-!                    end if
-!                    qp(i, j, :) = qp(i, j, :) - &
-!                            (matmul(psi_inv, residue(i, j, :)) * &
-!                                delta_t(i, j) / volume(i, j))
-!                    if (any(abs(residue(i, j, :)) > 1e-6)) then
-!                        print *, 'new qp: ', qp(i, j, :)
-!                    end if
-!                    if (qp(i, j, 1) < 0 .or. qp(i, j, 4) < 0) stop
-!                end do
-!            end do
-            qp_temp(1:imx-1, 1:jmx-1, 1) = qp(1:imx-1, 1:jmx-1, 1) - &
-                    (residue(:, :, 1) * &
-                    delta_t(:, :) / volume(:, :))
-            qp_temp(1:imx-1, 1:jmx-1, 2) = qp(1:imx-1, 1:jmx-1, 2) - &
-                    (( (-1. * qp(1:imx-1, 1:jmx-1, 2) / qp(1:imx-1, 1:jmx-1, 1) * residue(:, :, 1)) + &
-                       ( residue(:, :, 2) / qp(1:imx-1, 1:jmx-1, 1) )) * &
-                    delta_t(:, :) / volume(:, :))
-            qp_temp(1:imx-1, 1:jmx-1, 3) = qp(1:imx-1, 1:jmx-1, 3) - &
-                    (( (-1. * qp(1:imx-1, 1:jmx-1, 3) / qp(1:imx-1, 1:jmx-1, 1) * residue(:, :, 1)) + &
-                       ( residue(:, :, 3) / qp(1:imx-1, 1:jmx-1, 1) )) * &
-                    delta_t(:, :) / volume(:, :))
-            qp_temp(1:imx-1, 1:jmx-1, 4) = qp(1:imx-1, 1:jmx-1, 4) - &
-                    ( ( (0.5 * (1.4 - 1.) * ( qp(1:imx-1, 1:jmx-1, 2)**2. + qp(1:imx-1, 1:jmx-1, 3)**2. ) * residue(:, :, 1)) + &
-                       (- (1.4 - 1.) * qp(1:imx-1, 1:jmx-1, 2) * residue(:, :, 2)) + &
-                       (- (1.4 - 1.) * qp(1:imx-1, 1:jmx-1, 3) * residue(:, :, 3)) + &
-                       ((1.4 - 1.) * residue(:, :, 4)) ) * &
-                    delta_t(:, :) / volume(:, :) )
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+               density_temp = density(i, j, k) - &
+                            (mass_residue(i, j, k) * &
+                            delta_t(i, j, k) / volume(i, j, k))
 
-            qp(1:imx-1, 1:jmx-1, :) = qp_temp(1:imx-1, 1:jmx-1, :)
+               x_speed_temp = x_speed(i, j, k) - &
+                            (( (-1 * x_speed(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( x_mom_residue(i, j, k) / density(i, j, k)) ) * &
+                            delta_t(i, j, k) / volume(i, j, k))
+
+               y_speed_temp = y_speed(i, j, k) - &
+                            (( (-1 * y_speed(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( y_mom_residue(i, j, k) / density(i, j, k)) ) * &
+                            delta_t(i, j, k) / volume(i, j, k))
+
+               z_speed_temp = z_speed(i, j, k) - &
+                            (( (-1 * z_speed(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( z_mom_residue(i, j, k) / density(i, j, k)) ) * &
+                            delta_t(i, j, k) / volume(i, j, k))
+
+               pressure_temp = pressure(i, j, k) - &
+                   ( ( (0.5 * (gm - 1.) * ( x_speed(i, j, k) ** 2. + &
+                                            y_speed(i, j, k) ** 2. + &
+                                            z_speed(i, j, k) ** 2.) * &
+                                          mass_residue(i, j, k)) + &
+                       (- (gm - 1.) * x_speed(i, j, k) * x_mom_residue(i, j, k)) + &
+                       (- (gm - 1.) * y_speed(i, j, k) * y_mom_residue(i, j, k)) + &
+                       (- (gm - 1.) * z_speed(i, j, k) * z_mom_residue(i, j, k)) + &
+                       ((gm - 1.) * energy_residue(i, j, k)) ) * &
+                       delta_t(i, j, k) / volume(i, j, k) ) 
+
+               density(i, j, k) = density_temp
+               x_speed(i, j, k) = x_speed_temp
+               y_speed(i, j, k) = y_speed_temp
+               z_speed(i, j, k) = z_speed_temp
+               pressure(i, j, k) = pressure_temp
+              end do
+             end do
+            end do
+            
+       !    density(1:imx-1, 1:jmx-1, 1:kmx-1) = density_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
+       !    x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) = x_speed_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
+       !    y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) = y_speed_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
+       !    z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) = z_speed_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
+       !    pressure(1:imx-1, 1:jmx-1, 1:kmx-1) = pressure_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
+
+         
+
+         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1,  1) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) - &
+         !          (residue(:, :, :, 1) * &
+         !          delta_t(:, :, :) / volume(:, :, :))
+         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, 2) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 2) - &
+         !          (( (-1. * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 2) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) * residue(:, :, :, 1)) + &
+         !             ( residue(:, :, :, 2) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) )) * &
+         !          delta_t(:, :, :) / volume(:, :, :))
+         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, 3) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 3) - &
+         !          (( (-1. * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 3) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) * residue(:, :, :, 1)) + &
+         !             ( residue(:, :, :, 3) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) )) * &
+         !          delta_t(:, :, :) / volume(:, :, :))
+         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, 4) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 4) - &
+         !          (( (-1. * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 4) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) * residue(:, :, :, 1)) + &
+         !             ( residue(:, :, :, 4) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) )) * &
+         !          delta_t(:, :, :) / volume(:, :, :))
+         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, 5) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 5) - &
+         !          ( ( (0.5 * (gm - 1.) * ( qp(1:imx-1, 1:jmx-1, 1:kmx-1, 2)**2. + qp(1:imx-1, 1:jmx-1, 1:kmx-1, 3)**2. + &
+         !              qp(1:imx-1, 1:jmx-1, 1:kmx-1, 4)**2.) * residue(:, :, :, 1)) + &
+         !             (- (gm - 1.) * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 2) * residue(:, :, :, 2)) + &
+         !             (- (gm - 1.) * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 3) * residue(:, :, :, 3)) + &
+         !             (- (gm - 1.) * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 4) * residue(:, :, :, 4)) + &
+         !             ((gm - 1.) * residue(:, :, :, 5)) ) * &
+         !          delta_t(:, :, :) / volume(:, :, :) )
+
+
+         !  qp(1:imx-1, 1:jmx-1, 1:kmx-1, :) = qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, :)
+         
             if (any(density < 0) .or. any(pressure < 0)) then
                 call dmsg(5, 'solver', 'update_solution', &
                         'ERROR: Some density or pressure is negative.')
-                print *, 'new qp: ', qp
-                print *, 'residue: ', residue
-                print *, 'delta_t: ', delta_t
-                print *, 'volume: ', volume
+                stop
             end if
 
         end subroutine update_solution
@@ -470,13 +872,14 @@ module solver
             !-----------------------------------------------------------
 
             implicit none
-
             character(len=FILE_NAME_LENGTH) :: filename
-
             if (checkpoint_iter .ne. 0) then
                 if (mod(iter, checkpoint_iter) == 0) then
-                    write(filename, '(A,I5.5,A)') 'output', iter, '.fvtk'
-                    call writestate(filename, 'Simulation clock: ' + sim_clock)
+                    !write(filename, '(A,I5.5,A)') 'output', checkpoint_iter_count, '.vtk'
+                    write(filename, '(A,I2.2,A,I5.5,A)') 'results/process_',process_id,'/output', checkpoint_iter_count, '.vtk'
+                    print *, filename
+                    checkpoint_iter_count = checkpoint_iter_count + 1
+                    call writestate_vtk(filename, 'Simulation clock: ' + sim_clock)
                     call dmsg(3, 'solver', 'checkpoint', &
                             'Checkpoint created at iteration: ' + iter)
                 end if
@@ -484,6 +887,31 @@ module solver
 
         end subroutine checkpoint
 
+        subroutine sub_step()
+
+            implicit none
+
+            !TODO: Better name for this??
+
+            call dmsg(1, 'solver', 'sub_step')
+            call send_recv(3) ! parallel call-argument:no of layers 
+            call apply_boundary_conditions()
+            call compute_face_interpolant()
+            call set_wall_bc_at_faces()
+            call compute_fluxes()
+            if (mu_ref /= 0.0) then
+                if (interpolant /= "none") then
+                    call extrapolate_cell_averages_to_faces()
+                    call set_wall_bc_at_faces()
+                end if
+                call compute_viscous_fluxes(F_p, G_p, H_p)
+            end if
+            call compute_residue()
+            call dmsg(1, 'solver', 'step', 'Residue computed.')
+            call compute_time_step()
+
+        end subroutine sub_step
+        
         subroutine step()
             !-----------------------------------------------------------
             ! Perform one time step iteration
@@ -496,18 +924,40 @@ module solver
             
             call dmsg(1, 'solver', 'step')
 
-            call set_ghost_cell_data()
-            call compute_residue()
-            call dmsg(1, 'solver', 'step', 'Residue computed.')
-            call compute_time_step()
-            call update_solution()
+            call sub_step()
+
+            call get_next_solution()
             call update_simulation_clock()
             iter = iter + 1
+
             call compute_residue_norm()
             if (iter .eq. 1) then
+             !  resnorm = max(1e-18, resnorm)
+             !  cont_resnorm = max(1e-18, cont_resnorm)
+             !  x_mom_resnorm = max(1e-18, x_mom_resnorm)
+             !  y_mom_resnorm = max(1e-18, y_mom_resnorm)
+             !  z_mom_resnorm = max(1e-18, z_mom_resnorm)
+             !  energy_resnorm = max(1e-18, energy_resnorm)            
                 resnorm_0 = resnorm
+                cont_resnorm_0 = cont_resnorm
+                x_mom_resnorm_0 = x_mom_resnorm
+                y_mom_resnorm_0 = y_mom_resnorm
+                z_mom_resnorm_0 = z_mom_resnorm
+                energy_resnorm_0 = energy_resnorm
             end if
-            write(RESNORM_FILE_UNIT, *) resnorm
+            write(RESNORM_FILE_UNIT, *) resnorm/resnorm_0, &
+                cont_resnorm/cont_resnorm_0, x_mom_resnorm/x_mom_resnorm_0, &
+                y_mom_resnorm/y_mom_resnorm_0, z_mom_resnorm/z_mom_resnorm_0, &
+                energy_resnorm/energy_resnorm_0
+        !   resnorm = max(1e-18, resnorm/resnorm_0)
+        !   cont_resnorm = max(1e-18, cont_resnorm/cont_resnorm_0)
+        !   x_mom_resnorm = max(1e-18, x_mom_resnorm/x_mom_resnorm_0)
+        !   y_mom_resnorm = max(1e-18, y_mom_resnorm/y_mom_resnorm_0)
+        !   z_mom_resnorm = max(1e-18, z_mom_resnorm/z_mom_resnorm_0)
+        !   energy_resnorm = max(1e-18, energy_resnorm/energy_resnorm_0)
+        !   write(RESNORM_FILE_UNIT, *) resnorm, cont_resnorm, x_mom_resnorm, &
+        !       y_mom_resnorm, z_mom_resnorm, energy_resnorm
+
             call checkpoint()
 
         end subroutine step
@@ -518,17 +968,51 @@ module solver
             
             call dmsg(1, 'solver', 'compute_residue_norm')
 
-            resnorm = sum(sqrt( &
-                    (residue(:, :, 1) / &
-                        (density_inf * x_speed_inf)) ** 2. + &
-                    (residue(:, :, 2) / &
-                        (density_inf * x_speed_inf ** 2.)) ** 2. + &
-                    (residue(:, :, 3) / &
-                        (density_inf * x_speed_inf ** 2.)) ** 2. + &
-                    (residue(:, :, 4) / &
-                        (density_inf ** 2. * x_speed_inf ** 3.)) ** 2. &
+            speed_inf = sqrt(x_speed_inf ** 2. + y_speed_inf ** 2. + &
+                             z_speed_inf ** 2.)
+            
+            resnorm = sqrt(sum( &
+                    (residue(:, :, :, 1) / &
+                        (density_inf * speed_inf)) ** 2. + &
+                    (residue(:, :, :, 2) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. + &
+                    (residue(:, :, :, 3) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. + &
+                    (residue(:, :, :, 4) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. + &
+                    (residue(:, :, :, 5) / &
+                        (density_inf * speed_inf * &
+                        ((0.5 * speed_inf * speed_inf) + &
+                          (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
                     ))
 
+            cont_resnorm = sqrt(sum( &
+                    (residue(:, :, :, 1) / &
+                        (density_inf * speed_inf)) ** 2. &
+                        ))
+
+            x_mom_resnorm = sqrt(sum( &
+                    (residue(:, :, :, 2) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. &
+                        ))
+                
+            y_mom_resnorm = sqrt(sum( &
+                    (residue(:, :, :, 3) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. &
+                        ))
+                
+            z_mom_resnorm = sqrt(sum( &
+                    (residue(:, :, :, 4) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. &
+                        ))
+            
+            energy_resnorm = sqrt(sum( &
+                    (residue(:, :, :, 5) / &
+                        (density_inf * speed_inf * &
+                        ((0.5 * speed_inf * speed_inf) + &
+                          (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
+                        ))
+                        
         end subroutine compute_residue_norm
 
         function converged() result(c)

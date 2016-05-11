@@ -10,7 +10,8 @@ module utils
                          alloc_rank2_real, &
                          alloc_rank3_real, &
                          alloc_rank4_real, &
-                         alloc_rank5_real
+                         alloc_rank5_real, &
+                         alloc_rank2_integer
     end interface alloc
 
     public :: dealloc
@@ -19,7 +20,8 @@ module utils
                          dealloc_rank2_real, &
                          dealloc_rank3_real, &
                          dealloc_rank4_real, &
-                         dealloc_rank5_real
+                         dealloc_rank5_real, &
+                         dealloc_rank2_integer
     end interface dealloc
 
     public :: dmsg

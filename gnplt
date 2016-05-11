@@ -1,0 +1,4 @@
+set term x11 1 noraise
+set logscale y
+plot for [col=1:6] 'resnorms' using 0:col with lines title columnheader 
+pause 5; unset output; refresh; reread;

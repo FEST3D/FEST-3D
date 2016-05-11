@@ -12,24 +12,27 @@ module state
             DESCRIPTION_STRING_LENGTH
     use utils, only: alloc, dealloc, dmsg
     use string
-    use grid, only: imx, jmx
-    use geometry, only: xnx, xny, ynx, yny
+    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
+    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz
 
     implicit none
     private
 
     ! State variables
-    real, public, dimension(:, :, :), allocatable, target :: qp
+    real, public, dimension(:, :, :, :), allocatable, target :: qp
     ! Infinity variables (free stream conditions)
-    real, public, dimension(4), target :: qp_inf
+    real, public, dimension(:), allocatable, target :: qp_inf
     ! State variable component aliases
-    real, public, dimension(:, :), pointer :: density
-    real, public, dimension(:, :), pointer :: x_speed
-    real, public, dimension(:, :), pointer :: y_speed
-    real, public, dimension(:, :), pointer :: pressure
+    integer, public :: n_var
+    real, public, dimension(:, :, :), pointer :: density
+    real, public, dimension(:, :, :), pointer :: x_speed
+    real, public, dimension(:, :, :), pointer :: y_speed
+    real, public, dimension(:, :, :), pointer :: z_speed
+    real, public, dimension(:, :, :), pointer :: pressure
     real, public, pointer :: density_inf
     real, public, pointer :: x_speed_inf
     real, public, pointer :: y_speed_inf
+    real, public, pointer :: z_speed_inf
     real, public, pointer :: pressure_inf
     ! Supersonic flag
     logical :: supersonic_flag
@@ -37,28 +40,30 @@ module state
     real, public :: gm
     ! Specific gas constant
     real, public :: R_gas
+    ! Constants related to viscosity
+    real, public :: mu_ref, T_ref, Sutherland_temp, Pr
 
     ! Public methods
     public :: setup_state
     public :: destroy_state
-    public :: set_ghost_cell_data
-    public :: xi_face_normal_speeds
-    public :: eta_face_normal_speeds
-    public :: writestate
+!   public :: set_ghost_cell_data
+    public :: writestate_vtk
 
     contains
 
         subroutine link_aliases()
             implicit none
             call dmsg(1, 'state', 'link_aliases')
-            density(0:imx, 0:jmx) => qp(:, :, 1)
-            x_speed(0:imx, 0:jmx) => qp(:, :, 2)
-            y_speed(0:imx, 0:jmx) => qp(:, :, 3)
-            pressure(0:imx, 0:jmx) => qp(:, :, 4)
+            density(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 1)
+            x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 2)
+            y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 3)
+            z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 4)
+            pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 5)
             density_inf => qp_inf(1)
             x_speed_inf => qp_inf(2)
             y_speed_inf => qp_inf(3)
-            pressure_inf => qp_inf(4)
+            z_speed_inf => qp_inf(4)
+            pressure_inf => qp_inf(5)
         end subroutine link_aliases
 
         subroutine unlink_aliases()
@@ -67,10 +72,12 @@ module state
             nullify(density)
             nullify(x_speed)
             nullify(y_speed)
+            nullify(z_speed)
             nullify(pressure)
             nullify(density_inf)
             nullify(x_speed_inf)
             nullify(y_speed_inf)
+            nullify(z_speed_inf)
             nullify(pressure_inf)
         end subroutine unlink_aliases
 
@@ -92,9 +99,12 @@ module state
             ! There are (imx - 1) x (jmx - 1) grid cells within the 
             ! domain. We require a row of ghost cells on each boundary.
             ! This current implementation is for a 2D/1D case. 
-            call alloc(qp, 0, imx, 0, jmx, 1, 4, &
+            call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for state ' // &
                         'variable qp.')
+            call alloc(qp_inf, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for state ' // &
+                        'variable qp_inf.')
         end subroutine allocate_memory
 
         subroutine deallocate_memory()
@@ -108,7 +118,8 @@ module state
         end subroutine deallocate_memory
 
         subroutine setup_state(free_stream_density, free_stream_x_speed, &
-                free_stream_y_speed, free_stream_pressure, state_file)
+                free_stream_y_speed, free_stream_z_speed, &
+                free_stream_pressure, state_file)
             !-----------------------------------------------------------
             ! Setup the state module.
             !
@@ -120,7 +131,8 @@ module state
 
             implicit none
             real, intent(in) :: free_stream_density
-            real, intent(in) :: free_stream_x_speed, free_stream_y_speed
+            real, intent(in) :: free_stream_x_speed, free_stream_y_speed, &
+                                free_stream_z_speed
             real, intent(in) :: free_stream_pressure
             character(len=FILE_NAME_LENGTH), intent(in) :: state_file
 
@@ -130,7 +142,7 @@ module state
             call link_aliases()
             call init_infinity_values(free_stream_density, &
                     free_stream_x_speed, free_stream_y_speed, &
-                    free_stream_pressure)
+                    free_stream_z_speed, free_stream_pressure)
             call set_supersonic_flag()
             call initstate(state_file)
 
@@ -154,135 +166,302 @@ module state
 
         end subroutine destroy_state
 
-        subroutine set_inlet_and_exit_state_variables()
-            !-----------------------------------------------------------
-            ! Set / extrapolate inlet and exit state variables
-            !
-            ! The inlet and exit variables are set based on the 
-            ! prescribed infinity (free stream) values and extrapolation
-            ! of the neighbouring cells. The decision to impose or 
-            ! extrapolate is based on the wave speeds and whether or not
-            ! the flow is supersonic.
-            !-----------------------------------------------------------
+!       subroutine set_inlet_and_exit_state_variables()
+!           !-----------------------------------------------------------
+!           ! Set / extrapolate inlet and exit state variables
+!           !
+!           ! The inlet and exit variables are set based on the 
+!           ! prescribed infinity (free stream) values and extrapolation
+!           ! of the neighbouring cells. The decision to impose or 
+!           ! extrapolate is based on the wave speeds and whether or not
+!           ! the flow is supersonic.
+!           !-----------------------------------------------------------
 
-            implicit none
-            
-            call dmsg(1, 'state', 'set_inlet_and_exit_state_variables')
+!           implicit none
+!           
+!           call dmsg(1, 'state', 'set_inlet_and_exit_state_variables')
 
-            ! Impose the density, x_speed and y_speed at the inlet
-            density(0, :) = density_inf
-            x_speed(0, :) = x_speed_inf
-            y_speed(0, :) = y_speed_inf
-            ! Extrapolate these quantities at the exit
-            density(imx, :) = density(imx - 1, :)
-            x_speed(imx, :) = x_speed(imx - 1, :)
-            y_speed(imx, :) = y_speed(imx - 1, :)
-            ! If the flow is subsonic, impose the back pressure
-            ! Else, impose the inlet pressure
-            ! Extrapolate at the other end
-            if (supersonic_flag .eqv. .TRUE.) then
-                pressure(0, :) = pressure_inf
-                pressure(imx, :) = pressure(imx - 1, :)
-            else
-                pressure(imx, :) = pressure_inf
-                pressure(0, :) = pressure(1, :)
-            end if
+!           ! Impose the density, x_speed and y_speed at the inlet
+!           density(0, :, :) = density_inf
+!           x_speed(0, :, :) = x_speed_inf
+!           y_speed(0, :, :) = y_speed_inf
+!           z_speed(0, :, :) = z_speed_inf
+!           ! Extrapolate these quantities at the exit
+!           density(imx, :, :) = density(imx - 1, :, :)
+!           x_speed(imx, :, :) = x_speed(imx - 1, :, :)
+!           y_speed(imx, :, :) = y_speed(imx - 1, :, :)
+!           z_speed(imx, :, :) = z_speed(imx - 1, :, :)
+!           ! If the flow is subsonic, impose the back pressure
+!           ! Else, impose the inlet pressure
+!           ! Extrapolate at the other end
+!           if (supersonic_flag .eqv. .TRUE.) then
+!               pressure(0, :, :) = pressure_inf
+!               pressure(imx, :, :) = pressure(imx - 1, :, :)
+!           else
+!               pressure(imx, :, :) = pressure_inf
+!               pressure(0, :, :) = pressure(1, :, :)
+!           end if
+!           
+!       end subroutine set_inlet_and_exit_state_variables
 
-        end subroutine set_inlet_and_exit_state_variables
+!       subroutine set_front_and_back_ghost_cell_data()
+!           !-----------------------------------------------------------
+!           ! Set the state variables for the front and back ghosh cells
+!           !
+!           ! The pressure and density for the front and back ghost 
+!           ! cells is extrapolated from the neighboring interior cells.
+!           ! The velocity components are computed by applying the 
+!           ! flow tangency conditions.
+!           !-----------------------------------------------------------
 
-        subroutine set_top_and_bottom_ghost_cell_data()
-            !-----------------------------------------------------------
-            ! Set the state variables for the top and bottom ghosh cells
-            !
-            ! The pressure and density for the top and bottom ghost 
-            ! cells is extrapolated from the neighboring interior cells.
-            ! The velocity components are computed by applying the 
-            ! flow tangency conditions.
-            !-----------------------------------------------------------
+!           implicit none
 
-            implicit none
+!           call dmsg(1, 'state', 'set_front_and_back_ghost_cell_data')
 
-            call dmsg(1, 'state', 'set_top_and_bottom_ghost_cell_data')
+!           pressure(:, 0, :) = pressure(:, jmx-1, :)
+!           pressure(:, jmx, :) = pressure(:, 1, :)
+!           density(:, 0, :) = density(:, jmx-1, :)
+!           density(:, jmx, :) = density(:, 1, :)
+!        
+!           call apply_eta_flow_tangency_conditions()
 
-            pressure(1:imx-1, 0) = pressure(1:imx-1, 1)
-            pressure(1:imx-1, jmx) = pressure(1:imx-1, jmx-1)
-            density(1:imx-1, 0) = density(1:imx-1, 1)
-            density(1:imx-1, jmx) = density(1:imx-1, jmx-1)
-            call apply_flow_tangency_conditions()
+!       end subroutine set_front_and_back_ghost_cell_data
 
-        end subroutine set_top_and_bottom_ghost_cell_data
+!       subroutine set_top_and_bottom_ghost_cell_data()
+!           !-----------------------------------------------------------
+!           ! Set the state variables for the top and bottom ghosh cells
+!           !
+!           ! The pressure and density for the top and bottom ghost 
+!           ! cells is extrapolated from the neighboring interior cells.
+!           ! The velocity components are computed by applying the 
+!           ! flow tangency conditions.
+!           !-----------------------------------------------------------
 
-        subroutine apply_flow_tangency_conditions()
-            !-----------------------------------------------------------
-            ! Apply the flow tangency conditions
-            !
-            ! The flow tangency conditions ensure that there is no flow
-            ! across the boundaries. This is done by ensuring that the
-            ! flow is parallel to the boundary.
-            !-----------------------------------------------------------
+!           implicit none
 
-            implicit none
-            
-            call dmsg(1, 'state', 'apply_flow_tangency_conditions')
+!           call dmsg(1, 'state', 'set_top_and_bottom_ghost_cell_data')
 
-            ! For the top cells
-            x_speed(1:imx-1, jmx) = x_speed(1:imx-1, jmx-1) - &
-                    (2. * &
-                        ((x_speed(1:imx-1, jmx-1) * &
-                            ynx(1:imx-1, jmx) ** 2.) &
-                        + (y_speed(1:imx-1, jmx-1) * &
-                            yny(1:imx-1, jmx) * ynx(1:imx-1, jmx)) &
-                        ) &
-                    )
-            y_speed(1:imx-1, jmx) = y_speed(1:imx-1, jmx-1) - &
-                    (2. * &
-                        ((x_speed(1:imx-1, jmx-1) * &
-                            ynx(1:imx-1, jmx) * yny(1:imx-1, jmx)) &
-                        + (y_speed(1:imx-1, jmx-1) * &
-                            yny(1:imx-1, jmx) ** 2.) &
-                        ) &
-                    )
-            ! For the bottom cells
-            x_speed(1:imx-1, 0) = x_speed(1:imx-1, 1) - &
-                    (2. * &
-                        ((x_speed(1:imx-1, 1) * &
-                            ynx(1:imx-1, 1) ** 2.) &
-                        + (y_speed(1:imx-1, 1) * &
-                            yny(1:imx-1, 1) * ynx(1:imx-1, 1)) &
-                        ) &
-                    )
-            y_speed(1:imx-1, 0) = y_speed(1:imx-1, 1) - &
-                    (2. * &
-                        ((x_speed(1:imx-1, 1) * &
-                            ynx(1:imx-1, 1) * yny(1:imx-1, 1)) &
-                        + (y_speed(1:imx-1, 1) * &
-                            yny(1:imx-1, 1) ** 2.) &
-                        ) &
-                    )
+!           pressure(:, :,  0) = pressure(:, :, kmx-1)
+!           pressure(:, :, kmx) = pressure(:, :, 1)
+!           density(:, :, 0) = density(:, :,  kmx-1)
+!           density(:, :, kmx) = density(:, :, 1)
+!           call apply_zeta_flow_tangency_conditions()
 
-        end subroutine apply_flow_tangency_conditions
+!       end subroutine set_top_and_bottom_ghost_cell_data
+!       
+!       subroutine apply_eta_flow_tangency_conditions()
+!           !-----------------------------------------------------------
+!           ! Apply the flow tangency conditions for the eta face
+!           !
+!           ! The flow tangency conditions ensure that there is no flow
+!           ! across the boundaries. This is done by ensuring that the
+!           ! flow is parallel to the boundary.
+!           !-----------------------------------------------------------
 
-        subroutine set_ghost_cell_data()
-            !-----------------------------------------------------------
-            ! Set the data in the ghost cells
-            !
-            ! The ghost cell data is either imposed or extrapolated from
-            ! the neighboring cells inside the domain. The decision to
-            ! impose or extrapolate is taken based on certain 
-            ! conditions.
-            !-----------------------------------------------------------
+!           implicit none
+!           
+!           call dmsg(1, 'state', 'apply_eta_flow_tangency_conditions')
 
-            implicit none
+!           if (mu_ref .eq. 0.0) then
+!             ! For the back cells
+!             x_speed(1:imx-1, jmx, 1:kmx-1) = x_speed(1:imx-1, jmx-1, 1:kmx-1) - &
+!                     (2. * &
+!                         ((x_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             ynx(1:imx-1, jmx, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) &
+!                         + (y_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             yny(1:imx-1, jmx, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) &
+!                         + (z_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             ynz(1:imx-1, jmx, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) &
+!                         ) &
+!                     )
+!             y_speed(1:imx-1, jmx, 1:kmx-1) = y_speed(1:imx-1, jmx-1, 1:kmx-1) - &
+!                     (2. * &
+!                         ((x_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             ynx(1:imx-1, jmx, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) &
+!                         + (y_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             yny(1:imx-1, jmx, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) &
+!                         + (z_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             ynz(1:imx-1, jmx, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) &
+!                         ) &
+!                     )
+!             z_speed(1:imx-1, jmx, 1:kmx-1) = z_speed(1:imx-1, jmx-1, 1:kmx-1) - &
+!                     (2. * &
+!                         ((x_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             ynx(1:imx-1, jmx, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+!                         + (y_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             yny(1:imx-1, jmx, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+!                         + (z_speed(1:imx-1, jmx-1, 1:kmx-1) * &
+!                             ynz(1:imx-1, jmx, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+!                         ) &
+!                     )
 
-            call dmsg(1, 'state', 'set_ghost_cell_data')
+!             ! For the front cells
+!             x_speed(1:imx-1, 0, 1:kmx-1) = x_speed(1:imx-1, 1, 1:kmx-1) - &
+!                  (2. * &
+!                      ((x_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          ynx(1:imx-1, 1, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) &
+!                      + (y_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          yny(1:imx-1, 1, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) &
+!                      + (z_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          ynz(1:imx-1, 1, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) &
+!                      ) &
+!                  )
+!             y_speed(1:imx-1, 0, 1:kmx-1) = y_speed(1:imx-1, 1, 1:kmx-1) - &
+!                  (2. * &
+!                      ((x_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          ynx(1:imx-1, 1, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) &
+!                      + (y_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          yny(1:imx-1, 1, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) &
+!                      + (z_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          ynz(1:imx-1, 1, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) &
+!                      ) &
+!                  )
+!             z_speed(1:imx-1, 0, 1:kmx-1) = z_speed(1:imx-1, 1, 1:kmx-1) - &
+!                  (2. * &
+!                      ((x_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          ynx(1:imx-1, 1, 1:kmx-1) * znx(1:imx-1, 1, 1:kmx-1)) &
+!                      + (y_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          yny(1:imx-1, 1, 1:kmx-1) * znx(1:imx-1, 1, 1:kmx-1)) &
+!                      + (z_speed(1:imx-1, 1, 1:kmx-1) * &
+!                          ynz(1:imx-1, 1, 1:kmx-1) * znx(1:imx-1, 1, 1:kmx-1)) &
+!                      ) &
+!                  )
+!           else
+!             x_speed(1:imx-1, jmx, 1:kmx-1) = - x_speed(1:imx-1, jmx-1, 1:kmx-1)
+!             y_speed(1:imx-1, jmx, 1:kmx-1) = - y_speed(1:imx-1, jmx-1, 1:kmx-1)
+!             z_speed(1:imx-1, jmx, 1:kmx-1) = - z_speed(1:imx-1, jmx-1, 1:kmx-1)
+!        
+!             x_speed(1:imx-1, 0, 1:kmx-1) = - x_speed(1:imx-1, 1, 1:kmx-1)
+!             y_speed(1:imx-1, 0, 1:kmx-1) = - y_speed(1:imx-1, 1, 1:kmx-1)
+!             z_speed(1:imx-1, 0, 1:kmx-1) = - z_speed(1:imx-1, 1, 1:kmx-1)
+!           end if
+!           
+!           x_speed(1:imx-1, 0, 1:kmx-1) = x_speed(1:imx-1, jmx-1, 1:kmx-1)
+!           y_speed(1:imx-1, 0, 1:kmx-1) = y_speed(1:imx-1, jmx-1, 1:kmx-1)
+!           z_speed(1:imx-1, 0, 1:kmx-1) = z_speed(1:imx-1, jmx-1, 1:kmx-1)
+!           x_speed(1:imx-1, jmx, 1:kmx-1) = x_speed(1:imx-1, 1, 1:kmx-1)
+!           y_speed(1:imx-1, jmx, 1:kmx-1) = y_speed(1:imx-1, 1, 1:kmx-1)
+!           z_speed(1:imx-1, jmx, 1:kmx-1) = z_speed(1:imx-1, 1, 1:kmx-1)
 
-            call set_inlet_and_exit_state_variables()
-            call set_top_and_bottom_ghost_cell_data()
+!       end subroutine apply_eta_flow_tangency_conditions
 
-        end subroutine set_ghost_cell_data
+!       subroutine apply_zeta_flow_tangency_conditions()
+!           !-----------------------------------------------------------
+!           ! Apply the flow tangency conditions
+!           !
+!           ! The flow tangency conditions ensure that there is no flow
+!           ! across the boundaries. This is done by ensuring that the
+!           ! flow is parallel to the boundary.
+!           !-----------------------------------------------------------
+
+!           implicit none
+!           
+!           call dmsg(1, 'state', 'apply_zeta_flow_tangency_conditions')
+
+!           ! For the top cells
+!           x_speed(1:imx-1, 1:jmx-1, kmx) = x_speed(1:imx-1, 1:jmx-1, kmx-1) - &
+!                   (2. * &
+!                       ((x_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           znx(1:imx-1, 1:jmx-1, kmx) * znx(1:imx-1, 1:jmx-1, kmx)) &
+!                       + (y_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           zny(1:imx-1, 1:jmx-1, kmx) * znx(1:imx-1, 1:jmx-1, kmx)) &
+!                       + (z_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           znz(1:imx-1, 1:jmx-1, kmx) * znx(1:imx-1, 1:jmx-1, kmx)) &
+!                       ) &
+!                   )
+!           y_speed(1:imx-1, 1:jmx-1, kmx) = y_speed(1:imx-1, 1:jmx-1, kmx-1) - &
+!                   (2. * &
+!                       ((x_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           znx(1:imx-1, 1:jmx-1, kmx) * zny(1:imx-1, 1:jmx-1, kmx)) &
+!                       + (y_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           zny(1:imx-1, 1:jmx-1, kmx) * zny(1:imx-1, 1:jmx-1, kmx)) &
+!                       + (z_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           znz(1:imx-1, 1:jmx-1, kmx) * zny(1:imx-1, 1:jmx-1, kmx)) &
+!                       ) &
+!                   )
+!           z_speed(1:imx-1, 1:jmx-1, kmx) = z_speed(1:imx-1, 1:jmx-1, kmx-1) - &
+!                   (2. * &
+!                       ((x_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           znx(1:imx-1, 1:jmx-1, kmx) * znz(1:imx-1, 1:jmx-1, kmx)) &
+!                       + (y_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           zny(1:imx-1, 1:jmx-1, kmx) * znz(1:imx-1, 1:jmx-1, kmx)) &
+!                       + (z_speed(1:imx-1, 1:jmx-1, kmx-1) * &
+!                           znz(1:imx-1, 1:jmx-1, kmx) * znz(1:imx-1, 1:jmx-1, kmx)) &
+!                       ) &
+!                   )
+!           
+!           x_speed(1:imx-1, 1:jmx-1, kmx) = - x_speed(1:imx-1, 1:jmx-1, kmx-1)
+!           y_speed(1:imx-1, 1:jmx-1, kmx) = - y_speed(1:imx-1, 1:jmx-1, kmx-1)
+!           z_speed(1:imx-1, 1:jmx-1, kmx) = - z_speed(1:imx-1, 1:jmx-1, kmx-1)
+
+!           ! For the bottom cells
+!           x_speed(1:imx-1, 1:jmx-1, 0) = x_speed(1:imx-1, 1:jmx-1, 1) - &
+!                   (2. * &
+!                       ((x_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           znx(1:imx-1, 1:jmx-1, 1) * znx(1:imx-1, 1:jmx-1, 1)) &
+!                       + (y_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           zny(1:imx-1, 1:jmx-1, 1) * znx(1:imx-1, 1:jmx-1, 1)) &
+!                       + (z_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           znz(1:imx-1, 1:jmx-1, 1) * znx(1:imx-1, 1:jmx-1, 1)) &
+!                       ) &
+!                   )
+!           y_speed(1:imx-1, 1:jmx-1, 0) = y_speed(1:imx-1, 1:jmx-1, 1) - &
+!                   (2. * &
+!                       ((x_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           znx(1:imx-1, 1:jmx-1, 1) * zny(1:imx-1, 1:jmx-1, 1)) &
+!                       + (y_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           zny(1:imx-1, 1:jmx-1, 1) * zny(1:imx-1, 1:jmx-1, 1)) &
+!                       + (z_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           znz(1:imx-1, 1:jmx-1, 1) * zny(1:imx-1, 1:jmx-1, 1)) &
+!                       ) &
+!                   )
+!           z_speed(1:imx-1, 1:jmx-1, 0) = z_speed(1:imx-1, 1:jmx-1, 1) - &
+!                   (2. * &
+!                       ((x_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           znx(1:imx-1, 1:jmx-1, 1) * znz(1:imx-1, 1:jmx-1, 1)) &
+!                       + (y_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           zny(1:imx-1, 1:jmx-1, 1) * znz(1:imx-1, 1:jmx-1, 1)) &
+!                       + (z_speed(1:imx-1, 1:jmx-1, 1) * &
+!                           znz(1:imx-1, 1:jmx-1, 1) * znz(1:imx-1, 1:jmx-1, 1)) &
+!                       ) &
+!                   )
+
+!           x_speed(1:imx-1, 1:jmx-1, 0) = - x_speed(1:imx-1, 1:jmx-1, 1)
+!           y_speed(1:imx-1, 1:jmx-1, 0) = - y_speed(1:imx-1, 1:jmx-1, 1)
+!           z_speed(1:imx-1, 1:jmx-1, 0) = - z_speed(1:imx-1, 1:jmx-1, 1)
+
+!           x_speed(1:imx-1, 1:jmx-1, 0) = x_speed(1:imx-1, 1:jmx-1, kmx-1)
+!           y_speed(1:imx-1, 1:jmx-1, 0) = y_speed(1:imx-1, 1:jmx-1, kmx-1)
+!           z_speed(1:imx-1, 1:jmx-1, 0) = z_speed(1:imx-1, 1:jmx-1, kmx-1)
+!           x_speed(1:imx-1, 1:jmx-1, kmx) = x_speed(1:imx-1, 1:jmx-1, 1)
+!           y_speed(1:imx-1, 1:jmx-1, kmx) = y_speed(1:imx-1, 1:jmx-1, 1)
+!           z_speed(1:imx-1, 1:jmx-1, kmx) = z_speed(1:imx-1, 1:jmx-1, 1)
+
+!       end subroutine apply_zeta_flow_tangency_conditions
+!       
+!       subroutine set_ghost_cell_data()
+!           !-----------------------------------------------------------
+!           ! Set the data in the ghost cells
+!           !
+!           ! The ghost cell data is either imposed or extrapolated from
+!           ! the neighboring cells inside the domain. The decision to
+!           ! impose or extrapolate is taken based on certain 
+!           ! conditions.
+!           !-----------------------------------------------------------
+
+!           implicit none
+
+!           call dmsg(1, 'state', 'set_ghost_cell_data')
+
+!           call set_inlet_and_exit_state_variables()
+!           call set_front_and_back_ghost_cell_data()
+!           call set_top_and_bottom_ghost_cell_data()
+
+!       end subroutine set_ghost_cell_data
 
         subroutine init_infinity_values(free_stream_density, &
-                free_stream_x_speed, free_stream_y_speed, free_stream_pressure)
+                free_stream_x_speed, free_stream_y_speed, &
+                free_stream_z_speed, free_stream_pressure)
             !-----------------------------------------------------------
             ! Set the values of the infinity variables
             !-----------------------------------------------------------
@@ -291,6 +470,7 @@ module state
             real, intent(in) :: free_stream_density
             real, intent(in) :: free_stream_x_speed
             real, intent(in) :: free_stream_y_speed
+            real, intent(in) :: free_stream_z_speed
             real, intent(in) :: free_stream_pressure
             
             call dmsg(1, 'state', 'init_infinity_values')
@@ -298,6 +478,7 @@ module state
             density_inf = free_stream_density
             x_speed_inf = free_stream_x_speed
             y_speed_inf = free_stream_y_speed
+            z_speed_inf = free_stream_z_speed
             pressure_inf = free_stream_pressure
 
         end subroutine init_infinity_values
@@ -330,8 +511,8 @@ module state
 
             call dmsg(1, 'state', 'set_supersonic_flag')
 
-            avg_inlet_mach = sqrt(x_speed_inf ** 2. + y_speed_inf ** 2.) / &
-                    sound_speed_inf()
+            avg_inlet_mach = sqrt(x_speed_inf ** 2. + y_speed_inf ** 2. + &
+                                  z_speed_inf ** 2.) / sound_speed_inf()
 
             if (avg_inlet_mach >= 1) then
                 supersonic_flag = .TRUE.
@@ -343,104 +524,6 @@ module state
                     'Supersonic flag set to ' + supersonic_flag)
 
         end subroutine set_supersonic_flag
-
-        function xi_face_normal_speeds(dir) result(face_normal_speeds)
-            !-----------------------------------------------------------
-            ! Return the xi face normal speed
-            !
-            ! The face normal speed is the component of the flow speed 
-            ! at a face perpendicular to it. This function returns the 
-            ! face normal speeds for xi faces.
-            !
-            ! Since the state variables are specified at cell 
-            ! centers, the direction of extrapolation must be specified 
-            ! using the following parameter:
-            ! 
-            !   dir: character
-            !       Extrapolate from previous or following cell
-            !       Use '+' to extrapolate from previous cell (in the 
-            !       positive direction) and '-' to extrapolate from the
-            !       following cell (in the negative direction).
-            !-----------------------------------------------------------
-
-            implicit none
-            character, intent(in) :: dir
-            real, dimension(imx, jmx-1) :: face_normal_speeds
-            integer :: i
-            integer, dimension(imx) :: indices
-            
-            call dmsg(1, 'state', 'xi_face_normal_speeds')
-
-            ! Find the indices of the cell centers whose speeds will be
-            ! used
-            indices = (/ (i, i = 0, imx-1) /)
-            if (dir .eq. '-') then
-                ! We have to compute the face normal speeds in the 
-                ! negative direction, i.e., using the following cells.
-                ! Adding 1 to the above indices gives us the correct 
-                ! ones.
-                indices = indices + 1
-            ! else if the direction is plus, the indices are correct
-            else if (dir .ne. '+') then
-                ! An incorrect direction is specified
-                print *, 'Error: An incorrect direction was specified to ', &
-                        'xi_face_normal_speeds().'
-                stop
-            end if
-
-            face_normal_speeds = x_speed(indices, 1:jmx-1) * xnx + &
-                    y_speed(indices, 1:jmx-1) * xny
-
-        end function xi_face_normal_speeds
-
-        function eta_face_normal_speeds(dir) result(face_normal_speeds)
-            !-----------------------------------------------------------
-            ! Return the eta face normal speed
-            !
-            ! The face normal speed is the component of the flow speed 
-            ! at a face perpendicular to it. This function returns the 
-            ! face normal speeds for eta faces.
-            !
-            ! Since the state variables are specified at cell 
-            ! centers, the direction of extrapolation must be specified 
-            ! using the following parameter:
-            ! 
-            !   dir: character
-            !       Extrapolate from previous or following cell
-            !       Use '+' to extrapolate from previous cell (in the 
-            !       positive direction) and '-' to extrapolate from the
-            !       following cell (in the negative direction).
-            !-----------------------------------------------------------
-
-            implicit none
-            character, intent(in) :: dir
-            real, dimension(imx-1, jmx) :: face_normal_speeds
-            integer :: j
-            ! Find the indices of the cell centers whose speeds will be
-            ! used
-            integer, dimension(jmx) :: indices
-            
-            call dmsg(1, 'state', 'eta_face_normal_speeds')
-
-            indices = (/ (j, j = 0, jmx-1) /)
-            if (dir .eq. '-') then
-                ! We have to compute the face normal speeds in the 
-                ! negative direction, i.e., using the following cells.
-                ! Adding 1 to the above indices gives us the correct 
-                ! ones.
-                indices = indices + 1
-            ! else if the direction is plus, the indices are correct
-            else if (dir .ne. '+') then
-                ! An incorrect direction is specified
-                print *, 'Error: An incorrect direction was specified to ', &
-                        'eta_face_normal_speeds().'
-                stop
-            end if
-
-            face_normal_speeds = x_speed(1:imx-1, indices) * ynx + &
-                    y_speed(1:imx-1, indices) * yny
-
-        end function eta_face_normal_speeds
 
         subroutine initstate(state_file)
             !-----------------------------------------------------------
@@ -460,7 +543,7 @@ module state
                 ! Set the state to the infinity values
                 call init_state_with_infinity_values()
             else
-                call readstate(state_file)
+                call readstate_vtk(state_file)
             end if
 
         end subroutine initstate
@@ -471,17 +554,17 @@ module state
             !-----------------------------------------------------------
             
             implicit none
+            integer :: i
             
             call dmsg(1, 'state', 'init_state_with_infinity_values')
-
-            qp(:, :, 1) = qp_inf(1)
-            qp(:, :, 2) = qp_inf(2)
-            qp(:, :, 3) = qp_inf(3)
-            qp(:, :, 4) = qp_inf(4)
-
+            
+            do i = 1,n_var
+                qp(:, :, :, i) = qp_inf(i)
+            end do  
+            
         end subroutine init_state_with_infinity_values
 
-        subroutine writestate(outfile, comment)
+        subroutine writestate_vtk(outfile, comment, extravar, extravarname)
             !-----------------------------------------------------------
             ! Write the state of the system to a file
             !-----------------------------------------------------------
@@ -490,99 +573,170 @@ module state
             character(len=FILE_NAME_LENGTH), intent(in) :: outfile
             character(len=DESCRIPTION_STRING_LENGTH), optional, intent(in) :: &
                     comment
-            integer :: i, j
+            real, dimension(:, :, :), optional, intent(in) :: extravar
+            character(len=DESCRIPTION_STRING_LENGTH), optional, intent(in) :: extravarname
+            integer :: i, j, k
             
-            call dmsg(1, 'state', 'writestate')
+            call dmsg(1, 'state', 'writestate_vtk')
 
             open(OUT_FILE_UNIT, file=outfile + '.part')
 
+            write(OUT_FILE_UNIT, fmt='(a)') '# vtk DataFile Version 3.1'
+
             if (present(comment)) then
-                write(OUT_FILE_UNIT, *) & 
+                write(OUT_FILE_UNIT, fmt='(a)') & 
                         trim('cfd-iitm output (' + comment + ')')
             else
-                write(OUT_FILE_UNIT, *) trim('cfd-iitm output')
+                write(OUT_FILE_UNIT, '(a)') 'cfd-iitm output'
             end if
 
-            write(OUT_FILE_UNIT, *) 'CELLDATA'
-            write(OUT_FILE_UNIT, *) 'Density'
-            do j = 1, jmx - 1
-                do i = 1, imx - 1
-                    write(OUT_FILE_UNIT, *) density(i, j)
-                end do
-            end do
+            write(OUT_FILE_UNIT, '(a)') 'ASCII'
+            write(OUT_FILE_UNIT, '(a)') 'DATASET STRUCTURED_GRID'
+            write(OUT_FILE_UNIT, *) 
 
-            write(OUT_FILE_UNIT, *) 'CELLDATA'
-            write(OUT_FILE_UNIT, *) 'Velocity'
-            do j = 1, jmx - 1
-                do i = 1, imx - 1
-                    write(OUT_FILE_UNIT, *) x_speed(i, j), y_speed(i, j)
-                end do
-            end do
+            write(OUT_FILE_UNIT, fmt='(a, i0, a, i0, a, i0)') &
+                'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
+            write(OUT_FILE_UNIT, fmt='(a, i0, a)') &
+                'POINTS ', imx*jmx*kmx, ' DOUBLE'
 
-            write(OUT_FILE_UNIT, *) 'CELLDATA'
-            write(OUT_FILE_UNIT, *) 'Pressure'
-            do j = 1, jmx - 1
-                do i = 1, imx - 1
-                    write(OUT_FILE_UNIT, *) pressure(i, j)
-                end do
+            do k = 1, kmx
+             do j = 1, jmx
+              do i = 1, imx
+                write(OUT_FILE_UNIT, fmt='(f0.16, a, f0.16, a, f0.16)') &
+                    grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
+              end do
+             end do
             end do
+            write(OUT_FILE_UNIT, *) 
+
+            ! Cell data
+            write(OUT_FILE_UNIT, fmt='(a, i0)') &
+                'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
+
+            ! Writing Velocity
+            write(OUT_FILE_UNIT, '(a)') 'VECTORS Velocity FLOAT'
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+                write(OUT_FILE_UNIT, fmt='(f0.16, a, f0.16, a, f0.16)') &
+                    x_speed(i, j, k), ' ', y_speed(i, j, k), ' ', z_speed(i, j, k)
+              end do
+             end do
+            end do
+            write(OUT_FILE_UNIT, *) 
+
+            ! Writing Density
+            write(OUT_FILE_UNIT, '(a)') 'SCALARS Density FLOAT'
+            write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+                write(OUT_FILE_UNIT, fmt='(f0.16)') density(i, j, k)
+              end do
+             end do
+            end do
+            write(OUT_FILE_UNIT, *) 
+
+            ! Writing Pressure
+            write(OUT_FILE_UNIT, '(a)') 'SCALARS Pressure FLOAT'
+            write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+                write(OUT_FILE_UNIT, fmt='(f0.16)') pressure(i, j, k)
+              end do
+             end do
+            end do
+            write(OUT_FILE_UNIT, *) 
+
+            ! Signed distance if IB
+            if (present(extravar)) then
+                write(OUT_FILE_UNIT, '(a)') &
+                    trim('SCALARS '), trim(extravarname), ' FLOAT'
+                write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+                do k = 1, kmx - 1
+                 do j = 1, jmx - 1
+                  do i = 1, imx - 1
+                    write(OUT_FILE_UNIT, fmt='(f0.16)') extravar(i, j, k)
+                  end do
+                 end do
+                end do
+                write(OUT_FILE_UNIT, *) 
+            end if
             
             close(OUT_FILE_UNIT)
 
             call rename(outfile + '.part', outfile)
 
-        end subroutine writestate
+        end subroutine writestate_vtk
 
-        subroutine readstate(state_file)
+        subroutine readstate_vtk(state_file)
             !-----------------------------------------------------------
-            ! Initialize the state using a state file.
-            !
-            ! Prior to running this subroutine, the memory for the 
-            ! state variables should have been allocated and the 
-            ! pointers to alias the components of the state should have 
-            ! been associated.
+            ! Read the state of the system from a file
             !-----------------------------------------------------------
-            
+
             implicit none
             character(len=FILE_NAME_LENGTH), intent(in) :: state_file
-            integer :: i, j
+            integer :: i, j, k
             
-            call dmsg(1, 'state', 'readstate')
+            call dmsg(1, 'state', 'readstate_vtk')
 
-            open(STATE_FILE_UNIT, file=state_file)
+            open(OUT_FILE_UNIT, file=state_file)
 
-            ! Skip the initial comment
-            read(STATE_FILE_UNIT, *)
+            read(OUT_FILE_UNIT, *) ! Skip first line
+            read(OUT_FILE_UNIT, *) ! Skip comment
+            read(OUT_FILE_UNIT, *) ! Skip ASCII
+            read(OUT_FILE_UNIT, *) ! Skip DATASET
+            read(OUT_FILE_UNIT, *) ! Skip Extra line
 
-            ! Skip the section header
-            read(STATE_FILE_UNIT, *)
-            read(STATE_FILE_UNIT, *)
-            do j = 1, jmx - 1
-                do i = 1, imx - 1
-                    read(STATE_FILE_UNIT, *) density(i, j)
-                end do
+            read(OUT_FILE_UNIT, *) ! Skip DIMENSIONS
+            read(OUT_FILE_UNIT, *) ! Skip POINTS
+            do k = 1, kmx
+             do j = 1, jmx
+              do i = 1, imx
+                read(OUT_FILE_UNIT, *) ! Skip grid points
+              end do
+             end do
+            end do
+            read(OUT_FILE_UNIT, *) ! Skip blank space
+
+            ! Cell data
+            read(OUT_FILE_UNIT, *) ! Skip CELL_DATA
+            read(OUT_FILE_UNIT, *) ! Skip VECTORS Velocity
+ 
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+                read(OUT_FILE_UNIT, *) x_speed(i, j, k), y_speed(i, j, k), z_speed(i, j, k)
+              end do
+             end do
             end do
 
-            ! Skip the section header
-            read(STATE_FILE_UNIT, *)
-            read(STATE_FILE_UNIT, *)
-            do j = 1, jmx - 1
-                do i = 1, imx - 1
-                    read(STATE_FILE_UNIT, *) x_speed(i, j), y_speed(i, j)
-                end do
+            read(OUT_FILE_UNIT, *) ! Skip Blank line
+            read(OUT_FILE_UNIT, *) ! Skip SCALARS DENSITY
+            read(OUT_FILE_UNIT, *) ! Skip LOOKUP_TABLE
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+                read(OUT_FILE_UNIT, *) density(i, j, k)
+              end do
+             end do
             end do
 
-            ! Skip the section header
-            read(STATE_FILE_UNIT, *)
-            read(STATE_FILE_UNIT, *)
-            do j = 1, jmx - 1
-                do i = 1, imx - 1
-                    read(STATE_FILE_UNIT, *) pressure(i, j)
-                end do
+            read(OUT_FILE_UNIT, *) ! Skip Blank line
+            read(OUT_FILE_UNIT, *) ! Skip SCALARS Pressure
+            read(OUT_FILE_UNIT, *) ! Skip LOOKUP_TABLE
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+                read(OUT_FILE_UNIT, *) pressure(i, j, k)
+              end do
+             end do
             end do
-            
-            close(STATE_FILE_UNIT)
+            ! Extra var not needed for state
 
-        end subroutine readstate
+            close(OUT_FILE_UNIT)
+
+        end subroutine readstate_vtk
 
 end module state

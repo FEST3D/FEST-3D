@@ -6,8 +6,8 @@ module weno_reconstruction
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx
-    use state, only: qp
+    use grid, only: imx, jmx, kmx
+    use state, only: qp, n_var
 
     implicit none
     private
@@ -32,16 +32,16 @@ module weno_reconstruction
 
             call dmsg(1, 'weno_reconstruction', 'setup_scheme')
 
-            call alloc(x_qp_left, 0, imx+1, 1, jmx-1, 1, 4, &
+            call alloc(x_qp_left, 0, imx+1, 1, jmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'x_qp_left.')
-            call alloc(x_qp_right, 0, imx+1, 1, jmx-1, 1, 4, &
+            call alloc(x_qp_right, 0, imx+1, 1, jmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'x_qp_right.')
-            call alloc(y_qp_left, 1, imx-1, 0, jmx+1, 1, 4, &
+            call alloc(y_qp_left, 1, imx-1, 0, jmx+1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'y_qp_left.')
-            call alloc(y_qp_right, 1, imx-1, 0, jmx+1, 1, 4, &
+            call alloc(y_qp_right, 1, imx-1, 0, jmx+1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'y_qp_right.')
 

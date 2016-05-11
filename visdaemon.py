@@ -4,10 +4,7 @@ import time
 import datetime
 
 from daemon import Daemon
-from vtkwrite import translate_fortran_to_vtk as translate_fvtk_to_vtk
-
-sys.path.append("/usr/local/visit/current/linux-x86_64/lib/site-packages")
-import visit
+import visitpostprocessing as vs
 
 class VisDaemon(Daemon):
 
@@ -17,6 +14,7 @@ class VisDaemon(Daemon):
         self.processed = []
         self.get_grid_file_name()
         self._database_open = False
+        self.plot_variable_data = vs.get_plot_variable_data()
         super(VisDaemon, self).__init__(pidfile, stdin, stdout, stderr)
 
     def get_grid_file_name(self):
@@ -31,45 +29,35 @@ class VisDaemon(Daemon):
             if not self._gridfile.startswith('#'):
                 break
         self._gridfile = self._gridfile.strip()
-
+        
+    
     def run(self):
         print 'visdaemon listening for files.'
-        visit.Launch(vdir='/usr/local/visit/bin/')
+        vs.launch_visit()
+        self._db = self.track_dir + '/' + 'output*.vtk database'
         while True:
-            #TODO: Generalize filename (output*.fvtk)
             new_files = [f for f in os.listdir(self.track_dir) if \
                     os.path.isfile(self.track_dir + '/' + f) and \
                     f[:6] == 'output' and \
-                    f[-5:] == '.fvtk' and \
+                    f[-4:] == '.vtk' and \
                     f not in self.processed]
             new_files.sort()
             if new_files:
                 next_file = new_files.pop(0)
-                print 'Translating file ' + next_file
-                output_file = self.track_dir + '/' + \
-                        next_file.split('.')[0] + '.vtk'
-                translate_fvtk_to_vtk(self.track_dir + '/' + self._gridfile, \
-                    self.track_dir + '/' + next_file, \
-                    output_file, \
-                    'ccfd-iitm solver output')
                 self.processed.append(next_file)
 
                 if not self._database_open and len(self.processed) >= 2:
-                    print 'Opening database...'
-                    self._db = self.track_dir + '/' + 'output*.vtk database'
-                    visit.OpenDatabase(self._db)
-                    self._database_open = True
-                    visit.AddPlot('Pseudocolor', 'Pressure')
-                    visit.DrawPlots()
-                    visit.TimeSliderNextState()
+                    vs.setup_visit(self.plot_variable_data, self._db)
+                    self._database_open = True                    
+                    vs.draw_plots()
+                    vs.time_slider_next_state()
                 elif self._database_open:
-                    #print 'Advancing...'
-                    visit.CheckForNewStates(self._db)
-                    visit.TimeSliderNextState()
+                    print 'Advancing...'
+                    vs.check_and_advance_state(self._db)
                 
             time.sleep(0.1)
 
-        visit.Close()
+        vs.close_visit()
 
 if __name__ == "__main__":
     pidfile = os.path.dirname(os.path.realpath(__file__)) + '/.visdaemon.pid'
@@ -109,5 +97,4 @@ if __name__ == "__main__":
 
     else:
         print "usage: %s start|stop|restart" % sys.argv[0]
-        sys.exit(2)
-        
+        sys.exit(2)        

@@ -7,15 +7,18 @@ module ausm
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx
-    use geometry, only: xnx, xny, ynx, yny, xA, yA
+    use state, only: n_var
+    use grid, only: imx, jmx, kmx
+    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, xA, yA, zA
     use van_leer, only: setup_scheme_VL => setup_scheme, &
             destroy_scheme_VL => destroy_scheme, &
             compute_residue_VL => compute_residue, &
             compute_xi_face_quantities_VL => compute_xi_face_quantities, &
             compute_eta_face_quantities_VL => compute_eta_face_quantities, &
+            compute_tau_face_quantities_VL => compute_tau_face_quantities, &
             x_c_plus, x_c_minus, &
-            y_c_plus, y_c_minus
+            y_c_plus, y_c_minus, &
+            z_c_plus, z_c_minus
 
     implicit none
     private
@@ -81,7 +84,7 @@ module ausm
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(imx-1, jmx-1, 4) :: residue
+            real, dimension(imx-1, jmx-1, kmx-1, n_var) :: residue
 
             call compute_xi_face_quantities_VL()
             call compute_eta_face_quantities_VL()

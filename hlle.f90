@@ -4,33 +4,47 @@ module hlle
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx
-    use geometry, only: xnx, xny, ynx, yny, xA, yA
-    use state, only: gm
+    use grid, only: imx, jmx, kmx
+    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, xA, yA, zA
+    use state, only: gm, n_var
     use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
-            x_density_left, x_x_speed_left, x_y_speed_left, x_pressure_left, &
-            x_density_right, x_x_speed_right, x_y_speed_right, &
+                z_qp_left, z_qp_right, &
+            x_density_left, x_x_speed_left, x_y_speed_left, x_z_speed_left, &
+                x_pressure_left, &
+            x_density_right, x_x_speed_right, x_y_speed_right, x_z_speed_right, &
                 x_pressure_right, &
-            y_density_left, y_x_speed_left, y_y_speed_left, y_pressure_left, &
-            y_density_right, y_x_speed_right, y_y_speed_right, &
+            y_density_left, y_x_speed_left, y_y_speed_left, y_z_speed_left, &
+                y_pressure_left, &
+            y_density_right, y_x_speed_right, y_y_speed_right, y_z_speed_right, &
                 y_pressure_right, &
+            z_density_left, z_x_speed_left, z_y_speed_left, z_z_speed_left, &
+                z_pressure_left, &
+            z_density_right, z_x_speed_right, z_y_speed_right, z_z_speed_right, &
+                z_pressure_right, &
             x_sound_speed_left, x_sound_speed_right, &
-            y_sound_speed_left, y_sound_speed_right
+            y_sound_speed_left, y_sound_speed_right, &
+            z_sound_speed_left, z_sound_speed_right
 
     implicit none
     private
-    real, dimension(:, :), allocatable :: x_alpha_left, x_alpha_right
-    real, dimension(:, :), allocatable :: x_face_normal_speed_left, &
+    real, dimension(:, :, :), allocatable :: x_alpha_left, x_alpha_right
+    real, dimension(:, :, :), allocatable :: x_face_normal_speed_left, &
             x_face_normal_speed_right
-    real, dimension(:, :), allocatable :: x_total_enthalpy_left, &
+    real, dimension(:, :, :), allocatable :: x_total_enthalpy_left, &
             x_total_enthalpy_right
-    real, dimension(:, :), allocatable :: y_alpha_left, y_alpha_right
-    real, dimension(:, :), allocatable :: y_face_normal_speed_left, &
+    real, dimension(:, :, :), allocatable :: y_alpha_left, y_alpha_right
+    real, dimension(:, :, :), allocatable :: y_face_normal_speed_left, &
             y_face_normal_speed_right
-    real, dimension(:, :), allocatable :: y_total_enthalpy_left, &
+    real, dimension(:, :, :), allocatable :: y_total_enthalpy_left, &
             y_total_enthalpy_right
-    real, dimension(:, :, :), allocatable :: F
-    real, dimension(:, :, :), allocatable :: G
+    real, dimension(:, :, :), allocatable :: z_alpha_left, z_alpha_right
+    real, dimension(:, :, :), allocatable :: z_face_normal_speed_left, &
+            z_face_normal_speed_right
+    real, dimension(:, :, :), allocatable :: z_total_enthalpy_left, &
+            z_total_enthalpy_right
+    real, dimension(:, :, :, :), allocatable :: F
+    real, dimension(:, :, :, :), allocatable :: G
+    real, dimension(:, :, :, :), allocatable :: H
 
     ! Public members
     public :: setup_scheme
@@ -45,51 +59,72 @@ module hlle
 
             call dmsg(1, 'hlle', 'setup_scheme')
 
-            call alloc(x_alpha_left, 1, imx, 1, jmx-1, &
+            call alloc(x_alpha_left, 1, imx, 1, jmx-1, 1, kmx-1,  &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'x_alpha_left.')
-            call alloc(x_alpha_right, 1, imx, 1, jmx-1, &
+            call alloc(x_alpha_right, 1, imx, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'x_alpha_right.')
-            call alloc(y_alpha_left, 1, imx-1, 1, jmx, &
+            call alloc(y_alpha_left, 1, imx-1, 1, jmx, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'y_alpha_left.')
-            call alloc(y_alpha_right, 1, imx-1, 1, jmx, &
+            call alloc(y_alpha_right, 1, imx-1, 1, jmx, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'y_alpha_right.')
+            call alloc(z_alpha_left, 1, imx-1, 1, jmx-1, 1, kmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'z_alpha_left.')
+            call alloc(z_alpha_right, 1, imx-1, 1, jmx-1, 1, kmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'z_alpha_right.')
 
-            call alloc(x_face_normal_speed_left, 1, imx, 1, jmx-1, &
+            call alloc(x_face_normal_speed_left, 1, imx, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'x_face_normal_speed_left.')
-            call alloc(x_face_normal_speed_right, 1, imx, 1, jmx-1, &
+            call alloc(x_face_normal_speed_right, 1, imx, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'x_face_normal_speed_right.')
-            call alloc(y_face_normal_speed_left, 1, imx-1, 1, jmx, &
+            call alloc(y_face_normal_speed_left, 1, imx-1, 1, jmx, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'y_face_normal_speed_left.')
-            call alloc(y_face_normal_speed_right, 1, imx-1, 1, jmx, &
+            call alloc(y_face_normal_speed_right, 1, imx-1, 1, jmx, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'y_face_normal_speed_right.')
+            call alloc(z_face_normal_speed_left, 1, imx-1, 1, jmx-1, 1, kmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'z_face_normal_speed_left.')
+            call alloc(z_face_normal_speed_right, 1, imx-1, 1, jmx-1, 1, kmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'z_face_normal_speed_right.')
 
-            call alloc(x_total_enthalpy_left, 1, imx, 1, jmx-1, &
+            call alloc(x_total_enthalpy_left, 1, imx, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'x_total_enthalpy_left.')
-            call alloc(x_total_enthalpy_right, 1, imx, 1, jmx-1, &
+            call alloc(x_total_enthalpy_right, 1, imx, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'x_total_enthalpy_right.')
-            call alloc(y_total_enthalpy_left, 1, imx-1, 1, jmx, &
+            call alloc(y_total_enthalpy_left, 1, imx-1, 1, jmx, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'y_total_enthalpy_left.')
-            call alloc(y_total_enthalpy_right, 1, imx-1, 1, jmx, &
+            call alloc(y_total_enthalpy_right, 1, imx-1, 1, jmx, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'y_total_enthalpy_right.')
+            call alloc(z_total_enthalpy_left, 1, imx-1, 1, jmx-1, 1, kmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'z_total_enthalpy_left.')
+            call alloc(z_total_enthalpy_right, 1, imx-1, 1, jmx-1, 1, kmx, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'z_total_enthalpy_right.')
 
-            call alloc(F, 1, imx, 1, jmx-1, 1, 4, &
+            call alloc(F, 1, imx, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'F.')
-            call alloc(G, 1, imx-1, 1, jmx, 1, 4, &
+            call alloc(G, 1, imx-1, 1, jmx, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
                         'G.')
+            call alloc(H, 1, imx-1, 1, jmx-1, 1, kmx, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'H.')
 
         end subroutine setup_scheme
 
@@ -101,21 +136,28 @@ module hlle
 
             call dealloc(F)
             call dealloc(G)
+            call dealloc(H)
 
             call dealloc(x_alpha_left)
             call dealloc(x_alpha_right)
             call dealloc(y_alpha_left)
             call dealloc(y_alpha_right)
+            call dealloc(z_alpha_left)
+            call dealloc(z_alpha_right)
 
             call dealloc(x_face_normal_speed_left)
             call dealloc(x_face_normal_speed_right)
             call dealloc(y_face_normal_speed_left)
             call dealloc(y_face_normal_speed_right)
+            call dealloc(z_face_normal_speed_left)
+            call dealloc(z_face_normal_speed_right)
             
             call dealloc(x_total_enthalpy_left)
             call dealloc(x_total_enthalpy_right)
             call dealloc(y_total_enthalpy_left)
             call dealloc(y_total_enthalpy_right)
+            call dealloc(z_total_enthalpy_left)
+            call dealloc(z_total_enthalpy_right)
 
         end subroutine destroy_scheme
 
@@ -212,7 +254,7 @@ module hlle
         function F_left()
 
             implicit none
-            real, dimension(1:imx, 1:jmx-1, 1:4) :: F_left
+            real, dimension(1:imx, 1:jmx-1, 1:n_var) :: F_left
             integer :: k
 
             F_left(:, :, 1) = x_density_left * &
@@ -234,7 +276,7 @@ module hlle
         function F_right()
 
             implicit none
-            real, dimension(1:imx, 1:jmx-1, 1:4) :: F_right
+            real, dimension(1:imx, 1:jmx-1, 1:n_var) :: F_right
             integer :: k
 
             F_right(:, :, 1) = x_density_right * &
@@ -349,7 +391,7 @@ module hlle
         function G_left()
 
             implicit none
-            real, dimension(1:imx-1, 1:jmx, 1:4) :: G_left
+            real, dimension(1:imx-1, 1:jmx, 1:n_var) :: G_left
             integer :: k
 
             G_left(:, :, 1) = y_density_left * &
@@ -371,7 +413,7 @@ module hlle
         function G_right()
 
             implicit none
-            real, dimension(1:imx-1, 1:jmx, 1:4) :: G_right
+            real, dimension(1:imx-1, 1:jmx, 1:n_var) :: G_right
             integer :: k
 
             G_right(:, :, 1) = y_density_right * &
@@ -410,14 +452,16 @@ module hlle
             !-----------------------------------------------------------
             
             implicit none
-            real, dimension(imx-1, jmx-1, 4) :: residue
+            real, dimension(imx-1, jmx-1, kmx-1, n_var) :: residue
 
             call dmsg(1, 'hlle', 'get_residue')
 
             call compute_xi_face_quantities()
             call compute_eta_face_quantities()
+            call compute_tau_face_quantities()
             call compute_F()
             call compute_G()
+            call compute_H()
 
             residue = F(2:imx, 1:jmx-1, :) &
                     - F(1:imx-1, 1:jmx-1, :) &

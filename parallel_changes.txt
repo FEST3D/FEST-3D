@@ -1,0 +1,19 @@
+### run.sh ##
+- commented visit real-time visualizing
+- added total process
+- running using mpirun
+- running parallel_clean.sh
+### solver.f90 ##
+- checkpoint() : changed to output in different folders
+- sub_step() : parallel send_recv() call
+- setup_solver() : loads corresponding bc.config.md,grid.txt,allocate_buffer_cell()   
+### compile.sh ##
+- compile using mpif90
+
+### main.f90 ##
+- MPI initialize and finalize
+
+### global.f90 ##
+- file name string length to 64
+### boundary_Conditon.f90
+- No changes

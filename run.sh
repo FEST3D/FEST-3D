@@ -1,28 +1,34 @@
 #!/bin/bash
 
-ex='iitm_cfd_solver.out'
-log='out'
 output_dir='results'
+ex='iitm_cfd_solver.out'
+runlog='out'
+vislog='vislog'
+visdaemon='visdaemon.py'
+total_process="$1" #parallel running - number of process
+. parallel_clean.sh
 
-echo "Run: `date +%Y/%m/%d-%H/%M/%S`" | tee -a $log
+echo "Run: `date +%Y/%m/%d-%H/%M/%S`" | tee -a $runlog
 
 if ls output*.*vtk 1> /dev/null 2>&1; then
     # Output files exist
     # Back them up
-    backup_dir="$output_dir`date +%Y%m%d%H%M%S`"
-    mkdir $backup_dir
-    mv output*.*vtk $backup_dir/
-    echo "Previous output files moved to $backup_dir""." | tee -a $log
+    echo 'Backing up existing data' | tee -a $runlog
+    . backupcurrent.sh
+    echo "Previous output files moved to $backup_dir""." | tee -a $runlog
 fi
 
 if [ -f $ex ]; then
-    echo 'Running solver.'
-    echo >> $log
-    echo 'Solver output:' >> $log
-    echo >> $log
-    espeak -a10 'Running solver.'
-    ./$ex >> $log
+    echo 'Clearing old log files' | tee -a $runlog
+    . clearlogs.sh
+    echo 'Running solver.' | tee -a $runlog
+    #python $visdaemon start './' ./$vislog  
+    echo >> $runlog
+    echo 'Solver output:' >> $runlog
+    echo >> $runlog
+    #espeak -a10 'Running solver.'
+    mpirun -np $total_process ./$ex >> $runlog
 fi
 
-echo | tee -a $log
-echo 'End of run script.' | tee -a $log
+echo | tee -a $runlog
+echo 'End of run script.' | tee -a $runlog

@@ -4,25 +4,30 @@ module ldfss0
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx
-    use geometry, only: xnx, xny, ynx, yny, xA, yA
+    use grid, only: imx, jmx, kmx
+    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, xA, yA, zA
     use van_leer, only: setup_scheme_VL => setup_scheme, &
             destroy_scheme_VL => destroy_scheme, &
             compute_residue_VL => compute_residue, &
             compute_xi_face_quantities_VL => compute_xi_face_quantities, &
             compute_eta_face_quantities_VL => compute_eta_face_quantities, &
+            compute_tau_face_quantities_VL => compute_tau_face_quantities, &
             x_M_perp_left, x_M_perp_right, &
             y_M_perp_left, y_M_perp_right, &
+            z_M_perp_left, z_M_perp_right, &
             x_beta_left, x_beta_right, &
             y_beta_left, y_beta_right, &
+            z_beta_left, z_beta_right, &
             x_c_plus, x_c_minus, &
             y_c_plus, y_c_minus
+            z_c_plus, z_c_minus
 
     implicit none
     private
 
-    real, dimension(:, :), allocatable :: x_M_ldfss
-    real, dimension(:, :), allocatable :: y_M_ldfss
+    real, dimension(:, :, :), allocatable :: x_M_ldfss
+    real, dimension(:, :, :), allocatable :: y_M_ldfss
+    real, dimension(:, :, :), allocatable :: z_M_ldfss
 
     ! Public methods
     public :: setup_scheme
@@ -39,10 +44,12 @@ module ldfss0
 
             call setup_scheme_VL()
 
-            call alloc(x_M_ldfss, 1, imx, 1, jmx-1, &
+            call alloc(x_M_ldfss, 1, imx, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for x_M_ldfss.')
-            call alloc(y_M_ldfss, 1, imx-1, 1, jmx, &
+            call alloc(y_M_ldfss, 1, imx-1, 1, jmx, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for y_M_ldfss.')
+            call alloc(z_M_ldfss, 1, imx-1, 1, jmx-1, 1, kmx, &
+                    errmsg='Error: Unable to allocate memory for z_M_ldfss.')
 
         end subroutine setup_scheme
 
@@ -54,6 +61,7 @@ module ldfss0
 
             call dealloc(x_M_ldfss)
             call dealloc(y_M_ldfss)
+            call dealloc(z_M_ldfss)
             call destroy_scheme_VL()
 
         end subroutine destroy_scheme
@@ -94,14 +102,16 @@ module ldfss0
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(imx-1, jmx-1, 4) :: residue
+            real, dimension(imx-1, jmx-1, 1, kmx-1, n_var) :: residue
 
             call compute_xi_face_quantities_VL()
             call compute_eta_face_quantities_VL()
+            call compute_tau_face_quantities_VL()
             
             ! Update the face variables according to the LDFSS(0) specs
             call ldfss_modify_xi_face_quantities()
             call ldfss_modify_eta_face_quantities()
+            call ldfss_modify_tau_face_quantities()
 
             residue = compute_residue_VL()
 
