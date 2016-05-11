@@ -9,6 +9,9 @@ resnorms
 # Config file
 config.md
 
+# Results folders
+results*/
+
 # FORTRAN and C++
 
 # Compiled Object files
