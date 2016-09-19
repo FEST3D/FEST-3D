@@ -5,12 +5,19 @@
 *.vtk
 out*
 resnorms
+art_disspn
+vislog
+visitlog.py
 
 # Config file
 config.md
 
-# Results folders
+# Results files
 results*/
+
+#grid file or data file
+*.dat
+*.txt
 
 # FORTRAN and C++
 
