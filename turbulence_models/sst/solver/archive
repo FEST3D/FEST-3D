@@ -1,0 +1,112 @@
+!include in solver.f90
+
+
+
+        subroutine unlink_aliases_solver()
+
+
+            nullify(tk_temp)
+            nullify(yw_temp)
+
+
+
+            ! qp now is qp_4
+            ! Use qp(4)
+                tk_temp = qp_n(i, j, k, 6) - &
+                               (((dEdx_1(i, j, k, 6) / 6.0) + &
+                                 (dEdx_2(i, j, k, 6) / 3.0) + &
+                                 (dEdx_3(i, j, k, 6) / 3.0) + &
+                                 (( (-1 * tk(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( TKE_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
+                                ) * delta_t(i, j, k) / volume(i, j, k))
+                tw_temp = qp_n(i, j, k, 7) - &
+                               (((dEdx_1(i, j, k, 7) / 6.0) + &
+                                 (dEdx_2(i, j, k, 7) / 3.0) + &
+                                 (dEdx_3(i, j, k, 7) / 3.0) + &
+                                 (( (-1 * tw(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( omega_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
+                                ) * delta_t(i, j, k) / volume(i, j, k))
+            
+                tk(i, j, k) = tk_temp
+                tw(i, j, k) = tw_temp
+
+
+            dEdx(:, :, :, 6) = ( (-1 * tk(1:imx-1, 1:jmx-1, 1:kmx-1) / &
+                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
+                                     mass_residue) + &
+                             ( TKE_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
+            dEdx(:, :, :, 7) = ( (-1 * tw(1:imx-1, 1:jmx-1, 1:kmx-1) / &
+                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
+                                     mass_residue) + &
+                             ( omega_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
+            
+            call dmsg(1, 'solver', 'update_solution')
+
+
+               tk_temp = tk(i, j, k) - &
+                            (( (-1 * tk(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( TKE_residue(i, j, k) / density(i, j, k)) ) * &
+                            delta_t(i, j, k) / volume(i, j, k))
+
+               tw_temp = tw(i, j, k) - &
+                            (( (-1 * tw(i, j, k) / density(i, j, k) * &
+                                     mass_residue(i, j, k)) + &
+                             ( omega_residue(i, j, k) / density(i, j, k)) ) * &
+                            delta_t(i, j, k) / volume(i, j, k))
+
+               tk(i, j, k) = tk_temp
+               tw(i, j, k) = tw_temp
+         
+
+                TKE_resnorm_0 = x_mom_resnorm
+                omega_resnorm_0 = y_mom_resnorm
+
+            call dmsg(1, 'solver', 'compute_residue_norm')
+
+            
+            resnorm = sqrt(sum( &
+                    (mass_residue(:, :, :) / &
+                        (density_inf * speed_inf)) ** 2. + &
+                    (x_mom_residue(:, :, :) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. + &
+                    (y_mom_residue(:, :, :) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. + &
+                    (z_mom_residue(:, :, :) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. + &
+                    (energy_residue(:, :, :) / &
+                        (density_inf * speed_inf * &
+                        ((0.5 * speed_inf * speed_inf) + &
+                          (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
+                    ))
+
+            cont_resnorm = sqrt(sum( &
+                    (mass_residue(:, :, :) / &
+                        (density_inf * speed_inf)) ** 2. &
+                        ))
+
+            x_mom_resnorm = sqrt(sum( &
+                    (x_mom_residue(:, :, :) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. &
+                        ))
+                
+            y_mom_resnorm = sqrt(sum( &
+                    (y_mom_residue(:, :, :) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. &
+                        ))
+                
+            z_mom_resnorm = sqrt(sum( &
+                    (z_mom_residue(:, :, :) / &
+                        (density_inf * speed_inf ** 2.)) ** 2. &
+                        ))
+            
+            energy_resnorm = sqrt(sum( &
+                    (energy_residue(:, :, :) / &
+                        (density_inf * speed_inf * &
+                        ((0.5 * speed_inf * speed_inf) + &
+                          (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
+                        ))
+                        
+
