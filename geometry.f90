@@ -14,11 +14,11 @@ module geometry
     private
 
     ! Grid face normals
-    real, public, dimension(:, :, :), allocatable :: xnx, xny, xnz
-    real, public, dimension(:, :, :), allocatable :: ynx, yny, ynz
-    real, public, dimension(:, :, :), allocatable :: znx, zny, znz
+    real, public, dimension(:, :, :), allocatable, target :: xnx, xny, xnz
+    real, public, dimension(:, :, :), allocatable, target :: ynx, yny, ynz
+    real, public, dimension(:, :, :), allocatable, target :: znx, zny, znz
     ! Grid face areas
-    real, public, dimension(:, :, :), allocatable :: xA, yA, zA
+    real, public, dimension(:, :, :), allocatable, target :: xA, yA, zA
     ! Grid cell volumes
     real, public, dimension(:, :, :), allocatable :: volume
     ! Ghost cell centroid

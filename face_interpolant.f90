@@ -22,6 +22,7 @@ module face_interpolant
             y_qp_right_ppm => y_qp_right, &
             z_qp_left_ppm => z_qp_left, &
             z_qp_right_ppm => z_qp_right
+    include "turbulence_models/include/face_interpolant/import_module.inc"
 
     implicit none
     private
@@ -46,6 +47,9 @@ module face_interpolant
     real, dimension(:, :, :), pointer :: z_y_speed_left, z_y_speed_right
     real, dimension(:, :, :), pointer :: z_z_speed_left, z_z_speed_right
     real, dimension(:, :, :), pointer :: z_pressure_left, z_pressure_right
+
+    !turbulent variable left and right with public deceleration
+    include "turbulence_models/include/face_interpolant/variables_deceleration.inc"
 
     ! Public members
     public :: interpolant
@@ -147,6 +151,8 @@ module face_interpolant
             z_z_speed_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 4)
             z_pressure_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 5)
 
+            !turbulent variable tk and tw linking _qp_ (6:7)
+            include "turbulence_models/include/face_interpolant/link_aliases.inc"
         end subroutine link_aliases
 
         subroutine setup_interpolant_scheme()
@@ -224,6 +230,7 @@ module face_interpolant
             nullify(z_z_speed_right)
             nullify(z_pressure_right)
 
+            include "turbulence_models/include/face_interpolant/unlink_aliases.inc" 
         end subroutine unlink_aliases
 
         subroutine destroy_interpolant_scheme()

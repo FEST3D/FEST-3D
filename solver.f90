@@ -11,20 +11,27 @@ module solver
             pressure, density_inf, x_speed_inf, y_speed_inf, z_speed_inf, pressure_inf, &
             gm, R_gas, setup_state, destroy_state, writestate_vtk, &
             mu_ref, T_ref, Sutherland_temp, Pr
+    use state, only: n_var
     use face_interpolant, only: interpolant, &
             x_qp_left, x_qp_right, &
             y_qp_left, y_qp_right, &
             z_qp_left, z_qp_right, compute_face_interpolant, &
             extrapolate_cell_averages_to_faces
-    use scheme, only: scheme_name, residue, setup_scheme, destroy_scheme, &
-            compute_fluxes, compute_residue, F_p, G_p, H_p
+    use scheme, only: scheme_name, setup_scheme, destroy_scheme, &
+            compute_fluxes, compute_residue, F_p, G_p, H_p, mass_residue,&
+            x_mom_residue, y_mom_residue, z_mom_residue, energy_residue
+    use source, only: setup_source, destroy_source, add_source_term_residue, &
+                      compute_gradients_cell_centre
     use boundary_conditions, only: setup_boundary_conditions, &
             apply_boundary_conditions, set_wall_bc_at_faces, &
             destroy_boundary_conditions
+    use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
     use viscous, only: compute_viscous_fluxes
     use layout, only: process_id, grid_file_buf, bc_file, &
     get_process_data, read_layout_file
     use parallel, only: allocate_buffer_cells,send_recv
+    use state, only: turbulence
+    include "turbulence_models/include/solver/import_module.inc"
     
     implicit none
     private
@@ -50,8 +57,7 @@ module solver
     real, pointer :: density_temp, x_speed_temp, &
                                          y_speed_temp, z_speed_temp, &
                                          pressure_temp
-    real, dimension(:, :, :), pointer :: mass_residue, x_mom_residue, &
-                             y_mom_residue, z_mom_residue, energy_residue
+    include "turbulence_models/include/solver/variables_deceleration.inc"
 
     ! Public methods
     public :: setup_solver
@@ -248,6 +254,11 @@ module solver
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='Prandtl Number = ' + Pr)
 
+            call get_next_token(buf)
+            read(buf, *) turbulence
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='Turbulence model = ' + turbulence)
+
             close(CONFIG_FILE_UNIT)
 
         end subroutine read_config_file
@@ -268,6 +279,10 @@ module solver
             call read_config_file(free_stream_density, free_stream_x_speed, &
                     free_stream_y_speed, free_stream_z_speed, &
                     free_stream_pressure, grid_file, state_load_file)
+                  !TODO make it general for all turbulence model
+                  if(turbulence=="sst")then
+                    n_var = n_var + sst_n_var
+                  end if
             call setup_grid(grid_file_buf)
             call setup_geometry()
             call setup_state(free_stream_density, free_stream_x_speed, &
@@ -277,6 +292,8 @@ module solver
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
+            call find_wall_dist()
+            call setup_source()
             call link_aliases_solver()
             call initmisc()
             !resnorm_file = 'resnorms'//process_id
@@ -402,12 +419,13 @@ module solver
             nullify(y_speed_temp)
             nullify(z_speed_temp)
             nullify(pressure_temp)
+            include "turbulence_models/include/solver/unlink_aliases_solver.inc"
 
-            nullify(mass_residue)
-            nullify(x_mom_residue)
-            nullify(y_mom_residue)
-            nullify(z_mom_residue)
-            nullify(energy_residue)
+!            nullify(mass_residue)
+!            nullify(x_mom_residue)
+!            nullify(y_mom_residue)
+!            nullify(z_mom_residue)
+!            nullify(energy_residue)
 
         end subroutine unlink_aliases_solver
 
@@ -423,11 +441,11 @@ module solver
             z_speed_temp => qp_temp(4)
             pressure_temp => qp_temp(5)
             
-            mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 1)
-            x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 2)
-            y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 3)
-            z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 4)
-            energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 5)
+!            mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 1)
+!            x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 2)
+!            y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 3)
+!            z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 4)
+!            energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 5)
 
         end subroutine link_aliases_solver
 
@@ -719,6 +737,7 @@ module solver
                 y_speed(i, j, k) = y_speed_temp
                 z_speed(i, j, k) = z_speed_temp
                 pressure(i, j, k) = pressure_temp
+                include "turbulence_models/include/solver/RK4_update_solution.inc"
               end do
              end do
             end do
@@ -765,6 +784,8 @@ module solver
                        (- (gm - 1.) * y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * y_mom_residue) + &
                        (- (gm - 1.) * z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * z_mom_residue) + &
                        ((gm - 1.) * energy_residue) )
+
+            include "turbulence_models/include/solver/get_residue_primitive.inc"
 
         end function get_residue_primitive
 
@@ -822,6 +843,8 @@ module solver
               end do
              end do
             end do
+
+            include "turbulence_models/include/solver/update_solution.inc"
             
        !    density(1:imx-1, 1:jmx-1, 1:kmx-1) = density_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
        !    x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) = x_speed_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
@@ -864,6 +887,7 @@ module solver
                 stop
             end if
 
+
         end subroutine update_solution
 
         subroutine checkpoint()
@@ -904,6 +928,8 @@ module solver
                     call extrapolate_cell_averages_to_faces()
                     call set_wall_bc_at_faces()
                 end if
+                call compute_gradients_cell_centre()
+                call add_source_term_residue()
                 call compute_viscous_fluxes(F_p, G_p, H_p)
             end if
             call compute_residue()
@@ -939,11 +965,11 @@ module solver
              !  z_mom_resnorm = max(1e-18, z_mom_resnorm)
              !  energy_resnorm = max(1e-18, energy_resnorm)            
                 resnorm_0 = resnorm
-                cont_resnorm_0 = cont_resnorm
-                x_mom_resnorm_0 = x_mom_resnorm
-                y_mom_resnorm_0 = y_mom_resnorm
-                z_mom_resnorm_0 = z_mom_resnorm
-                energy_resnorm_0 = energy_resnorm
+                cont_resnorm_0 = cont_resnorm + 1
+                x_mom_resnorm_0 = x_mom_resnorm + 1
+                y_mom_resnorm_0 = y_mom_resnorm + 1
+                z_mom_resnorm_0 = z_mom_resnorm + 1
+                energy_resnorm_0 = energy_resnorm + 1
             end if
             write(RESNORM_FILE_UNIT, *) resnorm/resnorm_0, &
                 cont_resnorm/cont_resnorm_0, x_mom_resnorm/x_mom_resnorm_0, &
@@ -972,42 +998,42 @@ module solver
                              z_speed_inf ** 2.)
             
             resnorm = sqrt(sum( &
-                    (residue(:, :, :, 1) / &
+                    (mass_residue(:, :, :) / &
                         (density_inf * speed_inf)) ** 2. + &
-                    (residue(:, :, :, 2) / &
+                    (x_mom_residue(:, :, :) / &
                         (density_inf * speed_inf ** 2.)) ** 2. + &
-                    (residue(:, :, :, 3) / &
+                    (y_mom_residue(:, :, :) / &
                         (density_inf * speed_inf ** 2.)) ** 2. + &
-                    (residue(:, :, :, 4) / &
+                    (z_mom_residue(:, :, :) / &
                         (density_inf * speed_inf ** 2.)) ** 2. + &
-                    (residue(:, :, :, 5) / &
+                    (energy_residue(:, :, :) / &
                         (density_inf * speed_inf * &
                         ((0.5 * speed_inf * speed_inf) + &
                           (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
                     ))
 
             cont_resnorm = sqrt(sum( &
-                    (residue(:, :, :, 1) / &
+                    (mass_residue(:, :, :) / &
                         (density_inf * speed_inf)) ** 2. &
                         ))
 
             x_mom_resnorm = sqrt(sum( &
-                    (residue(:, :, :, 2) / &
+                    (x_mom_residue(:, :, :) / &
                         (density_inf * speed_inf ** 2.)) ** 2. &
                         ))
                 
             y_mom_resnorm = sqrt(sum( &
-                    (residue(:, :, :, 3) / &
+                    (y_mom_residue(:, :, :) / &
                         (density_inf * speed_inf ** 2.)) ** 2. &
                         ))
                 
             z_mom_resnorm = sqrt(sum( &
-                    (residue(:, :, :, 4) / &
+                    (z_mom_residue(:, :, :) / &
                         (density_inf * speed_inf ** 2.)) ** 2. &
                         ))
             
             energy_resnorm = sqrt(sum( &
-                    (residue(:, :, :, 5) / &
+                    (energy_residue(:, :, :) / &
                         (density_inf * speed_inf * &
                         ((0.5 * speed_inf * speed_inf) + &
                           (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &

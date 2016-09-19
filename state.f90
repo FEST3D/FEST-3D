@@ -9,7 +9,7 @@ module state
     !-------------------------------------------------------------------
     
     use global, only: FILE_NAME_LENGTH, STATE_FILE_UNIT, OUT_FILE_UNIT, &
-            DESCRIPTION_STRING_LENGTH
+            DESCRIPTION_STRING_LENGTH, STRING_BUFFER_LENGTH
     use utils, only: alloc, dealloc, dmsg
     use string
     use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
@@ -43,6 +43,9 @@ module state
     ! Constants related to viscosity
     real, public :: mu_ref, T_ref, Sutherland_temp, Pr
 
+    ! Including Turbulence variables
+    include "turbulence_models/include/state/variables_deceleration.inc"
+
     ! Public methods
     public :: setup_state
     public :: destroy_state
@@ -64,6 +67,7 @@ module state
             y_speed_inf => qp_inf(3)
             z_speed_inf => qp_inf(4)
             pressure_inf => qp_inf(5)
+            include "turbulence_models/include/state/link_aliases.inc"
         end subroutine link_aliases
 
         subroutine unlink_aliases()
@@ -79,6 +83,7 @@ module state
             nullify(y_speed_inf)
             nullify(z_speed_inf)
             nullify(pressure_inf)
+            include "turbulence_models/include/state/unlink_aliases.inc"
         end subroutine unlink_aliases
 
         subroutine allocate_memory()
@@ -105,6 +110,8 @@ module state
             call alloc(qp_inf, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for state ' // &
                         'variable qp_inf.')
+            !!!!include only when turblent variables are differetn than qp(6:7)
+            !include "turbulence_models/sst/state/allocate_memory.inc"
         end subroutine allocate_memory
 
         subroutine deallocate_memory()
@@ -145,6 +152,8 @@ module state
                     free_stream_z_speed, free_stream_pressure)
             call set_supersonic_flag()
             call initstate(state_file)
+            !!!!include only when turblent variables are differetn than qp(6:7)
+            !include "turbulence_models/sst/state/deallocate_memory.inc"
 
         end subroutine setup_state
 
@@ -480,6 +489,7 @@ module state
             y_speed_inf = free_stream_y_speed
             z_speed_inf = free_stream_z_speed
             pressure_inf = free_stream_pressure
+            include "turbulence_models/include/state/init_infinity_values.inc"
 
         end subroutine init_infinity_values
         
@@ -560,7 +570,9 @@ module state
             
             do i = 1,n_var
                 qp(:, :, :, i) = qp_inf(i)
-            end do  
+            end do 
+            !!!!include only when turblent variables are differetn than qp(6:7)
+            !include "turbulence_models/sst/state/init_state_with_infinity_values.inc"
             
         end subroutine init_state_with_infinity_values
 
@@ -660,9 +672,11 @@ module state
                     write(OUT_FILE_UNIT, fmt='(f0.16)') extravar(i, j, k)
                   end do
                  end do
-                end do
+                end do 
                 write(OUT_FILE_UNIT, *) 
             end if
+
+            include "turbulence_models/include/state/writestate_vtk.inc"
             
             close(OUT_FILE_UNIT)
 
@@ -734,6 +748,7 @@ module state
              end do
             end do
             ! Extra var not needed for state
+            include "turbulence_models/include/state/readstate_vtk.inc"
 
             close(OUT_FILE_UNIT)
 

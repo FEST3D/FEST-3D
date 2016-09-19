@@ -13,27 +13,42 @@ module scheme
             get_residue_van_leer => get_residue, &
             F_van_leer => F, &
             G_van_leer => G, &
-            H_van_leer => H
-    use viscous, only: setup_viscous, destroy_viscous
-!   use ausm, only: &
-!           setup_scheme_ausm => setup_scheme, &
-!           destroy_scheme_ausm => destroy_scheme, &
-!           get_residue_ausm => get_residue
-!   use ldfss0, only: &
-!           setup_scheme_ldfss0 => setup_scheme, &
-!           destroy_scheme_ldfss0 => destroy_scheme, &
-!           get_residue_ldfss0 => get_residue
+            H_van_leer => H, &
+            residue_van_leer => residue
+    use ausm, only: &
+            setup_scheme_ausm => setup_scheme, &
+            destroy_scheme_ausm => destroy_scheme, &
+            compute_fluxes_ausm => compute_fluxes, &
+            get_residue_ausm => get_residue, &
+            F_ausm => F, &
+            G_ausm => G, &
+            H_ausm => H, &
+            residue_ausm => residue
+    use ldfss0, only: &
+            setup_scheme_ldfss0=> setup_scheme, &
+            destroy_scheme_ldfss0=> destroy_scheme, &
+            compute_fluxes_ldfss0 => compute_fluxes, &
+            get_residue_ldfss0 => get_residue, &
+            F_ldfss0 => F, &
+            G_ldfss0 => G, &
+            H_ldfss0 => H, &
+            residue_ldfss0 => residue
+!    use source, only: setup_source, destroy_source
 !   use hlle, only: &
 !           setup_scheme_hlle => setup_scheme, &
 !           destroy_scheme_hlle => destroy_scheme, &
 !           get_residue_hlle => get_residue
+    include "turbulence_models/include/scheme/import_module.inc"
 
     implicit none
     private
 
     character(len=SCHEME_NAME_LENGTH) :: scheme_name
-    real, public, dimension(:, :, :, :), allocatable, target :: residue
     real, public, dimension(:, :, :, :), pointer :: F_p, G_p, H_p
+    real, public, dimension(:, :, :), pointer :: mass_residue, x_mom_residue, &
+                             y_mom_residue, z_mom_residue, energy_residue
+
+    include "turbulence_models/include/scheme/variable_deceleration.inc" 
 
     ! Public members
     public :: scheme_name
@@ -44,19 +59,8 @@ module scheme
 
     contains
 
-        subroutine allocate_memory()
-            
-            implicit none
-            
-            call alloc(residue, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for residue.')
-
-        end subroutine allocate_memory
-
         subroutine setup_scheme()
             implicit none
-
-            call allocate_memory()
 
             call setup_interpolant_scheme()
 
@@ -66,10 +70,34 @@ module scheme
                     F_p => F_van_leer
                     G_p => G_van_leer
                     H_p => H_van_leer
-!               case ("ausm")
-!                   call setup_scheme_ausm()
-!               case ("ldfss0")
-!                   call setup_scheme_ldfss0()
+                    mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 1)
+                    x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 2)
+                    y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 3)
+                    z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 4)
+                    energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 5)
+                    include "turbulence_models/include/scheme/van_leer_setup.inc" 
+                case ("ausm")
+                    call setup_scheme_ausm()
+                    F_p => F_ausm
+                    G_p => G_ausm
+                    H_p => H_ausm
+                    mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 1)
+                    x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 2)
+                    y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 3)
+                    z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 4)
+                    energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 5)
+                    include "turbulence_models/include/scheme/ausm_setup.inc" 
+                case ("ldfss0")
+                    call setup_scheme_ldfss0()
+                    F_p => F_ldfss0
+                    G_p => G_ldfss0
+                    H_p => H_ldfss0
+                    mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 1)
+                    x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 2)
+                    y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 3)
+                    z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 4)
+                    energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 5)
+                    include "turbulence_models/include/scheme/ldfss0_setup.inc" 
 !               case ("hlle")
 !                   call setup_scheme_hlle()
                 case default
@@ -78,30 +106,39 @@ module scheme
                     stop
             end select
 
-            if (mu_ref /= 0.0) then
-                call setup_viscous()
-            end if
+ !           if (mu_ref /= 0.0) then
+  !              call setup_source()
+  !          end if
 
         end subroutine setup_scheme
 
         subroutine deallocate_memory()
+
             implicit none
-            call dealloc(residue)
+
             nullify(F_p)
             nullify(G_p)
             nullify(H_p)
+            nullify(mass_residue)
+            nullify(x_mom_residue)
+            nullify(y_mom_residue)
+            nullify(z_mom_residue)
+            nullify(energy_residue)
+            include "turbulence_models/include/scheme/deallocate_memory.inc" 
+
         end subroutine deallocate_memory
 
         subroutine destroy_scheme()
+
             implicit none
 
             select case (scheme_name)
                 case ("van_leer")
                     call destroy_scheme_van_leer
-!               case ("ausm")
-!                   call destroy_scheme_ausm()
-!               case ("ldfss0")
-!                   call destroy_scheme_ldfss0()
+                case ("ausm")
+                    call destroy_scheme_ausm()
+                case ("ldfss0")
+                    call destroy_scheme_ldfss0()
 !               case ("hlle")
 !                   call destroy_scheme_hlle()
                 case default
@@ -110,9 +147,9 @@ module scheme
                     stop
             end select
             
-            if (mu_ref /= 0.0) then
-                call destroy_viscous()
-            end if
+!            if (mu_ref /= 0.0) then
+!                call destroy_source()
+!            end if
 
             call destroy_interpolant_scheme()
             call deallocate_memory()
@@ -126,6 +163,12 @@ module scheme
             select case (scheme_name)
                 case ("van_leer")
                     call compute_fluxes_van_leer()
+                case ("ausm")
+                    call compute_fluxes_ausm()
+                case ("ldfss0")
+                    call compute_fluxes_ldfss0()
+!               case ("hlle")
+!                   call compute_fluxes_hlle()
                 case default
                     call dmsg(5, 'scheme', 'compute_fluxes', &
                             'Scheme not recognized.')
@@ -140,13 +183,13 @@ module scheme
             
             select case (scheme_name)
                 case ("van_leer")
-                    residue = get_residue_van_leer()
-!               case ("ausm")
-!                   residue = get_residue_ausm()
-!               case ("ldfss0")
-!                   residue = get_residue_ldfss0()
+                    call get_residue_van_leer()
+                case ("ausm")
+                    call get_residue_ausm()
+                case ("ldfss0")
+                    call get_residue_ldfss0()
 !               case ("hlle")
-!                   residue = get_residue_hlle()
+!                   call get_residue_hlle()
                 case default
                     call dmsg(5, 'scheme', 'compute_residue', &
                             'Scheme not recognized.')

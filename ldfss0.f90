@@ -1,55 +1,61 @@
 module ldfss0
     !-------------------------------------------------------------------
-    ! LDFSS is a class of flux-splitting schemes
+    ! The ausm scheme is a type of flux-splitting scheme
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
     use grid, only: imx, jmx, kmx
     use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, xA, yA, zA
-    use van_leer, only: setup_scheme_VL => setup_scheme, &
-            destroy_scheme_VL => destroy_scheme, &
-            compute_residue_VL => compute_residue, &
-            compute_xi_face_quantities_VL => compute_xi_face_quantities, &
-            compute_eta_face_quantities_VL => compute_eta_face_quantities, &
-            compute_tau_face_quantities_VL => compute_tau_face_quantities, &
-            x_M_perp_left, x_M_perp_right, &
-            y_M_perp_left, y_M_perp_right, &
-            z_M_perp_left, z_M_perp_right, &
-            x_beta_left, x_beta_right, &
-            y_beta_left, y_beta_right, &
-            z_beta_left, z_beta_right, &
-            x_c_plus, x_c_minus, &
-            y_c_plus, y_c_minus
-            z_c_plus, z_c_minus
+    use state, only: gm, n_var
+    use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
+                z_qp_left, z_qp_right, &
+            x_density_left, x_x_speed_left, x_y_speed_left, x_z_speed_left, &
+                x_pressure_left, &
+            x_density_right, x_x_speed_right, x_y_speed_right, x_z_speed_right, &
+                x_pressure_right, &
+            y_density_left, y_x_speed_left, y_y_speed_left, y_z_speed_left, &
+                y_pressure_left, &
+            y_density_right, y_x_speed_right, y_y_speed_right, y_z_speed_right, &
+                y_pressure_right, &
+            z_density_left, z_x_speed_left, z_y_speed_left, z_z_speed_left, &
+                z_pressure_left, &
+            z_density_right, z_x_speed_right, z_y_speed_right, z_z_speed_right, &
+                z_pressure_right
+    ! turbulenc avriables from face_interolant
+    include "turbulence_models/include/ldfss0/import_module.inc" 
 
     implicit none
     private
 
-    real, dimension(:, :, :), allocatable :: x_M_ldfss
-    real, dimension(:, :, :), allocatable :: y_M_ldfss
-    real, dimension(:, :, :), allocatable :: z_M_ldfss
+    real, public, dimension(:, :, :, :), allocatable, target :: F, G, H, residue
+    real, dimension(:, :, :, :), pointer :: flux_p
 
-    ! Public methods
+    ! Public members
     public :: setup_scheme
     public :: destroy_scheme
+    public :: compute_fluxes
     public :: get_residue
-
+    
     contains
 
         subroutine setup_scheme()
 
             implicit none
 
-            call dmsg(1, 'ldfss', 'setup_scheme')
+            call dmsg(1, 'ldfss0', 'setup_scheme')
 
-            call setup_scheme_VL()
-
-            call alloc(x_M_ldfss, 1, imx, 1, jmx-1, 1, kmx-1, &
-                    errmsg='Error: Unable to allocate memory for x_M_ldfss.')
-            call alloc(y_M_ldfss, 1, imx-1, 1, jmx, 1, kmx-1, &
-                    errmsg='Error: Unable to allocate memory for y_M_ldfss.')
-            call alloc(z_M_ldfss, 1, imx-1, 1, jmx-1, 1, kmx, &
-                    errmsg='Error: Unable to allocate memory for z_M_ldfss.')
+            call alloc(F, 1, imx, 1, jmx-1, 1, kmx-1, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'F - ldfss0.')
+            call alloc(G, 1, imx-1, 1, jmx, 1, kmx-1, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'G - ldfss0.')
+            call alloc(H, 1, imx-1, 1, jmx-1, 1, kmx, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'H - ldfss0.')
+            call alloc(residue, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
+                    errmsg='Error: Unable to allocate memory for ' // &
+                        'residue - ldfss0.')
 
         end subroutine setup_scheme
 
@@ -57,64 +63,256 @@ module ldfss0
 
             implicit none
 
-            call dmsg(1, 'ldfss', 'destroy_scheme')
-
-            call dealloc(x_M_ldfss)
-            call dealloc(y_M_ldfss)
-            call dealloc(z_M_ldfss)
-            call destroy_scheme_VL()
+            call dmsg(1, 'ldfss0', 'destroy_scheme')
+            
+            call dealloc(F)
+            call dealloc(G)
+            call dealloc(H)
 
         end subroutine destroy_scheme
 
-        subroutine ldfss_modify_xi_face_quantities()
-            !-----------------------------------------------------------
-            ! Update the Van-Leer computed speeds: x_c_plus & x_c_minus
-            !-----------------------------------------------------------
+        subroutine compute_flux(f_dir)
 
             implicit none
-
-            x_M_ldfss = 0.25 * x_beta_left * x_beta_right * &
-                    (sqrt((x_M_perp_left ** 2. + x_M_perp_right ** 2.) * 0.5) &
-                    - 1) ** 2.
-            x_c_plus = x_c_plus - x_M_ldfss
-            x_c_minus = x_c_minus + x_M_ldfss
-
-        end subroutine ldfss_modify_xi_face_quantities
-
-        subroutine ldfss_modify_eta_face_quantities()
-            !-----------------------------------------------------------
-            ! Update the Van-Leer computed speeds: y_c_plus & y_c_minus
-            !-----------------------------------------------------------
-
-            implicit none
-
-            y_M_ldfss = 0.25 * y_beta_left * y_beta_right * &
-                    (sqrt((y_M_perp_left ** 2. + y_M_perp_right ** 2.) * 0.5) &
-                    - 1) ** 2.
-            y_c_plus = y_c_plus - y_M_ldfss
-            y_c_minus = y_c_minus + y_M_ldfss
-
-        end subroutine ldfss_modify_eta_face_quantities
-
-        function get_residue() result(residue)
-            !-----------------------------------------------------------
-            ! Return the LDFSS(0) residue
-            !-----------------------------------------------------------
-
-            implicit none
-            real, dimension(imx-1, jmx-1, 1, kmx-1, n_var) :: residue
-
-            call compute_xi_face_quantities_VL()
-            call compute_eta_face_quantities_VL()
-            call compute_tau_face_quantities_VL()
+            character, intent(in) :: f_dir
+            integer :: i, j, k 
+            integer :: i_f, j_f, k_f ! Flags to determine face direction
+            real, dimension(:, :, :), pointer :: fA, nx, ny, nz, &
+                f_x_speed_left, f_x_speed_right, &
+                f_y_speed_left, f_y_speed_right, &
+                f_z_speed_left, f_z_speed_right, &
+                f_density_left, f_density_right, &
+                f_pressure_left, f_pressure_right
+            real, dimension(1:n_var) :: F_plus, F_minus
+            real :: M_perp_left, M_perp_right
+            real :: alpha_plus, alpha_minus
+            real :: beta_left, beta_right
+            real :: M_plus, M_minus
+            real :: D_plus, D_minus
+            real :: c_plus, c_minus
+            real :: scrD_plus, scrD_minus
+            real :: sound_speed_avg, face_normal_speeds
+            real :: M_ldfss, M_plus_ldfss, M_minus_ldfss
+            !include compute_flux_variable_and_select.inc before select         
+            !as it contains variables deceleration                              
+            include "turbulence_models/include/ldfss0/compute_flux_var.inc"
+            include "turbulence_models/include/ldfss0/compute_flux_select.inc"
             
-            ! Update the face variables according to the LDFSS(0) specs
-            call ldfss_modify_xi_face_quantities()
-            call ldfss_modify_eta_face_quantities()
-            call ldfss_modify_tau_face_quantities()
 
-            residue = compute_residue_VL()
+            call dmsg(1, 'ldfss0', 'compute_flux')
+            
+            select case (f_dir)
+                case ('x')
+                    i_f = 1
+                    j_f = 0
+                    k_f = 0
+                    flux_p => F
+                    fA => xA
+                    nx => xnx
+                    ny => xny
+                    nz => xnz
+                    f_x_speed_left => x_x_speed_left
+                    f_x_speed_right => x_x_speed_right
+                    f_y_speed_left => x_y_speed_left
+                    f_y_speed_right => x_y_speed_right
+                    f_z_speed_left => x_z_speed_left
+                    f_z_speed_right => x_z_speed_right
+                    f_density_left => x_density_left
+                    f_density_right => x_density_right
+                    f_pressure_left => x_pressure_left
+                    f_pressure_right => x_pressure_right
+                case ('y')
+                    i_f = 0
+                    j_f = 1
+                    k_f = 0
+                    flux_p => G
+                    fA => yA
+                    nx => ynx
+                    ny => yny
+                    nz => ynz
+                    f_x_speed_left => y_x_speed_left
+                    f_x_speed_right => y_x_speed_right
+                    f_y_speed_left => y_y_speed_left
+                    f_y_speed_right => y_y_speed_right
+                    f_z_speed_left => y_z_speed_left
+                    f_z_speed_right => y_z_speed_right
+                    f_density_left => y_density_left
+                    f_density_right => y_density_right
+                    f_pressure_left => y_pressure_left
+                    f_pressure_right => y_pressure_right
+                case ('z')
+                    i_f = 0
+                    j_f = 0
+                    k_f = 1
+                    flux_p => H
+                    fA => zA
+                    nx => znx
+                    ny => zny
+                    nz => znz
+                    f_x_speed_left => z_x_speed_left
+                    f_x_speed_right => z_x_speed_right
+                    f_y_speed_left => z_y_speed_left
+                    f_y_speed_right => z_y_speed_right
+                    f_z_speed_left => z_z_speed_left
+                    f_z_speed_right => z_z_speed_right
+                    f_density_left => z_density_left
+                    f_density_right => z_density_right
+                    f_pressure_left => z_pressure_left
+                    f_pressure_right => z_pressure_right
+                case default
+                    call dmsg(5, 'ldfss0', 'compute_flux', &
+                            'Direction not recognised')
+                    stop
+            end select
 
-        end function get_residue
+            do k = 1, kmx - 1 + k_f
+             do j = 1, jmx - 1 + j_f 
+              do i = 1, imx - 1 + i_f
+                sound_speed_avg = 0.5 * (sqrt(gm * f_pressure_left(i, j, k) / &
+                                            f_density_left(i, j, k) ) + &
+                                          sqrt(gm * f_pressure_right(i, j, k) / &
+                                            f_density_right(i, j, k) ) )
+                
+                ! Compute '+' direction quantities
+                face_normal_speeds = f_x_speed_left(i, j, k) * nx(i, j, k) + &
+                                     f_y_speed_left(i, j, k) * ny(i, j, k) + &
+                                     f_z_speed_left(i, j, k) * nz(i, j, k)
+                M_perp_left = face_normal_speeds / sound_speed_avg
+                alpha_plus = 0.5 * (1.0 + sign(1.0, M_perp_left))
+                beta_left = -max(0, 1 - floor(abs(M_perp_left)))
+                M_plus = 0.25 * ((1. + M_perp_left) ** 2.)
+                D_plus = 0.25 * ((1. + M_perp_left) ** 2.) * (2. - M_perp_left)
+                c_plus = (alpha_plus * (1.0 + beta_left) * M_perp_left) - &
+                          beta_left * M_plus
+                scrD_plus = (alpha_plus * (1. + beta_left)) - &
+                        (beta_left * D_plus)
+
+                ! Compute '-' direction quantities
+                face_normal_speeds = f_x_speed_right(i, j, k) * nx(i, j, k) + &
+                                     f_y_speed_right(i, j, k) * ny(i, j, k) + &
+                                     f_z_speed_right(i, j, k) * nz(i, j, k)
+                M_perp_right = face_normal_speeds / sound_speed_avg
+                alpha_minus = 0.5 * (1.0 - sign(1.0, M_perp_right))
+                beta_right = -max(0, 1 - floor(abs(M_perp_right)))
+                M_minus = -0.25 * ((1. - M_perp_right) ** 2.)
+                D_minus = 0.25 * ((1. - M_perp_right) ** 2.) * (2. + M_perp_right)
+                c_minus = (alpha_minus * (1.0 + beta_right) * M_perp_right) - &
+                          beta_right * M_minus
+                scrD_minus = (alpha_minus * (1. + beta_right)) - &
+                             (beta_right * D_minus)
+                
+                ! LDFSS0 modification             
+                M_ldfss = 0.25 * beta_left * beta_right * &
+                    (sqrt((M_perp_left ** 2 + M_perp_right ** 2) * 0.5) &
+                     - 1) ** 2
+                M_plus_ldfss = M_ldfss * &
+                        (1 - (f_pressure_left(i, j, k) - f_pressure_right(i, j, k)) / &
+                            (2 * f_density_left(i, j, k) * (sound_speed_avg ** 2)))
+                M_minus_ldfss = M_ldfss * &
+                        (1 - (f_pressure_left(i, j, k) - f_pressure_right(i, j, k)) / &
+                            (2 * f_density_right(i, j, k) * (sound_speed_avg ** 2)))
+                c_plus = c_plus - M_plus_ldfss
+                c_minus = c_minus + M_minus_ldfss
+
+                ! F plus mass flux
+                F_plus(1) = f_density_left(i, j, k) * sound_speed_avg * c_plus
+
+                ! Construct other fluxes in terms of the F mass flux
+                F_plus(2) = (F_plus(1) * f_x_speed_left(i, j, k)) + &
+                            (scrD_plus * f_pressure_left(i, j, k) * nx(i, j, k))
+                F_plus(3) = (F_plus(1) * f_y_speed_left(i, j, k)) + &
+                            (scrD_plus * f_pressure_left(i, j, k) * ny(i, j, k))
+                F_plus(4) = (F_plus(1) * f_z_speed_left(i, j, k)) + &
+                            (scrD_plus * f_pressure_left(i, j, k) * nz(i, j, k))
+                F_plus(5) = F_plus(1) * &
+                            ((0.5 * (f_x_speed_left(i, j, k) ** 2. + &
+                                     f_y_speed_left(i, j, k) ** 2. + &
+                                     f_z_speed_left(i, j, k) ** 2.)) + &
+                            ((gm / (gm - 1.)) * f_pressure_left(i, j, k) / &
+                             f_density_left(i, j, k)))
+
+
+                ! F minus mass flux
+                F_minus(1) = f_density_right(i, j, k) * sound_speed_avg * c_minus
+                
+                ! Construct other fluxes in terms of the F mass flux
+                F_minus(2) = (F_minus(1) * f_x_speed_right(i, j, k)) + &
+                             (scrD_minus * f_pressure_right(i, j, k) * nx(i, j, k))
+                F_minus(3) = (F_minus(1) * f_y_speed_right(i, j, k)) + &
+                             (scrD_minus * f_pressure_right(i, j, k) * ny(i, j, k))
+                F_minus(4) = (F_minus(1) * f_z_speed_right(i, j, k)) + &
+                             (scrD_minus * f_pressure_right(i, j, k) * nz(i, j, k))
+                F_minus(5) = F_minus(1) * &
+                            ((0.5 * (f_x_speed_right(i, j, k) ** 2. + &
+                                     f_y_speed_right(i, j, k) ** 2. + &
+                                     f_z_speed_right(i, j, k) ** 2.)) + &
+                            ((gm / (gm - 1.)) * f_pressure_right(i, j, k) / &
+                             f_density_right(i, j, k)))
+         
+                !turbulent fluxes                                               
+                include "turbulence_models/include/ldfss0/Fcompute_flux.inc"  
+
+                ! Multiply in the face areas
+                F_plus(:) = F_plus(:) * fA(i, j, k)
+                F_minus(:) = F_minus(:) * fA(i, j, k)
+
+                ! Get the total flux for a face
+                flux_p(i, j, k, :) = F_plus(:) + F_minus(:)
+              end do
+             end do
+            end do 
+
+        end subroutine compute_flux
+
+        subroutine compute_fluxes()
+            
+            implicit none
+            
+            call dmsg(1, 'ldfss0', 'compute_fluxes')
+
+            call compute_flux('x')
+            if (any(isnan(F))) then
+                call dmsg(5, 'ldfss0', 'compute_residue', 'ERROR: F flux Nan detected')
+                stop
+            end if    
+
+            call compute_flux('y')
+            if (any(isnan(G))) then 
+                call dmsg(5, 'ldfss0', 'compute_residue', 'ERROR: G flux Nan detected')
+                stop
+            end if    
+            
+            call compute_flux('z')
+            if (any(isnan(H))) then
+                call dmsg(5, 'ldfss0', 'compute_residue', 'ERROR: H flux Nan detected')
+                stop
+            end if
+
+        end subroutine compute_fluxes
+
+        subroutine get_residue()
+            !-----------------------------------------------------------
+            ! Compute the residue for the ldfss0 scheme
+            !-----------------------------------------------------------
+
+            implicit none
+            
+            integer :: i, j, k, l
+
+            call dmsg(1, 'ldfss0', 'compute_residue')
+
+            do l = 1, n_var
+             do k = 1, kmx - 1
+              do j = 1, jmx - 1
+               do i = 1, imx - 1
+               residue(i, j, k, l) = F(i+1, j, k, l) - F(i, j, k, l) &
+                                   + G(i, j+1, k, l) - G(i, j, k, l) &
+                                   + H(i, j, k+1, l) - H(i, j, k, l)
+               end do
+              end do
+             end do
+            end do
+        
+        end subroutine get_residue
 
 end module ldfss0

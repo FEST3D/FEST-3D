@@ -46,8 +46,13 @@ filelist="
     muscl
     face_interpolant
     van_leer
-    viscous
+    ausm
+    ldfss0
     scheme
+    surface
+    wall_dist
+    source
+    viscous
     parallel
     boundary_conditions
     solver
