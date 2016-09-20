@@ -257,7 +257,7 @@ module solver
             call get_next_token(buf)
             read(buf, *) turbulence
             call dmsg(5, 'solver', 'read_config_file', &
-                    msg='Turbulence model = ' + turbulence)
+                    msg='Turbulence Model = ' + turbulence)
 
             close(CONFIG_FILE_UNIT)
 
@@ -279,9 +279,9 @@ module solver
             call read_config_file(free_stream_density, free_stream_x_speed, &
                     free_stream_y_speed, free_stream_z_speed, &
                     free_stream_pressure, grid_file, state_load_file)
-                  !TODO make it general for all turbulence model
+                  !todo make it general for all turbulence model
                   if(turbulence=="sst")then
-                    n_var = n_var + sst_n_var
+                    n_var=n_var+sst_n_var
                   end if
             call setup_grid(grid_file_buf)
             call setup_geometry()
@@ -314,6 +314,8 @@ module solver
             
             call dmsg(1, 'solver', 'destroy_solver')
 
+            call destroy_source()
+            call destroy_wall_dist()
             call destroy_scheme()
             call deallocate_misc()
             call unlink_aliases_solver()
@@ -421,12 +423,6 @@ module solver
             nullify(pressure_temp)
             include "turbulence_models/include/solver/unlink_aliases_solver.inc"
 
-!            nullify(mass_residue)
-!            nullify(x_mom_residue)
-!            nullify(y_mom_residue)
-!            nullify(z_mom_residue)
-!            nullify(energy_residue)
-
         end subroutine unlink_aliases_solver
 
         subroutine link_aliases_solver()
@@ -440,13 +436,7 @@ module solver
             y_speed_temp => qp_temp(3)
             z_speed_temp => qp_temp(4)
             pressure_temp => qp_temp(5)
-            
-!            mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 1)
-!            x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 2)
-!            y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 3)
-!            z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 4)
-!            energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue(:, :, :, 5)
-
+            include "turbulence_models/include/solver/link_aliases_solver.inc"
         end subroutine link_aliases_solver
 
         subroutine compute_local_time_step()
@@ -662,27 +652,18 @@ module solver
 
             ! Stage 3
             call sub_step()
-       !    call apply_boundary_conditions()
-       !    call compute_residue()
-       !    call compute_time_step() ! delta_t(2)
             dEdx_2 = get_residue_primitive()
             delta_t = 0.5 * delta_t
             call update_solution()
 
             ! Stage 4
             call sub_step()
-        !   call apply_boundary_conditions()
-        !   call compute_residue()
-        !   call compute_time_step() ! delta_t(3)
             dEdx_3 = get_residue_primitive()
             call update_solution()
-            ! qp now is qp_4
 
+            ! qp now is qp_4
             ! Use qp(4)
             call sub_step()
-       !    call apply_boundary_conditions()
-       !    call compute_residue()
-       !    call compute_time_step() ! delta_t(4)
 
             ! Calculating dEdx_4 in-situ and updating the solution
             do k = 1, kmx - 1
@@ -754,15 +735,6 @@ module solver
             implicit none
 
             real, dimension(1:imx-1, 1:jmx-1, 1:kmx-1, n_var) :: dEdx
-      !     integer, dimension(1:4) :: dEsize
-      !     integer, dimension(1:3) :: ressize
-
-      !     dEsize = shape(dEdx)
-      !     ressize = shape(mass_residue)
-
-      !     print *, dEsize(1), dEsize(2), dEsize(3), dEsize(4)
-      !     print *, ressize(1), ressize(2), ressize(3)
-      !     (1:imx-1, 1:jmx-1, 1:kmx-1)
             dEdx(:, :, :, 1) = mass_residue
             dEdx(:, :, :, 2) = ( (-1 * x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
                                        density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
@@ -840,53 +812,16 @@ module solver
                y_speed(i, j, k) = y_speed_temp
                z_speed(i, j, k) = z_speed_temp
                pressure(i, j, k) = pressure_temp
+               include "turbulence_models/include/solver/update_solution.inc"
               end do
              end do
             end do
 
-            include "turbulence_models/include/solver/update_solution.inc"
-            
-       !    density(1:imx-1, 1:jmx-1, 1:kmx-1) = density_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
-       !    x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) = x_speed_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
-       !    y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) = y_speed_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
-       !    z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) = z_speed_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
-       !    pressure(1:imx-1, 1:jmx-1, 1:kmx-1) = pressure_temp(1:imx-1, 1:jmx-1, 1:kmx-1)
-
-         
-
-         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1,  1) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) - &
-         !          (residue(:, :, :, 1) * &
-         !          delta_t(:, :, :) / volume(:, :, :))
-         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, 2) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 2) - &
-         !          (( (-1. * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 2) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) * residue(:, :, :, 1)) + &
-         !             ( residue(:, :, :, 2) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) )) * &
-         !          delta_t(:, :, :) / volume(:, :, :))
-         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, 3) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 3) - &
-         !          (( (-1. * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 3) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) * residue(:, :, :, 1)) + &
-         !             ( residue(:, :, :, 3) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) )) * &
-         !          delta_t(:, :, :) / volume(:, :, :))
-         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, 4) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 4) - &
-         !          (( (-1. * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 4) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) * residue(:, :, :, 1)) + &
-         !             ( residue(:, :, :, 4) / qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1) )) * &
-         !          delta_t(:, :, :) / volume(:, :, :))
-         !  qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, 5) = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 5) - &
-         !          ( ( (0.5 * (gm - 1.) * ( qp(1:imx-1, 1:jmx-1, 1:kmx-1, 2)**2. + qp(1:imx-1, 1:jmx-1, 1:kmx-1, 3)**2. + &
-         !              qp(1:imx-1, 1:jmx-1, 1:kmx-1, 4)**2.) * residue(:, :, :, 1)) + &
-         !             (- (gm - 1.) * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 2) * residue(:, :, :, 2)) + &
-         !             (- (gm - 1.) * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 3) * residue(:, :, :, 3)) + &
-         !             (- (gm - 1.) * qp(1:imx-1, 1:jmx-1, 1:kmx-1, 4) * residue(:, :, :, 4)) + &
-         !             ((gm - 1.) * residue(:, :, :, 5)) ) * &
-         !          delta_t(:, :, :) / volume(:, :, :) )
-
-
-         !  qp(1:imx-1, 1:jmx-1, 1:kmx-1, :) = qp_temp(1:imx-1, 1:jmx-1, 1:kmx-1, :)
-         
             if (any(density < 0) .or. any(pressure < 0)) then
                 call dmsg(5, 'solver', 'update_solution', &
                         'ERROR: Some density or pressure is negative.')
                 stop
             end if
-
 
         end subroutine update_solution
 
@@ -896,7 +831,9 @@ module solver
             !-----------------------------------------------------------
 
             implicit none
+
             character(len=FILE_NAME_LENGTH) :: filename
+
             if (checkpoint_iter .ne. 0) then
                 if (mod(iter, checkpoint_iter) == 0) then
                     !write(filename, '(A,I5.5,A)') 'output', checkpoint_iter_count, '.vtk'
@@ -956,14 +893,9 @@ module solver
             call update_simulation_clock()
             iter = iter + 1
 
+            !TODO k and w residue
             call compute_residue_norm()
             if (iter .eq. 1) then
-             !  resnorm = max(1e-18, resnorm)
-             !  cont_resnorm = max(1e-18, cont_resnorm)
-             !  x_mom_resnorm = max(1e-18, x_mom_resnorm)
-             !  y_mom_resnorm = max(1e-18, y_mom_resnorm)
-             !  z_mom_resnorm = max(1e-18, z_mom_resnorm)
-             !  energy_resnorm = max(1e-18, energy_resnorm)            
                 resnorm_0 = resnorm
                 cont_resnorm_0 = cont_resnorm + 1
                 x_mom_resnorm_0 = x_mom_resnorm + 1
@@ -975,14 +907,6 @@ module solver
                 cont_resnorm/cont_resnorm_0, x_mom_resnorm/x_mom_resnorm_0, &
                 y_mom_resnorm/y_mom_resnorm_0, z_mom_resnorm/z_mom_resnorm_0, &
                 energy_resnorm/energy_resnorm_0
-        !   resnorm = max(1e-18, resnorm/resnorm_0)
-        !   cont_resnorm = max(1e-18, cont_resnorm/cont_resnorm_0)
-        !   x_mom_resnorm = max(1e-18, x_mom_resnorm/x_mom_resnorm_0)
-        !   y_mom_resnorm = max(1e-18, y_mom_resnorm/y_mom_resnorm_0)
-        !   z_mom_resnorm = max(1e-18, z_mom_resnorm/z_mom_resnorm_0)
-        !   energy_resnorm = max(1e-18, energy_resnorm/energy_resnorm_0)
-        !   write(RESNORM_FILE_UNIT, *) resnorm, cont_resnorm, x_mom_resnorm, &
-        !       y_mom_resnorm, z_mom_resnorm, energy_resnorm
 
             call checkpoint()
 
