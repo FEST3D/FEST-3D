@@ -5,7 +5,7 @@ ex='iitm_cfd_solver.out'
 runlog='out'
 vislog='vislog'
 visdaemon='visdaemon.py'
-total_process="$1" #parallel running - number of process
+total_process=2 #"$2" #parallel running - number of process
 . parallel_clean.sh
 
 echo "Run: `date +%Y/%m/%d-%H/%M/%S`" | tee -a $runlog
@@ -27,7 +27,8 @@ if [ -f $ex ]; then
     echo 'Solver output:' >> $runlog
     echo >> $runlog
     #espeak -a10 'Running solver.'
-    mpirun -np $total_process ./$ex >> $runlog
+    `which mpirun` -np $total_process ./$ex >> $runlog
+    time ./$ex >> $runlog
 fi
 
 echo | tee -a $runlog

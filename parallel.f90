@@ -119,7 +119,7 @@ contains
        end do
        !print *,"count is ", count 
        ! send message to left process
-       buf = (jmx+1)*(kmx+1)*5*layers ! three cells       
+       buf = (jmx+1)*(kmx+1)*5*layers ! three cells 
        !do k = 1, buf
        !print *,'left send - ', process_id, k ,left_send_buf(k)
        !end do       

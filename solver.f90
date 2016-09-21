@@ -292,6 +292,7 @@ module solver
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
+            call setup_wall_dist
             call find_wall_dist()
             call setup_source()
             call link_aliases_solver()
