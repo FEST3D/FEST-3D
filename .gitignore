@@ -19,6 +19,9 @@ results*/
 *.dat
 *.txt
 
+#Boundary_condition files
+bc_*.md
+
 # FORTRAN and C++
 
 # Compiled Object files
