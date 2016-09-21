@@ -1,8 +1,8 @@
 !include in viscous (transport) module
+! used if here it contain initalization
 
         real :: tk_face, tw_face
 
-        call dmsg(1, 'turbuence_models/sst/source', 'compute_cell_center_grad')
         if (turbulence == "sst")then
           F1 = 0.0
           sst_mu =0.0
