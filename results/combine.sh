@@ -2,7 +2,7 @@
 # this script copies the output files from different process_x folders 
 # into a new folder and creates a .visit master file to combine the blocks 
 output_dir='net'
-total_process="$1"
+total_process=2 #"$1"
 if [ -d "$output_dir" ]; then
 rm -r "$output_dir"
 fi

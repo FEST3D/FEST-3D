@@ -27,8 +27,7 @@ if [ -f $ex ]; then
     echo 'Solver output:' >> $runlog
     echo >> $runlog
     #espeak -a10 'Running solver.'
-    `which mpirun` -np $total_process ./$ex >> $runlog
-    time ./$ex >> $runlog
+    mpirun -np $total_process ./$ex >> $runlog
 fi
 
 echo | tee -a $runlog

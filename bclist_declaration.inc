@@ -17,3 +17,5 @@ integer, public :: BC_FLOW_TANGENCY
 integer, public :: BC_NO_SLIP
 integer, public :: BC_PERIODIC
 integer, public :: BC_INTERFACE
+
+include "turbulence_models/include/bc/bclist_declaration.inc"

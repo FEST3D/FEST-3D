@@ -117,9 +117,10 @@ contains
              !             count = count+1 
           end do
        end do
+       include "turbulence_models/include/parallel/send_imin.inc"
        !print *,"count is ", count 
        ! send message to left process
-       buf = (jmx+1)*(kmx+1)*5*layers ! three cells 
+       buf = (jmx+1)*(kmx+1)*n_var*layers ! three cells       
        !do k = 1, buf
        !print *,'left send - ', process_id, k ,left_send_buf(k)
        !end do       
@@ -201,12 +202,13 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/recv_imin.inc"
     end if
 
 
     if(imax_id >= 0) then
        !print *,"right id is ", process_id,right_id
-       buf = (jmx+1)*(kmx+1)*5*layers
+       buf = (jmx+1)*(kmx+1)*n_var*layers
        call MPI_RECV(imax_recv_buf,buf,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD,status,ierr)
        ! updating solution       
        count = 1
@@ -281,6 +283,7 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/recv_imax.inc"
        ! creating right send  buffer
        count = 1
        do k = 0, kmx
@@ -353,6 +356,7 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/send_imax.inc"
        !do k = 1, buf
        !print *,'right send - ', process_id, k ,right_send_buf(k)
        !end do
@@ -448,9 +452,10 @@ contains
              !             count = count+1 
           end do
        end do
+       include "turbulence_models/include/parallel/send_jmin.inc"
        !print *,"count is ", count 
        ! send message to left process
-       buf = (imx+1)*(kmx+1)*5*layers ! three layers       
+       buf = (imx+1)*(kmx+1)*n_var*layers ! three layers       
        !do k = 1, buf
        !print *,'left send - ', process_id, k ,left_send_buf(k)
        !end do       
@@ -531,12 +536,13 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/recv_jmin.inc"
     end if
 
 
     if(jmax_id >= 0) then
        !print *,"right id is ", process_id,right_id
-       buf = (imx+1)*(kmx+1)*5*layers
+       buf = (imx+1)*(kmx+1)*n_var*layers
        call MPI_RECV(jmax_recv_buf,buf,MPI_DOUBLE_PRECISION,jmax_id,1,MPI_COMM_WORLD,status,ierr)
        ! updating solution       
        count = 1
@@ -610,6 +616,7 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/recv_jmax.inc"
        ! creating right send  buffer
        count = 1
        do k = 0, kmx
@@ -682,6 +689,7 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/send_jmax.inc"
        !do k = 1, buf
        !print *,'right send - ', process_id, k ,right_send_buf(k)
        !end do
@@ -776,9 +784,10 @@ contains
              !             count = count+1  
           end do
        end do
+       include "turbulence_models/include/parallel/send_kmin.inc"
        !print *,"count is ", count 
        ! send message to left process
-       buf = (jmx+1)*(imx+1)*5*layers ! three cells       
+       buf = (jmx+1)*(imx+1)*n_var*layers ! three cells       
        !do k = 1, buf
        !print *,'left send - ', process_id, k ,left_send_buf(k)
        !end do       
@@ -859,12 +868,13 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/recv_kmin.inc"
     end if
 
 
     if(kmax_id >= 0) then
        !print *,"right id is ", process_id,right_id
-       buf = (jmx+1)*(imx+1)*5*layers
+       buf = (jmx+1)*(imx+1)*n_var*layers
        call MPI_RECV(kmax_recv_buf,buf,MPI_DOUBLE_PRECISION,kmax_id,1,MPI_COMM_WORLD,status,ierr)
        ! updating solution       
        count = 1
@@ -938,6 +948,7 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/recv_kmax.inc"
        ! creating right send  buffer
        count = 1
        do i = 0, imx
@@ -1010,6 +1021,7 @@ contains
              !             count = count+1
           end do
        end do
+       include "turbulence_models/include/parallel/send_kmax.inc"
        !do k = 1, buf
        !print *,'right send - ', process_id, k ,right_send_buf(k)
        !end do
@@ -1025,7 +1037,7 @@ contains
     call dmsg(1, 'parallel', 'allocating memory for buffer cells for MP')  
     !left buffer jmx+1 * kmx + 1 * (dens, x , y, z speeds, pressure)
 
-    buf = (jmx+1)*(kmx+1)*5*layers ! size of buffer cells left - right
+    buf = (jmx+1)*(kmx+1)*n_var*layers ! size of buffer cells left - right
     call alloc(imin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable left_buf.')
@@ -1039,7 +1051,7 @@ contains
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable right_buf.')
 
-    buf = (imx+1)*(kmx+1)*5*layers ! size of buffer top - bottom
+    buf = (imx+1)*(kmx+1)*n_var*layers ! size of buffer top - bottom
     call alloc(jmin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable top_buf.')
@@ -1053,7 +1065,7 @@ contains
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable bottom_buf.')
 
-    buf = (imx+1)*(jmx+1)*5*layers ! size of buffer front back
+    buf = (imx+1)*(jmx+1)*n_var*layers ! size of buffer front back
 
     call alloc(kmin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &

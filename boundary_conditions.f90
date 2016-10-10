@@ -38,13 +38,14 @@ module boundary_conditions
     use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz
     use state, only: density, x_speed, y_speed, z_speed, pressure, &
             density_inf, x_speed_inf, y_speed_inf, z_speed_inf, &
-            pressure_inf, qp
+            pressure_inf, qp, n_var
     use face_interpolant, only: x_x_speed_left, x_x_speed_right, &
             x_y_speed_left, x_y_speed_right, x_z_speed_left, x_z_speed_right, &
             y_x_speed_left, y_x_speed_right, y_y_speed_left, y_y_speed_right, &
             y_z_speed_left, y_z_speed_right, z_x_speed_left, z_x_speed_right, &
             z_y_speed_left, z_y_speed_right, z_z_speed_left, z_z_speed_right
-    !use parallel
+
+    include "turbulence_models/include/bc/import_module.inc" 
     implicit none
     private
     ! Boundary condition (bc) descriptor variables
@@ -87,6 +88,7 @@ module boundary_conditions
             do while (setup_next_side() .neqv. .FALSE.)
             end do
             call initialize_remaining()
+            close(BOUNDARY_CONDITIONS_FILE_UNIT)
             call dmsg(1, 'boundary_conditions', 'setup_boundary_conditions', 'done')
         end subroutine setup_boundary_conditions
 
@@ -133,6 +135,16 @@ module boundary_conditions
                 call alloc(bc_jmx, 1, 1, 1, 1, &
                         errmsg='Error: Unable to allocate memory for side_bc.')
                 bc_jmx = 0
+            end if
+            if (allocated(bc_kmn) .eqv. .FALSE.) then
+                call alloc(bc_kmn, 1, 1, 1, 1, &
+                        errmsg='Error: Unable to allocate memory for side_bc.')
+                bc_kmn = 0
+            end if
+            if (allocated(bc_kmx) .eqv. .FALSE.) then
+                call alloc(bc_kmx, 1, 1, 1, 1, &
+                        errmsg='Error: Unable to allocate memory for side_bc.')
+                bc_kmx = 0
             end if
         end subroutine initialize_remaining
 
@@ -225,7 +237,7 @@ module boundary_conditions
             call alloc(side_bc, 1, 1, 1, 1, &
                     errmsg='Error: Unable to allocate memory for side_bc.')
             ! Allocate memory to store the fix type conditions values
-            call alloc(side_bc_fix_vals, 1, 1, 1, 1, 1, 5, &
+            call alloc(side_bc_fix_vals, 1, 1, 1, 1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for side_bc_fix_vals')
             ! Initialize the boundary condition variables
             side_bc = 0
@@ -273,7 +285,7 @@ module boundary_conditions
  !          end if
 
  !          startidx = 0
- !          stopidx = 0
+ !          stopidx  0
 
  !          ! Try tokenizing the line assuming all components are there
  !          read(buf, *, iostat=ios) temp, startidx, temp, stopidx
@@ -403,7 +415,6 @@ module boundary_conditions
             integer, dimension(1:2) :: n_shape
 
             call dmsg(1, 'boundary_conditions', 'apply_boundary conditions')
-            
             current_condition = 1
             do while (current_condition /= 0)
                 ! Check if current_condition needs to be applied
@@ -446,6 +457,8 @@ module boundary_conditions
                     else if ((bc_imn(i, j) .and. current_condition) .eq. BC_PERIODIC) then
                         call periodic("imin", i * cell_ind)
                     end if
+
+                    include "turbulence_models/include/bc/apply_boundary_condition_imin.inc"
 
                     if ((bc_imn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                         call extra_ghost_cells("imin")
@@ -490,6 +503,7 @@ module boundary_conditions
                     else if ((bc_imx(i, j) .and. current_condition) .eq. BC_PERIODIC) then
                         call periodic("imax", i * cell_ind)
                     end if
+                    include "turbulence_models/include/bc/apply_boundary_condition_imax.inc"
 
                     if ((bc_imx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                         call extra_ghost_cells("imax")
@@ -534,6 +548,7 @@ module boundary_conditions
                     else if ((bc_jmn(i, j) .and. current_condition) .eq. BC_PERIODIC) then
                         call periodic("jmin", i * cell_ind)
                     end if
+                    include "turbulence_models/include/bc/apply_boundary_condition_jmin.inc"
 
                     if ((bc_jmn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                         call extra_ghost_cells("jmin")
@@ -578,6 +593,7 @@ module boundary_conditions
                     else if ((bc_jmx(i, j) .and. current_condition) .eq. BC_PERIODIC) then
                         call periodic("jmax", i * cell_ind)
                     end if
+                    include "turbulence_models/include/bc/apply_boundary_condition_jmax.inc"
 
                     if ((bc_jmx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                         call extra_ghost_cells("jmax")
@@ -622,6 +638,7 @@ module boundary_conditions
                     else if ((bc_kmn(i, j) .and. current_condition) .eq. BC_PERIODIC) then
                         call periodic("kmin", i * cell_ind)
                     end if
+                   include "turbulence_models/include/bc/apply_boundary_condition_kmin.inc"
 
                     if ((bc_kmn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                         call extra_ghost_cells("kmin")
@@ -666,6 +683,7 @@ module boundary_conditions
                     else if ((bc_kmx(i, j) .and. current_condition) .eq. BC_PERIODIC) then
                         call periodic("kmax", i * cell_ind)
                     end if
+                    include "turbulence_models/include/bc/apply_boundary_condition_kmax.inc"
 
                     if ((bc_kmx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                         call extra_ghost_cells("kmax")
@@ -673,7 +691,7 @@ module boundary_conditions
                  end do
                 end do
 
-                if (current_condition > 2**13) then
+                if (current_condition > 2**13) then !TODO change it to 17 for turbulence integeraitokn
                     current_condition = 0
                 end if
                 current_condition = current_condition * 2
@@ -878,6 +896,8 @@ module boundary_conditions
                 z_z_speed_right(:, :, kmx) = 0.
             end if
 
+            include "turbulence_models/include/bc/set_wall_bc_at_faces.inc"
+
         end subroutine set_wall_bc_at_faces
 
         !---------------------------------------------------------------
@@ -937,7 +957,6 @@ module boundary_conditions
         end subroutine fix_density
 
         subroutine fix_x_speed(face, cell_ind, optional_fixed_x_speed)
-
             implicit none
             character(len=4), intent(in) :: face
             integer, intent(in) :: cell_ind
@@ -1537,6 +1556,8 @@ module boundary_conditions
                 end if
             end if
 
+            include "turbulence_models/include/bc/no_slip.inc"
+
         end subroutine no_slip
 
         subroutine periodic(face, cell_ind)
@@ -1629,6 +1650,8 @@ module boundary_conditions
             end if
 
         end subroutine extra_ghost_cells
+
+        include "turbulence_models/include/bc/fix_and_copy_turb_var.inc"
 
 
 end module boundary_conditions
