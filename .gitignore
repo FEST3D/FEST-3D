@@ -11,6 +11,7 @@ visitlog.py
 
 # Config file
 config.md
+bc.config.md
 
 # Results files
 results*/
