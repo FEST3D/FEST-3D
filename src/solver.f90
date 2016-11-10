@@ -27,6 +27,7 @@ module solver
             destroy_boundary_conditions
     use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
     use viscous, only: compute_viscous_fluxes
+    use boundary_state_reconstruction, only: reconstruct_boundary_state
     use layout, only: process_id, grid_file_buf, bc_file, &
     get_process_data, read_layout_file
     use parallel, only: allocate_buffer_cells,send_recv
@@ -292,16 +293,16 @@ module solver
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
-            call setup_wall_dist
-            call find_wall_dist()
-            call setup_source()
+           ! call setup_wall_dist
+           ! call find_wall_dist()
+           ! call setup_source()
             call link_aliases_solver()
             call initmisc()
             !resnorm_file = 'resnorms'//process_id
             !write(filename, '(A,I2.2,A,I5.5,A)') 'results/process_',process_id,'/output', checkpoint_iter_count, '.vtk'
             write(resnorm_file, '(A,I2.2,A)') 'results/process_',process_id,'/resnorms'
             open(RESNORM_FILE_UNIT, file=resnorm_file)
-            write(RESNORM_FILE_UNIT, *) 'resnorm continuity_resnorm', &
+            write(RESNORM_FILE_UNIT, *) 'res_abs, resnorm continuity_resnorm', &
                 ' x_mom_resnorm y_mom_resnorm z_mom_resnorm energy_resnorm'
             checkpoint_iter_count = 0
             call checkpoint()  ! Create an initial dump file
@@ -315,8 +316,8 @@ module solver
             
             call dmsg(1, 'solver', 'destroy_solver')
 
-            call destroy_source()
-            call destroy_wall_dist()
+          !  call destroy_source()
+         !   call destroy_wall_dist()
             call destroy_scheme()
             call deallocate_misc()
             call unlink_aliases_solver()
@@ -859,6 +860,7 @@ module solver
             call send_recv(3) ! parallel call-argument:no of layers 
             call apply_boundary_conditions()
             call compute_face_interpolant()
+            call reconstruct_boundary_state(interpolant)
             call set_wall_bc_at_faces()
             call compute_fluxes()
             if (mu_ref /= 0.0) then
@@ -866,9 +868,9 @@ module solver
                     call extrapolate_cell_averages_to_faces()
                     call set_wall_bc_at_faces()
                 end if
-                call compute_gradients_cell_centre()
-                call add_source_term_residue()
-                call compute_viscous_fluxes(F_p, G_p, H_p)
+              !  call compute_gradients_cell_centre()
+              !  call add_source_term_residue()
+              !  call compute_viscous_fluxes(F_p, G_p, H_p)
             end if
             call compute_residue()
             call dmsg(1, 'solver', 'step', 'Residue computed.')
@@ -904,7 +906,7 @@ module solver
                 z_mom_resnorm_0 = z_mom_resnorm + 1
                 energy_resnorm_0 = energy_resnorm + 1
             end if
-            write(RESNORM_FILE_UNIT, *) resnorm/resnorm_0, &
+            write(RESNORM_FILE_UNIT, *) resnorm, resnorm/resnorm_0, &
                 cont_resnorm/cont_resnorm_0, x_mom_resnorm/x_mom_resnorm_0, &
                 y_mom_resnorm/y_mom_resnorm_0, z_mom_resnorm/z_mom_resnorm_0, &
                 energy_resnorm/energy_resnorm_0

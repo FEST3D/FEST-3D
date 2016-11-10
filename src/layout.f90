@@ -74,7 +74,7 @@ contains
 
   subroutine read_layout_file(process_id)
     implicit none
-    character(len=FILE_NAME_LENGTH) :: layout_file = "layout.md"
+    character(len=FILE_NAME_LENGTH) :: layout_file = "layout/layout.md"
     character(len=STRING_BUFFER_LENGTH) :: buf
     integer,intent(in)::process_id
     integer :: i,buf_id 
@@ -95,6 +95,8 @@ contains
        i = i+1
     end do
     read(buf,*) buf_id, grid_file_buf, bc_file, imin_id, imax_id, jmin_id,jmax_id,kmin_id,kmax_id
+    write(grid_file_buf, '(A)') 'layout/'//trim(grid_file_buf)
+    write(bc_file, '(A)') 'layout/'//trim(bc_file)
     !print *, process_id ,grid_file_buf ,  bc_file, imin_id, imax_id, jmin_id,jmax_id,kmin_id,kmax_id
   end subroutine read_layout_file
 

@@ -12,8 +12,13 @@ visitlog.py
 # Config file
 config.md
 
-# Results files
-results*/
+# Folders to skip
+bin/
+mod/
+obj/
+
+# module  dependency file
+makefile.dep
 
 #grid file or data file
 *.dat
