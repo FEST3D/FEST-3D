@@ -293,9 +293,13 @@ module solver
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
-           ! call setup_wall_dist
-           ! call find_wall_dist()
-           ! call setup_source()
+            if(turbulence /= 'none') then
+              call setup_wall_dist
+              call find_wall_dist()
+            end if
+            if(mu_ref /= 0. .or. turbulence /= 'none') then
+              call setup_source()
+            end if
             call link_aliases_solver()
             call initmisc()
             !resnorm_file = 'resnorms'//process_id
@@ -316,8 +320,12 @@ module solver
             
             call dmsg(1, 'solver', 'destroy_solver')
 
-          !  call destroy_source()
-         !   call destroy_wall_dist()
+            if(mu_ref /= 0. .or. turbulence /= 'none')  then 
+              call destroy_source()
+            end if
+            if(turbulence /= 'none') then
+              call destroy_wall_dist()
+            end if
             call destroy_scheme()
             call deallocate_misc()
             call unlink_aliases_solver()
@@ -868,9 +876,9 @@ module solver
                     call extrapolate_cell_averages_to_faces()
                     call set_wall_bc_at_faces()
                 end if
-              !  call compute_gradients_cell_centre()
-              !  call add_source_term_residue()
-              !  call compute_viscous_fluxes(F_p, G_p, H_p)
+                call compute_gradients_cell_centre()
+                call add_source_term_residue()
+                call compute_viscous_fluxes(F_p, G_p, H_p)
             end if
             call compute_residue()
             call dmsg(1, 'solver', 'step', 'Residue computed.')
@@ -900,11 +908,11 @@ module solver
             call compute_residue_norm()
             if (iter .eq. 1) then
                 resnorm_0 = resnorm
-                cont_resnorm_0 = cont_resnorm + 1
-                x_mom_resnorm_0 = x_mom_resnorm + 1
-                y_mom_resnorm_0 = y_mom_resnorm + 1
-                z_mom_resnorm_0 = z_mom_resnorm + 1
-                energy_resnorm_0 = energy_resnorm + 1
+                cont_resnorm_0 = cont_resnorm 
+                x_mom_resnorm_0 = x_mom_resnorm 
+                y_mom_resnorm_0 = y_mom_resnorm 
+                z_mom_resnorm_0 = z_mom_resnorm 
+                energy_resnorm_0 = energy_resnorm
             end if
             write(RESNORM_FILE_UNIT, *) resnorm, resnorm/resnorm_0, &
                 cont_resnorm/cont_resnorm_0, x_mom_resnorm/x_mom_resnorm_0, &
