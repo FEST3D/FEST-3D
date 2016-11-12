@@ -26,6 +26,7 @@ else if (token == 'INTERFACE') then
     val = BC_INTERFACE
 else if (token == 'PERIODIC') then
     val = BC_PERIODIC
+    include "turbulence_models/sst/bc/bc_token_value_map_implementation.inc"
 else
     val = 0
 end if

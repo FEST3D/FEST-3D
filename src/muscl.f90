@@ -268,7 +268,7 @@ module muscl
             integer :: i_f, j_f, k_f  ! Flags to determine face direction
             real :: pd2
 
-            call dmsg(1, 'ppm', 'pressure_based_switching')
+            call dmsg(1, 'muscl', 'pressure_based_switching')
 
             select case (f_dir)
                 case ('x')

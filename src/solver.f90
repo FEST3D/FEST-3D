@@ -273,6 +273,7 @@ module solver
             character(len=FILE_NAME_LENGTH) :: grid_file
             character(len=FILE_NAME_LENGTH) :: state_load_file
             character(len=FILE_NAME_LENGTH) :: resnorm_file
+
             call dmsg(1, 'solver', 'setup_solver')
             call get_process_data() ! parallel calls
             call read_layout_file(process_id) ! reads layout file calls
@@ -908,10 +909,10 @@ module solver
             call compute_residue_norm()
             if (iter .eq. 1) then
                 resnorm_0 = resnorm
-                cont_resnorm_0 = cont_resnorm 
-                x_mom_resnorm_0 = x_mom_resnorm 
-                y_mom_resnorm_0 = y_mom_resnorm 
-                z_mom_resnorm_0 = z_mom_resnorm 
+                cont_resnorm_0 = cont_resnorm
+                x_mom_resnorm_0 = x_mom_resnorm
+                y_mom_resnorm_0 = y_mom_resnorm
+                z_mom_resnorm_0 = z_mom_resnorm
                 energy_resnorm_0 = energy_resnorm
             end if
             write(RESNORM_FILE_UNIT, *) resnorm, resnorm/resnorm_0, &
