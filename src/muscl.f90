@@ -16,6 +16,7 @@ module muscl
     use utils, only: alloc, dealloc, dmsg
     use grid, only: imx, jmx, kmx
     use state, only: qp, n_var, pressure, pressure_inf
+    use state, only: ilimiter_switch
 
     implicit none
     private
@@ -26,7 +27,6 @@ module muscl
     real :: phi, kappa
     real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
     real, dimension(:, :, :), allocatable :: pdif
-    integer :: ilimiter_switch
     !TODO: Convert to system of flags to write all 3 directions in a single subroutine
 
 !   character(len=30) :: TVD_scheme
