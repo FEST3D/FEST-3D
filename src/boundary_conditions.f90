@@ -413,6 +413,7 @@ module boundary_conditions
             implicit none
             integer :: current_condition, i, j, cell_ind, m, n
             integer, dimension(1:2) :: n_shape
+            integer :: flow_tangency_flag=0
 
             call dmsg(1, 'boundary_conditions', 'apply_boundary conditions')
             current_condition = 1
@@ -452,6 +453,7 @@ module boundary_conditions
                         call copy_pressure("imin", i * cell_ind)
                     else if ((bc_imn(i, j) .and. current_condition) .eq. BC_FLOW_TANGENCY) then
                         call flow_tangency("imin", i * cell_ind)
+                        flow_tangency_flag=1
                     else if ((bc_imn(i, j) .and. current_condition) .eq. BC_NO_SLIP) then
                         call no_slip("imin", i * cell_ind)
                     else if ((bc_imn(i, j) .and. current_condition) .eq. BC_PERIODIC) then
@@ -461,7 +463,9 @@ module boundary_conditions
                     include "turbulence_models/include/bc/apply_boundary_condition_imin.inc"
 
                     if ((bc_imn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
+                      if (flow_tangency_flag==0)then
                         call extra_ghost_cells("imin")
+                      end if
                     end if
                  end do
                 end do
@@ -498,6 +502,7 @@ module boundary_conditions
                         call copy_pressure("imax", i * cell_ind)
                     else if ((bc_imx(i, j) .and. current_condition) .eq. BC_FLOW_TANGENCY) then
                         call flow_tangency("imax", i * cell_ind)
+                        flow_tangency_flag=1
                     else if ((bc_imx(i, j) .and. current_condition) .eq. BC_NO_SLIP) then
                         call no_slip("imax", i * cell_ind)
                     else if ((bc_imx(i, j) .and. current_condition) .eq. BC_PERIODIC) then
@@ -506,7 +511,9 @@ module boundary_conditions
                     include "turbulence_models/include/bc/apply_boundary_condition_imax.inc"
 
                     if ((bc_imx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
+                      if (flow_tangency_flag==0)then
                         call extra_ghost_cells("imax")
+                      end if
                     end if
                  end do
                 end do
@@ -543,6 +550,7 @@ module boundary_conditions
                         call copy_pressure("jmin", i * cell_ind)
                     else if ((bc_jmn(i, j) .and. current_condition) .eq. BC_FLOW_TANGENCY) then
                         call flow_tangency("jmin", i * cell_ind)
+                        flow_tangency_flag=1
                     else if ((bc_jmn(i, j) .and. current_condition) .eq. BC_NO_SLIP) then
                         call no_slip("jmin", i * cell_ind)
                     else if ((bc_jmn(i, j) .and. current_condition) .eq. BC_PERIODIC) then
@@ -550,9 +558,11 @@ module boundary_conditions
                     end if
                     include "turbulence_models/include/bc/apply_boundary_condition_jmin.inc"
 
-!                    if ((bc_jmn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
-!                        call extra_ghost_cells("jmin")
-!                    end if
+                    if ((bc_jmn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
+                      if (flow_tangency_flag==0)then
+                        call extra_ghost_cells("jmin")
+                      end if
+                    end if
                  end do
                 end do
 
@@ -588,6 +598,7 @@ module boundary_conditions
                         call copy_pressure("jmax", i * cell_ind)
                     else if ((bc_jmx(i, j) .and. current_condition) .eq. BC_FLOW_TANGENCY) then
                         call flow_tangency("jmax", i * cell_ind)
+                        flow_tangency_flag=1
                     else if ((bc_jmx(i, j) .and. current_condition) .eq. BC_NO_SLIP) then
                         call no_slip("jmax", i * cell_ind)
                     else if ((bc_jmx(i, j) .and. current_condition) .eq. BC_PERIODIC) then
@@ -595,9 +606,11 @@ module boundary_conditions
                     end if
                     include "turbulence_models/include/bc/apply_boundary_condition_jmax.inc"
 
-!                    if ((bc_jmx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
-!                        call extra_ghost_cells("jmax")
-!                    end if
+                    if ((bc_jmx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
+                      if (flow_tangency_flag==0)then
+                        call extra_ghost_cells("jmax")
+                      end if
+                    end if
                  end do
                 end do
 
@@ -633,6 +646,7 @@ module boundary_conditions
                         call copy_pressure("kmin", i * cell_ind)
                     else if ((bc_kmn(i, j) .and. current_condition) .eq. BC_FLOW_TANGENCY) then
                         call flow_tangency("kmin", i * cell_ind)
+                        flow_tangency_flag=1
                     else if ((bc_kmn(i, j) .and. current_condition) .eq. BC_NO_SLIP) then
                         call no_slip("kmin", i * cell_ind)
                     else if ((bc_kmn(i, j) .and. current_condition) .eq. BC_PERIODIC) then
@@ -640,9 +654,11 @@ module boundary_conditions
                     end if
                    include "turbulence_models/include/bc/apply_boundary_condition_kmin.inc"
 
-!                    if ((bc_kmn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
-!                        call extra_ghost_cells("kmin")
-!                    end if
+                    if ((bc_kmn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
+                      if (flow_tangency_flag==0)then
+                        call extra_ghost_cells("kmin")
+                      end if
+                    end if
                  end do
                 end do
 
@@ -678,6 +694,7 @@ module boundary_conditions
                         call copy_pressure("kmax", i * cell_ind)
                     else if ((bc_kmx(i, j) .and. current_condition) .eq. BC_FLOW_TANGENCY) then
                         call flow_tangency("kmax", i * cell_ind)
+                        flow_tangency_flag=1
                     else if ((bc_kmx(i, j) .and. current_condition) .eq. BC_NO_SLIP) then
                         call no_slip("kmax", i * cell_ind)
                     else if ((bc_kmx(i, j) .and. current_condition) .eq. BC_PERIODIC) then
@@ -685,9 +702,11 @@ module boundary_conditions
                     end if
                     include "turbulence_models/include/bc/apply_boundary_condition_kmax.inc"
 
-!                    if ((bc_kmx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
-!                        call extra_ghost_cells("kmax")
-!                    end if
+                    if ((bc_kmx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
+                      if (flow_tangency_flag==0)then
+                        call extra_ghost_cells("kmax")
+                      end if
+                    end if
                  end do
                 end do
 
