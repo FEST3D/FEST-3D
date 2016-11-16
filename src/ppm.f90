@@ -366,8 +366,10 @@ module ppm
 
             call compute_face_estimates('x')
             call init_left_and_right_xi_estimates()
-            call remove_extrema('x')
-            call pressure_based_switching('x')
+            if(ilimiter_switch==1)then
+              call remove_extrema('x')
+              call pressure_based_switching('x')
+            end if
 
     !       if (iter_no == 5000) then 
     !           call write_line_data_x('qp-before.txt')
@@ -378,13 +380,17 @@ module ppm
 
             call compute_face_estimates('y')
             call init_left_and_right_eta_estimates()
-            call remove_extrema('y')
-            call pressure_based_switching('y')
+            if(ilimiter_switch==1)then
+              call remove_extrema('y')
+              call pressure_based_switching('y')
+            end if
 
             call compute_face_estimates('z')
             call init_left_and_right_zeta_estimates()
-            call remove_extrema('z')
-            call pressure_based_switching('z')
+            if(ilimiter_switch==1)then
+              call remove_extrema('z')
+              call pressure_based_switching('z')
+            end if
 
         end subroutine compute_ppm_states
 

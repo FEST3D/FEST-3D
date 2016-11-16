@@ -9,6 +9,11 @@ ldfss0
 ## Higher order extension: none or ppm or muscl
 ppm
 
+## Higher order extension limiter switch:
+### 0 -> off
+### 1 -> on
+1
+
 ## CFL
 0.25
 

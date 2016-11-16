@@ -31,7 +31,7 @@ module solver
     use layout, only: process_id, grid_file_buf, bc_file, &
     get_process_data, read_layout_file
     use parallel, only: allocate_buffer_cells,send_recv
-    use state, only: turbulence
+    use state, only: turbulence, ilimiter_switch
     include "turbulence_models/include/solver/import_module.inc"
     
     implicit none
@@ -143,6 +143,11 @@ module solver
             interpolant = trim(interpolant)
             call dmsg(5, 'solver', 'read_config_file', &
                     msg='interpolant = ' + interpolant)
+
+            call get_next_token(buf)
+            read(buf, *) ilimiter_switch
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='limiter switch = ' + ilimiter_switch)
 
             call get_next_token(buf)
             read(buf, *) CFL

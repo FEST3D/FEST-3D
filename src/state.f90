@@ -42,6 +42,7 @@ module state
     real, public :: R_gas
     ! Constants related to viscosity
     real, public :: mu_ref, T_ref, Sutherland_temp, Pr
+    integer :: ilimiter_switch
 
     ! Including Turbulence variables
     include "turbulence_models/include/state/variables_deceleration.inc"

@@ -26,6 +26,7 @@ module muscl
     real :: phi, kappa
     real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
     real, dimension(:, :, :), allocatable :: pdif
+    integer :: ilimiter_switch
     !TODO: Convert to system of flags to write all 3 directions in a single subroutine
 
 !   character(len=30) :: TVD_scheme
@@ -143,9 +144,11 @@ module muscl
                 r = fd / bd
              !  psi1 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+                psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
              !  psi2 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+                psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
                 x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
@@ -189,9 +192,11 @@ module muscl
                 r = fd / bd
                 psi1 = max(0., min(2*r, (2 + r)/3., 2.))
              !  psi1 = min(1., (3 - kappa) * r / (1 - kappa))
+                psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
              !  psi2 = min(1., (3 - kappa) * r / (1 - kappa))
+                psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
                 y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
@@ -236,9 +241,11 @@ module muscl
                 r = fd / bd
                 psi1 = max(0., min(2*r, (2 + r)/3., 2.))
              !  psi1 = min(1., (3 - kappa) * r / (1 - kappa))
+                psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
              !  psi2 = min(1., (3 - kappa) * r / (1 - kappa))
+                psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
                 z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
@@ -351,11 +358,17 @@ module muscl
             !---------------------------------------------------------
             
             call compute_xi_face_states()
-            call pressure_based_switching('x')
+            if(ilimiter_switch==1)then
+              call pressure_based_switching('x')
+            end if
             call compute_eta_face_states()
-            call pressure_based_switching('y')
+            if(ilimiter_switch==1)then
+              call pressure_based_switching('y')
+            end if
             call compute_zeta_face_states()
-            call pressure_based_switching('z')
+            if(ilimiter_switch==1)then
+              call pressure_based_switching('z')
+            end if
 
         end subroutine compute_muscl_states
 
