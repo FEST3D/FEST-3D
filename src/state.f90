@@ -11,6 +11,7 @@ module state
     use global, only: FILE_NAME_LENGTH, STATE_FILE_UNIT, OUT_FILE_UNIT, &
             DESCRIPTION_STRING_LENGTH, STRING_BUFFER_LENGTH
     use utils, only: alloc, dealloc, dmsg
+    use layout, only: process_id
     use string
     use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
     use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz
@@ -127,7 +128,7 @@ module state
 
         subroutine setup_state(free_stream_density, free_stream_x_speed, &
                 free_stream_y_speed, free_stream_z_speed, &
-                free_stream_pressure, state_file)
+                free_stream_pressure, state_file_level)
             !-----------------------------------------------------------
             ! Setup the state module.
             !
@@ -142,7 +143,7 @@ module state
             real, intent(in) :: free_stream_x_speed, free_stream_y_speed, &
                                 free_stream_z_speed
             real, intent(in) :: free_stream_pressure
-            character(len=FILE_NAME_LENGTH), intent(in) :: state_file
+            integer          :: state_file_level
 
             call dmsg(1, 'state', 'setup_state')
 
@@ -152,7 +153,7 @@ module state
                     free_stream_x_speed, free_stream_y_speed, &
                     free_stream_z_speed, free_stream_pressure)
             call set_supersonic_flag()
-            call initstate(state_file)
+            call initstate(state_file_level)
             !!!!include only when turblent variables are differetn than qp(6:7)
             !include "turbulence_models/sst/state/deallocate_memory.inc"
 
@@ -536,7 +537,7 @@ module state
 
         end subroutine set_supersonic_flag
 
-        subroutine initstate(state_file)
+        subroutine initstate(state_file_level)
             !-----------------------------------------------------------
             ! Initialize the state
             !
@@ -546,14 +547,17 @@ module state
             !-----------------------------------------------------------
 
             implicit none
-            character(len=FILE_NAME_LENGTH), intent(in) :: state_file
+            integer                         :: state_file_level
+            character(len=FILE_NAME_LENGTH) :: state_file
             
             call dmsg(1, 'state', 'initstate')
 
-            if (state_file .eq. '~') then
+            if (state_file_level .eq. 0) then
                 ! Set the state to the infinity values
                 call init_state_with_infinity_values()
             else
+                write(state_file,'(a,i2.2,a,i5.5,a)') &
+                  "results/process_",process_id,"/output",state_file_level,".vtk"
                 call readstate_vtk(state_file)
             end if
 

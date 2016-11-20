@@ -112,13 +112,13 @@ module solver
         subroutine read_config_file(free_stream_density, &
                 free_stream_x_speed, free_stream_y_speed, &
                 free_stream_z_speed, free_stream_pressure, &
-                grid_file, state_load_file)
+                grid_file, state_load_level)
 
             implicit none
             real, intent(out) :: free_stream_density, free_stream_x_speed, &
                     free_stream_y_speed, free_stream_z_speed, free_stream_pressure
             character(len=FILE_NAME_LENGTH), intent(out) :: grid_file
-            character(len=FILE_NAME_LENGTH), intent(out) :: state_load_file
+            integer, intent(out)                         :: state_load_level
             character(len=FILE_NAME_LENGTH) :: config_file = "config.md"
             character(len=STRING_BUFFER_LENGTH) :: buf
             integer :: ios
@@ -181,9 +181,9 @@ module solver
                     msg='grid_file = ' + grid_file)
 
             call get_next_token(buf)
-            read(buf, *) state_load_file
+            read(buf, *) state_load_level
             call dmsg(5, 'solver', 'read_config_file', &
-                    msg='state_load_file = ' + state_load_file)
+                    msg='state_load_level = ' + state_load_level)
 
             call get_next_token(buf)
             read(buf, *) max_iters
@@ -276,7 +276,7 @@ module solver
             real :: free_stream_x_speed, free_stream_y_speed, free_stream_z_speed
             real :: free_stream_pressure
             character(len=FILE_NAME_LENGTH) :: grid_file
-            character(len=FILE_NAME_LENGTH) :: state_load_file
+            integer                         :: state_load_level
             character(len=FILE_NAME_LENGTH) :: resnorm_file
 
             call dmsg(1, 'solver', 'setup_solver')
@@ -285,7 +285,7 @@ module solver
             
             call read_config_file(free_stream_density, free_stream_x_speed, &
                     free_stream_y_speed, free_stream_z_speed, &
-                    free_stream_pressure, grid_file, state_load_file)
+                    free_stream_pressure, grid_file, state_load_level)
                   !todo make it general for all turbulence model
                   if(turbulence=="sst")then
                     n_var=n_var+sst_n_var
@@ -294,7 +294,7 @@ module solver
             call setup_geometry()
             call setup_state(free_stream_density, free_stream_x_speed, &
                     free_stream_y_speed, free_stream_z_speed, &
-                    free_stream_pressure, state_load_file)
+                    free_stream_pressure, state_load_level)
             call setup_boundary_conditions(bc_file)
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
