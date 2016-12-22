@@ -29,12 +29,14 @@ module solver
     use viscous, only: compute_viscous_fluxes
     use boundary_state_reconstruction, only: reconstruct_boundary_state
     use layout, only: process_id, grid_file_buf, bc_file, &
-    get_process_data, read_layout_file
+    get_process_data, read_layout_file, total_process
     use parallel, only: allocate_buffer_cells,send_recv
     use state, only: turbulence, ilimiter_switch
     include "turbulence_models/include/solver/import_module.inc"
-    
+
+!    use mpi
     implicit none
+    include "mpif.h"
     private
 
     real, public :: CFL
@@ -311,9 +313,11 @@ module solver
             !resnorm_file = 'resnorms'//process_id
             !write(filename, '(A,I2.2,A,I5.5,A)') 'results/process_',process_id,'/output', checkpoint_iter_count, '.vtk'
             write(resnorm_file, '(A,I2.2,A)') 'results/process_',process_id,'/resnorms'
-            open(RESNORM_FILE_UNIT, file=resnorm_file)
-            write(RESNORM_FILE_UNIT, '(2A)') 'res_abs, resnorm continuity_resnorm', &
-                ' x_mom_resnorm y_mom_resnorm z_mom_resnorm energy_resnorm'
+            if (process_id == 0) then
+              open(RESNORM_FILE_UNIT, file=resnorm_file)
+              write(RESNORM_FILE_UNIT, '(2A)') 'res_abs resnorm continuity_resnorm', &
+                          ' x_mom_resnorm y_mom_resnorm z_mom_resnorm energy_resnorm'
+            end if
             checkpoint_iter_count = 0
             call checkpoint()  ! Create an initial dump file
             call dmsg(1, 'solver', 'setup_solver', 'Setup solver complete')
@@ -338,7 +342,9 @@ module solver
             call destroy_state()
             call destroy_geometry()
             call destroy_grid()
-            close(RESNORM_FILE_UNIT)
+            if (process_id == 0) then
+              close(RESNORM_FILE_UNIT)
+            end if
 
         end subroutine destroy_solver
 
@@ -901,7 +907,11 @@ module solver
             !-----------------------------------------------------------
 
             implicit none
-            
+            integer :: id, ierr
+            real, dimension(8) :: res_send_buf
+            real, dimension(:), allocatable :: root_res_recv_buf
+            real, dimension(:,:), allocatable:: global_resnorm
+            real :: res_norm, total_volume
             call dmsg(1, 'solver', 'step')
 
             call sub_step()
@@ -912,7 +922,7 @@ module solver
 
             !TODO k and w residue
             call compute_residue_norm()
-            if (iter .eq. 1) then
+            if (iter <= 5) then
                 resnorm_0 = resnorm
                 cont_resnorm_0 = cont_resnorm
                 x_mom_resnorm_0 = x_mom_resnorm
@@ -920,10 +930,77 @@ module solver
                 z_mom_resnorm_0 = z_mom_resnorm
                 energy_resnorm_0 = energy_resnorm
             end if
-            write(RESNORM_FILE_UNIT, '(7(f0.16, A))') resnorm,' ', resnorm/resnorm_0,' ', &
-                cont_resnorm/cont_resnorm_0,' ', x_mom_resnorm/x_mom_resnorm_0,' ', &
-                y_mom_resnorm/y_mom_resnorm_0,' ', z_mom_resnorm/z_mom_resnorm_0,' ', &
-                energy_resnorm/energy_resnorm_0,' '
+            if (process_id == 0) then
+              allocate(root_res_recv_buf(1:total_process*8))
+              root_res_recv_buf = 0.
+            end if
+
+            res_send_buf(1) = resnorm
+            res_send_buf(2) = resnorm/resnorm_0
+            res_send_buf(3) = cont_resnorm/cont_resnorm_0
+            res_send_buf(4) = x_mom_resnorm/x_mom_resnorm_0
+            res_send_buf(5) = y_mom_resnorm/y_mom_resnorm_0
+            res_send_buf(6) = z_mom_resnorm/z_mom_resnorm_0
+            res_send_buf(7) = energy_resnorm/energy_resnorm_0
+            res_send_buf(8) = sum(volume(1:imx-1, 1:jmx-1, 1:kmx-1))
+
+!              print*, 'send buf ->  ', res_send_buf(1:8)
+            call MPI_Gather(res_send_buf, 8, MPI_DOUBLE_PRECISION, &
+              root_res_recv_buf, 8, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
+            if (process_id == 0) then
+              allocate(global_resnorm(1:total_process,1:8))
+              do id = 0,total_process-1
+                global_resnorm(id+1, 1) = root_res_recv_buf(1+8*id)
+                global_resnorm(id+1, 2) = root_res_recv_buf(2+8*id)
+                global_resnorm(id+1, 3) = root_res_recv_buf(3+8*id)
+                global_resnorm(id+1, 4) = root_res_recv_buf(4+8*id)
+                global_resnorm(id+1, 5) = root_res_recv_buf(5+8*id)
+                global_resnorm(id+1, 6) = root_res_recv_buf(6+8*id)
+                global_resnorm(id+1, 7) = root_res_recv_buf(7+8*id)
+                global_resnorm(id+1, 8) = root_res_recv_buf(8+8*id)
+ !               print*, global_resnorm(id,1:8)
+              end do
+
+              !all resnorm except first are all normalized
+              resnorm         = 0.
+              res_norm        = 0.
+              cont_resnorm    = 0.
+              x_mom_resnorm   = 0.
+              y_mom_resnorm   = 0.
+              z_mom_resnorm   = 0.
+              energy_resnorm  = 0.
+              total_volume    = 0.
+
+              do id = 1,total_process
+                resnorm         = resnorm         + (global_resnorm(id,1)**2)
+                res_norm        = res_norm        + (global_resnorm(id,2)**2)
+                cont_resnorm    = cont_resnorm    + (global_resnorm(id,3)**2)
+                x_mom_resnorm   = x_mom_resnorm   + (global_resnorm(id,4)**2)
+                y_mom_resnorm   = y_mom_resnorm   + (global_resnorm(id,5)**2)
+                z_mom_resnorm   = z_mom_resnorm   + (global_resnorm(id,6)**2)
+                energy_resnorm  = energy_resnorm  + (global_resnorm(id,7)**2)
+                total_volume    = total_volume    + (global_resnorm(id,8)) ! total volume of whole computational domain
+              end do
+  !            print*, "sum ->", resnorm, res_norm, cont_resnorm, total_volume
+
+              resnorm         = sqrt(resnorm)       
+              res_norm        = sqrt(res_norm)      
+              cont_resnorm    = sqrt(cont_resnorm) 
+              x_mom_resnorm   = sqrt(x_mom_resnorm) 
+              y_mom_resnorm   = sqrt(y_mom_resnorm) 
+              z_mom_resnorm   = sqrt(z_mom_resnorm) 
+              energy_resnorm  = sqrt(energy_resnorm)
+
+              write(RESNORM_FILE_UNIT, '(7(f0.16, A))') resnorm,          ' ', & 
+                                                        res_norm,         ' ', &
+                                                        cont_resnorm,     ' ', &
+                                                        x_mom_resnorm,    ' ', &
+                                                        y_mom_resnorm,    ' ', &
+                                                        z_mom_resnorm,    ' ', &
+                                                        energy_resnorm, ' '
+              deallocate(global_resnorm)
+              deallocate(root_res_recv_buf)
+              end if
 
             call checkpoint()
 
