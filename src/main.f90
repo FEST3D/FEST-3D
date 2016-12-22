@@ -1,8 +1,9 @@
 program main
-  use mpi
+!  use mpi
   use solver
 
   implicit none
+  include "mpif.h"
 
   integer :: ierr
   call MPI_INIT(ierr)
@@ -11,7 +12,7 @@ program main
 
   do while (.not. converged())
      !print *, 'Iteration', iter
-     call flush()
+!     call flush()
      call step()
      if (iter == max_iters) then
         exit

@@ -312,7 +312,7 @@ module solver
             !write(filename, '(A,I2.2,A,I5.5,A)') 'results/process_',process_id,'/output', checkpoint_iter_count, '.vtk'
             write(resnorm_file, '(A,I2.2,A)') 'results/process_',process_id,'/resnorms'
             open(RESNORM_FILE_UNIT, file=resnorm_file)
-            write(RESNORM_FILE_UNIT, *) 'res_abs, resnorm continuity_resnorm', &
+            write(RESNORM_FILE_UNIT, '(2A)') 'res_abs, resnorm continuity_resnorm', &
                 ' x_mom_resnorm y_mom_resnorm z_mom_resnorm energy_resnorm'
             checkpoint_iter_count = 0
             call checkpoint()  ! Create an initial dump file
@@ -392,7 +392,7 @@ module solver
     
             implicit none
 
-            call alloc(qp_n, 0, imx, 0, jmx, 0, kmx, 1, n_var, &
+            call alloc(qp_n, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for qp_n.')
             call alloc(dEdx_1, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for dEdx_1.')
@@ -657,7 +657,7 @@ module solver
 
             ! Stage 1 is identical to stage (n)
             ! Store qp(n)
-            qp_n = qp
+            qp_n = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1:n_var)
             dEdx_1 = get_residue_primitive()
             
             ! Stage 2
@@ -920,10 +920,10 @@ module solver
                 z_mom_resnorm_0 = z_mom_resnorm
                 energy_resnorm_0 = energy_resnorm
             end if
-            write(RESNORM_FILE_UNIT, *) resnorm, resnorm/resnorm_0, &
-                cont_resnorm/cont_resnorm_0, x_mom_resnorm/x_mom_resnorm_0, &
-                y_mom_resnorm/y_mom_resnorm_0, z_mom_resnorm/z_mom_resnorm_0, &
-                energy_resnorm/energy_resnorm_0
+            write(RESNORM_FILE_UNIT, '(7(f0.16, A))') resnorm,' ', resnorm/resnorm_0,' ', &
+                cont_resnorm/cont_resnorm_0,' ', x_mom_resnorm/x_mom_resnorm_0,' ', &
+                y_mom_resnorm/y_mom_resnorm_0,' ', z_mom_resnorm/z_mom_resnorm_0,' ', &
+                energy_resnorm/energy_resnorm_0,' '
 
             call checkpoint()
 

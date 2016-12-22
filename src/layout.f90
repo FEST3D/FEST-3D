@@ -3,11 +3,12 @@ module layout
   ! contains routine to load layout file and sets the layout variables
   ! gets process id and total process 
   !------------------------------
-  use mpi
+!  use mpi
   use global, only: CONFIG_FILE_UNIT, RESNORM_FILE_UNIT, FILE_NAME_LENGTH, &
        STRING_BUFFER_LENGTH, INTERPOLANT_NAME_LENGTH
   use utils, only: dmsg, DEBUG_LEVEL
   implicit none
+  include "mpif.h"
   
   ! process layout
   integer,public :: total_process,total_entries,process_id, &
