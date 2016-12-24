@@ -34,7 +34,7 @@ module surfnode
       ! which will be futher used by wall_find module to append data.
       ! This file will be destroy on complition of extraciton process.
       !--------------------------------------------------------------------
-      open(TEMP_NODE_FILE_UNIT, file=nodefile_temp, status='new')
+      open(TEMP_NODE_FILE_UNIT, file=nodefile_temp)
       close(TEMP_NODE_FILE_UNIT)
     end subroutine setup_tempfile
 
@@ -46,7 +46,7 @@ module surfnode
 
 
     subroutine setup_nodefile()
-      open(NODESURF_FILE_UNIT, file=surface_node_points, status='new')
+      open(NODESURF_FILE_UNIT, file=surface_node_points)
       allocate(surface_grid_all(1:n_total_surfnodes))
     end subroutine setup_nodefile
 
@@ -112,6 +112,8 @@ module surfnode
       call get_next_token_parallel(buf)
       read(buf,*) dump    !no of entry per block, not required
 
+      allocate(gridfiles(Nblocks))
+      allocate(bcfiles(Nblocks))
       !reading block data
       do i = 1,Nblocks
       call get_next_token_parallel(buf)
@@ -143,11 +145,12 @@ module surfnode
       integer   :: i
       real      :: x,y,z
 
+      close(TEMP_NODE_FILE_UNIT)
       open(TEMP_NODE_FILE_UNIT, file=nodefile_temp, status='old')
       write(NODESURF_FILE_UNIT,'(I0)') n_total_surfnodes
       do i = 1,n_total_surfnodes
         read(TEMP_NODE_FILE_UNIT, *) x, y, z
-        write(NODESURF_FILE_UNIT, '(3(f0.16))') x,' ',y,' ',z,' '
+        write(NODESURF_FILE_UNIT, '(3(f0.16, A))') x,' ',y,' ',z,' '
       end do
       close(TEMP_NODE_FILE_UNIT)
 

@@ -1,7 +1,7 @@
 module wall_find
   use global, only: CONFIG_FILE_UNIT, FILE_NAME_LENGTH, STRING_BUFFER_LENGTH,&
-    BOUNDARY_CONDITIONS_FILE_UNIT, TEMP_NODE_FILE_UNIT
-  use bitwise
+    BOUNDARY_CONDITIONS_FILE_UNIT, TEMP_NODE_FILE_UNIT, nodefile_temp
+  use string
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
   use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
 
@@ -27,16 +27,16 @@ module wall_find
         subroutine allocate_memory()
             implicit none
 
-            call dmsg(1, 'surface', 'setup_surface')
+            call dmsg(1, 'wall_find', 'setup_surface')
 
             n_wall = 0
 
-            n_wall =  ((jmx-1)*(kmx-1)*(NO_SLIP_flag(1)) &
-                      +(jmx-1)*(kmx-1)*(NO_SLIP_flag(2)) &
-                      +(kmx-1)*(imx-1)*(NO_SLIP_flag(3)) &
-                      +(kmx-1)*(imx-1)*(NO_SLIP_flag(4)) &
-                      +(imx-1)*(jmx-1)*(NO_SLIP_flag(5)) &
-                      +(imx-1)*(jmx-1)*(NO_SLIP_flag(6)) &
+            n_wall =  ((jmx)*(kmx)*(NO_SLIP_flag(1)) &
+                      +(jmx)*(kmx)*(NO_SLIP_flag(2)) &
+                      +(kmx)*(imx)*(NO_SLIP_flag(3)) &
+                      +(kmx)*(imx)*(NO_SLIP_flag(4)) &
+                      +(imx)*(jmx)*(NO_SLIP_flag(5)) &
+                      +(imx)*(jmx)*(NO_SLIP_flag(6)) &
                       )
 
             call alloc(wallc, 1, n_wall, 1, 3 ,&
@@ -50,7 +50,7 @@ module wall_find
 
           implicit none
 
-          call dmsg(1, 'surface', 'link_aliases')
+          call dmsg(1, 'wall_find', 'link_aliases')
           wall_x(1:n_wall) => wallc(1:n_wall,1)
           wall_y(1:n_wall) => wallc(1:n_wall,2)
           wall_z(1:n_wall) => wallc(1:n_wall,3)
@@ -63,7 +63,7 @@ module wall_find
 
           implicit none
 
-          call dmsg(1, 'surface', 'unlink_aliases')
+          call dmsg(1, 'wall_find', 'unlink_aliases')
           nullify(wall_x)
           nullify(wall_y)
           nullify(wall_z)
@@ -76,7 +76,7 @@ module wall_find
   
           implicit none
   
-          call dmsg(1, 'surface', 'dealloate_memory')
+          call dmsg(1, 'wall_find', 'dealloate_memory')
           call dealloc(wallc)
   
         end subroutine deallocate_memory
@@ -88,7 +88,7 @@ module wall_find
           implicit none
           character(len=*), intent(in) :: bcfiles
   
-          call dmsg(1, 'surface', 'setup_surface')
+          call dmsg(1, 'wall_find', 'setup_surface')
           call find_wall(bcfiles)
           call allocate_memory()
           call link_aliases()
@@ -101,7 +101,7 @@ module wall_find
   
           implicit none
   
-          call dmsg(1, 'surface', 'destroy_surface')
+          call dmsg(1, 'wall_find', 'destroy_surface')
           call deallocate_memory()
           call unlink_aliases()
   
@@ -118,14 +118,14 @@ module wall_find
           integer :: ios
           character(len=STRING_BUFFER_LENGTH) :: buf  
 
-          call dmsg(1, 'surface', 'update_flag')
+          call dmsg(1, 'wall_find', 'update_flag')
           buf = "none_zero_length"
           do while ( len_trim(buf) /= 0 )
             read(BOUNDARY_CONDITIONS_FILE_UNIT, '(A)', iostat =ios)  buf
             if(ios /=0 )then
               print*, "  /!\"
               print*, " /_|_\ ERROR: Boundary conditon read unsuccesful "
-              print*, " checkpoint : module_surface - subroutine_ update_flag"
+              print*, " checkpoint : module_wall_find - subroutine_ update_flag"
               STOP
             end if
   
@@ -148,7 +148,7 @@ module wall_find
           integer :: ios
           character(len=STRING_BUFFER_LENGTH) :: buf 
 
-          call dmsg(1, 'surface', 'find_wall')
+          call dmsg(1, 'wall_find', 'find_wall')
           
           NO_SLIP_flag = 0
 
@@ -167,7 +167,7 @@ module wall_find
             if(ios /=0 )then
               print*, "  /!\"
               print*, " /_|_\ ERROR: Boundary conditon read unsuccesful "
-              print*, " checkpoint : module_surface - subroutine_ find_wall"
+              print*, " checkpoint : module_wall_find - subroutine_ find_wall"
               STOP
             end if
 
@@ -176,28 +176,31 @@ module wall_find
             select case ( buf )
 
               case ( "# imn" )
-                call dmsg(1, 'surface', 'find_wall', '# imn')
+                call dmsg(1, 'wall_find', 'find_wall', '# imn')
                 call update_flag(1)
               case ( "# imx" )
-                call dmsg(1, 'surface', 'find_wall', '# imx')
+                call dmsg(1, 'wall_find', 'find_wall', '# imx')
                 call update_flag(2)
               case ( "# jmn" )
-                call dmsg(1, 'surface', 'find_wall', '# jmn')
+                call dmsg(1, 'wall_find', 'find_wall', '# jmn')
                 call update_flag(3)
               case ( "# jmx" )
-                call dmsg(1, 'surface', 'find_wall', '# jmx')
+                call dmsg(1, 'wall_find', 'find_wall', '# jmx')
                 call update_flag(4)
               case ( "# kmn" )
-                call dmsg(1, 'surface', 'find_wall', '# kmn')
+                call dmsg(1, 'wall_find', 'find_wall', '# kmn')
                 call update_flag(5)
               case ( "# kmx" )
-                call dmsg(1, 'surface', 'find_wall', '# kmx')
+                call dmsg(1, 'wall_find', 'find_wall', '# kmx')
                 call update_flag(6)
               case DEFAULT
-                print*, "------"
-                print*, "|  0  |" ," NO wall found " 
-                print*, "------"
-
+                if (sum(NO_SLIP_flag)==0) then
+                  print*, "------"
+                  print*, "|  0  |" ," NO wall found " 
+                  print*, "------"
+                else
+                  write(*,'(A,I0)') "NUMBER of NO_SLIP BOUNDARY FOUND -> ", sum(NO_SLIP_flag)
+                end if
             end select
 
             end if
@@ -218,12 +221,12 @@ module wall_find
           integer :: jm=1, jx=1
           integer :: km=1, kx=1
 
-          call dmsg(1, 'surface', 'surface_points')
+          call dmsg(1, 'wall_find', 'surface_points')
 
 
           ind = 0
 
-          open(TEMP_NODE_FILE_UNIT, file='nodefile_temp', status='old', position='append')
+          open(TEMP_NODE_FILE_UNIT, file=nodefile_temp, status='old', position='append')
 
           do OL = 1,6
 
@@ -272,7 +275,7 @@ module wall_find
                   jx = jmx
                   ix = imx
                 case DEFAULT
-                  call dmsg(5, "Surface", 'Surface_points', 'FATAL  ERROR: select case')
+                  call dmsg(5, "wall_find", 'Surface_points', 'FATAL  ERROR: select case')
                   km = 1
                   jm = 1
                   im = 1

@@ -25,9 +25,11 @@ module global
     integer, parameter :: TEMP_NODE_FILE_UNIT = 30
     integer, parameter :: LAYOUT_FILE_UNIT = 31
     integer, parameter :: NODESURF_FILE_UNIT=32
+    integer, parameter :: WALL_DIST_FILE_UNIT=33
 
     !Fixed file names
     character(len=*), Parameter :: nodefile_temp="scratch.dat"
     character(len=*), Parameter :: surface_node_points='surfnode.dat'
+    character(len=*), Parameter :: wall_dist_file='distance.vtk'
 
 end module global
