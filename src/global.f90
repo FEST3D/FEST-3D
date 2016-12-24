@@ -22,5 +22,12 @@ module global
     integer, parameter :: OUT_FILE_UNIT = 20
     integer, parameter :: RESNORM_FILE_UNIT = 21
     integer, parameter :: SPHERE_INDICES_FILE_UNIT = 22
+    integer, parameter :: TEMP_NODE_FILE_UNIT = 30
+    integer, parameter :: LAYOUT_FILE_UNIT = 31
+    integer, parameter :: NODESURF_FILE_UNIT=32
+
+    !Fixed file names
+    character(len=*), Parameter :: nodefile_temp="scratch.dat"
+    character(len=*), Parameter :: surface_node_points='surfnode.dat'
 
 end module global

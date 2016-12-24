@@ -1,13 +1,15 @@
 module wall_dist
+  use global,  only: NODESURF_FILE_UNIT
+  use global,  only: surface_node_points
   use utils, only: alloc, dealloc, dmsg
   use grid, only: imx,jmx, kmx, grid_x, grid_y, grid_z
-  use surface, only: setup_surface, destroy_surface, surface_points, wallc,&
-                    wall_x, wall_y, wall_z
 
   implicit none
   private
 
+  integer                                     :: n_surfnodes
   real, public, dimension(:,:,:), allocatable :: dist
+  real, private,dimension(:)    , allocatable :: wall_x, wall_y, wall_z
 
   public :: setup_wall_dist
   public :: destroy_wall_dist
@@ -20,7 +22,14 @@ module wall_dist
       implicit none
 
       call dmsg(1, 'wall_dist', 'setup_wall_dist')
-      call setup_surface
+      call setup_nodefile()
+      call read_destroy_nodefile
+      call alloc(wall_x, 1, n_surfnodes,&
+                "ERROR: unale to allocate memory to 'Dist' variable " )
+      call alloc(wall_y, 1, n_surfnodes,&
+                "ERROR: unale to allocate memory to 'Dist' variable " )
+      call alloc(wall_z, 1, n_surfnodes,&
+                "ERROR: unale to allocate memory to 'Dist' variable " )
       call alloc(dist, 1, imx-1, 1, jmx-1, 1, kmx-1, &
                 "ERROR: unale to allocate memory to 'Dist' variable " )
 
@@ -33,12 +42,35 @@ module wall_dist
       implicit none
 
       call dmsg(1, 'wall_dist', 'destroy_wall_dist')
-      call destroy_surface
+      call dealloc(wall_x)
+      call dealloc(wall_y)
+      call dealloc(wall_z)
       call dealloc(dist)
 
     end subroutine destroy_wall_dist
 
 
+    subroutine setup_nodefile()
+      implicit none
+      integer :: ios
+      open(NODESURF_FILE_UNIT, file=surface_node_points, status='old', IOSTAT=ios)
+      if(ios/=0) then
+        call dmsg(5, 'wall_dist', 'setup_nodefile', &
+          "!!! -->file containg surface nodepoints not found" )
+      end if
+      read(NODESURF_FILE_UNIT, *) n_surfnodes
+
+    end subroutine setup_nodefile
+
+
+    subroutine read_destroy_nodefile()
+      implicit none
+      integer :: i
+      do i = 1, n_surfnodes
+        read(NODESURF_FILE_UNIT, *) wall_x(i), wall_y(i), wall_z(i)
+      end do
+      close(NODESURF_FILE_UNIT)
+    end subroutine read_destroy_nodefile
 
     subroutine find_wall_dist()
 
@@ -49,7 +81,6 @@ module wall_dist
       real :: cc_x, cc_y, cc_z  !cell center
       call dmsg(1, 'wall_dist', 'find_wall_dist')
 
-      call surface_points()
       open(607, file='distance.vtk')
 
       write(607,'(a)') '# vtk DataFile Version 3.1'

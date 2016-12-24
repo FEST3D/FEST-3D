@@ -1,6 +1,6 @@
-module surface
+module wall_find
   use global, only: CONFIG_FILE_UNIT, FILE_NAME_LENGTH, STRING_BUFFER_LENGTH,&
-    BOUNDARY_CONDITIONS_FILE_UNIT
+    BOUNDARY_CONDITIONS_FILE_UNIT, TEMP_NODE_FILE_UNIT
   use bitwise
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
   use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
@@ -8,13 +8,13 @@ module surface
   implicit none
   private
 
-  real, public, dimension(:, :), allocatable, target :: wallc ! centre of wall surface
-  real, public, dimension(:), pointer :: wall_x
-  real, public, dimension(:), pointer :: wall_y
-  real, public, dimension(:), pointer :: wall_z
+  real, private, dimension(:, :), allocatable, target :: wallc ! centre of wall surface
+  real, private, dimension(:), pointer :: wall_x
+  real, private, dimension(:), pointer :: wall_y
+  real, private, dimension(:), pointer :: wall_z
  ! real , dimension(:,:,:), allocatable, pointer :: face_points()
   integer, dimension(6) :: NO_SLIP_flag
-  integer :: n_wall
+  integer, public :: n_wall
 
 
   public :: setup_surface
@@ -83,12 +83,13 @@ module surface
   
         
 
-        subroutine setup_surface()
+        subroutine setup_surface(bcfiles)
   
           implicit none
+          character(len=*), intent(in) :: bcfiles
   
           call dmsg(1, 'surface', 'setup_surface')
-          call find_wall()
+          call find_wall(bcfiles)
           call allocate_memory()
           call link_aliases()
   
@@ -138,11 +139,12 @@ module surface
 
 
 
-        subroutine find_wall()
+        subroutine find_wall(bcfile)
 
           implicit none
 
 
+          character(len=*), intent(in) :: bcfile
           integer :: ios
           character(len=STRING_BUFFER_LENGTH) :: buf 
 
@@ -151,7 +153,7 @@ module surface
           NO_SLIP_flag = 0
 
           ! opening the boundary condtion file (bc.config.d)
-          open(BOUNDARY_CONDITIONS_FILE_UNIT, file="bc.config.md")
+          open(BOUNDARY_CONDITIONS_FILE_UNIT, file=bcfile)
           !Ignore the file header
           read(BOUNDARY_CONDITIONS_FILE_UNIT, *)
           read(BOUNDARY_CONDITIONS_FILE_UNIT, *)
@@ -212,14 +214,16 @@ module surface
           implicit none
           integer :: OL
           integer :: i, j, k, ind
-          integer :: im=1, ix=1, id=1
-          integer :: jm=1, jx=1, jd=1
-          integer :: km=1, kx=1, kd=1
+          integer :: im=1, ix=1
+          integer :: jm=1, jx=1
+          integer :: km=1, kx=1
 
           call dmsg(1, 'surface', 'surface_points')
 
 
           ind = 0
+
+          open(TEMP_NODE_FILE_UNIT, file='nodefile_temp', status='old', position='append')
 
           do OL = 1,6
 
@@ -229,44 +233,44 @@ module surface
                   km = 1
                   jm = 1
                   im = 1
-                  kx = kmx-1
-                  jx = jmx-1
+                  kx = kmx
+                  jx = jmx
                   ix = 1
                 case (2)
                   km = 1
                   jm = 1
                   im = imx
-                  kx = kmx-1
-                  jx = jmx-1
+                  kx = kmx
+                  jx = jmx
                   ix = imx
                 case (3)
                   km = 1
                   jm = 1
                   im = 1
-                  kx = kmx-1
+                  kx = kmx
                   jx = 1
-                  ix = imx-1
+                  ix = imx
                 case (4)
                   km = 1
                   jm = jmx
                   im = 1
-                  kx = kmx-1
+                  kx = kmx
                   jx = jmx
-                  ix = imx-1
+                  ix = imx
                 case (5)
                   km = 1
                   jm = 1
                   im = 1
                   kx = 1
-                  jx = jmx-1
-                  ix = imx-1
+                  jx = jmx
+                  ix = imx
                 case (6)
                   km = kmx
                   jm = 1
                   im = 1
                   kx = kmx
-                  jx = jmx-1
-                  ix = imx-1
+                  jx = jmx
+                  ix = imx
                 case DEFAULT
                   call dmsg(5, "Surface", 'Surface_points', 'FATAL  ERROR: select case')
                   km = 1
@@ -281,44 +285,10 @@ module surface
               do j = jm,jx
                 do i = im,ix 
                   ind = ind + 1
-                  id = min(ix-im, 1)
-                  jd = min(jx-jm, 1)
-                  kd = min(kx-km, 1)
-                  wall_x(ind) = 0.5 * 0.25 * (                        &
-                                              grid_x(i, j, k )        &
-                                            + grid_x(i+id, j, k)      &
-                                            + grid_x(i, j+jd, k)      &
-                                            + grid_x(i, j, k+kd)      &
-                                            + grid_x(i, j+jd, k+kd)   &
-                                            + grid_x(i+id, j, k+kd)   &
-                                            + grid_x(i+id, j+jd, k)   &
-                                            + grid_x(i+id, j+jd, k+kd)  &
-                                            )
-
-
-                  wall_y(ind) = 0.5 * 0.25 * (                        &
-                                              grid_y(i, j, k )        &
-                                            + grid_y(i+id, j, k)      &
-                                            + grid_y(i, j+jd, k)      &
-                                            + grid_y(i, j, k+kd)      &
-                                            + grid_y(i, j+jd, k+kd)   &
-                                            + grid_y(i+id, j, k+kd)   &
-                                            + grid_y(i+id, j+jd, k)   &
-                                            + grid_y(i+id, j+jd, k+kd)  &
-                                             )
-
-
-                  wall_z(ind) = 0.5 * 0.25 * (                        &
-                                              grid_z(i, j, k )        &
-                                            + grid_z(i+id, j, k)      &
-                                            + grid_z(i, j+jd, k)      &
-                                            + grid_z(i, j, k+kd)      &
-                                            + grid_z(i, j+jd, k+kd)   &
-                                            + grid_z(i+id, j, k+kd)   &
-                                            + grid_z(i+id, j+jd, k)   &
-                                            + grid_z(i+id, j+jd, k+kd)  &
-                                             )
-
+                  wall_x(ind) = grid_x(i, j, k )        
+                  wall_y(ind) = grid_y(i, j, k )        
+                  wall_z(ind) = grid_z(i, j, k )        
+                  write(TEMP_NODE_FILE_UNIT, *) wallc(ind,:) 
                 end do
               end do
             end do
@@ -331,4 +301,4 @@ module surface
 
 
           
-end module surface
+end module wall_find

@@ -7,16 +7,16 @@ BINDIR	:= bin
 OBJDIR	:= obj
 MODDIR	:= mod
 GFC 		:= mpif90
-IFC 		:= ifort
+IFC 		:= mpif90 -f90=ifort
 GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 					-Wno-compare-reals \
 					-fdefault-real-8 \
 					-Waliasing \
 					-Wsurprising \
 					-Wintrinsic-shadow \
-					-Werror \
 					-pedantic-errors \
 					-fbounds-check
+#					-Werror \
 
 IFFLAGS := -O3 -free -r8 -traceback \
 					 -zero \
@@ -43,7 +43,8 @@ files = global.f90 \
 				ausm.f90 \
 				ldfss0.f90 \
 				scheme.f90 \
-				surface.f90 \
+				wall_find.f90 \
+				surfnodes.f90 \
 				wall_dist.f90 \
 				source.f90 \
 				viscous.f90 \
