@@ -74,7 +74,7 @@ module dump_solution
       integer                         :: purge_num
 
       purge_num = checkpoint_iter_count-purge_write
-      if (purge_num > 0) then
+      if (purge_write /=0 .and. purge_num > 0) then
         write(purge_dirname,'(A,I4.4)') 'time_directories/', purge_num
         call remove_directory(purge_dirname)
       end if
