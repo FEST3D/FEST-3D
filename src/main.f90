@@ -1,9 +1,10 @@
 program main
-!  use mpi
+  use mpi
+  use global_vars
   use solver
 
   implicit none
-  include "mpif.h"
+!  include "mpif.h"
 
   integer :: ierr
   call MPI_INIT(ierr)
@@ -14,7 +15,7 @@ program main
      !print *, 'Iteration', iter
 !     call flush()
      call step()
-     if (iter == max_iters) then
+     if (current_iter == max_iters) then
         exit
      end if
   end do

@@ -1,8 +1,13 @@
 module boundary_state_reconstruction
   use utils,                only: dmsg
-  use grid,                 only: imx, jmx, kmx
-  use state,                only: qp
-  use state,                only: n_var
+!  use grid,                 only: imx, jmx, kmx
+  use global_vars,          only: imx
+  use global_vars,          only: jmx
+  use global_vars,          only: kmx
+
+  use global_vars,          only: qp
+  use global_vars,          only: n_var
+
   use face_interpolant,     only: x_qp_left, x_qp_right
   use face_interpolant,     only: y_qp_left, y_qp_right
   use face_interpolant,     only: z_qp_left, z_qp_right

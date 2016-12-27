@@ -7,24 +7,43 @@ module geometry
     ! 2-dimensional. 
     !-------------------------------------------------------------------
 
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+    use global_vars, only : grid_x
+    use global_vars, only : grid_y
+    use global_vars, only : grid_z
+
+    use global_vars, only : xnx, xny, xnz !face unit normal x
+    use global_vars, only : ynx, yny, ynz !face unit normal y
+    use global_vars, only : znx, zny, znz !face unit normal z
+    use global_vars, only : xA, yA, zA    !face area
+    use global_vars, only : volume
+    use global_vars, only :   left_ghost_centroid
+    use global_vars, only :  right_ghost_centroid
+    use global_vars, only :  front_ghost_centroid
+    use global_vars, only :   back_ghost_centroid
+    use global_vars, only :    top_ghost_centroid
+    use global_vars, only : bottom_ghost_centroid
+    
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
+!    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
 
     implicit none
     private
 
-    ! Grid face normals
-    real, public, dimension(:, :, :), allocatable, target :: xnx, xny, xnz
-    real, public, dimension(:, :, :), allocatable, target :: ynx, yny, ynz
-    real, public, dimension(:, :, :), allocatable, target :: znx, zny, znz
-    ! Grid face areas
-    real, public, dimension(:, :, :), allocatable, target :: xA, yA, zA
-    ! Grid cell volumes
-    real, public, dimension(:, :, :), allocatable :: volume
-    ! Ghost cell centroid
-    real, public, dimension(:, :, :), allocatable :: left_ghost_centroid, &
-        right_ghost_centroid, front_ghost_centroid, back_ghost_centroid, &
-        top_ghost_centroid, bottom_ghost_centroid
+!    ! Grid face normals
+!    real, public, dimension(:, :, :), allocatable, target :: xnx, xny, xnz
+!    real, public, dimension(:, :, :), allocatable, target :: ynx, yny, ynz
+!    real, public, dimension(:, :, :), allocatable, target :: znx, zny, znz
+!    ! Grid face areas
+!    real, public, dimension(:, :, :), allocatable, target :: xA, yA, zA
+!    ! Grid cell volumes
+!    real, public, dimension(:, :, :), allocatable :: volume
+!    ! Ghost cell centroid
+!    real, public, dimension(:, :, :), allocatable :: left_ghost_centroid, &
+!        right_ghost_centroid, front_ghost_centroid, back_ghost_centroid, &
+!        top_ghost_centroid, bottom_ghost_centroid
 
     ! Public methods
     public :: setup_geometry

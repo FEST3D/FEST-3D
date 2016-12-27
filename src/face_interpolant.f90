@@ -1,9 +1,18 @@
 module face_interpolant
 
     use global, only: INTERPOLANT_NAME_LENGTH
+
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+
+    use global_vars, only : qp
+    use global_vars, only : gm
+    use global_vars, only : n_var
+    use global_vars, only : turbulence
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx, kmx
-    use state, only: qp, gm, n_var
+!    use grid, only: imx, jmx, kmx
+!    use state, only: qp, gm, n_var
     use muscl, only: setup_scheme_muscl => setup_scheme, &
             destroy_scheme_muscl => destroy_scheme, &
             compute_muscl_states, &

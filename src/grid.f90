@@ -9,15 +9,21 @@ module grid
     
     use global, only: STRING_BUFFER_LENGTH, GRID_FILE_UNIT
 !                     SPHERE_INDICES_FILE_UNIT
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+    use global_vars, only : grid_x
+    use global_vars, only : grid_y
+    use global_vars, only : grid_z
     use utils, only: alloc, dealloc, dmsg
     
     implicit none
     private
     
     ! Grid point coordinates
-    real, public, dimension(:, :, :), allocatable :: grid_x, grid_y, grid_z
+!    real, public, dimension(:, :, :), allocatable :: grid_x, grid_y, grid_z
     ! Grid size
-    integer, public :: imx, jmx, kmx
+!    integer, public :: imx, jmx, kmx
 !   integer, public, dimension(:, :), allocatable :: sphere_indices
 !   integer, public :: n_sph_ind
 

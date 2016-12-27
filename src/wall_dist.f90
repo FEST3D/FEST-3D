@@ -3,8 +3,16 @@ module wall_dist
   use global,  only: WALL_DIST_FILE_UNIT
   use global,  only: wall_dist_file
   use global,  only: surface_node_points
+
+  use global_vars, only : imx
+  use global_vars, only : jmx
+  use global_vars, only : kmx
+  use global_vars, only : grid_x
+  use global_vars, only : grid_y
+  use global_vars, only : grid_z
+
   use utils, only: alloc, dealloc, dmsg
-  use grid, only: imx,jmx, kmx, grid_x, grid_y, grid_z
+!  use grid, only: imx,jmx, kmx, grid_x, grid_y, grid_z
 
   implicit none
   private

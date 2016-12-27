@@ -1,7 +1,7 @@
 ! include in boundary condition.f90
 
-    use state, only:  tk, tw, tk_inf, tw_inf, Sutherland_temp, T_ref, mu_ref,&
-                      R_gas
+!    use state, only:  tk, tw, tk_inf, tw_inf, Sutherland_temp, T_ref, mu_ref,&
+!                      R_gas
 
     use face_interpolant, only: x_tk_left, x_tk_right,&
                 y_tk_left, y_tk_right, z_tk_left, z_tk_right, &

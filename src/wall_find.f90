@@ -1,9 +1,17 @@
 module wall_find
   use global, only: CONFIG_FILE_UNIT, FILE_NAME_LENGTH, STRING_BUFFER_LENGTH,&
     BOUNDARY_CONDITIONS_FILE_UNIT, TEMP_NODE_FILE_UNIT, nodefile_temp
+
+  use global_vars, only : imx
+  use global_vars, only : jmx
+  use global_vars, only : kmx
+  use global_vars, only : grid_x
+  use global_vars, only : grid_y
+  use global_vars, only : grid_z
+
   use string
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
-  use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
+!  use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
 
   implicit none
   private

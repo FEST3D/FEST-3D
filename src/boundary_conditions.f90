@@ -30,15 +30,45 @@ module boundary_conditions
     ! and the final three (min / max) denote which side of the domain.
     !-------------------------------------------------------------------
     
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+
+    use global_vars, only : xnx, xny, xnz !face unit normal x
+    use global_vars, only : ynx, yny, ynz !face unit normal y
+    use global_vars, only : znx, zny, znz !face unit normal z
+
+    use global_vars, only : n_var
+    use global_vars, only : qp
+    use global_vars, only : density
+    use global_vars, only : x_speed
+    use global_vars, only : y_speed
+    use global_vars, only : z_speed
+    use global_vars, only : pressure
+    use global_vars, only : tk
+    use global_vars, only : tw
+    use global_vars, only : density_inf
+    use global_vars, only : x_speed_inf
+    use global_vars, only : y_speed_inf
+    use global_vars, only : z_speed_inf
+    use global_vars, only : pressure_inf
+    use global_vars, only : tk_inf
+    use global_vars, only : tw_inf
+    use global_vars, only : mu_ref
+    use global_vars, only : R_gas
+    use global_vars, only : T_ref
+    use global_vars, only : Sutherland_temp
+    use global_vars, only : turbulence
+
     use utils, only: alloc, dealloc, dmsg
     use bitwise
     use global, only: BOUNDARY_CONDITIONS_FILE_UNIT, STRING_BUFFER_LENGTH, &
             FILE_NAME_LENGTH
-    use grid, only: imx, jmx, kmx
-    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz
-    use state, only: density, x_speed, y_speed, z_speed, pressure, &
-            density_inf, x_speed_inf, y_speed_inf, z_speed_inf, &
-            pressure_inf, qp, n_var
+!    use grid, only: imx, jmx, kmx
+!    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz
+!    use state, only: density, x_speed, y_speed, z_speed, pressure, &
+!            density_inf, x_speed_inf, y_speed_inf, z_speed_inf, &
+!            pressure_inf, qp, n_var
     use face_interpolant, only: x_x_speed_left, x_x_speed_right, &
             x_y_speed_left, x_y_speed_right, x_z_speed_left, x_z_speed_right, &
             y_x_speed_left, y_x_speed_right, y_y_speed_left, y_y_speed_right, &

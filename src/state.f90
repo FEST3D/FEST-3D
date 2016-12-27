@@ -10,43 +10,76 @@ module state
     
     use global, only: FILE_NAME_LENGTH, STATE_FILE_UNIT, OUT_FILE_UNIT, &
             DESCRIPTION_STRING_LENGTH, STRING_BUFFER_LENGTH
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+    use global_vars, only : grid_x
+    use global_vars, only : grid_y
+    use global_vars, only : grid_z
+
+    use global_vars, only : xnx, xny, xnz !face unit normal x
+    use global_vars, only : ynx, yny, ynz !face unit normal y
+    use global_vars, only : znx, zny, znz !face unit normal z
+
+    use global_vars, only : n_var
+    use global_vars, only : qp
+    use global_vars, only : qp_inf
+    use global_vars, only : density
+    use global_vars, only : x_speed
+    use global_vars, only : y_speed
+    use global_vars, only : z_speed
+    use global_vars, only : pressure
+    use global_vars, only : density_inf
+    use global_vars, only : x_speed_inf
+    use global_vars, only : y_speed_inf
+    use global_vars, only : z_speed_inf
+    use global_vars, only : pressure_inf
+    use global_vars, only : tk
+    use global_vars, only : tw
+    use global_vars, only : tk_inf
+    use global_vars, only : tw_inf
+    use global_vars, only : gm
+    use global_vars, only : mu_ref
+    use global_vars, only : supersonic_flag
+    use global_vars, only : turbulence
+    
     use utils, only: alloc, dealloc, dmsg
     use layout, only: process_id
     use string
-    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
-    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz
+!    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
+!    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz
 
     implicit none
     private
 
-    ! State variables
-    real, public, dimension(:, :, :, :), allocatable, target :: qp
-    ! Infinity variables (free stream conditions)
-    real, public, dimension(:), allocatable, target :: qp_inf
-    ! State variable component aliases
-    integer, public :: n_var
-    real, public, dimension(:, :, :), pointer :: density
-    real, public, dimension(:, :, :), pointer :: x_speed
-    real, public, dimension(:, :, :), pointer :: y_speed
-    real, public, dimension(:, :, :), pointer :: z_speed
-    real, public, dimension(:, :, :), pointer :: pressure
-    real, public, pointer :: density_inf
-    real, public, pointer :: x_speed_inf
-    real, public, pointer :: y_speed_inf
-    real, public, pointer :: z_speed_inf
-    real, public, pointer :: pressure_inf
-    ! Supersonic flag
-    logical :: supersonic_flag
-    ! Ratio of specific heats (gamma)
-    real, public :: gm
-    ! Specific gas constant
-    real, public :: R_gas
-    ! Constants related to viscosity
-    real, public :: mu_ref, T_ref, Sutherland_temp, Pr
-    integer, public :: ilimiter_switch
-
+!    ! State variables
+!    real, public, dimension(:, :, :, :), allocatable, target :: qp
+!    ! Infinity variables (free stream conditions)
+!    real, public, dimension(:), allocatable, target :: qp_inf
+!    ! State variable component aliases
+!    integer, public :: n_var
+!    real, public, dimension(:, :, :), pointer :: density
+!    real, public, dimension(:, :, :), pointer :: x_speed
+!    real, public, dimension(:, :, :), pointer :: y_speed
+!    real, public, dimension(:, :, :), pointer :: z_speed
+!    real, public, dimension(:, :, :), pointer :: pressure
+!    real, public, pointer :: density_inf
+!    real, public, pointer :: x_speed_inf
+!    real, public, pointer :: y_speed_inf
+!    real, public, pointer :: z_speed_inf
+!    real, public, pointer :: pressure_inf
+!    ! Supersonic flag
+!    logical :: supersonic_flag
+!    ! Ratio of specific heats (gamma)
+!    real, public :: gm
+!    ! Specific gas constant
+!    real, public :: R_gas
+!    ! Constants related to viscosity
+!    real, public :: mu_ref, T_ref, Sutherland_temp, Pr
+!    integer, public :: ilimiter_switch
+!
     ! Including Turbulence variables
-    include "turbulence_models/include/state/variables_deceleration.inc"
+!    include "turbulence_models/include/state/variables_deceleration.inc"
 
     ! Public methods
     public :: setup_state

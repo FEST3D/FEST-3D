@@ -4,9 +4,21 @@ module van_leer
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx, kmx
-    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, xA, yA, zA
-    use state, only: gm, n_var
+
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+
+    use global_vars, only : xnx, xny, xnz !face unit normal x
+    use global_vars, only : ynx, yny, ynz !face unit normal y
+    use global_vars, only : znx, zny, znz !face unit normal z
+    use global_vars, only : xA, yA, zA    !face area
+
+    use global_vars, only : gm
+    use global_vars, only : n_var
+!    use grid, only: imx, jmx, kmx
+!    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, xA, yA, zA
+!    use state, only: gm, n_var
     use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
                 z_qp_left, z_qp_right, &
             x_density_left, x_x_speed_left, x_y_speed_left, x_z_speed_left, &

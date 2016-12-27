@@ -1,60 +1,138 @@
 module solver
 
-    use global, only: CONFIG_FILE_UNIT, RESNORM_FILE_UNIT, FILE_NAME_LENGTH, &
-            STRING_BUFFER_LENGTH, INTERPOLANT_NAME_LENGTH
-    use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
-    use string
-    use grid, only: imx, jmx, kmx, setup_grid, destroy_grid
-    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, &
-            xA, yA, zA, volume, setup_geometry, destroy_geometry
-    use state, only: n_var, qp, qp_inf, density, x_speed, y_speed, z_speed, &
-            pressure, density_inf, x_speed_inf, y_speed_inf, z_speed_inf, pressure_inf, &
-            gm, R_gas, setup_state, destroy_state, writestate_vtk, &
-            mu_ref, T_ref, Sutherland_temp, Pr
-    use state, only: n_var
-    use face_interpolant, only: interpolant, &
-            x_qp_left, x_qp_right, &
-            y_qp_left, y_qp_right, &
-            z_qp_left, z_qp_right, compute_face_interpolant, &
-            extrapolate_cell_averages_to_faces
-    use scheme, only: scheme_name, setup_scheme, destroy_scheme, &
-            compute_fluxes, compute_residue, F_p, G_p, H_p, mass_residue,&
-            x_mom_residue, y_mom_residue, z_mom_residue, energy_residue
-    use source, only: setup_source, destroy_source, add_source_term_residue, &
-                      compute_gradients_cell_centre
-    use boundary_conditions, only: setup_boundary_conditions, &
-            apply_boundary_conditions, set_wall_bc_at_faces, &
-            destroy_boundary_conditions
-    use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
-    use viscous, only: compute_viscous_fluxes
-    use boundary_state_reconstruction, only: reconstruct_boundary_state
-    use layout, only: process_id, grid_file_buf, bc_file, &
-    get_process_data, read_layout_file, total_process
-    use parallel, only: allocate_buffer_cells,send_recv
-    use state, only: turbulence, ilimiter_switch
-    include "turbulence_models/include/solver/import_module.inc"
+  use global, only: CONFIG_FILE_UNIT 
+  use global, only: RESNORM_FILE_UNIT 
+  use global, only: FILE_NAME_LENGTH
+  use global, only: STRING_BUFFER_LENGTH 
+  use global, only: INTERPOLANT_NAME_LENGTH
 
-!    use mpi
+  use global_vars, only : imx
+  use global_vars, only : jmx
+  use global_vars, only : kmx
+
+  use global_vars, only : xnx, xny, xnz !face unit normal x
+  use global_vars, only : ynx, yny, ynz !face unit normal y
+  use global_vars, only : znx, zny, znz !face unit normal z
+  use global_vars, only : xA, yA, zA    !face area
+  use global_vars, only : volume
+    
+  use global_vars, only : n_var
+  use global_vars, only : sst_n_var
+  use global_vars, only : qp
+  use global_vars, only : qp_inf
+  use global_vars, only : density
+  use global_vars, only : x_speed
+  use global_vars, only : y_speed
+  use global_vars, only : z_speed
+  use global_vars, only : pressure
+  use global_vars, only : tk
+  use global_vars, only : tw
+  use global_vars, only : tk_inf
+  use global_vars, only : tw_inf
+  use global_vars, only : gm
+  use global_vars, only : R_gas
+  use global_vars, only : mu_ref
+  use global_vars, only : T_ref
+  use global_vars, only : Sutherland_temp
+  use global_vars, only : Pr
+
+  use global_vars, only : qp_n
+  use global_vars, only : dEdx_1
+  use global_vars, only : dEdx_2
+  use global_vars, only : dEdx_3
+  use global_vars, only : resnorm, resnorm_0
+  use global_vars, only : cont_resnorm, cont_resnorm_0
+  use global_vars, only : x_mom_resnorm, x_mom_resnorm_0
+  use global_vars, only : y_mom_resnorm, y_mom_resnorm_0
+  use global_vars, only : z_mom_resnorm, z_mom_resnorm_0
+  use global_vars, only : energy_resnorm, energy_resnorm_0
+!  use global_vars, only : write_interval
+  use global_vars, only : write_percision
+  use global_vars, only : write_format
+  use global_vars, only : purge_write
+  use global_vars, only : CFL
+  use global_vars, only : tolerance
+  use global_vars, only : min_iter
+  use global_vars, only : max_iters
+  use global_vars, only : current_iter
+  use global_vars, only : checkpoint_iter
+  use global_vars, only : checkpoint_iter_count
+  use global_vars, only : start_from
+  use global_vars, only : time_stepping_method
+  use global_vars, only : time_step_accuracy
+  use global_vars, only : global_time_step
+  use global_vars, only : delta_t
+  use global_vars, only : sim_clock
+  use global_vars, only : turbulence
+  use global_vars, only : ilimiter_switch
+
+  use global_vars, only: F_p
+  use global_vars, only: G_p
+  use global_vars, only: H_p
+  use global_vars, only: mass_residue
+  use global_vars, only: x_mom_residue
+  use global_vars, only: y_mom_residue
+  use global_vars, only: z_mom_residue
+  use global_vars, only: energy_residue
+  use global_vars, only: TKE_residue
+  use global_vars, only: omega_residue
+  use global_vars, only: res_write_interval
+
+  use utils, only: alloc
+  use utils, only:  dealloc 
+  use utils, only:  dmsg
+  use utils, only:  DEBUG_LEVEL
+
+  use string
+
+  use grid, only: setup_grid, destroy_grid
+  use geometry, only: setup_geometry, destroy_geometry
+  use state, only:  setup_state, destroy_state, writestate_vtk
+
+  use face_interpolant, only: interpolant, &
+          x_qp_left, x_qp_right, &
+          y_qp_left, y_qp_right, &
+          z_qp_left, z_qp_right, compute_face_interpolant, &
+          extrapolate_cell_averages_to_faces
+  use scheme, only: scheme_name, setup_scheme, destroy_scheme, &
+          compute_fluxes, compute_residue
+  use source, only: setup_source, destroy_source, add_source_term_residue, &
+                    compute_gradients_cell_centre
+  use boundary_conditions, only: setup_boundary_conditions, &
+          apply_boundary_conditions, set_wall_bc_at_faces, &
+          destroy_boundary_conditions
+  use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
+  use viscous, only: compute_viscous_fluxes
+  use boundary_state_reconstruction, only: reconstruct_boundary_state
+  use layout, only: process_id, grid_file_buf, bc_file, &
+  get_process_data, read_layout_file, total_process
+  use parallel, only: allocate_buffer_cells,send_recv
+!  use state, only: turbulence
+  use resnorm_, only : write_resnorm, setup_resnorm, destroy_resnorm
+  use dump_solution, only : checkpoint
+  include "turbulence_models/include/solver/import_module.inc"
+
+    use mpi
     implicit none
-    include "mpif.h"
+!    include "mpif.h"
     private
 
-    real, public :: CFL
-    character, public :: time_stepping_method
-    real, public :: global_time_step
-    character(len=INTERPOLANT_NAME_LENGTH) :: time_step_accuracy
-    real, dimension(:, :, :, :), allocatable :: qp_n, dEdx_1, dEdx_2, dEdx_3
-    real :: tolerance
-    integer, public :: max_iters
-    integer, public :: checkpoint_iter, checkpoint_iter_count
-    real, public :: resnorm, resnorm_0
-    real, public :: cont_resnorm, cont_resnorm_0, x_mom_resnorm, &
-        x_mom_resnorm_0, y_mom_resnorm, y_mom_resnorm_0, z_mom_resnorm, &
-        z_mom_resnorm_0, energy_resnorm, energy_resnorm_0
-    real, public, dimension(:, :, :), allocatable :: delta_t
-    integer, public :: iter
-    real :: sim_clock
-    real :: speed_inf
+!    real, public :: CFL
+!    character, public :: time_stepping_method
+!    real, public :: global_time_step
+!    character(len=INTERPOLANT_NAME_LENGTH) :: time_step_accuracy
+!    real, dimension(:, :, :, :), allocatable :: qp_n, dEdx_1, dEdx_2, dEdx_3
+!    real :: tolerance
+!    integer, public :: max_iters
+!    integer, public :: checkpoint_iter, checkpoint_iter_count
+!    real, public :: resnorm, resnorm_0
+!    real, public :: cont_resnorm, cont_resnorm_0, x_mom_resnorm, &
+!        x_mom_resnorm_0, y_mom_resnorm, y_mom_resnorm_0, z_mom_resnorm, &
+!        z_mom_resnorm_0, energy_resnorm, energy_resnorm_0
+!    real, public, dimension(:, :, :), allocatable :: delta_t
+!    integer, public :: iter
+!    real :: sim_clock
+!    real :: speed_inf
 
     real, dimension(:), allocatable, target :: qp_temp
     real, pointer :: density_temp, x_speed_temp, &
@@ -279,7 +357,7 @@ module solver
             real :: free_stream_pressure
             character(len=FILE_NAME_LENGTH) :: grid_file
             integer                         :: state_load_level
-            character(len=FILE_NAME_LENGTH) :: resnorm_file
+!            character(len=FILE_NAME_LENGTH) :: resnorm_file
 
             call dmsg(1, 'solver', 'setup_solver')
             call get_process_data() ! parallel calls
@@ -309,15 +387,17 @@ module solver
               call setup_source()
             end if
             call link_aliases_solver()
-            call initmisc()
+!            call initmisc()
             !resnorm_file = 'resnorms'//process_id
             !write(filename, '(A,I2.2,A,I5.5,A)') 'results/process_',process_id,'/output', checkpoint_iter_count, '.vtk'
-            write(resnorm_file, '(A,I2.2,A)') 'results/process_',process_id,'/resnorms'
-            if (process_id == 0) then
-              open(RESNORM_FILE_UNIT, file=resnorm_file)
-              write(RESNORM_FILE_UNIT, '(2A)') 'res_abs resnorm continuity_resnorm', &
-                          ' x_mom_resnorm y_mom_resnorm z_mom_resnorm energy_resnorm'
-            end if
+!            write(resnorm_file, '(A)') 'time_directories/resnorm'
+!            if (process_id == 0) then
+!              open(RESNORM_FILE_UNIT, file=resnorm_file)
+!write(RESNORM_FILE_UNIT, '(2A)') 'res_abs resnorm continuity_resnorm', &
+!                          ' x_mom_resnorm y_mom_resnorm z_mom_resnorm energy_resnorm'
+            call setup_resnorm()
+!            end if
+            call initmisc()
             checkpoint_iter_count = 0
             call checkpoint()  ! Create an initial dump file
             call dmsg(1, 'solver', 'setup_solver', 'Setup solver complete')
@@ -342,9 +422,7 @@ module solver
             call destroy_state()
             call destroy_geometry()
             call destroy_grid()
-            if (process_id == 0) then
-              close(RESNORM_FILE_UNIT)
-            end if
+            call destroy_resnorm()
 
         end subroutine destroy_solver
 
@@ -355,9 +433,9 @@ module solver
             call dmsg(1, 'solver', 'initmisc')
 
             sim_clock = 0.
-            iter = 0
-            resnorm = 1.
-            resnorm_0 = 1.
+            current_iter = 0
+!            resnorm = 1.
+!            resnorm_0 = 1.
 
         end subroutine initmisc
 
@@ -847,28 +925,47 @@ module solver
 
         end subroutine update_solution
 
-        subroutine checkpoint()
-            !-----------------------------------------------------------
-            ! Create a checkpoint dump file if the time has come
-            !-----------------------------------------------------------
-
-            implicit none
-
-            character(len=FILE_NAME_LENGTH) :: filename
-
-            if (checkpoint_iter .ne. 0) then
-                if (mod(iter, checkpoint_iter) == 0) then
-                    !write(filename, '(A,I5.5,A)') 'output', checkpoint_iter_count, '.vtk'
-                    write(filename, '(A,I2.2,A,I5.5,A)') 'results/process_',process_id,'/output', checkpoint_iter_count, '.vtk'
-                    print *, filename
-                    checkpoint_iter_count = checkpoint_iter_count + 1
-                    call writestate_vtk(filename, 'Simulation clock: ' + sim_clock)
-                    call dmsg(3, 'solver', 'checkpoint', &
-                            'Checkpoint created at iteration: ' + iter)
-                end if
-            end if
-
-        end subroutine checkpoint
+!        subroutine checkpoint()
+!            !-----------------------------------------------------------
+!            ! Create a checkpoint dump file if the time has come
+!            !-----------------------------------------------------------
+!
+!            implicit none
+!
+!            character(len=FILE_NAME_LENGTH) :: filename
+!            character(len=FILE_NAME_LENGTH) :: dirname
+!            character(len=FILE_NAME_LENGTH) :: mkdircmd, rmdircmd
+!            integer                         :: purge_num
+!
+!
+!            if (checkpoint_iter .ne. 0) then
+!                if (mod(current_iter, checkpoint_iter) == 0) then
+!                    write(dirname,'(A,I4.4)') 'time_directories/',checkpoint_iter_count
+!                    mkdircmd = 'mkdir -p '//trim(dirname)
+!                    call system(mkdircmd)
+!                    !write(filename, '(A,I5.5,A)') 'output', checkpoint_iter_count, '.vtk'
+!                    write(filename, '(A,I2.2,A)') trim(dirname)//'/process_',process_id,'.vtk'
+!                    print *, filename
+!                    call writestate_vtk(filename, 'Simulation clock: ' + sim_clock)
+!                    !------------------------------------------------------------
+!                    !Purging unneccessary directories
+!                    !------------------------------------------------------------
+!                    purge_num = checkpoint_iter_count-purge_write
+!                    if (purge_num > 0) then
+!                      write(dirname,'(A,I4.4)') 'time_directories/', purge_num
+!                      rmdircmd = 'rm -rf '//trim(dirname)
+!                      call system(rmdircmd)
+!                    end if
+!                      
+!                    checkpoint_iter_count = checkpoint_iter_count + 1
+!                    call dmsg(3, 'solver', 'checkpoint', &
+!                            'Checkpoint created at iteration: ' + current_iter)
+!
+!
+!                end if
+!            end if
+!
+!        end subroutine checkpoint
 
         subroutine sub_step()
 
@@ -907,157 +1004,158 @@ module solver
             !-----------------------------------------------------------
 
             implicit none
-            integer :: id, ierr
-            real, dimension(8) :: res_send_buf
-            real, dimension(:), allocatable :: root_res_recv_buf
-            real, dimension(:,:), allocatable:: global_resnorm
-            real :: res_norm, total_volume
+!            integer :: id, ierr
+!            real, dimension(7) :: res_send_buf
+!            real, dimension(:), allocatable :: root_res_recv_buf
+!            real, dimension(:,:), allocatable:: global_resnorm
+!            real :: res_norm
+!            integer:: res_write_interval=5
             call dmsg(1, 'solver', 'step')
 
             call sub_step()
 
             call get_next_solution()
             call update_simulation_clock()
-            iter = iter + 1
+            current_iter = current_iter + 1
 
             !TODO k and w residue
-            call compute_residue_norm()
-            if (iter <= 5) then
-                resnorm_0 = resnorm
-                cont_resnorm_0 = cont_resnorm
-                x_mom_resnorm_0 = x_mom_resnorm
-                y_mom_resnorm_0 = y_mom_resnorm
-                z_mom_resnorm_0 = z_mom_resnorm
-                energy_resnorm_0 = energy_resnorm
+!            if (mod(current_iter,res_write_interval)==0) then
+!            call compute_residue_norm()
+!            if (current_iter <= 5) then
+!                resnorm_0 = resnorm
+!                cont_resnorm_0 = cont_resnorm
+!                x_mom_resnorm_0 = x_mom_resnorm
+!                y_mom_resnorm_0 = y_mom_resnorm
+!                z_mom_resnorm_0 = z_mom_resnorm
+!                energy_resnorm_0 = energy_resnorm
+!            end if
+!            if (process_id == 0) then
+!              allocate(root_res_recv_buf(1:total_process*7))
+!              root_res_recv_buf = 0.
+!            end if
+!
+!            res_send_buf(1) = resnorm
+!            res_send_buf(2) = resnorm/resnorm_0
+!            res_send_buf(3) = cont_resnorm/cont_resnorm_0
+!            res_send_buf(4) = x_mom_resnorm/x_mom_resnorm_0
+!            res_send_buf(5) = y_mom_resnorm/y_mom_resnorm_0
+!            res_send_buf(6) = z_mom_resnorm/z_mom_resnorm_0
+!            res_send_buf(7) = energy_resnorm/energy_resnorm_0
+!
+!            call MPI_Gather(res_send_buf, 7, MPI_DOUBLE_PRECISION, &
+!              root_res_recv_buf, 7, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
+!            if (process_id == 0) then
+!              allocate(global_resnorm(1:total_process,1:7))
+!              do id = 0,total_process-1
+!                global_resnorm(id+1, 1) = root_res_recv_buf(1+7*id)
+!                global_resnorm(id+1, 2) = root_res_recv_buf(2+7*id)
+!                global_resnorm(id+1, 3) = root_res_recv_buf(3+7*id)
+!                global_resnorm(id+1, 4) = root_res_recv_buf(4+7*id)
+!                global_resnorm(id+1, 5) = root_res_recv_buf(5+7*id)
+!                global_resnorm(id+1, 6) = root_res_recv_buf(6+7*id)
+!                global_resnorm(id+1, 7) = root_res_recv_buf(7+7*id)
+!              print*, global_resnorm(id+1,1)
+!              end do
+!
+!              !all resnorm except first are all normalized
+!              resnorm         = 0.
+!              res_norm        = 0.
+!              cont_resnorm    = 0.
+!              x_mom_resnorm   = 0.
+!              y_mom_resnorm   = 0.
+!              z_mom_resnorm   = 0.
+!              energy_resnorm  = 0.
+!
+!              do id = 1,total_process
+!                resnorm         = resnorm         + (global_resnorm(id,1)**2)
+!                res_norm        = res_norm        + (global_resnorm(id,2)**2)
+!                cont_resnorm    = cont_resnorm    + (global_resnorm(id,3)**2)
+!                x_mom_resnorm   = x_mom_resnorm   + (global_resnorm(id,4)**2)
+!                y_mom_resnorm   = y_mom_resnorm   + (global_resnorm(id,5)**2)
+!                z_mom_resnorm   = z_mom_resnorm   + (global_resnorm(id,6)**2)
+!                energy_resnorm  = energy_resnorm  + (global_resnorm(id,7)**2)
+!              end do
+!
+!              resnorm         = sqrt(resnorm)       
+!              res_norm        = sqrt(res_norm)      
+!              cont_resnorm    = sqrt(cont_resnorm) 
+!              x_mom_resnorm   = sqrt(x_mom_resnorm) 
+!              y_mom_resnorm   = sqrt(y_mom_resnorm) 
+!              z_mom_resnorm   = sqrt(z_mom_resnorm) 
+!              energy_resnorm  = sqrt(energy_resnorm)
+!
+!              write(RESNORM_FILE_UNIT, '(7(f0.16, A))') resnorm,          ' ', & 
+!                                                        res_norm,         ' ', &
+!                                                        cont_resnorm,     ' ', &
+!                                                        x_mom_resnorm,    ' ', &
+!                                                        y_mom_resnorm,    ' ', &
+!                                                        z_mom_resnorm,    ' ', &
+!                                                        energy_resnorm, ' '
+!              deallocate(global_resnorm)
+!              deallocate(root_res_recv_buf)
+!              end if
+!              end if
+            
+            if ( mod(current_iter,res_write_interval) == 0 ) then
+              call write_resnorm()
             end if
-            if (process_id == 0) then
-              allocate(root_res_recv_buf(1:total_process*8))
-              root_res_recv_buf = 0.
-            end if
-
-            res_send_buf(1) = resnorm
-            res_send_buf(2) = resnorm/resnorm_0
-            res_send_buf(3) = cont_resnorm/cont_resnorm_0
-            res_send_buf(4) = x_mom_resnorm/x_mom_resnorm_0
-            res_send_buf(5) = y_mom_resnorm/y_mom_resnorm_0
-            res_send_buf(6) = z_mom_resnorm/z_mom_resnorm_0
-            res_send_buf(7) = energy_resnorm/energy_resnorm_0
-            res_send_buf(8) = sum(volume(1:imx-1, 1:jmx-1, 1:kmx-1))
-
-!              print*, 'send buf ->  ', res_send_buf(1:8)
-            call MPI_Gather(res_send_buf, 8, MPI_DOUBLE_PRECISION, &
-              root_res_recv_buf, 8, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
-            if (process_id == 0) then
-              allocate(global_resnorm(1:total_process,1:8))
-              do id = 0,total_process-1
-                global_resnorm(id+1, 1) = root_res_recv_buf(1+8*id)
-                global_resnorm(id+1, 2) = root_res_recv_buf(2+8*id)
-                global_resnorm(id+1, 3) = root_res_recv_buf(3+8*id)
-                global_resnorm(id+1, 4) = root_res_recv_buf(4+8*id)
-                global_resnorm(id+1, 5) = root_res_recv_buf(5+8*id)
-                global_resnorm(id+1, 6) = root_res_recv_buf(6+8*id)
-                global_resnorm(id+1, 7) = root_res_recv_buf(7+8*id)
-                global_resnorm(id+1, 8) = root_res_recv_buf(8+8*id)
- !               print*, global_resnorm(id,1:8)
-              end do
-
-              !all resnorm except first are all normalized
-              resnorm         = 0.
-              res_norm        = 0.
-              cont_resnorm    = 0.
-              x_mom_resnorm   = 0.
-              y_mom_resnorm   = 0.
-              z_mom_resnorm   = 0.
-              energy_resnorm  = 0.
-              total_volume    = 0.
-
-              do id = 1,total_process
-                resnorm         = resnorm         + (global_resnorm(id,1)**2)
-                res_norm        = res_norm        + (global_resnorm(id,2)**2)
-                cont_resnorm    = cont_resnorm    + (global_resnorm(id,3)**2)
-                x_mom_resnorm   = x_mom_resnorm   + (global_resnorm(id,4)**2)
-                y_mom_resnorm   = y_mom_resnorm   + (global_resnorm(id,5)**2)
-                z_mom_resnorm   = z_mom_resnorm   + (global_resnorm(id,6)**2)
-                energy_resnorm  = energy_resnorm  + (global_resnorm(id,7)**2)
-                total_volume    = total_volume    + (global_resnorm(id,8)) ! total volume of whole computational domain
-              end do
-  !            print*, "sum ->", resnorm, res_norm, cont_resnorm, total_volume
-
-              resnorm         = sqrt(resnorm)       
-              res_norm        = sqrt(res_norm)      
-              cont_resnorm    = sqrt(cont_resnorm) 
-              x_mom_resnorm   = sqrt(x_mom_resnorm) 
-              y_mom_resnorm   = sqrt(y_mom_resnorm) 
-              z_mom_resnorm   = sqrt(z_mom_resnorm) 
-              energy_resnorm  = sqrt(energy_resnorm)
-
-              write(RESNORM_FILE_UNIT, '(7(f0.16, A))') resnorm,          ' ', & 
-                                                        res_norm,         ' ', &
-                                                        cont_resnorm,     ' ', &
-                                                        x_mom_resnorm,    ' ', &
-                                                        y_mom_resnorm,    ' ', &
-                                                        z_mom_resnorm,    ' ', &
-                                                        energy_resnorm, ' '
-              deallocate(global_resnorm)
-              deallocate(root_res_recv_buf)
-              end if
 
             call checkpoint()
 
         end subroutine step
 
-        subroutine compute_residue_norm()
-
-            implicit none
-            
-            call dmsg(1, 'solver', 'compute_residue_norm')
-
-            speed_inf = sqrt(x_speed_inf ** 2. + y_speed_inf ** 2. + &
-                             z_speed_inf ** 2.)
-            
-            resnorm = sqrt(sum( &
-                    (mass_residue(:, :, :) / &
-                        (density_inf * speed_inf)) ** 2. + &
-                    (x_mom_residue(:, :, :) / &
-                        (density_inf * speed_inf ** 2.)) ** 2. + &
-                    (y_mom_residue(:, :, :) / &
-                        (density_inf * speed_inf ** 2.)) ** 2. + &
-                    (z_mom_residue(:, :, :) / &
-                        (density_inf * speed_inf ** 2.)) ** 2. + &
-                    (energy_residue(:, :, :) / &
-                        (density_inf * speed_inf * &
-                        ((0.5 * speed_inf * speed_inf) + &
-                          (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
-                    ))
-
-            cont_resnorm = sqrt(sum( &
-                    (mass_residue(:, :, :) / &
-                        (density_inf * speed_inf)) ** 2. &
-                        ))
-
-            x_mom_resnorm = sqrt(sum( &
-                    (x_mom_residue(:, :, :) / &
-                        (density_inf * speed_inf ** 2.)) ** 2. &
-                        ))
-                
-            y_mom_resnorm = sqrt(sum( &
-                    (y_mom_residue(:, :, :) / &
-                        (density_inf * speed_inf ** 2.)) ** 2. &
-                        ))
-                
-            z_mom_resnorm = sqrt(sum( &
-                    (z_mom_residue(:, :, :) / &
-                        (density_inf * speed_inf ** 2.)) ** 2. &
-                        ))
-            
-            energy_resnorm = sqrt(sum( &
-                    (energy_residue(:, :, :) / &
-                        (density_inf * speed_inf * &
-                        ((0.5 * speed_inf * speed_inf) + &
-                          (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
-                        ))
-                        
-        end subroutine compute_residue_norm
+!        subroutine compute_residue_norm()
+!
+!            implicit none
+!            
+!            call dmsg(1, 'solver', 'compute_residue_norm')
+!
+!            speed_inf = sqrt(x_speed_inf ** 2. + y_speed_inf ** 2. + &
+!                             z_speed_inf ** 2.)
+!            
+!            resnorm = sqrt(sum( &
+!                    (mass_residue(:, :, :) / &
+!                        (density_inf * speed_inf)) ** 2. + &
+!                    (x_mom_residue(:, :, :) / &
+!                        (density_inf * speed_inf ** 2.)) ** 2. + &
+!                    (y_mom_residue(:, :, :) / &
+!                        (density_inf * speed_inf ** 2.)) ** 2. + &
+!                    (z_mom_residue(:, :, :) / &
+!                        (density_inf * speed_inf ** 2.)) ** 2. + &
+!                    (energy_residue(:, :, :) / &
+!                        (density_inf * speed_inf * &
+!                        ((0.5 * speed_inf * speed_inf) + &
+!                          (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
+!                    ))
+!
+!            cont_resnorm = sqrt(sum( &
+!                    (mass_residue(:, :, :) / &
+!                        (density_inf * speed_inf)) ** 2. &
+!                        ))
+!
+!            x_mom_resnorm = sqrt(sum( &
+!                    (x_mom_residue(:, :, :) / &
+!                        (density_inf * speed_inf ** 2.)) ** 2. &
+!                        ))
+!                
+!            y_mom_resnorm = sqrt(sum( &
+!                    (y_mom_residue(:, :, :) / &
+!                        (density_inf * speed_inf ** 2.)) ** 2. &
+!                        ))
+!                
+!            z_mom_resnorm = sqrt(sum( &
+!                    (z_mom_residue(:, :, :) / &
+!                        (density_inf * speed_inf ** 2.)) ** 2. &
+!                        ))
+!            
+!            energy_resnorm = sqrt(sum( &
+!                    (energy_residue(:, :, :) / &
+!                        (density_inf * speed_inf * &
+!                        ((0.5 * speed_inf * speed_inf) + &
+!                          (gm/(gm-1) * pressure_inf / density_inf) )  )) ** 2. &
+!                        ))
+!                        
+!        end subroutine compute_residue_norm
 
         function converged() result(c)
             !-----------------------------------------------------------

@@ -1,13 +1,17 @@
 module parallel
   ! contains routines to execute parallelly
-!  use mpi
+  use mpi
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
-  use grid, only: imx,jmx,kmx
+!  use grid, only: imx,jmx,kmx
   use layout, only: process_id,imin_id,imax_id,jmin_id,jmax_id,&
        kmin_id,kmax_id
   use state 
+  use global_vars
+  use global_vars, only : imx
+  use global_vars, only : jmx
+  use global_vars, only : kmx
   implicit none
-  include "mpif.h"
+!  include "mpif.h"
 
   real, public, dimension(:),allocatable :: imin_send_buf,imin_recv_buf,&
        imax_send_buf,imax_recv_buf,jmin_send_buf,jmin_recv_buf, &

@@ -1,9 +1,28 @@
 module scheme
 
     use global, only: SCHEME_NAME_LENGTH
+
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+
+    use global_vars, only : mu_ref
+    use global_vars, only : n_var
+    use global_vars, only : F_p
+    use global_vars, only : G_p
+    use global_vars, only : H_p
+    use global_vars, only : mass_residue
+    use global_vars, only : x_mom_residue
+    use global_vars, only : y_mom_residue
+    use global_vars, only : z_mom_residue
+    use global_vars, only : energy_residue
+    use global_vars, only : TKE_residue
+    use global_vars, only : omega_residue
+    use global_vars, only : turbulence
+
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx, kmx
-    use state, only: n_var, mu_ref
+!    use grid, only: imx, jmx, kmx
+!    use state, only: n_var, mu_ref
     use face_interpolant, only: setup_interpolant_scheme, &
             destroy_interpolant_scheme
     use van_leer, only: &
@@ -44,9 +63,9 @@ module scheme
     private
 
     character(len=SCHEME_NAME_LENGTH) :: scheme_name
-    real, public, dimension(:, :, :, :), pointer :: F_p, G_p, H_p
-    real, public, dimension(:, :, :), pointer :: mass_residue, x_mom_residue, &
-                             y_mom_residue, z_mom_residue, energy_residue
+!    real, public, dimension(:, :, :, :), pointer :: F_p, G_p, H_p
+!    real, public, dimension(:, :, :), pointer :: mass_residue, x_mom_residue, &
+!                             y_mom_residue, z_mom_residue, energy_residue
 
     include "turbulence_models/include/scheme/variable_deceleration.inc" 
 

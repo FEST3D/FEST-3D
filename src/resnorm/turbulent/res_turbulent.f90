@@ -1,0 +1,183 @@
+module Res_turbulent
+  !----------------------------------------------------
+  ! this module contains subroutine that 
+  ! 1. check if time for resnorm dump is arrived
+  ! 2. calculate resnorm
+  ! 3. send those resnorm to processor number 0
+  ! 4. Recalulate resnorm based on information 
+  !    availble from all processors
+  ! 5. Append the data to resnorm file
+  !----------------------------------------------------
+
+  use global_vars, only: density_inf
+  use global_vars, only: tk_inf
+  use global_vars, only: tw_inf
+  use global_vars, only: TKE_residue
+  use global_vars, only: omega_residue
+  use global_vars, only: turb_resnorm
+  use global_vars, only: turb_resnorm_0
+  use global_vars, only: turb_resnorm_abs
+  use global_vars, only: TKE_resnorm
+  use global_vars, only: TKE_resnorm_0
+  use global_vars, only: omega_resnorm
+  use global_vars, only: omega_resnorm_0
+  use global_vars, only: current_iter
+  use global_vars, only: res_write_interval
+
+  use utils,      only: dmsg
+  use utils,      only: dealloc
+  use utils,      only: alloc
+  use layout,     only: process_id
+  use layout,     only: total_process
+
+  use mpi
+
+  implicit none
+  private
+  integer, parameter                :: tn = 4    !total number of turbulent variables
+  real                              :: speed_inf
+  real, dimension(7)                :: res_send_buf
+  real, dimension(:),   allocatable :: root_res_recv_buf
+  real, dimension(:,:), allocatable :: global_resnorm
+
+  public :: compute_turbulent_resnorm
+
+  contains
+
+    subroutine compute_turbulent_resnorm()
+      implicit none
+
+!      if ( mod(current_iter,res_write_interval) == 0 ) then
+        call compute_block_resnorm()
+        if (current_iter <= 5) then
+          call store_intial_resnorm()
+        end if
+        if (process_id == 0) then
+          call alloc(root_res_recv_buf, 1,total_process*tn, &
+              errmsg='Error: Unable to allocate memory to root_res_recv_buf')
+          root_res_recv_buf = 0.
+        end if
+        call send_resnorm_to_process_0()
+        if (process_id == 0) then
+          call alloc(global_resnorm, 1,total_process, 1,tn, &
+              errmsg='Error: Unable to allocate memory to root_res_recv_buf')
+          call recv_resnorm_to_process_0()
+          call recalculate_collective_resnorm()
+          call dealloc(global_resnorm)
+          call dealloc(root_res_recv_buf)
+        end if
+!      end if
+
+    end subroutine compute_turbulent_resnorm
+
+    subroutine compute_block_resnorm()
+
+        implicit none
+        
+        call dmsg(1, 'res_turbuent', 'compute_block_norm')
+
+        select case (turbulence)
+          
+          case ('sst')
+            call R_TKE()
+            call R_omega()
+
+          case DEFAULT
+            call dmsg(5, "res_turbulence", "compute_block_resnorm", &
+                       "ERROR: Turbulence model not recognised")
+            STOP
+
+          end select
+
+        turb_resnorm = sqrt(                       &
+                            TKE_resnorm    **2  + &
+                            omega_resnorm  **2  + &
+                           )
+
+    end subroutine compute_block_resnorm
+
+
+    subroutine R_TKE()
+      implicit none
+
+      TKE_resnorm = sqrt(                                          &
+                      sum(                                         &
+                          (TKE_residue(:, :, :)/                   &
+                          (density_inf * tk_inf)) ** 2             &
+                         )                                         &
+                        )
+
+    end subroutine R_TKE
+
+    subroutine R_omega()
+      implicit none
+
+      omega_resnorm = sqrt(                                        &
+                      sum(                                         &
+                          (omega_residue(:, :, :)/                 &
+                          (density_inf * tw_inf)) ** 2             &
+                         )                                         &
+                        )
+
+    end subroutine R_omega
+
+    subroutine store_intial_resnorm()
+      implicit none
+  
+        turb_resnorm_0  = turb_resnorm
+        TKE_resnorm_0   = TKE_resnorm
+        omega_resnorm_0 = omega_resnorm
+
+    end subroutine store_intial_resnorm
+
+    subroutine send_resnorm_to_process_0()
+      implicit none
+      integer :: ierr
+
+      res_send_buf(1) = turb_resnorm
+      res_send_buf(2) = turb_resnorm/turb_resnorm_0
+      res_send_buf(3) = TKE_resnorm/TKE_resnorm_0
+      res_send_buf(4) = omega_resnorm/omega_resnorm_0
+
+      call MPI_Gather(res_send_buf, tn, MPI_DOUBLE_PRECISION, &
+        root_res_recv_buf, tn, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
+
+    end subroutine send_resnorm_to_process_0
+
+    subroutine recv_resnorm_to_process_0()
+      implicit none
+      integer :: id
+      do id = 0,total_process-1
+        global_resnorm(id+1, 1) = root_res_recv_buf(1+tn*id)
+        global_resnorm(id+1, 2) = root_res_recv_buf(2+tn*id)
+        global_resnorm(id+1, 3) = root_res_recv_buf(3+tn*id)
+        global_resnorm(id+1, 4) = root_res_recv_buf(4+tn*id)
+      end do
+    end  subroutine recv_resnorm_to_process_0
+
+    subroutine recalculate_collective_resnorm()
+      implicit none
+      integer :: id
+
+        !all resnorm except first are all normalized
+        turb_resnorm_abs = 0.
+        turb_resnorm     = 0.
+        TKE_resnorm      = 0.
+        omega_resnorm    = 0.
+
+        do id = 1,total_process
+          turb_resnorm_abs  = turb_resnorm_abs  + (global_resnorm(id,1)**2)
+          turb_resnorm      = turb_resnorm      + (global_resnorm(id,2)**2)
+          TKE_resnorm       = TKE_resnorm       + (global_resnorm(id,3)**2)
+          omega_resnorm     = omega_resnorm     + (global_resnorm(id,4)**2)
+        end do
+
+        turb_resnorm_abs  = sqrt(turb_resnorm_abs)       
+        turb_resnorm      = sqrt(turb_resnorm)      
+        TKE_resnorm       = sqrt(TKE_resnorm) 
+        omega_resnorm     = sqrt(omega_resnorm) 
+
+    end subroutine recalculate_collective_resnorm
+
+end module res_turbulent
+

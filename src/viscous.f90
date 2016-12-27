@@ -4,17 +4,51 @@ module viscous
     ! the boundary conditions to be imposed
     !-----------------------------------------------------------------
 
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+    use global_vars, only : grid_x
+    use global_vars, only : grid_y
+    use global_vars, only : grid_z
+
+    use global_vars, only : xnx, xny, xnz !face unit normal x
+    use global_vars, only : ynx, yny, ynz !face unit normal y
+    use global_vars, only : znx, zny, znz !face unit normal z
+    use global_vars, only : xA, yA, zA    !face area
+    use global_vars, only : vol => volume
+    use global_vars, only :   left_ghost_centroid
+    use global_vars, only :  right_ghost_centroid
+    use global_vars, only :  front_ghost_centroid
+    use global_vars, only :   back_ghost_centroid
+    use global_vars, only :    top_ghost_centroid
+    use global_vars, only : bottom_ghost_centroid
+    
     use global, only: FILE_NAME_LENGTH
+    use global_vars, only : gm
+    use global_vars, only : n_var
+    use global_vars, only : R_gas
+    use global_vars, only : mu_ref
+    use global_vars, only : T_ref
+    use global_vars, only : Pr
+    use global_vars, only : Sutherland_temp
+    use global_vars, only : density
+    use global_vars, only : x_speed
+    use global_vars, only : y_speed
+    use global_vars, only : z_speed
+    use global_vars, only : pressure
+    use global_vars, only : tk
+    use global_vars, only : tw
+    use global_vars, only : turbulence
     use utils, only: alloc, dealloc, dmsg
     use string
-    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
-    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, &
-                        xA, yA, zA, left_ghost_centroid, &
-        right_ghost_centroid, front_ghost_centroid, back_ghost_centroid, &
-        top_ghost_centroid, bottom_ghost_centroid
-    use geometry, only: vol => volume
-    use state, only: gm, n_var, R_gas, mu_ref, T_ref, Pr, Sutherland_temp, &
-                     density, x_speed, y_speed, z_speed, pressure
+!    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
+!    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, &
+!                        xA, yA, zA, left_ghost_centroid, &
+!        right_ghost_centroid, front_ghost_centroid, back_ghost_centroid, &
+!        top_ghost_centroid, bottom_ghost_centroid
+!    use geometry, only: vol => volume
+!    use state, only: gm, n_var, R_gas, mu_ref, T_ref, Pr, Sutherland_temp, &
+!                     density, x_speed, y_speed, z_speed, pressure
     use face_interpolant, only: x_density_left, x_density_right, &
         y_density_left, y_density_right, z_density_left, z_density_right, &
         x_x_speed_left, x_x_speed_right, x_y_speed_left, x_y_speed_right, &

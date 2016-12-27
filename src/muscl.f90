@@ -14,9 +14,23 @@ module muscl
     !-----------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
-    use grid, only: imx, jmx, kmx
-    use state, only: qp, n_var, pressure, pressure_inf
-    use state, only: ilimiter_switch
+
+    use global_vars, only : imx
+    use global_vars, only : jmx
+    use global_vars, only : kmx
+    use global_vars, only : grid_x
+    use global_vars, only : grid_y
+    use global_vars, only : grid_z
+
+    use global_vars, only : qp
+    use global_vars, only : n_var
+    use global_vars, only : pressure
+    use global_vars, only : pressure_inf
+    use global_vars, only : ilimiter_switch
+
+!    use grid, only: imx, jmx, kmx
+!    use state, only: qp, n_var, pressure, pressure_inf
+!    use state, only: ilimiter_switch
 
     implicit none
     private
