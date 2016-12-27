@@ -30,6 +30,7 @@ IFFLAGS := -O3 -free -r8 -traceback \
 					 -warn unused 
 
 files = global.f90 \
+				global_vars.f90 \
 				utils.f90 \
 				layout.f90 \
 				bitwise.f90 \
@@ -45,29 +46,34 @@ files = global.f90 \
 				ldfss0.f90 \
 				scheme.f90 \
 				wall_find.f90 \
-				surfnodes.f90 \
+				surfnode.f90 \
 				wall_dist.f90 \
 				source.f90 \
 				viscous.f90 \
 				parallel.f90 \
 				boundary_conditions.f90 \
 				boundary_state_reconstruction.f90 \
+				res_viscous.f90 \
+				res_turbulent.f90 \
+				resnorm.f90 \
+				dump_solution.f90 \
 				solver.f90 \
 				main.f90
 
 subfiles = global.f90 \
+					 global_vars.f90 \
 					 utils.f90 \
 					 grid.f90 \
 					 wall_find.f90 \
-					 surfnodes.f90 \
+					 surfnode.f90 \
 					 wall_main.f90 
 
 
 objects = $(addprefix $(OBJDIR)/, $(files:.f90=.o))
 modules = $(addprefix $(MODDIR)/, $(files:.f90=.mod))
 src     = $(addprefix $(VPATH)/, $(files))
-subobjects = $(addprefix $(OBJDIR)/, $(subfiles:.f90=.o))
-submodules = $(addprefix $(MODDIR)/, $(subfiles:.f90=.mod))
+subobjects = $(addprefix $(OBJDIR)/, $(notdir $(subfiles:.f90=.o)))
+submodules = $(addprefix $(MODDIR)/, $(notdir $(subfiles:.f90=.mod)))
 exe = $(BINDIR)/$(program)
 pre = $(BINDIR)/$(subprog)
 
