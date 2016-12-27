@@ -94,6 +94,7 @@ module global_vars
   ! switches
   logical                                           :: supersonic_flag
   integer                                           :: ilimiter_switch
+  integer                                           :: PB_switch
   character(len=5)                                  :: turbulence ! todo character length
   
 

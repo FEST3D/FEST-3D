@@ -19,6 +19,7 @@ module ppm
     use global_vars, only : pressure
     use global_vars, only : pressure_inf
     use global_vars, only : ilimiter_switch
+    use global_vars, only : PB_switch
 
 !    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
 !    use state, only: qp, n_var, pressure, pressure_inf
@@ -383,6 +384,8 @@ module ppm
             call init_left_and_right_xi_estimates()
             if(ilimiter_switch==1)then
               call remove_extrema('x')
+            end if
+            if (PB_switch==1)then
               call pressure_based_switching('x')
             end if
 
@@ -397,6 +400,8 @@ module ppm
             call init_left_and_right_eta_estimates()
             if(ilimiter_switch==1)then
               call remove_extrema('y')
+            end if
+            if (PB_switch==1)then
               call pressure_based_switching('y')
             end if
 
@@ -404,6 +409,8 @@ module ppm
             call init_left_and_right_zeta_estimates()
             if(ilimiter_switch==1)then
               call remove_extrema('z')
+            end if
+            if (PB_switch==1)then
               call pressure_based_switching('z')
             end if
 

@@ -65,6 +65,7 @@ module solver
   use global_vars, only : sim_clock
   use global_vars, only : turbulence
   use global_vars, only : ilimiter_switch
+  use global_vars, only : PB_switch
 
   use global_vars, only: F_p
   use global_vars, only: G_p
@@ -225,9 +226,11 @@ module solver
                     msg='interpolant = ' + interpolant)
 
             call get_next_token(buf)
-            read(buf, *) ilimiter_switch
+            read(buf, *) ilimiter_switch, PB_switch
             call dmsg(5, 'solver', 'read_config_file', &
-                    msg='limiter switch = ' + ilimiter_switch)
+                    msg='limiter switch = ' + ilimiter_switch )
+            call dmsg(5, 'solver', 'read_config_file', &
+                    msg='PB switch = ' + PB_switch )
 
             call get_next_token(buf)
             read(buf, *) CFL

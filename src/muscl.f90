@@ -27,6 +27,7 @@ module muscl
     use global_vars, only : pressure
     use global_vars, only : pressure_inf
     use global_vars, only : ilimiter_switch
+    use global_vars, only : PB_switch
 
 !    use grid, only: imx, jmx, kmx
 !    use state, only: qp, n_var, pressure, pressure_inf
@@ -372,15 +373,15 @@ module muscl
             !---------------------------------------------------------
             
             call compute_xi_face_states()
-            if(ilimiter_switch==1)then
+            if(PB_switch==1)then
               call pressure_based_switching('x')
             end if
             call compute_eta_face_states()
-            if(ilimiter_switch==1)then
+            if(PB_switch==1)then
               call pressure_based_switching('y')
             end if
             call compute_zeta_face_states()
-            if(ilimiter_switch==1)then
+            if(PB_switch==1)then
               call pressure_based_switching('z')
             end if
 
