@@ -10,7 +10,6 @@ vislog
 visitlog.py
 
 # Config file
-config.md
 bc.config.md
 
 # Folders to skip
