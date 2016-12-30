@@ -34,7 +34,6 @@ module wall_dist
 
       call dmsg(1, 'wall_dist', 'setup_wall_dist')
       call setup_nodefile()
-      call read_destroy_nodefile
       call alloc(wall_x, 1, n_surfnodes,&
                 "ERROR: unale to allocate memory to 'Dist' variable " )
       call alloc(wall_y, 1, n_surfnodes,&
@@ -43,6 +42,7 @@ module wall_dist
                 "ERROR: unale to allocate memory to 'Dist' variable " )
       call alloc(dist, 1, imx-1, 1, jmx-1, 1, kmx-1, &
                 "ERROR: unale to allocate memory to 'Dist' variable " )
+      call read_destroy_nodefile
 
     end subroutine setup_wall_dist
 

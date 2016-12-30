@@ -48,8 +48,8 @@ module solver
   use global_vars, only : energy_resnorm, energy_resnorm_0
 !  use global_vars, only : write_interval
   use global_vars, only : write_percision
-  use global_vars, only : write_format
-  use global_vars, only : purge_write
+!  use global_vars, only : write_format
+!  use global_vars, only : purge_write
   use global_vars, only : CFL
   use global_vars, only : tolerance
   use global_vars, only : min_iter
@@ -57,15 +57,15 @@ module solver
   use global_vars, only : current_iter
   use global_vars, only : checkpoint_iter
   use global_vars, only : checkpoint_iter_count
-  use global_vars, only : start_from
+!  use global_vars, only : start_from
   use global_vars, only : time_stepping_method
   use global_vars, only : time_step_accuracy
   use global_vars, only : global_time_step
   use global_vars, only : delta_t
   use global_vars, only : sim_clock
+!  use global_vars, only : ilimiter_switch
+!  use global_vars, only : PB_switch
   use global_vars, only : turbulence
-  use global_vars, only : ilimiter_switch
-  use global_vars, only : PB_switch
 
   use global_vars, only: F_p
   use global_vars, only: G_p
@@ -85,6 +85,9 @@ module solver
   use utils, only:  DEBUG_LEVEL
 
   use string
+  use read, only : read_controls
+  use read, only : read_scheme
+  use read, only : read_flow
 
   use grid, only: setup_grid, destroy_grid
   use geometry, only: setup_geometry, destroy_geometry
@@ -149,235 +152,233 @@ module solver
 
     contains
 
-        subroutine get_next_token(buf)
-            !-----------------------------------------------------------
-            ! Extract the next token from the config file
-            !
-            ! Each token is on a separate line.
-            ! There may be multiple comments (lines beginning with #) 
-            ! and blank lines in between.
-            ! The purpose of this subroutine is to ignore all these 
-            ! lines and return the next "useful" line.
-            !-----------------------------------------------------------
-
-            implicit none
-            character(len=STRING_BUFFER_LENGTH), intent(out) :: buf
-            integer :: ios
-
-            do
-                read(CONFIG_FILE_UNIT, '(A)', iostat=ios) buf
-                if (ios /= 0) then
-                    print *, 'Error while reading config file.'
-                    print *, 'Current buffer length is set to: ', &
-                            STRING_BUFFER_LENGTH
-                    stop
-                end if
-                if (index(buf, '#') == 1) then
-                    ! The current line begins with a hash
-                    ! Ignore it
-                    continue
-                else if (len_trim(buf) == 0) then
-                    ! The current line is empty
-                    ! Ignore it
-                    continue
-                else
-                    ! A new token has been found
-                    ! Break out
-                    exit
-                end if
-            end do
-            call dmsg(0, 'solver', 'get_next_token', 'Returning: ' // trim(buf))
-
-        end subroutine get_next_token
-
-        subroutine read_config_file(free_stream_density, &
-                free_stream_x_speed, free_stream_y_speed, &
-                free_stream_z_speed, free_stream_pressure, &
-                grid_file, state_load_level)
-
-            implicit none
-            real, intent(out) :: free_stream_density, free_stream_x_speed, &
-                    free_stream_y_speed, free_stream_z_speed, free_stream_pressure
-            character(len=FILE_NAME_LENGTH), intent(out) :: grid_file
-            integer, intent(out)                         :: state_load_level
-            character(len=FILE_NAME_LENGTH) :: config_file = "config.md"
-            character(len=STRING_BUFFER_LENGTH) :: buf
-            integer :: ios
-
-            call dmsg(1, 'solver', 'read_config_file')
-            
-            open(CONFIG_FILE_UNIT, file=config_file)
-
-            ! Ignore the config file header
-            read(CONFIG_FILE_UNIT, *)
-            read(CONFIG_FILE_UNIT, *)
-            
-            ! Read the parameters from the file
-
-            call get_next_token(buf)
-            read(buf, *) scheme_name
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='scheme_name = ' + scheme_name)
-
-            call get_next_token(buf)
-            read(buf, *) interpolant
-            interpolant = trim(interpolant)
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='interpolant = ' + interpolant)
-
-            call get_next_token(buf)
-            read(buf, *) ilimiter_switch, PB_switch
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='limiter switch = ' + ilimiter_switch )
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='PB switch = ' + PB_switch )
-
-            call get_next_token(buf)
-            read(buf, *) CFL
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='CFL = ' + CFL)
-
-            call get_next_token(buf)
-            read(buf, *, iostat=ios) time_stepping_method, global_time_step
-            if (ios /= 0) then
-                read(buf, *) time_stepping_method
-                global_time_step = -1
-            end if
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='time_stepping_method = ' + time_stepping_method)
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='global_time_step = ' + global_time_step)
-
-            call get_next_token(buf)
-            read(buf, *) time_step_accuracy
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='time_step_accuracy  = ' + time_step_accuracy)
-
-            call get_next_token(buf)
-            read(buf, *) tolerance
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='tolerance  = ' + tolerance)
-
-            call get_next_token(buf)
-            read(buf, *) grid_file
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='grid_file = ' + grid_file)
-
-            call get_next_token(buf)
-            read(buf, *) state_load_level
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='state_load_level = ' + state_load_level)
-
-            call get_next_token(buf)
-            read(buf, *) max_iters
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='max_iters = ' + max_iters)
-
-            call get_next_token(buf)
-            read(buf, *) checkpoint_iter
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='checkpoint_iter = ' + checkpoint_iter)
-
-            call get_next_token(buf)
-            read(buf, *) DEBUG_LEVEL
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='DEBUG_LEVEL = ' + DEBUG_LEVEL)
-
-            call get_next_token(buf)
-            read(buf, *) gm
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='gamma = ' + gm)
-
-            call get_next_token(buf)
-            read(buf, *) R_gas
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='R_gas = ' + R_gas)
-            
-            call get_next_token(buf)
-            read(buf, *) n_var
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='Number of variables = ' + n_var)
-
-            call get_next_token(buf)
-            read(buf, *) free_stream_density
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='free_stream_density = ' + free_stream_density)
-
-            call get_next_token(buf)
-            read(buf, *) free_stream_x_speed
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='free_stream_x_speed = ' + free_stream_x_speed)
-
-            call get_next_token(buf)
-            read(buf, *) free_stream_y_speed
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='free_stream_y_speed = ' + free_stream_y_speed)
-
-            call get_next_token(buf)
-            read(buf, *) free_stream_z_speed
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='free_stream_z_speed = ' + free_stream_z_speed)
-
-            call get_next_token(buf)
-            read(buf, *) free_stream_pressure
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='free_stream_pressure = ' + free_stream_pressure)
-
-            call get_next_token(buf)
-            read(buf, *) mu_ref
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='mu_reference = ' + mu_ref)
-
-            call get_next_token(buf)
-            read(buf, *) T_ref
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='T_reference = ' + T_ref)
-
-            call get_next_token(buf)
-            read(buf, *) Sutherland_temp
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='Sutherland temperature = ' + Sutherland_temp)
-
-            call get_next_token(buf)
-            read(buf, *) Pr
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='Prandtl Number = ' + Pr)
-
-            call get_next_token(buf)
-            read(buf, *) turbulence
-            call dmsg(5, 'solver', 'read_config_file', &
-                    msg='Turbulence Model = ' + turbulence)
-
-            close(CONFIG_FILE_UNIT)
-
-        end subroutine read_config_file
+!        subroutine get_next_token(buf)
+!            !-----------------------------------------------------------
+!            ! Extract the next token from the config file
+!            !
+!            ! Each token is on a separate line.
+!            ! There may be multiple comments (lines beginning with #) 
+!            ! and blank lines in between.
+!            ! The purpose of this subroutine is to ignore all these 
+!            ! lines and return the next "useful" line.
+!            !-----------------------------------------------------------
+!
+!            implicit none
+!            character(len=STRING_BUFFER_LENGTH), intent(out) :: buf
+!            integer :: ios
+!
+!            do
+!                read(CONFIG_FILE_UNIT, '(A)', iostat=ios) buf
+!                if (ios /= 0) then
+!                    print *, 'Error while reading config file.'
+!                    print *, 'Current buffer length is set to: ', &
+!                            STRING_BUFFER_LENGTH
+!                    stop
+!                end if
+!                if (index(buf, '#') == 1) then
+!                    ! The current line begins with a hash
+!                    ! Ignore it
+!                    continue
+!                else if (len_trim(buf) == 0) then
+!                    ! The current line is empty
+!                    ! Ignore it
+!                    continue
+!                else
+!                    ! A new token has been found
+!                    ! Break out
+!                    exit
+!                end if
+!            end do
+!            call dmsg(0, 'solver', 'get_next_token', 'Returning: ' // trim(buf))
+!
+!        end subroutine get_next_token
+!
+!        subroutine read_config_file(free_stream_density, &
+!                free_stream_x_speed, free_stream_y_speed, &
+!                free_stream_z_speed, free_stream_pressure, &
+!                grid_file, state_load_level)
+!
+!            implicit none
+!            real, intent(out) :: free_stream_density, free_stream_x_speed, &
+!                    free_stream_y_speed, free_stream_z_speed, free_stream_pressure
+!            character(len=FILE_NAME_LENGTH), intent(out) :: grid_file
+!            integer, intent(out)                         :: state_load_level
+!            character(len=FILE_NAME_LENGTH) :: config_file = "config.md"
+!            character(len=STRING_BUFFER_LENGTH) :: buf
+!            integer :: ios
+!
+!            call dmsg(1, 'solver', 'read_config_file')
+!            
+!            open(CONFIG_FILE_UNIT, file=config_file)
+!
+!            ! Ignore the config file header
+!            read(CONFIG_FILE_UNIT, *)
+!            read(CONFIG_FILE_UNIT, *)
+!            
+!            ! Read the parameters from the file
+!
+!            call get_next_token(buf)
+!            read(buf, *) scheme_name
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='scheme_name = ' + scheme_name)
+!
+!            call get_next_token(buf)
+!            read(buf, *) interpolant
+!            interpolant = trim(interpolant)
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='interpolant = ' + interpolant)
+!
+!            call get_next_token(buf)
+!            read(buf, *) ilimiter_switch, PB_switch
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='limiter switch = ' + ilimiter_switch )
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='PB switch = ' + PB_switch )
+!
+!            call get_next_token(buf)
+!            read(buf, *) CFL
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='CFL = ' + CFL)
+!
+!            call get_next_token(buf)
+!            read(buf, *, iostat=ios) time_stepping_method, global_time_step
+!            if (ios /= 0) then
+!                read(buf, *) time_stepping_method
+!                global_time_step = -1
+!            end if
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='time_stepping_method = ' + time_stepping_method)
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='global_time_step = ' + global_time_step)
+!
+!            call get_next_token(buf)
+!            read(buf, *) time_step_accuracy
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='time_step_accuracy  = ' + time_step_accuracy)
+!
+!            call get_next_token(buf)
+!            read(buf, *) tolerance
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='tolerance  = ' + tolerance)
+!
+!            call get_next_token(buf)
+!            read(buf, *) grid_file
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='grid_file = ' + grid_file)
+!
+!            call get_next_token(buf)
+!            read(buf, *) state_load_level
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='state_load_level = ' + state_load_level)
+!
+!            call get_next_token(buf)
+!            read(buf, *) max_iters
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='max_iters = ' + max_iters)
+!
+!            call get_next_token(buf)
+!            read(buf, *) checkpoint_iter
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='checkpoint_iter = ' + checkpoint_iter)
+!
+!            call get_next_token(buf)
+!            read(buf, *) DEBUG_LEVEL
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='DEBUG_LEVEL = ' + DEBUG_LEVEL)
+!
+!            call get_next_token(buf)
+!            read(buf, *) gm
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='gamma = ' + gm)
+!
+!            call get_next_token(buf)
+!            read(buf, *) R_gas
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='R_gas = ' + R_gas)
+!            
+!            call get_next_token(buf)
+!            read(buf, *) n_var
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='Number of variables = ' + n_var)
+!
+!            call get_next_token(buf)
+!            read(buf, *) free_stream_density
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='free_stream_density = ' + free_stream_density)
+!
+!            call get_next_token(buf)
+!            read(buf, *) free_stream_x_speed
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='free_stream_x_speed = ' + free_stream_x_speed)
+!
+!            call get_next_token(buf)
+!            read(buf, *) free_stream_y_speed
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='free_stream_y_speed = ' + free_stream_y_speed)
+!
+!            call get_next_token(buf)
+!            read(buf, *) free_stream_z_speed
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='free_stream_z_speed = ' + free_stream_z_speed)
+!
+!            call get_next_token(buf)
+!            read(buf, *) free_stream_pressure
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='free_stream_pressure = ' + free_stream_pressure)
+!
+!            call get_next_token(buf)
+!            read(buf, *) mu_ref
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='mu_reference = ' + mu_ref)
+!
+!            call get_next_token(buf)
+!            read(buf, *) T_ref
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='T_reference = ' + T_ref)
+!
+!            call get_next_token(buf)
+!            read(buf, *) Sutherland_temp
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='Sutherland temperature = ' + Sutherland_temp)
+!
+!            call get_next_token(buf)
+!            read(buf, *) Pr
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='Prandtl Number = ' + Pr)
+!
+!            call get_next_token(buf)
+!            read(buf, *) turbulence
+!            call dmsg(5, 'solver', 'read_config_file', &
+!                    msg='Turbulence Model = ' + turbulence)
+!
+!            close(CONFIG_FILE_UNIT)
+!
+!        end subroutine read_config_file
 
         subroutine setup_solver()
             
             implicit none
-            real :: free_stream_density
-            real :: free_stream_x_speed, free_stream_y_speed, free_stream_z_speed
-            real :: free_stream_pressure
-            character(len=FILE_NAME_LENGTH) :: grid_file
-            integer                         :: state_load_level
+!            real :: free_stream_density
+!            real :: free_stream_x_speed, free_stream_y_speed, free_stream_z_speed
+!            real :: free_stream_pressure
+!            character(len=FILE_NAME_LENGTH) :: grid_file
+!            integer                         :: state_load_level
 !            character(len=FILE_NAME_LENGTH) :: resnorm_file
 
             call dmsg(1, 'solver', 'setup_solver')
             call get_process_data() ! parallel calls
             call read_layout_file(process_id) ! reads layout file calls
             
-            call read_config_file(free_stream_density, free_stream_x_speed, &
-                    free_stream_y_speed, free_stream_z_speed, &
-                    free_stream_pressure, grid_file, state_load_level)
+            call read_controls()
+            call read_scheme()
+            call read_flow()
                   !todo make it general for all turbulence model
                   if(turbulence=="sst")then
                     n_var=n_var+sst_n_var
                   end if
             call setup_grid(grid_file_buf)
             call setup_geometry()
-            call setup_state(free_stream_density, free_stream_x_speed, &
-                    free_stream_y_speed, free_stream_z_speed, &
-                    free_stream_pressure, state_load_level)
+            call setup_state()
             call setup_boundary_conditions(bc_file)
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
@@ -1099,7 +1100,7 @@ module solver
 !              end if
 !              end if
             
-            if ( mod(current_iter,res_write_interval) == 0 ) then
+            if ( mod(current_iter,res_write_interval) == 0 .or. current_iter == 1) then
               call write_resnorm()
             end if
 

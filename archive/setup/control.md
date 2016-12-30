@@ -1,4 +1,3 @@
-
 CONTROL FILE
 ============
 
@@ -31,6 +30,9 @@ ascii
 
 ## resnorm write inteval (resnorm dump interval)
 10
+
+## tolerance
+1e-6
 
 ## Debug level: Most detail (1) to least detail (5)
 5

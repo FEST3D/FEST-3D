@@ -35,6 +35,7 @@ files = global.f90 \
 				layout.f90 \
 				bitwise.f90 \
 				string.f90 \
+				read.f90 \
 				grid.f90 \
 				geometry.f90 \
 				state.f90 \

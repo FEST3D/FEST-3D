@@ -1,5 +1,6 @@
 module utils
 
+    use global_vars, only : process_id
     implicit none
     private
     integer, public :: DEBUG_LEVEL = 1
@@ -51,7 +52,8 @@ module utils
             character(len=*), optional :: method
             character(len=*), optional :: msg
             integer :: level
-            
+           
+            if (process_id == 0) then
             if (level < DEBUG_LEVEL) then
                 ! Don't print the message
                 return
@@ -72,6 +74,7 @@ module utils
             if (present(msg)) then
                 print *, msg
             end if
+           end if
 
         end subroutine dmsg
 

@@ -62,6 +62,16 @@ module resnorm_
   use global_vars, only: energy_resnorm_0
   use global_vars, only:    TKE_resnorm_0
   use global_vars, only:  omega_resnorm_0
+  use global_vars, only:        resnorm_0s
+  use global_vars, only:    vis_resnorm_0s
+  use global_vars, only:   turb_resnorm_0s 
+  use global_vars, only:   cont_resnorm_0s
+  use global_vars, only:  x_mom_resnorm_0s
+  use global_vars, only:  y_mom_resnorm_0s
+  use global_vars, only:  z_mom_resnorm_0s
+  use global_vars, only: energy_resnorm_0s
+  use global_vars, only:    TKE_resnorm_0s
+  use global_vars, only:  omega_resnorm_0s
   use global_vars, only: current_iter
   use global_vars, only: res_write_interval
   use global_vars, only: write_percision
@@ -130,16 +140,6 @@ module resnorm_
       implicit none
       call dmsg(1, 'resnorm_', 'compute_resnorm')
 
-             resnorm     = 0.
-         vis_resnorm     = 0.
-        turb_resnorm     = 0.
-        cont_resnorm     = 0.
-       x_mom_resnorm     = 0.
-       y_mom_resnorm     = 0.
-       z_mom_resnorm     = 0.
-      energy_resnorm     = 0.
-         TKE_resnorm     = 0.
-       omega_resnorm     = 0.
 
       call compute_viscous_resnorm()
       if (turbulence /= 'none') then
@@ -151,11 +151,12 @@ module resnorm_
                            vis_resnorm    **2  + &
                           turb_resnorm    **2    &
                         )
-      resnorm_0   = sqrt(                        &
-                           vis_resnorm_0  **2  + &
-                          turb_resnorm_0  **2    &
+      resnorm_0s   = sqrt(                        &
+                           vis_resnorm_0s  **2  + &
+                          turb_resnorm_0s  **2    &
                         )
-      resnorm_d1  = resnorm / resnorm_0
+      resnorm_d1  = resnorm / resnorm_0s
+
       end if
 
     end subroutine compute_resnorm
@@ -367,6 +368,21 @@ module resnorm_
       open(RESNORM_FILE_UNIT, file=resnorm_file, ACTION='write')
       write(RESNORM_FILE_UNIT, '(A)') header
       end if
+
+
+      ! intializing whole resnorm to 0.
+      write_data = 0.
+             resnorm_0   = 0.
+         vis_resnorm_0   = 0.
+        turb_resnorm_0   = 0.
+        cont_resnorm_0   = 0.
+       x_mom_resnorm_0   = 0.
+       y_mom_resnorm_0   = 0.
+       z_mom_resnorm_0   = 0.
+      energy_resnorm_0   = 0.
+         TKE_resnorm_0   = 0.
+       omega_resnorm_0   = 0.
+
 
       end subroutine setup_resnorm
 

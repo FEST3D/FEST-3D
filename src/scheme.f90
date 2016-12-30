@@ -20,6 +20,8 @@ module scheme
     use global_vars, only : omega_residue
     use global_vars, only : turbulence
 
+    use global_vars, only : scheme_name
+
     use utils, only: alloc, dealloc, dmsg
 !    use grid, only: imx, jmx, kmx
 !    use state, only: n_var, mu_ref
@@ -62,7 +64,7 @@ module scheme
     implicit none
     private
 
-    character(len=SCHEME_NAME_LENGTH) :: scheme_name
+!    character(len=SCHEME_NAME_LENGTH) :: scheme_name
 !    real, public, dimension(:, :, :, :), pointer :: F_p, G_p, H_p
 !    real, public, dimension(:, :, :), pointer :: mass_residue, x_mom_residue, &
 !                             y_mom_residue, z_mom_residue, energy_residue

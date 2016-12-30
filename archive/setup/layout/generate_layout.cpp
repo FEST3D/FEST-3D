@@ -7,6 +7,7 @@
 #include <cstring>
 #include <sstream>
 #include <fstream>
+#include <iomanip>
 
 namespace patch
 {
@@ -62,8 +63,8 @@ public:
     std::vector <std::string> grid_names;
     std::vector <vertices> all_vertices;
     std::vector <faces> all_faces;
-    void read_grid_names();//read file_names to get grids
-    void compute_grid_medians(std::string str);
+    void read_grid_names(std::ostream& block);//read file_names to get grids
+    void compute_grid_medians(std::string str, std::ostream& block );
     void compute_interfaces();
     void write_to_file();
     std::string layout_comment(std::string str);
@@ -98,8 +99,9 @@ void read_compute::write_to_file()
     {
     comnt_str = "PROCESS "+ patch::to_string(i);
     output_file << layout_comment(comnt_str);
-    output_file << i << "  " << grid_names[i]<<"  "<<"bc_"+patch::to_string(i)+".md" <<"  "<<all_faces[i].left << "  " << all_faces[i].right << "  "<< all_faces[i].bottom << "  ";
-    output_file << all_faces[i].top << "  "<< all_faces[i].front << "  "<< all_faces[i].back << "  ";
+    output_file <<setfill('0') <<setw(2) <<i << "  " << grid_names[i].substr(13,-1)<<"  "<<"bc_" << setw(2) << setfill('0') << i<<".md" <<"  ";
+    output_file << setw(4) << all_faces[i].left << "  " << setw(4) << all_faces[i].right << "  "<< setw(4) << all_faces[i].bottom << "  ";
+    output_file << setw(4) << all_faces[i].top << "  "<< setw(4) << all_faces[i].front << "  "<< setw(4) << all_faces[i].back << "  ";
     output_file << "\n";
     }
     output_file.close();
@@ -239,7 +241,7 @@ void read_compute::compute_interfaces()
     }
 
 }
-void read_compute::read_grid_names()
+void read_compute::read_grid_names(std::ostream& block)
 {
     std::string str_buf;
     int count =0;
@@ -251,17 +253,20 @@ void read_compute::read_grid_names()
         count++;
     }
     tot_grids = count;
+    block << "MBLK \t"<<tot_grids << endl;
 }
 
-void read_compute::compute_grid_medians(std::string str)
+void read_compute::compute_grid_medians(std::string str, std::ostream& block)
 {
     char *cr = &str[0u];
     std::ifstream grid;
     grid.open(cr);
+    cout << cr << endl;
     int imx =51,jmx =51, kmx =51;
     coord a,b,c,d,e,f,g,h,buf;
     medians buf_med;
     grid >> imx >> jmx >> kmx;
+    block << imx << "\t" << jmx << "\t" << kmx << endl;
     grid >> a.x >> a.y >> a.z;
     for(int i = 2; i < imx; i++)
         grid >> buf.x >> buf.y >> buf.z;
@@ -334,16 +339,20 @@ return "## " + str + "\n";
 
 int main()
 {
+    std::ofstream block;
+    block.open("blocking.dat");
     read_compute handler;
-    handler.read_grid_names();
+    handler.read_grid_names(block);
+    block << "imx \t jmx \t kmx \n";
     for(int i =0; i< handler.tot_grids; i++)
     {
         cout << "Wait!! Reading grid "<< i+1 << endl;
-        handler.compute_grid_medians(handler.grid_names[i]);
+        handler.compute_grid_medians(handler.grid_names[i], block);
     }
     cout << "computing adjacent blocks" << endl;
     handler.compute_interfaces();
     handler.write_to_file();
+    block.close();
     //cout << handler.all_faces[0].left << handler.all_faces[0].right << endl;
     //cout << handler.all_vertices.size();
     //cout << handler.grid_names[1] << handler.tot_grids << endl;

@@ -69,7 +69,7 @@ std::string read_write::parse_bc(std::string bc)
 
 void read_write::write_bc_file(std::string bc_file, all_bc buf)
 {
-    string str = bc_file;
+    string str = "../bc/"+bc_file;
     char *c = &str[0u];
     std::fstream output_file (c,fstream::out);
     if(!output_file.is_open())

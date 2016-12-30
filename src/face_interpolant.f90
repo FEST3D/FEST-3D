@@ -10,6 +10,9 @@ module face_interpolant
     use global_vars, only : gm
     use global_vars, only : n_var
     use global_vars, only : turbulence
+
+    use global_vars, only : interpolant
+
     use utils, only: alloc, dealloc, dmsg
 !    use grid, only: imx, jmx, kmx
 !    use state, only: qp, gm, n_var
@@ -36,7 +39,7 @@ module face_interpolant
     implicit none
     private
 
-    character(len=INTERPOLANT_NAME_LENGTH) :: interpolant
+!    character(len=INTERPOLANT_NAME_LENGTH) :: interpolant
 
     real, dimension(:, :, :, :), allocatable, target :: x_qp_left, x_qp_right
     real, dimension(:, :, :, :), allocatable, target :: y_qp_left, y_qp_right

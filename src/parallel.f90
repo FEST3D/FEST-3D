@@ -1,15 +1,23 @@
 module parallel
   ! contains routines to execute parallelly
   use mpi
-  use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
-!  use grid, only: imx,jmx,kmx
-  use layout, only: process_id,imin_id,imax_id,jmin_id,jmax_id,&
-       kmin_id,kmax_id
-  use state 
   use global_vars
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
+  use global_vars, only : process_id
+  use global_vars, only : imin_id
+  use global_vars, only : imax_id
+  use global_vars, only : jmin_id
+  use global_vars, only : jmax_id
+  use global_vars, only : kmin_id
+  use global_vars, only : kmax_id
+  use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
+
+  use state 
+
+
+
   implicit none
 !  include "mpif.h"
 

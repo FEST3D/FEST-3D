@@ -6,6 +6,7 @@ module surfnode
   use global,     only: TEMP_NODE_FILE_UNIT
   use global,     only: nodefile_temp
   use global,     only: surface_node_points
+  use global,     only: layout_file
   use grid,       only: setup_grid
   use grid,       only: destroy_grid                        
   use wall_find,  only: setup_surface 
@@ -104,7 +105,7 @@ module surfnode
       character(len=STRING_BUFFER_LENGTH) :: buf
       character(len=STRING_BUFFER_LENGTH) :: dump
 
-      open(LAYOUT_FILE_UNIT, file = "layout/layout.md")
+      open(LAYOUT_FILE_UNIT, file = layout_file)
 
       ! Read the parameters from the file
       call get_next_token_parallel(buf)
@@ -118,8 +119,8 @@ module surfnode
       do i = 1,Nblocks
       call get_next_token_parallel(buf)
       read(buf,*) dump, gridfiles(i), bcfiles(i), dump
-      write(gridfiles(i), '(A)') 'gridfiles/'//trim(gridfiles(i))
-      write(bcfiles(i),       '(A)') 'bc/'//trim(bcfiles(i))
+      write(gridfiles(i), '(A)') 'system/mesh/gridfiles/'//trim(gridfiles(i))
+      write(bcfiles(i),       '(A)') 'system/mesh/bc/'//trim(bcfiles(i))
       end do
 
     end subroutine read_layout_file

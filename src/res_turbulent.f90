@@ -20,6 +20,9 @@ module Res_turbulent
   use global_vars, only:   TKE_resnorm_0
   use global_vars, only:  turb_resnorm_0
   use global_vars, only: omega_resnorm_0
+  use global_vars, only:   TKE_resnorm_0s
+  use global_vars, only:  turb_resnorm_0s
+  use global_vars, only: omega_resnorm_0s
   use global_vars, only:   TKE_resnorm_d1
   use global_vars, only:  turb_resnorm_d1
   use global_vars, only: omega_resnorm_d1
@@ -37,9 +40,9 @@ module Res_turbulent
 
   implicit none
   private
-  integer                           :: n = 6    !total number of turbulent variables
+  integer, parameter                :: n = 6    !total number of turbulent variables
   real                              :: speed_inf
-  real, dimension(7)                :: res_send_buf
+  real, dimension(n)                :: res_send_buf
   real, dimension(:),   allocatable :: root_res_recv_buf
   real, dimension(:,:), allocatable :: global_resnorm
 
@@ -51,7 +54,7 @@ module Res_turbulent
       implicit none
 
         call compute_block_resnorm()
-        if (current_iter <= 5) then
+        if (current_iter == 1) then
           call store_intial_resnorm()
         end if
         if (process_id == 0) then
@@ -158,43 +161,27 @@ module Res_turbulent
 
     subroutine recalculate_collective_resnorm()
       implicit none
-      integer :: id
-
-        !all resnorm except first are all normalized
-!        turb_resnorm_abs = 0.
-!        turb_resnorm     = 0.
-!        TKE_resnorm      = 0.
-!        omega_resnorm    = 0.
-!
-!        do id = 1,total_process
-!          turb_resnorm_abs  = turb_resnorm_abs  + (global_resnorm(id,1)**2)
-!          turb_resnorm      = turb_resnorm      + (global_resnorm(id,2)**2)
-!          TKE_resnorm       = TKE_resnorm       + (global_resnorm(id,3)**2)
-!          omega_resnorm     = omega_resnorm     + (global_resnorm(id,4)**2)
-!        end do
+!      real  ::  turb_resnorm_0s
+!      real  ::   TKE_resnorm_0s
+!      real  :: omega_resnorm_0s
 
          turb_resnorm     = SUM(global_resnorm(: ,1))
           TKE_resnorm     = SUM(global_resnorm(: ,2))
         omega_resnorm     = SUM(global_resnorm(: ,3))
-         turb_resnorm_0   = SUM(global_resnorm(: ,4))
-          TKE_resnorm_0   = SUM(global_resnorm(: ,5))
-        omega_resnorm_0   = SUM(global_resnorm(: ,6))
+         turb_resnorm_0s  = SUM(global_resnorm(: ,4))
+          TKE_resnorm_0s  = SUM(global_resnorm(: ,5))
+        omega_resnorm_0s  = SUM(global_resnorm(: ,6))
 
          turb_resnorm     = SQRT( turb_resnorm  )
           TKE_resnorm     = SQRT(  TKE_resnorm  )
         omega_resnorm     = SQRT(omega_resnorm  )
-         turb_resnorm_0   = SQRT( turb_resnorm_0)
-          TKE_resnorm_0   = SQRT(  TKE_resnorm_0)
-        omega_resnorm_0   = SQRT(omega_resnorm_0)
+         turb_resnorm_0s  = SQRT( turb_resnorm_0s)
+          TKE_resnorm_0s  = SQRT(  TKE_resnorm_0s)
+        omega_resnorm_0s  = SQRT(omega_resnorm_0s)
 
-         turb_resnorm_d1  =  turb_resnorm / turb_resnorm_0
-          TKE_resnorm_d1  =   TKE_resnorm /  TKE_resnorm_0
-        omega_resnorm_d1  = omega_resnorm /omega_resnorm_0
-
-
-!        turb_resnorm      = (turb_resnorm)      
-!        TKE_resnorm       = (TKE_resnorm) 
-!        omega_resnorm     = (omega_resnorm) 
+         turb_resnorm_d1  =  turb_resnorm / turb_resnorm_0s
+          TKE_resnorm_d1  =   TKE_resnorm /  TKE_resnorm_0s
+        omega_resnorm_d1  = omega_resnorm /omega_resnorm_0s
 
     end subroutine recalculate_collective_resnorm
 

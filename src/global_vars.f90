@@ -5,9 +5,22 @@ module global_vars
   !----------------------------------------------
 
   use global, only : INTERPOLANT_NAME_LENGTH
+  use global, only : FORMAT_LENGTH
+  use global, only : SCHEME_NAME_LENGTH
 
   implicit none
   public
+
+  ! Parallel processig variables
+  integer :: total_process
+  integer :: total_entries
+  integer :: process_id
+  integer :: imin_id
+  integer :: imax_id
+  integer :: jmin_id
+  integer :: jmax_id
+  integer :: kmin_id
+  integer :: kmax_id
 
   ! Time controls
   integer :: min_iter=1     !Minimum iteration value, starting iteration value
@@ -19,10 +32,11 @@ module global_vars
 
   !write controls
 !  integer :: write_interval
-  integer :: res_write_interval=5
-  integer :: purge_write=2
-  integer :: write_percision=6
-  character(len=5):: write_format = 'ascii'  ! either ascii or binary
+  integer :: res_write_interval
+  integer :: purge_write
+  integer :: write_percision
+  character(len=FORMAT_LENGTH):: write_data_format   ! either ascii or binary
+  character(len=FORMAT_LENGTH):: write_file_format   ! either ascii or binary
 
   ! solver specific
   real :: CFL
@@ -34,6 +48,10 @@ module global_vars
   real                                      :: global_time_step
   real, dimension(:, :, :), allocatable     :: delta_t
   real                                      :: sim_clock
+
+  !scheme
+  character(len=SCHEME_NAME_LENGTH) :: scheme_name
+  character(len=INTERPOLANT_NAME_LENGTH) :: interpolant
 
   !solution specific
   real, dimension(:, :, :, :), allocatable  :: qp_n
@@ -55,6 +73,15 @@ module global_vars
   real                                    , pointer :: y_speed_inf
   real                                    , pointer :: z_speed_inf
   real                                    , pointer :: pressure_inf
+
+  ! Freestram variable used to read file before inf pointer are linked and allocated
+  real                                              :: free_stream_density
+  real                                              :: free_stream_x_speed
+  real                                              :: free_stream_y_speed
+  real                                              :: free_stream_z_speed
+  real                                              :: free_stream_pressure
+  real                                              :: free_stream_tk
+  real                                              :: free_stream_tw
 
   ! state variable turbulent
   integer                                           :: sst_n_var=2
@@ -98,7 +125,6 @@ module global_vars
   character(len=5)                                  :: turbulence ! todo character length
   
 
-
   !residual specific
   real, pointer ::        resnorm
   real, pointer ::    vis_resnorm
@@ -130,6 +156,16 @@ module global_vars
   real          :: energy_resnorm_0
   real          ::    TKE_resnorm_0
   real          ::  omega_resnorm_0
+  real          ::        resnorm_0s
+  real          ::    vis_resnorm_0s
+  real          ::   turb_resnorm_0s 
+  real          ::   cont_resnorm_0s
+  real          ::  x_mom_resnorm_0s
+  real          ::  y_mom_resnorm_0s
+  real          ::  z_mom_resnorm_0s
+  real          :: energy_resnorm_0s
+  real          ::    TKE_resnorm_0s
+  real          ::  omega_resnorm_0s
 
   ! grid variables
   integer                                 :: imx, jmx, kmx        ! no. of points

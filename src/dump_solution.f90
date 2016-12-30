@@ -9,6 +9,7 @@ module dump_solution
 
   use global,      only : FILE_NAME_LENGTH
   use global_vars, only : current_iter
+  use global_vars, only : max_iters
   use global_vars, only : checkpoint_iter
   use global_vars, only : checkpoint_iter_count
   use global_vars, only : purge_write
@@ -36,7 +37,8 @@ module dump_solution
 
 
       if (checkpoint_iter .ne. 0) then
-          if (mod(current_iter, checkpoint_iter) == 0) then
+          if (mod(current_iter, checkpoint_iter) == 0 &
+             .or. current_iter == max_iters) then
               call make_dump_dir()
               call dump_data()
               call purge_dump_dir()

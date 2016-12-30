@@ -81,7 +81,7 @@ module grid
             !-----------------------------------------------------------
 
             implicit none
-            character(len=32), intent(in) :: gridfile
+            character(len=64), intent(in) :: gridfile
    !        character(len=32) :: sphindfile
             
             call dmsg(1, 'grid', 'setup_grid')
