@@ -59,6 +59,7 @@ module boundary_conditions
     use global_vars, only : T_ref
     use global_vars, only : Sutherland_temp
     use global_vars, only : turbulence
+    use global_vars, only : dist
 
     use utils, only: alloc, dealloc, dmsg
     use bitwise
@@ -199,7 +200,7 @@ module boundary_conditions
             ! Find the where the second space occurs to separate the value from the condition
             ! Extract the value and convert the condition string into its numerical value
             read(BOUNDARY_CONDITIONS_FILE_UNIT, '(A)', iostat=ios) buf
-            print *, "Read boundary condition: ", buf
+!            print *, "Read boundary condition: ", trim(buf)
             if (ios /= 0) then
                 print *, 'Error while reading a boundary condition name' // &
                         ' in the boundary conditions file.'
@@ -212,7 +213,8 @@ module boundary_conditions
                 if (ios /= 0) then
                     fix_val = -1
                 end if
-                print *, "Read value: ", fix_val
+                write(6,"(A,f0.4)") "  >> Read bc: "//trim(buf)//&
+                                 ", Read value:- ", fix_val
                 if (.false.) then
                     bc_val = 0
                 end if
@@ -240,7 +242,7 @@ module boundary_conditions
                 ! to the boundary condition we are looking at. 
                 fix_val_type = nint(log(real(fix_val_type)) / log(2.)) + 1
                 if (fix_val == -1) then
-                    print *, 'Fix value not specified. Using initial condition'
+!                    print *, 'Fix value not specified. Using initial condition'
                     if (bc_val == BC_FIX_DENSITY) then
                         fix_val = density_inf
                     else if (bc_val == BC_FIX_X_SPEED) then
@@ -402,7 +404,7 @@ module boundary_conditions
             ! Let the boundary directive line remain in the buffer so 
             ! that the setup_side subroutine can read it.
             read(BOUNDARY_CONDITIONS_FILE_UNIT, "(A)", iostat=ios) buf
-            print *, "Boundary directive line: ", buf
+            write(6,'(A)') ">>> Boundary directive line: "//trim(buf)
             select case (buf)
                 case ("# imn")
                     call setup_common_boundary_conditions(bc_imn, bc_imn_fix_values)

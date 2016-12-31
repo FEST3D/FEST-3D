@@ -52,6 +52,18 @@ module state
     use global_vars, only  : free_stream_tk
     use global_vars, only  : free_stream_tw
 
+  use global_vars, only: mass_residue
+  use global_vars, only: x_mom_residue
+  use global_vars, only: y_mom_residue
+  use global_vars, only: z_mom_residue
+  use global_vars, only: energy_residue
+  use global_vars, only:    vis_resnorm
+  use global_vars, only:   cont_resnorm
+  use global_vars, only:  x_mom_resnorm
+  use global_vars, only:  y_mom_resnorm
+  use global_vars, only:  z_mom_resnorm
+  use global_vars, only: energy_resnorm
+
     use utils, only: alloc, dealloc, dmsg
     use layout, only: process_id
     use string
@@ -90,6 +102,7 @@ module state
     ! Including Turbulence variables
 !    include "turbulence_models/include/state/variables_deceleration.inc"
 
+    real :: speed_inf
     ! Public methods
     public :: setup_state
     public :: destroy_state
@@ -698,6 +711,56 @@ module state
              do j = 1, jmx - 1
               do i = 1, imx - 1
                 write(OUT_FILE_UNIT, fmt='(f0.16)') pressure(i, j, k)
+              end do
+             end do
+            end do
+            write(OUT_FILE_UNIT, *) 
+
+            ! Writing Pressure
+            write(OUT_FILE_UNIT, '(a)') 'SCALARS Resnorm FLOAT'
+            write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+            speed_inf = sqrt(x_speed_inf**2 + y_speed_inf**2 &
+                        + z_speed_inf**2)
+            do k = 1, kmx - 1
+             do j = 1, jmx - 1
+              do i = 1, imx - 1
+
+      energy_resnorm = (                                       &
+                            (                                     &
+                             energy_residue(i, j, k) /            &
+                            (density_inf * speed_inf *            &
+                            ((0.5 * speed_inf * speed_inf) +      &
+                            (gm/(gm-1)*pressure_inf/density_inf)))&
+                            ) ** 2                                &
+                          )                                       
+
+        x_mom_resnorm = (                                     &
+                            (x_mom_residue(i, j, k) /            &
+                            (density_inf * speed_inf ** 2)) ** 2 &
+                           )                                     
+            
+        y_mom_resnorm = (                                     &
+                            (y_mom_residue(i, j, k) /            &
+                            (density_inf * speed_inf ** 2)) ** 2 &
+                           )                                     
+            
+        z_mom_resnorm = (                                     &
+                            (z_mom_residue(i, j, k) /            &
+                            (density_inf * speed_inf ** 2)) ** 2 &
+                           )                                     
+        cont_resnorm =(                                     &
+                           (mass_residue(i, j, k) /             &
+                           (density_inf * speed_inf)) ** 2      &
+                          )                                     
+        vis_resnorm =    sqrt(                    &
+                            cont_resnorm    + &
+                            x_mom_resnorm   + &
+                            y_mom_resnorm   + &
+                            z_mom_resnorm   + &
+                            energy_resnorm    &
+                          )
+                    
+                write(OUT_FILE_UNIT, fmt='(f0.16)') vis_resnorm
               end do
              end do
             end do

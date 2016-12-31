@@ -314,7 +314,6 @@ module read
         ! read reference viscosity
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) mu_ref
-        print*, mu_ref
         call dmsg(5, 'read', 'read_flow', &
                 msg='mu_reference = ' + mu_ref)
 

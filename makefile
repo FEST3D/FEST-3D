@@ -36,6 +36,7 @@ files = global.f90 \
 				bitwise.f90 \
 				string.f90 \
 				read.f90 \
+				write_output_vtk.f90 \
 				grid.f90 \
 				geometry.f90 \
 				state.f90 \

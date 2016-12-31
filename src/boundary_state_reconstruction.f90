@@ -27,30 +27,30 @@ module boundary_state_reconstruction
 
       implicit none
       character(len=*), intent(in)  :: interpolant
-      call dmsg(1,'boundary_state_reconstruction', 'reconstruct_boundary_state')
+      call dmsg(1,'boundary_state_recons', 'recons_boundary_state')
       if(interpolant /='none')then
         if(bc_imn(1,1) /= BC_INTERFACE)then
-          call dmsg(1,'boundary_state_reconstruction', 'reconstruct_boundary_state', 'imin')
+          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imin')
           call reconstruct_imin()
         end if
         if(bc_imx(1,1) /= BC_INTERFACE)then
-          call dmsg(1,'boundary_state_reconstruction', 'reconstruct_boundary_state', 'imax')
+          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imax')
           call reconstruct_imax()
         end if
         if(bc_jmn(1,1) /= BC_INTERFACE)then
-          call dmsg(1,'boundary_state_reconstruction', 'reconstruct_boundary_state', 'jmin')
+          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'jmin')
           call reconstruct_jmin()
         end if
         if(bc_jmx(1,1) /= BC_INTERFACE)then
-          call dmsg(1,'boundary_state_reconstruction', 'reconstruct_boundary_state', 'jmax')
+          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'jmax')
           call reconstruct_jmax()
         end if
         if(bc_kmn(1,1) /= BC_INTERFACE)then
-          call dmsg(1,'boundary_state_reconstruction', 'reconstruct_boundary_state', 'kmin')
+          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'kmin')
           call reconstruct_kmin()
         end if
         if(bc_kmx(1,1) /= BC_INTERFACE)then
-        call dmsg(1,'boundary_state_reconstruction', 'reconstruct_boundary_state', 'kmax')
+        call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'kmax')
           call reconstruct_kmax()
         end if
       end if

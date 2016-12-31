@@ -14,9 +14,11 @@ module dump_solution
   use global_vars, only : checkpoint_iter_count
   use global_vars, only : purge_write
   use global_vars, only : sim_clock
+  use global_vars, only : outfile
   use utils
   use string
   use state,       only : writestate_vtk
+  use write_output_vtk, only : write_file
   use layout,      only : process_id
 
   implicit none
@@ -93,10 +95,10 @@ module dump_solution
 
     subroutine dump_data()
       implicit none
-      character(len=FILE_NAME_LENGTH) :: filename
+!      character(len=FILE_NAME_LENGTH) :: filename
 
-      write(filename, '(A,I2.2,A)') trim(dump_dirname)//'/process_',process_id,'.vtk'
-      call writestate_vtk(filename, 'Simulaion clock: ' + sim_clock)
+      write(outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
+      call write_file()
 
     end subroutine dump_data
 

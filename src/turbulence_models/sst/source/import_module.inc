@@ -10,4 +10,4 @@
                                 y_tk_left, y_tw_left, y_tk_right, y_tw_right, &
                                 z_tk_left, z_tw_left, z_tk_right, z_tw_right
 
-  use wall_dist, only: dist
+!  use wall_dist, only: dist

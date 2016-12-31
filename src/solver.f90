@@ -66,6 +66,7 @@ module solver
 !  use global_vars, only : ilimiter_switch
 !  use global_vars, only : PB_switch
   use global_vars, only : turbulence
+  use global_vars, only : supersonic_flag
 
   use global_vars, only: F_p
   use global_vars, only: G_p

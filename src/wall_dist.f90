@@ -10,6 +10,7 @@ module wall_dist
   use global_vars, only : grid_x
   use global_vars, only : grid_y
   use global_vars, only : grid_z
+  use global_vars, only : dist
 
   use utils, only: alloc, dealloc, dmsg
 !  use grid, only: imx,jmx, kmx, grid_x, grid_y, grid_z
@@ -18,7 +19,7 @@ module wall_dist
   private
 
   integer                                     :: n_surfnodes
-  real, public, dimension(:,:,:), allocatable :: dist
+!  real, public, dimension(:,:,:), allocatable :: dist
   real, private,dimension(:)    , allocatable :: wall_x, wall_y, wall_z
 
   public :: setup_wall_dist

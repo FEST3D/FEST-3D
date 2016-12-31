@@ -7,6 +7,7 @@ module global_vars
   use global, only : INTERPOLANT_NAME_LENGTH
   use global, only : FORMAT_LENGTH
   use global, only : SCHEME_NAME_LENGTH
+  use global, only : FILE_NAME_LENGTH
 
   implicit none
   public
@@ -36,7 +37,8 @@ module global_vars
   integer :: purge_write
   integer :: write_percision
   character(len=FORMAT_LENGTH):: write_data_format   ! either ascii or binary
-  character(len=FORMAT_LENGTH):: write_file_format   ! either ascii or binary
+  character(len=FORMAT_LENGTH):: write_file_format   ! either vtk or tecplot
+  character(len=FILE_NAME_LENGTH):: outfile   ! either vtk or tecplot
 
   ! solver specific
   real :: CFL
@@ -82,6 +84,7 @@ module global_vars
   real                                              :: free_stream_pressure
   real                                              :: free_stream_tk
   real                                              :: free_stream_tw
+  real, dimension(:, :, :), allocatable             :: dist
 
   ! state variable turbulent
   integer                                           :: sst_n_var=2

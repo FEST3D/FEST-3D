@@ -111,7 +111,6 @@ contains
     read(buf,*) buf_id, grid_file_buf, bc_file, imin_id, imax_id, jmin_id,jmax_id,kmin_id,kmax_id
     write(grid_file_buf, '(A)') 'system/mesh/gridfiles/'//trim(grid_file_buf)
     write(bc_file, '(A)') 'system/mesh/bc/'//trim(bc_file)
-    print *, process_id ,grid_file_buf ,  bc_file
   end subroutine read_layout_file
 
 

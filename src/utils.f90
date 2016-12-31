@@ -51,12 +51,19 @@ module utils
             character(len=*), optional :: prog
             character(len=*), optional :: method
             character(len=*), optional :: msg
+            character(len=256)         :: ifmsg   
             integer :: level
            
-            if (process_id == 0) then
+!            if (process_id == 0) then
             if (level < DEBUG_LEVEL) then
                 ! Don't print the message
                 return
+            end if
+
+
+            ifmsg = ""
+            if (present(msg)) then
+              ifmsg = " >--> "//trim(msg)
             end if
 
             if (.not. present(prog) .and. .not. present(method) .and. &
@@ -68,13 +75,9 @@ module utils
                 stop
             end if
 
-            print '(A7,I1.1,A2,A,A2,A,A1)', 'Debug: ', level, ' (', &
-                    prog, ', ', method, ')'
-
-            if (present(msg)) then
-                print *, msg
-            end if
-           end if
+            print '(A7,I1.1,A2,A,A2,A,A,A1)', 'Debug: ', level, ' (', &
+              trim(prog), ', ', trim(method), trim(ifmsg), ')'
+!           end if
 
         end subroutine dmsg
 
