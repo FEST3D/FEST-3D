@@ -1,4 +1,7 @@
 module write_output_vtk
+  !---------------------------------------------------------
+  ! This module write state + other variable in output file
+  !---------------------------------------------------------
   use global     , only : OUT_FILE_UNIT
   use global_vars, only : outfile
 
@@ -136,6 +139,7 @@ module write_output_vtk
     subroutine write_grid()
       implicit none
 
+      ! write grid point coordinates
       call dmsg(1, 'write_output_vtk', 'write_grid')
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, fmt='(a, i0, a, i0, a, i0)') &
@@ -269,7 +273,7 @@ module write_output_vtk
       implicit none
 
       call dmsg(1, 'write_output_vtk', 'write_dist')
-      ! Writing Pressure
+      ! Writing wall distance for each cell
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, '(a)') 'SCALARS dist FLOAT'
         write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
@@ -300,7 +304,7 @@ module write_output_vtk
       implicit none
 
       call dmsg(1, 'write_output_vtk', 'write_resnorm')
-      ! Writing Pressure
+      ! Writing resnorm for each cell
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, '(a)') 'SCALARS Resnorm FLOAT'
         write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'

@@ -1,4 +1,13 @@
 module read
+  !-------------------------------------------------------
+  ! This module read input control files which include:
+  !   1. control.md
+  !   2. fvscheme.md
+  !   3. flow.md
+  !   4. res_control.md ! todo
+  !   5. state_read_write_control.md ! todo
+  !------------------------------------------------------
+
 
   use global, only: CONTROL_FILE_UNIT
   use global, only:  SCHEME_FILE_UNIT
@@ -46,9 +55,7 @@ module read
   use utils      , only: DEBUG_LEVEL
   use utils      , only: dmsg
   use string
-  !-------------------------------------------------------------------
-  ! read all the control files
-  !-------------------------------------------------------------------
+
   implicit none
 
   public :: read_controls
@@ -102,6 +109,9 @@ module read
 
 
       subroutine read_controls()
+        !---------------------------------------------
+        ! read control.md file
+        !---------------------------------------------
         implicit none
         character(len=STRING_BUFFER_LENGTH) :: buf
 
@@ -186,6 +196,9 @@ module read
 
 
       subroutine read_scheme()
+        !---------------------------------------------
+        ! read fvscheme.md control file
+        !--------------------------------------------
         implicit none
         character(len=STRING_BUFFER_LENGTH) :: buf
         integer                             :: ios
@@ -250,6 +263,9 @@ module read
       end subroutine read_scheme
 
       subroutine read_flow()
+        !---------------------------------------------
+        ! read flow.md control file
+        !--------------------------------------------
         implicit none
 
         character(len=STRING_BUFFER_LENGTH) :: buf
