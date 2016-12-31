@@ -111,14 +111,7 @@ module write_output_vtk
 
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, fmt='(a)') '# vtk DataFile Version 3.1'
-
-!        if (present(comment)) then
-!            write(OUT_FILE_UNIT, fmt='(a)') & 
-!                    trim('cfd-iitm output (' + comment + ')')
-!        else
-            write(OUT_FILE_UNIT, '(a)') 'cfd-iitm output'
-!        end if
-
+        write(OUT_FILE_UNIT, '(a)') 'cfd-iitm output'   ! comment line
         write(OUT_FILE_UNIT, '(a)') trim(Write_data_format)
         write(OUT_FILE_UNIT, '(a)') 'DATASET STRUCTURED_GRID'
         write(OUT_FILE_UNIT, *)
