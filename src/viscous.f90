@@ -41,14 +41,6 @@ module viscous
     use global_vars, only : turbulence
     use utils, only: alloc, dealloc, dmsg
     use string
-!    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
-!    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, &
-!                        xA, yA, zA, left_ghost_centroid, &
-!        right_ghost_centroid, front_ghost_centroid, back_ghost_centroid, &
-!        top_ghost_centroid, bottom_ghost_centroid
-!    use geometry, only: vol => volume
-!    use state, only: gm, n_var, R_gas, mu_ref, T_ref, Pr, Sutherland_temp, &
-!                     density, x_speed, y_speed, z_speed, pressure
     use face_interpolant, only: x_density_left, x_density_right, &
         y_density_left, y_density_right, z_density_left, z_density_right, &
         x_x_speed_left, x_x_speed_right, x_y_speed_left, x_y_speed_right, &

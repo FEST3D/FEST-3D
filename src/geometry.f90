@@ -27,23 +27,9 @@ module geometry
     use global_vars, only : bottom_ghost_centroid
     
     use utils, only: alloc, dealloc, dmsg
-!    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
 
     implicit none
     private
-
-!    ! Grid face normals
-!    real, public, dimension(:, :, :), allocatable, target :: xnx, xny, xnz
-!    real, public, dimension(:, :, :), allocatable, target :: ynx, yny, ynz
-!    real, public, dimension(:, :, :), allocatable, target :: znx, zny, znz
-!    ! Grid face areas
-!    real, public, dimension(:, :, :), allocatable, target :: xA, yA, zA
-!    ! Grid cell volumes
-!    real, public, dimension(:, :, :), allocatable :: volume
-!    ! Ghost cell centroid
-!    real, public, dimension(:, :, :), allocatable :: left_ghost_centroid, &
-!        right_ghost_centroid, front_ghost_centroid, back_ghost_centroid, &
-!        top_ghost_centroid, bottom_ghost_centroid
 
     ! Public methods
     public :: setup_geometry

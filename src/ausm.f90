@@ -17,9 +17,6 @@ module ausm
     use global_vars, only : turbulence
 
     use utils, only: alloc, dealloc, dmsg
-!    use grid, only: imx, jmx, kmx
-!    use geometry, only: xnx, xny, xnz, ynx, yny, ynz, znx, zny, znz, xA, yA, zA
-!    use state, only: gm, n_var
     use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
                 z_qp_left, z_qp_right, &
             x_density_left, x_x_speed_left, x_y_speed_left, x_z_speed_left, &

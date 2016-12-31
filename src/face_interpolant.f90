@@ -14,8 +14,6 @@ module face_interpolant
     use global_vars, only : interpolant
 
     use utils, only: alloc, dealloc, dmsg
-!    use grid, only: imx, jmx, kmx
-!    use state, only: qp, gm, n_var
     use muscl, only: setup_scheme_muscl => setup_scheme, &
             destroy_scheme_muscl => destroy_scheme, &
             compute_muscl_states, &
@@ -39,7 +37,6 @@ module face_interpolant
     implicit none
     private
 
-!    character(len=INTERPOLANT_NAME_LENGTH) :: interpolant
 
     real, dimension(:, :, :, :), allocatable, target :: x_qp_left, x_qp_right
     real, dimension(:, :, :, :), allocatable, target :: y_qp_left, y_qp_right

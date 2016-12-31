@@ -23,8 +23,6 @@ module scheme
     use global_vars, only : scheme_name
 
     use utils, only: alloc, dealloc, dmsg
-!    use grid, only: imx, jmx, kmx
-!    use state, only: n_var, mu_ref
     use face_interpolant, only: setup_interpolant_scheme, &
             destroy_interpolant_scheme
     use van_leer, only: &
@@ -54,7 +52,6 @@ module scheme
             G_ldfss0 => G, &
             H_ldfss0 => H, &
             residue_ldfss0 => residue
-!    use source, only: setup_source, destroy_source
 !   use hlle, only: &
 !           setup_scheme_hlle => setup_scheme, &
 !           destroy_scheme_hlle => destroy_scheme, &
@@ -63,11 +60,6 @@ module scheme
 
     implicit none
     private
-
-!    character(len=SCHEME_NAME_LENGTH) :: scheme_name
-!    real, public, dimension(:, :, :, :), pointer :: F_p, G_p, H_p
-!    real, public, dimension(:, :, :), pointer :: mass_residue, x_mom_residue, &
-!                             y_mom_residue, z_mom_residue, energy_residue
 
     include "turbulence_models/include/scheme/variable_deceleration.inc" 
 
@@ -127,10 +119,6 @@ module scheme
                     stop
             end select
 
- !           if (mu_ref /= 0.0) then
-  !              call setup_source()
-  !          end if
-
         end subroutine setup_scheme
 
         subroutine deallocate_memory()
@@ -168,10 +156,6 @@ module scheme
                     stop
             end select
             
-!            if (mu_ref /= 0.0) then
-!                call destroy_source()
-!            end if
-
             call destroy_interpolant_scheme()
             call deallocate_memory()
 

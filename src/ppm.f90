@@ -21,9 +21,6 @@ module ppm
     use global_vars, only : ilimiter_switch
     use global_vars, only : PB_switch
 
-!    use grid, only: imx, jmx, kmx, grid_x, grid_y, grid_z
-!    use state, only: qp, n_var, pressure, pressure_inf
-!    use state, only: ilimiter_switch
 
     implicit none
     private

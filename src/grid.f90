@@ -8,7 +8,6 @@ module grid
     !-------------------------------------------------------------------
     
     use global, only: STRING_BUFFER_LENGTH, GRID_FILE_UNIT
-!                     SPHERE_INDICES_FILE_UNIT
     use global_vars, only : imx
     use global_vars, only : jmx
     use global_vars, only : kmx
@@ -20,13 +19,6 @@ module grid
     implicit none
     private
     
-    ! Grid point coordinates
-!    real, public, dimension(:, :, :), allocatable :: grid_x, grid_y, grid_z
-    ! Grid size
-!    integer, public :: imx, jmx, kmx
-!   integer, public, dimension(:, :), allocatable :: sphere_indices
-!   integer, public :: n_sph_ind
-
     ! Public methods
     public :: setup_grid
     public :: destroy_grid

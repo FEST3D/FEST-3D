@@ -7,7 +7,6 @@ module layout
   use global, only: CONFIG_FILE_UNIT, RESNORM_FILE_UNIT, FILE_NAME_LENGTH, &
        STRING_BUFFER_LENGTH, INTERPOLANT_NAME_LENGTH
   use global, only: layout_file
-!  use globals
 
   use global_vars, only : total_process
   use global_vars, only : total_entries
@@ -25,8 +24,6 @@ module layout
 !  include "mpif.h"
   
   ! process layout
-!  integer,public :: total_process,total_entries,process_id, &
-!       imin_id,imax_id,jmin_id,jmax_id,kmin_id,kmax_id
   character(len=FILE_NAME_LENGTH) :: grid_file_buf
   character(len=FILE_NAME_LENGTH) :: bc_file
   public :: get_next_token_parallel
