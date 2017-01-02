@@ -17,7 +17,6 @@ module dump_solution
   use global_vars, only : outfile
   use utils
   use string
-  use state,       only : writestate_vtk
   use write_output_vtk, only : write_file
   use layout,      only : process_id
 

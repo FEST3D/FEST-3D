@@ -86,7 +86,7 @@ module solver
 
   use grid, only: setup_grid, destroy_grid
   use geometry, only: setup_geometry, destroy_geometry
-  use state, only:  setup_state, destroy_state, writestate_vtk
+  use state, only:  setup_state, destroy_state
 
   use face_interpolant, only: interpolant, &
           x_qp_left, x_qp_right, &

@@ -34,6 +34,12 @@ module res_viscous
   use global_vars, only:  y_mom_resnorm_0
   use global_vars, only:  z_mom_resnorm_0
   use global_vars, only: energy_resnorm_0
+  use global_vars, only:    vis_resnorm_0s
+  use global_vars, only:   cont_resnorm_0s
+  use global_vars, only:  x_mom_resnorm_0s
+  use global_vars, only:  y_mom_resnorm_0s
+  use global_vars, only:  z_mom_resnorm_0s
+  use global_vars, only: energy_resnorm_0s
   use global_vars, only:    vis_resnorm_d1
   use global_vars, only:   cont_resnorm_d1
   use global_vars, only:  x_mom_resnorm_d1
@@ -72,18 +78,18 @@ module res_viscous
                         z_speed_inf ** 2.)
 
         call compute_block_resnorm()
-        if (current_iter <= 5) then
+        if (current_iter == 1) then
           call store_intial_resnorm()
         end if
         if (process_id == 0) then
           call alloc(root_res_recv_buf, 1,total_process*n, &
               errmsg='Error: Unable to allocate memory to root_res_recv_buf')
+          call alloc(global_resnorm, 1,total_process, 1,n, &
+              errmsg='Error: Unable to allocate memory to root_res_recv_buf')
           root_res_recv_buf = 0.
         end if
         call send_resnorm_to_process_0()
         if (process_id == 0) then
-          call alloc(global_resnorm, 1,total_process, 1,n, &
-              errmsg='Error: Unable to allocate memory to root_res_recv_buf')
           call recv_resnorm_to_process_0()
           call recalculate_collective_resnorm()
           call dealloc(global_resnorm)
@@ -222,7 +228,12 @@ module res_viscous
 
     subroutine recalculate_collective_resnorm()
       implicit none
-      integer :: id
+!      real    ::   vis_resnorm_0s
+!      real    ::  cont_resnorm_0s
+!      real    :: x_mom_resnorm_0s
+!      real    :: y_mom_resnorm_0s
+!      real    :: z_mom_resnorm_0s
+!      real    ::energy_resnorm_0s
 
       call dmsg(1, 'res_viscous', 'recalculate_collective_resnorm')
         !all resnorm except first are all normalized
@@ -232,13 +243,7 @@ module res_viscous
 !         y_mom_resnorm     = 0.
 !         z_mom_resnorm     = 0.
 !        energy_resnorm     = 0.
-!           vis_resnorm_0   = 0.
-!          cont_resnorm_0   = 0.
-!         x_mom_resnorm_0   = 0.
-!         y_mom_resnorm_0   = 0.
-!         z_mom_resnorm_0   = 0.
-!        energy_resnorm_0   = 0.
-
+!
 !        do id = 1,total_process
 !             vis_resnorm   =    vis_resnorm    + (global_resnorm(id,1 ))
 !            cont_resnorm   =   cont_resnorm    + (global_resnorm(id,2 ))
@@ -259,12 +264,12 @@ module res_viscous
          y_mom_resnorm    = SUM(global_resnorm(: ,4 ))
          z_mom_resnorm    = SUM(global_resnorm(: ,5 ))
         energy_resnorm    = SUM(global_resnorm(: ,6 ))
-           vis_resnorm_0  = SUM(global_resnorm(: ,7 ))
-          cont_resnorm_0  = SUM(global_resnorm(: ,8 ))
-         x_mom_resnorm_0  = SUM(global_resnorm(: ,9 ))
-         y_mom_resnorm_0  = SUM(global_resnorm(: ,10))
-         z_mom_resnorm_0  = SUM(global_resnorm(: ,11))
-        energy_resnorm_0  = SUM(global_resnorm(: ,12))
+           vis_resnorm_0s = SUM(global_resnorm(: ,7 ))
+          cont_resnorm_0s = SUM(global_resnorm(: ,8 ))
+         x_mom_resnorm_0s = SUM(global_resnorm(: ,9 ))
+         y_mom_resnorm_0s = SUM(global_resnorm(: ,10))
+         z_mom_resnorm_0s = SUM(global_resnorm(: ,11))
+        energy_resnorm_0s = SUM(global_resnorm(: ,12))
 
            vis_resnorm    = SQRT(   vis_resnorm  )
           cont_resnorm    = SQRT(  cont_resnorm  )
@@ -272,19 +277,20 @@ module res_viscous
          y_mom_resnorm    = SQRT( y_mom_resnorm  )
          z_mom_resnorm    = SQRT( z_mom_resnorm  )
         energy_resnorm    = SQRT(energy_resnorm  )
-           vis_resnorm_0  = SQRT(   vis_resnorm_0)
-          cont_resnorm_0  = SQRT(  cont_resnorm_0)
-         x_mom_resnorm_0  = SQRT( x_mom_resnorm_0)
-         y_mom_resnorm_0  = SQRT( y_mom_resnorm_0)
-         z_mom_resnorm_0  = SQRT( z_mom_resnorm_0)
-        energy_resnorm_0  = SQRT(energy_resnorm_0)
+           vis_resnorm_0s = SQRT(   vis_resnorm_0s)
+          cont_resnorm_0s = SQRT(  cont_resnorm_0s)
+         x_mom_resnorm_0s = SQRT( x_mom_resnorm_0s)
+         y_mom_resnorm_0s = SQRT( y_mom_resnorm_0s)
+         z_mom_resnorm_0s = SQRT( z_mom_resnorm_0s)
+        energy_resnorm_0s = SQRT(energy_resnorm_0s)
 
-           vis_resnorm_d1 =    vis_resnorm /    vis_resnorm_0
-          cont_resnorm_d1 =   cont_resnorm /   cont_resnorm_0
-         x_mom_resnorm_d1 =  x_mom_resnorm /  x_mom_resnorm_0
-         y_mom_resnorm_d1 =  y_mom_resnorm /  y_mom_resnorm_0
-         z_mom_resnorm_d1 =  z_mom_resnorm /  z_mom_resnorm_0
-        energy_resnorm_d1 = energy_resnorm / energy_resnorm_0
+           vis_resnorm_d1 =    vis_resnorm /    vis_resnorm_0s
+          cont_resnorm_d1 =   cont_resnorm /   cont_resnorm_0s
+         x_mom_resnorm_d1 =  x_mom_resnorm /  x_mom_resnorm_0s
+         y_mom_resnorm_d1 =  y_mom_resnorm /  y_mom_resnorm_0s
+         z_mom_resnorm_d1 =  z_mom_resnorm /  z_mom_resnorm_0s
+        energy_resnorm_d1 = energy_resnorm / energy_resnorm_0s
+!        print*, vis_resnorm_0s, vis_resnorm_0s, vis_resnorm
 
     end subroutine recalculate_collective_resnorm
 

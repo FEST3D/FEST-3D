@@ -77,7 +77,6 @@ module state
     public :: setup_state
     public :: destroy_state
 !   public :: set_ghost_cell_data
-    public :: writestate_vtk
 
     contains
 
@@ -267,8 +266,8 @@ module state
                 ! Set the state to the infinity values
                 call init_state_with_infinity_values()
             else
-                write(state_file,'(a,i2.2,a,i5.5,a)') &
-                  "results/process_",process_id,"/output",start_from,".vtk"
+                write(state_file,'(a,i4.4,a,i2.2,a)') &
+                  "time_directories/",start_from,"/process_",process_id,".vtk"
                 call readstate_vtk(state_file)
             end if
 

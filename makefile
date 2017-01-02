@@ -27,40 +27,44 @@ IFFLAGS := -O3 -free -r8 -traceback \
 					 -warn error \
 					 -warn declaration \
 					 -warn uncalled \
-					 -warn unused 
+					 -warn unused
+subpath:= resnorm \
+				 resnorm/viscous \
+				 resnorm/turbulent
 
-files = global.f90 \
-				global_vars.f90 \
-				utils.f90 \
-				layout.f90 \
-				bitwise.f90 \
-				string.f90 \
-				read.f90 \
-				write_output_vtk.f90 \
-				grid.f90 \
-				geometry.f90 \
-				state.f90 \
-				ppm.f90 \
-				muscl.f90 \
-				face_interpolant.f90 \
-				van_leer.f90 \
-				ausm.f90 \
-				ldfss0.f90 \
-				scheme.f90 \
-				wall_find.f90 \
-				surfnode.f90 \
-				wall_dist.f90 \
-				source.f90 \
-				viscous.f90 \
-				parallel.f90 \
-				boundary_conditions.f90 \
-				boundary_state_reconstruction.f90 \
-				res_viscous.f90 \
-				res_turbulent.f90 \
-				resnorm.f90 \
-				dump_solution.f90 \
-				solver.f90 \
-				main.f90
+#files = global.f90 \
+#				global_vars.f90 \
+#				utils.f90 \
+#				layout.f90 \
+#				bitwise.f90 \
+#				string.f90 \
+#				read.f90 \
+#				write_output_vtk.f90 \
+#				grid.f90 \
+#				geometry.f90 \
+#				state.f90 \
+#				ppm.f90 \
+#				muscl.f90 \
+#				face_interpolant.f90 \
+#				van_leer.f90 \
+#				ausm.f90 \
+#				ldfss0.f90 \
+#				scheme.f90 \
+#				wall_find.f90 \
+#				surfnode.f90 \
+#				wall_dist.f90 \
+#				source.f90 \
+#				viscous.f90 \
+#				parallel.f90 \
+#				boundary_conditions.f90 \
+#				boundary_state_reconstruction.f90 \
+#				res_viscous.f90 \
+#				res_turbulent.f90 \
+#				resnorm/resnorm.f90 \
+#				dump_solution.f90 \
+#				solver.f90 \
+#				main.f90
+include files
 
 subfiles = global.f90 \
 					 global_vars.f90 \
@@ -123,7 +127,13 @@ setup:
 	@if test ! -d $(OBJDIR); then mkdir $(OBJDIR); else : ; fi
 	@if test ! -d $(MODDIR); then mkdir $(MODDIR); else : ; fi
 	@if test ! -d $(BINDIR); then mkdir $(BINDIR); else : ; fi
+	@if test ! -d $(OBJDIR)/resnorm/viscous; then mkdir $(OBJDIR)/resnorm/viscous; else : ; fi
+	@if test ! -d $(OBJDIR)/resnorm/turbulent; then mkdir $(OBJDIR)/resnorm/turbulent; else : ; fi
 
 clean:
 	rm -f $(objects) $(modules) $(exe)
+
+tar:
+	tar -zcvf fest3d.tar.gz $(OBJDIR)/ $(MODDIR)/ $(BINDIR)/ $(VPATH)/ setup.sh makefile \
+		makefile.dep fort_depend.py archive/ 
 

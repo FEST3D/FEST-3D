@@ -93,7 +93,7 @@ module write_output_vtk
       character(len=*), intent(in) :: filename 
       call dmsg(1, 'write_output_vtk', 'open_file')
 
-      open(OUT_FILE_UNIT, file=trim(filename)//trim(file_format) + '.part', form=trim(data_format), convert="BIG_ENDIAN")
+      open(OUT_FILE_UNIT, file=trim(filename)//trim(file_format) + '.part', form=trim(data_format))
 
     end subroutine open_file
 
