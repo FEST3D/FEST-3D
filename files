@@ -4,8 +4,8 @@ files = global.f90  \
         layout.f90 \
         bitwise.f90 \
         string.f90 \
-        read.f90 \
-        write_output_vtk.f90 \
+        read_write/read/read.f90 \
+        read_write/write/write_output_vtk.f90 \
         grid.f90 \
         geometry.f90 \
         state.f90 \
@@ -27,7 +27,7 @@ files = global.f90  \
         resnorm/viscous/res_viscous.f90 \
         resnorm/turbulent/res_turbulent.f90 \
         resnorm/resnorm.f90 \
-        dump_solution.f90 \
+        read_write/write/dump_solution.f90 \
         solver.f90 \
         main.f90 
 
