@@ -18,6 +18,8 @@ module write_output_vtk
   use global_vars, only : y_speed 
   use global_vars, only : z_speed 
   use global_vars, only : pressure 
+  use global_vars, only : tk 
+  use global_vars, only : tw 
   use global_vars, only : density_inf
   use global_vars, only : x_speed_inf
   use global_vars, only : y_speed_inf
@@ -38,6 +40,8 @@ module write_output_vtk
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
 
+  use global_vars, only : turbulence
+
   use utils
   use string
 
@@ -54,6 +58,7 @@ module write_output_vtk
 
     subroutine write_file()
       implicit none
+
       call setup_file
       call open_file(outfile)
       call write_header()
@@ -61,9 +66,30 @@ module write_output_vtk
       call write_velocity()
       call write_density()
       call write_pressure()
+      call write_turbulent_variables()
       call write_resnorm()
       call close_file(outfile)
+
     end subroutine write_file
+
+    subroutine write_turbulent_variables()
+      implicit none
+
+      select case (turbulence)
+        
+        case ('none')
+          !do nothing
+          continue
+        case ('sst')
+          call write_TKE()
+          call write_omega()
+        case DEFAULT
+          call dmsg(5, 'write_output_vtk',' write_turbulent_variables',&
+              'ERROR: Turbulence model not recongnised')
+          STOP
+      end select
+
+    end subroutine write_turbulent_variables
 
     subroutine setup_file()
       implicit none
@@ -261,6 +287,68 @@ module write_output_vtk
       end if
 
     end subroutine write_pressure
+
+    subroutine write_TKE()
+      implicit none
+
+      call dmsg(1, 'write_output_vtk', 'write_TKE')
+      ! Writing Pressure
+      if (Write_data_format == "ASCII") then
+        write(OUT_FILE_UNIT, '(a)') 'SCALARS k FLOAT'
+        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT, fmt='(f0.16)') tk(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT, *) 
+      elseif (write_data_format == 'BINARY') then
+        write(OUT_FILE_UNIT) 'SCALARS k  DOUBLE'
+        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT) tk(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT) 
+      end if
+
+    end subroutine write_TKE
+
+    subroutine write_omega()
+      implicit none
+
+      call dmsg(1, 'write_output_vtk', 'write_omega')
+      ! Writing Pressure
+      if (Write_data_format == "ASCII") then
+        write(OUT_FILE_UNIT, '(a)') 'SCALARS Omega FLOAT'
+        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT, fmt='(f0.16)') tw(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT, *) 
+      elseif (write_data_format == 'BINARY') then
+        write(OUT_FILE_UNIT) 'SCALARS Omega DOUBLE'
+        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT) tw(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT) 
+      end if
+
+    end subroutine write_omega
 
     subroutine write_dist()
       implicit none
