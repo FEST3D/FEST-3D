@@ -730,6 +730,9 @@ module solver
             implicit none
             call dmsg(1, 'solver', 'step')
 
+            if (process_id==0) then
+              print*, current_iter
+            end if
             call sub_step()
 
             call get_next_solution()

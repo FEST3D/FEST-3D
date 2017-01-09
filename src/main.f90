@@ -11,7 +11,8 @@ program main
 
   call setup_solver()
 
-  do while (.not. converged())
+!  do while (.not. converged())
+  do while (.true.)
      !print *, 'Iteration', iter
 !     call flush()
      call step()

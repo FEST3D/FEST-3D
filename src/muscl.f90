@@ -153,12 +153,14 @@ module muscl
                 fd = qp(i+1, j, k, l) - qp(i, j, k, l)
                 bd = qp(i, j, k, l) - qp(i-1, j, k, l)
                 r = fd / bd
-             !  psi1 = min(1., (3 - kappa) * r / (1 - kappa))
-                psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+!                psi1 = min(1., (3 - kappa) * r / (1 - kappa)) !minmod
+                psi1 = max(0., min(2*r, (2 + r)/3., 2.))  !koren limiter
+!                psi1 = max(0., min(2*r,1.), min(r,2.))    ! superbee
                 psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
-             !  psi2 = min(1., (3 - kappa) * r / (1 - kappa))
+!                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+!                psi2 = max(0., min(2*r,1.), min(r,2.))
                 psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
                 x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
@@ -202,11 +204,13 @@ module muscl
                 bd = qp(i, j, k, l) - qp(i, j-1, k, l)
                 r = fd / bd
                 psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-             !  psi1 = min(1., (3 - kappa) * r / (1 - kappa))
+!                psi1 = max(0., min(2*r,1.), min(r,2.))
+!                psi1 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-             !  psi2 = min(1., (3 - kappa) * r / (1 - kappa))
+!                psi2 = max(0., min(2*r,1.), min(r,2.))
+!                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
                 y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
@@ -251,11 +255,13 @@ module muscl
                 bd = qp(i, j, k, l) - qp(i, j, k-1, l)
                 r = fd / bd
                 psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-             !  psi1 = min(1., (3 - kappa) * r / (1 - kappa))
+!                psi1 = max(0., min(2*r,1.), min(r,2.))
+!                psi1 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-             !  psi2 = min(1., (3 - kappa) * r / (1 - kappa))
+!                psi2 = max(0., min(2*r,1.), min(r,2.))
+!                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
                 z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
