@@ -4,10 +4,12 @@ module read_output_vtk
   ! This module read state + other variable in output file
   !---------------------------------------------------------
   use global     , only : IN_FILE_UNIT
-  use global_vars, only : intfile
+  use global_vars, only : infile
 
   use global_vars, only : read_data_format
   use global_vars, only : read_file_format
+  use global_vars, only : start_from
+  use global_vars, only : process_id
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
@@ -19,6 +21,8 @@ module read_output_vtk
   use global_vars, only : y_speed 
   use global_vars, only : z_speed 
   use global_vars, only : pressure 
+  use global_vars, only : tk 
+  use global_vars, only : tw 
   use global_vars, only : density_inf
   use global_vars, only : x_speed_inf
   use global_vars, only : y_speed_inf
@@ -38,6 +42,8 @@ module read_output_vtk
   use global_vars, only :  y_mom_residue
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
+
+  use global_vars, only : turbulence
 
   use utils
   use string
@@ -62,9 +68,29 @@ module read_output_vtk
       call read_velocity()
       call read_density()
       call read_pressure()
+      call read_turbulence_variables()
  !     call read_resnorm()
       call close_file(infile)
     end subroutine read_file
+
+    subroutine read_turbulence_variables()
+      implicit none
+
+      select case (turbulence)
+
+        case ('none')
+          !do nothing
+          continue
+        case ('sst')
+          call read_TKE()
+          call read_omega()
+        case DEFAULT
+          call dmsg(5,'read_output_vtk', 'read_turbulence_variables',&
+                    'ERROR: Turbulence model not recognised')
+          STOP
+      end select
+
+    end subroutine read_turbulence_variables
 
     subroutine setup_file()
       implicit none
@@ -87,6 +113,8 @@ module read_output_vtk
         print*, "'ASCII' and 'BINARY' "
       end if
 
+      !write(infile,'(a,i4.4,a,i2.2)') 'time_directories/',start_from,'process_',process_id
+
     end subroutine setup_file
 
     subroutine open_file(filename)
@@ -94,7 +122,7 @@ module read_output_vtk
       character(len=*), intent(in) :: filename 
       call dmsg(1, 'read_output_vtk', 'open_file')
 
-      open(IN_FILE_UNIT, file=trim(filename)//trim(file_format), form=trim(data_format))
+      open(IN_FILE_UNIT, file=trim(filename)//trim(file_format))!, form=trim(data_format))
 
     end subroutine open_file
 
@@ -253,6 +281,70 @@ module read_output_vtk
       end if
 
     end subroutine read_pressure
+
+    subroutine read_TKE()
+      implicit none
+      character(len=64) :: buf
+
+      call dmsg(1, 'read_output_vtk', 'read_TKE')
+      ! Writing Pressure
+      if (read_data_format == "ASCII") then
+        read(IN_FILE_UNIT, *) buf!'SCALARS k FLOAT'
+        print*, buf
+        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT, *) tk(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT, *) 
+      elseif (read_data_format == 'BINARY') then
+        read(IN_FILE_UNIT) !'SCALARS k DOUBLE'
+        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT) tk(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT) 
+      end if
+
+    end subroutine read_TKE
+
+    subroutine read_omega()
+      implicit none
+
+      call dmsg(1, 'read_output_vtk', 'read_omega')
+      ! Writing Pressure
+      if (read_data_format == "ASCII") then
+        read(IN_FILE_UNIT, *) !'SCALARS Omega FLOAT'
+        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT, *) tw(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT, *) 
+      elseif (read_data_format == 'BINARY') then
+        read(IN_FILE_UNIT) !'SCALARS Omega DOUBLE'
+        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT) tw(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT) 
+      end if
+
+    end subroutine read_omega
 
     subroutine read_dist()
       implicit none

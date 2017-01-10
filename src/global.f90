@@ -21,6 +21,7 @@ module global
     integer, parameter :: GRID_FILE_UNIT = 2
     integer, parameter :: BOUNDARY_CONDITIONS_FILE_UNIT= 3
     integer, parameter :: STATE_FILE_UNIT = 10
+    integer, parameter ::  IN_FILE_UNIT = 19
     integer, parameter :: OUT_FILE_UNIT = 20
     integer, parameter :: RESNORM_FILE_UNIT = 21
     integer, parameter :: SPHERE_INDICES_FILE_UNIT = 22
@@ -33,6 +34,7 @@ module global
     integer, parameter ::     CONTROL_FILE_UNIT = 36
     integer, parameter ::      SCHEME_FILE_UNIT = 37
     integer, parameter ::        FLOW_FILE_UNIT = 38
+    integer, parameter ::     RESTART_FILE_UNIT = 39
 
 
     !Fixed file names

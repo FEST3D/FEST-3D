@@ -37,7 +37,11 @@ module global_vars
   integer :: write_percision                         ! number of place after decimal 
   character(len=FORMAT_LENGTH):: write_data_format   ! either ascii or binary
   character(len=FORMAT_LENGTH):: write_file_format   ! either vtk or tecplot
-  character(len=FILE_NAME_LENGTH):: outfile          ! name of output file
+  character(len=FORMAT_LENGTH)::  read_data_format='ASCII'   ! either ascii or binary
+  character(len=FORMAT_LENGTH)::  read_file_format="vtk"   ! either vtk or tecplot
+  character(len=FILE_NAME_LENGTH)::     outfile          ! name of output file
+  character(len=FILE_NAME_LENGTH)::      infile          ! name of load file
+  character(len=FILE_NAME_LENGTH):: restartfile          ! name of restart log file
 
   ! solver specific
   real :: CFL                  ! courrent number

@@ -8,13 +8,26 @@ module dump_solution
   !------------------------------------------
 
   use global,      only : FILE_NAME_LENGTH
+  use global,      only : RESTART_FILE_UNIT
   use global_vars, only : current_iter
   use global_vars, only : max_iters
   use global_vars, only : checkpoint_iter
   use global_vars, only : checkpoint_iter_count
   use global_vars, only : purge_write
   use global_vars, only : sim_clock
-  use global_vars, only : outfile
+  use global_vars, only :     outfile
+  use global_vars, only : restartfile
+  use global_vars, only :        resnorm_0
+  use global_vars, only :    vis_resnorm_0
+  use global_vars, only :   turb_resnorm_0
+  use global_vars, only :   cont_resnorm_0
+  use global_vars, only :  x_mom_resnorm_0
+  use global_vars, only :  y_mom_resnorm_0
+  use global_vars, only :  z_mom_resnorm_0
+  use global_vars, only : energy_resnorm_0
+  use global_vars, only :    TKE_resnorm_0
+  use global_vars, only :  omega_resnorm_0
+  use global_vars, only :  turbulence
   use utils
   use string
   use write_output_vtk, only : write_file
@@ -89,6 +102,7 @@ module dump_solution
 
       write(dump_dirname,'(A,I4.4)') 'time_directories/',checkpoint_iter_count
       call create_directory(dump_dirname)
+      call create_directory(trim(dump_dirname)//'/restart')
 
     end subroutine make_dump_dir
 
@@ -96,9 +110,43 @@ module dump_solution
       implicit none
 !      character(len=FILE_NAME_LENGTH) :: filename
 
-      write(outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
+      write(restartfile, '(A,I2.2)') trim(dump_dirname)//'/restart/process_',process_id
+      write(    outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
+      call write_restart_log()
       call write_file()
 
     end subroutine dump_data
+
+    subroutine write_restart_log()
+      implicit none
+      open(RESTART_FILE_UNIT, file=restartfile)
+      select case (turbulence)
+          
+        case ('none')
+          write(RESTART_FILE_UNIT, '(A)') 'viscous'
+        case('sst')
+          write(RESTART_FILE_UNIT, '(A)') 'sst'
+        case DEFAULT
+          call dmsg(5, 'dump_solution', 'write_restart_log',&
+                    'ERROR: Turbulence model not recognised')
+      end select
+      call write_initial_resnorm()
+      close(RESTART_FILE_UNIT)
+
+    end subroutine write_restart_log
+
+    subroutine write_initial_resnorm()
+      implicit none
+      write(RESTART_FILE_UNIT, '(f0.16)')        resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)')    vis_resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)')   turb_resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)')   cont_resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)')  x_mom_resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)')  y_mom_resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)')  z_mom_resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)') energy_resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)')    TKE_resnorm_0
+      write(RESTART_FILE_UNIT, '(f0.16)')  omega_resnorm_0
+    end subroutine write_initial_resnorm
 
 end module dump_solution

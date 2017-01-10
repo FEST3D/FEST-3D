@@ -43,6 +43,7 @@ module state
     use global_vars, only : mu_ref
     use global_vars, only : supersonic_flag
     use global_vars, only : turbulence
+    use global_vars, only : infile
     
     use global_vars, only  : free_stream_density
     use global_vars, only  : free_stream_x_speed
@@ -67,6 +68,7 @@ module state
     use utils, only: alloc, dealloc, dmsg
     use layout, only: process_id
     use string
+  use read_output_vtk, only: read_file
 
     implicit none
     private
@@ -266,9 +268,11 @@ module state
                 ! Set the state to the infinity values
                 call init_state_with_infinity_values()
             else
-                write(state_file,'(a,i4.4,a,i2.2,a)') &
-                  "time_directories/",start_from,"/process_",process_id,".vtk"
-                call readstate_vtk(state_file)
+                write(infile,'(a,i4.4,a,i2.2)') &
+                  "time_directories/",start_from,"/process_",process_id
+                !call readstate_vtk(state_file)
+                call read_file()
+
             end if
 
         end subroutine initstate

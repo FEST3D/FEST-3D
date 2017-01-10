@@ -6,6 +6,7 @@ files = global.f90  \
         string.f90 \
         read_write/read/read.f90 \
         read_write/write/write_output_vtk.f90 \
+        read_write/read/read_output_vtk.f90 \
         grid.f90 \
         geometry.f90 \
         state.f90 \
