@@ -372,16 +372,16 @@ module resnorm_
 
       ! intializing whole resnorm to 0.
       write_data = 0.
-             resnorm_0   = 0.
-         vis_resnorm_0   = 0.
-        turb_resnorm_0   = 0.
-        cont_resnorm_0   = 0.
-       x_mom_resnorm_0   = 0.
-       y_mom_resnorm_0   = 0.
-       z_mom_resnorm_0   = 0.
-      energy_resnorm_0   = 0.
-         TKE_resnorm_0   = 0.
-       omega_resnorm_0   = 0.
+!             resnorm_0   = 0.
+!         vis_resnorm_0   = 0.
+!        turb_resnorm_0   = 0.
+!        cont_resnorm_0   = 0.
+!       x_mom_resnorm_0   = 0.
+!       y_mom_resnorm_0   = 0.
+!       z_mom_resnorm_0   = 0.
+!      energy_resnorm_0   = 0.
+!         TKE_resnorm_0   = 0.
+!       omega_resnorm_0   = 0.
 
 
       end subroutine setup_resnorm

@@ -3,8 +3,10 @@ module read_output_vtk
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
-  use global     , only : IN_FILE_UNIT
-  use global_vars, only : infile
+  use global     , only :      IN_FILE_UNIT
+  use global     , only : RESTART_FILE_UNIT
+  use global_vars, only :      infile
+  use global_vars, only : restartfile
 
   use global_vars, only : read_data_format
   use global_vars, only : read_file_format
@@ -42,8 +44,17 @@ module read_output_vtk
   use global_vars, only :  y_mom_residue
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
+  use global_vars, only :        resnorm_0
+  use global_vars, only :    vis_resnorm_0
+  use global_vars, only :   turb_resnorm_0
+  use global_vars, only :   cont_resnorm_0
+  use global_vars, only :  x_mom_resnorm_0
+  use global_vars, only :  y_mom_resnorm_0
+  use global_vars, only :  z_mom_resnorm_0
+  use global_vars, only : energy_resnorm_0
+  use global_vars, only :    TKE_resnorm_0
+  use global_vars, only :  omega_resnorm_0
 
-  use global_vars, only : turbulence
 
   use utils
   use string
@@ -54,6 +65,7 @@ module read_output_vtk
   real    :: speed_inf
   character(len=8) :: file_format
   character(len=16) :: data_format
+  character(len=16) :: read_flow_type
 
   public :: read_file
 
@@ -63,6 +75,7 @@ module read_output_vtk
       implicit none
       call setup_file
       call open_file(infile)
+      call read_restart_file()
       call read_header()
       call read_grid()
       call read_velocity()
@@ -70,23 +83,24 @@ module read_output_vtk
       call read_pressure()
       call read_turbulence_variables()
  !     call read_resnorm()
-      call close_file(infile)
+      call close_file()
     end subroutine read_file
 
     subroutine read_turbulence_variables()
       implicit none
 
-      select case (turbulence)
+      select case (read_flow_type)
 
-        case ('none')
+        case ('viscous')
           !do nothing
+          !restart turbulent varibale with infinity condition !todo
           continue
         case ('sst')
           call read_TKE()
           call read_omega()
         case DEFAULT
           call dmsg(5,'read_output_vtk', 'read_turbulence_variables',&
-                    'ERROR: Turbulence model not recognised')
+            'ERROR: Read flow type not recognised')
           STOP
       end select
 
@@ -122,16 +136,20 @@ module read_output_vtk
       character(len=*), intent(in) :: filename 
       call dmsg(1, 'read_output_vtk', 'open_file')
 
+      write(restartfile, '(A,I4.4,A,I2.2)') 'time_directories/',start_from,&
+                          '/restart/process_', process_id
       open(IN_FILE_UNIT, file=trim(filename)//trim(file_format))!, form=trim(data_format))
+      open(RESTART_FILE_UNIT, file=restartfile, status='old')
 
     end subroutine open_file
 
-    subroutine close_file(filename)
+    subroutine close_file()
       implicit none
 
-      character(len=*), intent(in) :: filename 
-      call dmsg(1, 'read_output_vtk', 'close_file')
+      call dmsg(1, 'read_output_vtk', 'close_files')
       close(IN_FILE_UNIT)
+      close(RESTART_FILE_UNIT)
+
     end subroutine close_file
 
 
@@ -284,13 +302,11 @@ module read_output_vtk
 
     subroutine read_TKE()
       implicit none
-      character(len=64) :: buf
 
       call dmsg(1, 'read_output_vtk', 'read_TKE')
       ! Writing Pressure
       if (read_data_format == "ASCII") then
         read(IN_FILE_UNIT, *) buf!'SCALARS k FLOAT'
-        print*, buf
         read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
         do k = 1, kmx - 1
          do j = 1, jmx - 1
@@ -407,5 +423,21 @@ module read_output_vtk
       end if
 
     end subroutine read_resnorm
+
+    subroutine read_restart_file()
+      implicit none
+      read(RESTART_FILE_UNIT, *) read_flow_type
+
+      read(RESTART_FILE_UNIT, *)        resnorm_0
+      read(RESTART_FILE_UNIT, *)    vis_resnorm_0
+      read(RESTART_FILE_UNIT, *)   turb_resnorm_0
+      read(RESTART_FILE_UNIT, *)   cont_resnorm_0
+      read(RESTART_FILE_UNIT, *)  x_mom_resnorm_0
+      read(RESTART_FILE_UNIT, *)  y_mom_resnorm_0
+      read(RESTART_FILE_UNIT, *)  z_mom_resnorm_0
+      read(RESTART_FILE_UNIT, *) energy_resnorm_0
+      read(RESTART_FILE_UNIT, *)    TKE_resnorm_0
+      read(RESTART_FILE_UNIT, *)  omega_resnorm_0
+    end subroutine read_restart_file
 
 end module read_output_vtk
