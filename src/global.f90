@@ -35,12 +35,14 @@ module global
     integer, parameter ::      SCHEME_FILE_UNIT = 37
     integer, parameter ::        FLOW_FILE_UNIT = 38
     integer, parameter ::     RESTART_FILE_UNIT = 39
+    integer, parameter ::       OUTIN_FILE_UNIT = 40
 
 
     !Fixed file names
     character(len=*), Parameter :: control_file="system/control.md"
     character(len=*), Parameter ::  scheme_file="system/fvscheme.md"
     character(len=*), Parameter ::    flow_file="system/flow.md"
+    character(len=*), Parameter ::   outin_file="system/output_control.md"
     character(len=*), parameter :: layout_file='system/mesh/layout/layout.md'
     character(len=*), Parameter :: nodefile_temp="scratch.dat"
     character(len=*), Parameter :: surface_node_points='time_directories/aux/surfnode.dat'

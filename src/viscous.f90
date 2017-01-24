@@ -38,6 +38,26 @@ module viscous
     use global_vars, only : pressure
     use global_vars, only : tk
     use global_vars, only : tw
+    use global_vars  ,only : gradu_x
+    use global_vars  ,only : gradu_y
+    use global_vars  ,only : gradu_z
+    use global_vars  ,only : gradv_x
+    use global_vars  ,only : gradv_y
+    use global_vars  ,only : gradv_z
+    use global_vars  ,only : gradw_x
+    use global_vars  ,only : gradw_y
+    use global_vars  ,only : gradw_z
+    use global_vars  ,only : gradT_x
+    use global_vars  ,only : gradT_y
+    use global_vars  ,only : gradT_z
+    use global_vars  ,only : gradtk_x
+    use global_vars  ,only : gradtk_y
+    use global_vars  ,only : gradtk_z
+    use global_vars  ,only : gradtw_x
+    use global_vars  ,only : gradtw_y
+    use global_vars  ,only : gradtw_z
+    use global_vars  ,only : mu_v=>mu
+    use global_vars  ,only : mu_t
     use global_vars, only : turbulence
     use utils, only: alloc, dealloc, dmsg
     use string
@@ -49,12 +69,12 @@ module viscous
         z_x_speed_left, z_x_speed_right, z_y_speed_left, z_y_speed_right, &
         z_z_speed_left, z_z_speed_right, x_pressure_left, x_pressure_right, &
         y_pressure_left, y_pressure_right, z_pressure_left, z_pressure_right
-    use source, only: gradu_x, gradu_y, &
-    gradu_z, gradv_x, gradv_y, gradv_z, gradw_x, gradw_y, gradw_z, &
-    gradT_x, gradT_y, gradT_z
+!    use source, only: gradu_x, gradu_y, &
+!    gradu_z, gradv_x, gradv_y, gradv_z, gradw_x, gradw_y, gradw_z, &
+!    gradT_x, gradT_y, gradT_z
 
       !include tk and te face variable from face_interpolant.mod
-      include "turbulence_models/include/transport/import_module.inc" 
+!      include "turbulence_models/include/transport/import_module.inc" 
 
     implicit none
     private
@@ -64,7 +84,7 @@ module viscous
 !    real, public, dimension(:, :, :), allocatable :: gradu_x, gradu_y, &
 !    gradu_z, gradv_x, gradv_y, gradv_z, gradw_x, gradw_y, gradw_z, &
 !    gradT_x, gradT_y, gradT_z
-    include "turbulence_models/include/transport/variables_deceleration.inc"
+!    include "turbulence_models/include/transport/variables_deceleration.inc"
 !   real, public, dimension(:, :, :), allocatable :: gradu_y_f
 
     !TODO: Viscous: Change to single subroutine for all directions  
@@ -452,7 +472,7 @@ module viscous
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: F
 
-        include "turbulence_models/include/transport/Ftransport_init.inc" 
+!        include "turbulence_models/include/transport/Ftransport_init.inc" 
 
         ! Calculating the fluxes at the faces
         ! A different calculation is to be done for interior faces as compared
@@ -592,6 +612,7 @@ module viscous
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
+            mu = 0.5*(mu_v(i-1,j,k) + mu_v(i,j,k)) + 0.5*(mu_t(i-1,j,k) + mu_t(i,j,k)) 
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_zz = 2. * mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
@@ -635,7 +656,7 @@ module viscous
                               Qz) * xnz(i, j, k)) ) )
             
            ! gradu_y_f(i, j, k) = dTdy 
-        include "turbulence_models/include/transport/Ftransport_find.inc" 
+!        include "turbulence_models/include/transport/Ftransport_find.inc" 
            
           end do
          end do
@@ -663,7 +684,7 @@ module viscous
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: G
 
-        include "turbulence_models/include/transport/Gtransport_init.inc" 
+        !include "turbulence_models/include/transport/Gtransport_init.inc" 
         ! Calculating the fluxes at the faces
         ! A different calculation is to be done for interior faces as compared
         ! to the bounday
@@ -801,6 +822,7 @@ module viscous
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
+            mu = 0.5*(mu_v(i,j-1,k) + mu_v(i,j,k)) + 0.5*(mu_t(i,j-1,k) + mu_t(i,j,k)) 
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_zz = 2. * mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
@@ -852,7 +874,7 @@ module viscous
                               Qy) * yny(i, j, k)) + &
                             ((Tau_xz*uface + Tau_yz*vface + Tau_zz*wface + &
                               Qz) * ynz(i, j, k)) ) )
-          include "turbulence_models/include/transport/Gtransport_find.inc" 
+          !include "turbulence_models/include/transport/Gtransport_find.inc" 
           end do
          end do
         end do
@@ -879,7 +901,7 @@ module viscous
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: H
 
-        include "turbulence_models/include/transport/Htransport_init.inc" 
+!        include "turbulence_models/include/transport/Htransport_init.inc" 
         ! Calculating the fluxes at the faces
         ! A different calculation is to be done for interior faces as compared
         ! to the bounday
@@ -1017,6 +1039,7 @@ module viscous
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
+            mu = 0.5*(mu_v(i,j,k-1) + mu_v(i,j,k)) + 0.5*(mu_t(i,j,k-1) + mu_t(i,j,k)) 
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_zz = 2. * mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
@@ -1066,7 +1089,7 @@ module viscous
                               Qy) * zny(i, j, k)) + &
                             ((Tau_xz*uface + Tau_yz*vface + Tau_zz*wface + &
                               Qz) * znz(i, j, k)) ) )
-            include "turbulence_models/include/transport/Htransport_find.inc" 
+!            include "turbulence_models/include/transport/Htransport_find.inc" 
           end do
          end do
         end do

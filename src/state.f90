@@ -260,7 +260,6 @@ module state
             !-----------------------------------------------------------
 
             implicit none
-            character(len=FILE_NAME_LENGTH) :: state_file
             
             call dmsg(1, 'state', 'initstate')
 
@@ -295,74 +294,74 @@ module state
             
         end subroutine init_state_with_infinity_values
 
-        subroutine readstate_vtk(state_file)
-            !-----------------------------------------------------------
-            ! Read the state of the system from a file
-            !-----------------------------------------------------------
-
-            implicit none
-            character(len=FILE_NAME_LENGTH), intent(in) :: state_file
-            integer :: i, j, k
-            
-            call dmsg(1, 'state', 'readstate_vtk')
-
-            open(OUT_FILE_UNIT, file=state_file)
-
-            read(OUT_FILE_UNIT, *) ! Skip first line
-            read(OUT_FILE_UNIT, *) ! Skip comment
-            read(OUT_FILE_UNIT, *) ! Skip ASCII
-            read(OUT_FILE_UNIT, *) ! Skip DATASET
-            read(OUT_FILE_UNIT, *) ! Skip Extra line
-
-            read(OUT_FILE_UNIT, *) ! Skip DIMENSIONS
-            read(OUT_FILE_UNIT, *) ! Skip POINTS
-            do k = 1, kmx
-             do j = 1, jmx
-              do i = 1, imx
-                read(OUT_FILE_UNIT, *) ! Skip grid points
-              end do
-             end do
-            end do
-            read(OUT_FILE_UNIT, *) ! Skip blank space
-
-            ! Cell data
-            read(OUT_FILE_UNIT, *) ! Skip CELL_DATA
-            read(OUT_FILE_UNIT, *) ! Skip VECTORS Velocity
- 
-            do k = 1, kmx - 1
-             do j = 1, jmx - 1
-              do i = 1, imx - 1
-                read(OUT_FILE_UNIT, *) x_speed(i, j, k), y_speed(i, j, k), z_speed(i, j, k)
-              end do
-             end do
-            end do
-
-            read(OUT_FILE_UNIT, *) ! Skip Blank line
-            read(OUT_FILE_UNIT, *) ! Skip SCALARS DENSITY
-            read(OUT_FILE_UNIT, *) ! Skip LOOKUP_TABLE
-            do k = 1, kmx - 1
-             do j = 1, jmx - 1
-              do i = 1, imx - 1
-                read(OUT_FILE_UNIT, *) density(i, j, k)
-              end do
-             end do
-            end do
-
-            read(OUT_FILE_UNIT, *) ! Skip Blank line
-            read(OUT_FILE_UNIT, *) ! Skip SCALARS Pressure
-            read(OUT_FILE_UNIT, *) ! Skip LOOKUP_TABLE
-            do k = 1, kmx - 1
-             do j = 1, jmx - 1
-              do i = 1, imx - 1
-                read(OUT_FILE_UNIT, *) pressure(i, j, k)
-              end do
-             end do
-            end do
-            ! Extra var not needed for state
-            include "turbulence_models/include/state/readstate_vtk.inc"
-
-            close(OUT_FILE_UNIT)
-
-        end subroutine readstate_vtk
+!        subroutine readstate_vtk(state_file)
+!            !-----------------------------------------------------------
+!            ! Read the state of the system from a file
+!            !-----------------------------------------------------------
+!
+!            implicit none
+!            character(len=FILE_NAME_LENGTH), intent(in) :: state_file
+!            integer :: i, j, k
+!            
+!            call dmsg(1, 'state', 'readstate_vtk')
+!
+!            open(OUT_FILE_UNIT, file=state_file)
+!
+!            read(OUT_FILE_UNIT, *) ! Skip first line
+!            read(OUT_FILE_UNIT, *) ! Skip comment
+!            read(OUT_FILE_UNIT, *) ! Skip ASCII
+!            read(OUT_FILE_UNIT, *) ! Skip DATASET
+!            read(OUT_FILE_UNIT, *) ! Skip Extra line
+!
+!            read(OUT_FILE_UNIT, *) ! Skip DIMENSIONS
+!            read(OUT_FILE_UNIT, *) ! Skip POINTS
+!            do k = 1, kmx
+!             do j = 1, jmx
+!              do i = 1, imx
+!                read(OUT_FILE_UNIT, *) ! Skip grid points
+!              end do
+!             end do
+!            end do
+!            read(OUT_FILE_UNIT, *) ! Skip blank space
+!
+!            ! Cell data
+!            read(OUT_FILE_UNIT, *) ! Skip CELL_DATA
+!            read(OUT_FILE_UNIT, *) ! Skip VECTORS Velocity
+! 
+!            do k = 1, kmx - 1
+!             do j = 1, jmx - 1
+!              do i = 1, imx - 1
+!                read(OUT_FILE_UNIT, *) x_speed(i, j, k), y_speed(i, j, k), z_speed(i, j, k)
+!              end do
+!             end do
+!            end do
+!
+!            read(OUT_FILE_UNIT, *) ! Skip Blank line
+!            read(OUT_FILE_UNIT, *) ! Skip SCALARS DENSITY
+!            read(OUT_FILE_UNIT, *) ! Skip LOOKUP_TABLE
+!            do k = 1, kmx - 1
+!             do j = 1, jmx - 1
+!              do i = 1, imx - 1
+!                read(OUT_FILE_UNIT, *) density(i, j, k)
+!              end do
+!             end do
+!            end do
+!
+!            read(OUT_FILE_UNIT, *) ! Skip Blank line
+!            read(OUT_FILE_UNIT, *) ! Skip SCALARS Pressure
+!            read(OUT_FILE_UNIT, *) ! Skip LOOKUP_TABLE
+!            do k = 1, kmx - 1
+!             do j = 1, jmx - 1
+!              do i = 1, imx - 1
+!                read(OUT_FILE_UNIT, *) pressure(i, j, k)
+!              end do
+!             end do
+!            end do
+!            ! Extra var not needed for state
+!            include "turbulence_models/include/state/readstate_vtk.inc"
+!
+!            close(OUT_FILE_UNIT)
+!
+!        end subroutine readstate_vtk
 
 end module state

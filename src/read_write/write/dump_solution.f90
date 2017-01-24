@@ -30,7 +30,7 @@ module dump_solution
   use global_vars, only :  turbulence
   use utils
   use string
-  use write_output_vtk, only : write_file
+  use write_output, only : write_file
   use layout,      only : process_id
 
   implicit none

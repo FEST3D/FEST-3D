@@ -62,6 +62,8 @@ module boundary_conditions
     use global_vars, only : dist
     use global_vars, only : process_id
 
+    use global_sst , only : beta1
+
     use utils, only: alloc, dealloc, dmsg
     use bitwise
     use global, only: BOUNDARY_CONDITIONS_FILE_UNIT, STRING_BUFFER_LENGTH, &

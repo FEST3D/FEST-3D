@@ -306,7 +306,7 @@ module read_output_vtk
       call dmsg(1, 'read_output_vtk', 'read_TKE')
       ! Writing Pressure
       if (read_data_format == "ASCII") then
-        read(IN_FILE_UNIT, *) buf!'SCALARS k FLOAT'
+        read(IN_FILE_UNIT, *) !'SCALARS k FLOAT'
         read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
         do k = 1, kmx - 1
          do j = 1, jmx - 1

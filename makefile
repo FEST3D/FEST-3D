@@ -16,7 +16,8 @@ GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 					-Wsurprising \
 					-Wintrinsic-shadow \
 					-pedantic-errors \
-					-fbounds-check
+					-fbounds-check \
+					-cpp
 #					-Werror \
 
 IFFLAGS := -O3 -free -r8 -traceback \

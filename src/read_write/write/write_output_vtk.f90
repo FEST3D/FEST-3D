@@ -20,6 +20,8 @@ module write_output_vtk
   use global_vars, only : pressure 
   use global_vars, only : tk 
   use global_vars, only : tw 
+  use global_vars, only : mu 
+  use global_vars, only : mu_t 
   use global_vars, only : density_inf
   use global_vars, only : x_speed_inf
   use global_vars, only : y_speed_inf
@@ -59,16 +61,17 @@ module write_output_vtk
     subroutine write_file()
       implicit none
 
-      call setup_file
-      call open_file(outfile)
+!      call setup_file
+!      call open_file(outfile)
       call write_header()
       call write_grid()
       call write_velocity()
       call write_density()
       call write_pressure()
+      call write_mu()
       call write_turbulent_variables()
       call write_resnorm()
-      call close_file(outfile)
+!      call close_file(outfile)
 
     end subroutine write_file
 
@@ -83,6 +86,7 @@ module write_output_vtk
         case ('sst')
           call write_TKE()
           call write_omega()
+          call write_mu_t()
         case DEFAULT
           call dmsg(5, 'write_output_vtk',' write_turbulent_variables',&
               'ERROR: Turbulence model not recongnised')
@@ -349,6 +353,69 @@ module write_output_vtk
       end if
 
     end subroutine write_omega
+
+
+    subroutine write_mu()
+      implicit none
+
+      call dmsg(1, 'write_output_vtk', 'write_mu')
+      ! Writing Density
+      if (Write_data_format == "ASCII") then
+        write(OUT_FILE_UNIT, '(a)') 'SCALARS mu FLOAT'
+        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT, fmt='(f0.16)') mu(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT, *) 
+      elseif (write_data_format == 'BINARY') then
+        write(OUT_FILE_UNIT) 'SCALARS mu DOUBLE'
+        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT) mu(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT)
+      end if
+
+    end subroutine write_mu
+
+    subroutine write_mu_t()
+      implicit none
+
+      call dmsg(1, 'write_output_vtk', 'write_mu_t')
+      ! Writing Density
+      if (Write_data_format == "ASCII") then
+        write(OUT_FILE_UNIT, '(a)') 'SCALARS mu_t FLOAT'
+        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT, fmt='(f0.16)') mu_t(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT, *) 
+      elseif (write_data_format == 'BINARY') then
+        write(OUT_FILE_UNIT) 'SCALARS mu_t DOUBLE'
+        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT) mu_t(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT)
+      end if
+
+    end subroutine write_mu_t
 
     subroutine write_dist()
       implicit none

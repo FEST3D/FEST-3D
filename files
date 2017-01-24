@@ -1,11 +1,14 @@
 files = global.f90  \
         global_vars.f90  \
+        global_sst.f90  \
         utils.f90 \
         layout.f90 \
         bitwise.f90 \
         string.f90 \
         read_write/read/read.f90 \
         read_write/write/write_output_vtk.f90 \
+        read_write/write/write_output_tecplot.f90 \
+        read_write/write/write_output.f90 \
         read_write/read/read_output_vtk.f90 \
         grid.f90 \
         geometry.f90 \
@@ -20,7 +23,16 @@ files = global.f90  \
         wall_find.f90 \
         surfnode.f90 \
         wall_dist.f90 \
+        transport/viscosity/molecular/molecular_viscosity.f90 \
+        transport/viscosity/turbulent/sst_viscosity.f90 \
+        transport/viscosity/turbulent/turbulent_viscosity.f90 \
+        transport/viscosity/viscosity.f90 \
+        transport/transport.f90 \
+        source/sst_source.f90 \
+        source/sst_grad.f90 \
+        source/turbulent_source.f90 \
         source.f90 \
+        turbulent_flux.f90 \
         viscous.f90 \
         parallel.f90 \
         boundary_conditions.f90 \

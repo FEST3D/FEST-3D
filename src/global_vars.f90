@@ -65,29 +65,50 @@ module global_vars
   real, dimension(:, :, :, :), allocatable  :: dEdx_3
 
   ! state variables viscous
-  integer                                           :: n_var        ! number of variable to solve for
-  real, dimension(:, :, :, :), allocatable, target  :: qp           ! primitive variable at cell center
-  real, dimension(:)         , allocatable, target  :: qp_inf       ! primitive variable at infinity
-  real, dimension(:, :, :)                , pointer :: density      ! rho pointer, point to slice of qp
-  real, dimension(:, :, :)                , pointer :: x_speed      ! u pointer, point to slice of qp
-  real, dimension(:, :, :)                , pointer :: y_speed      ! v pointer, point to slice of qp
-  real, dimension(:, :, :)                , pointer :: z_speed      ! w pointer, point to slice of qp
-  real, dimension(:, :, :)                , pointer :: pressure     ! P pointer, point to slice of qp
-  real                                    , pointer :: density_inf  ! rho pointer, point to slice of qp_inf
-  real                                    , pointer :: x_speed_inf  ! u pointer, point to slice of qp_inf
-  real                                    , pointer :: y_speed_inf  ! v pointer, point to slice of qp_inf
-  real                                    , pointer :: z_speed_inf  ! w pointer, point to slice of qp_inf
-  real                                    , pointer :: pressure_inf ! p pointer, point to slice of qp_inf
+   ! number of variable to solve for
+   ! primitive variable at cell center
+   ! primitive variable at infinity  
+   ! rho pointer, point to slice of qp
+   ! u pointer, point to slice of qp 
+   ! v pointer, point to slice of qp 
+   ! w pointer, point to slice of qp 
+   ! P pointer, point to slice of qp 
+   ! rho pointer, point to slice of qp_inf
+   ! u pointer, point to slice of qp_inf
+   ! v pointer, point to slice of qp_inf
+   ! w pointer, point to slice of qp_inf
+   ! p pointer, point to slice of qp_inf
+  integer                                           :: n_var        
+  real, dimension(:, :, :, :), allocatable, target  :: qp           
+  real, dimension(:)         , allocatable, target  :: qp_inf       
+  real, dimension(:, :, :)                , pointer :: density      
+  real, dimension(:, :, :)                , pointer :: x_speed      
+  real, dimension(:, :, :)                , pointer :: y_speed      
+  real, dimension(:, :, :)                , pointer :: z_speed      
+  real, dimension(:, :, :)                , pointer :: pressure     
+  real                                    , pointer :: density_inf  
+  real                                    , pointer :: x_speed_inf  
+  real                                    , pointer :: y_speed_inf  
+  real                                    , pointer :: z_speed_inf  
+  real                                    , pointer :: pressure_inf 
 
   ! Freestram variable used to read file before inf pointer are linked and allocated
-  real                                              :: free_stream_density  ! read Rho_inf from control file
-  real                                              :: free_stream_x_speed  ! read U_inf from control file
-  real                                              :: free_stream_y_speed  ! read V_inf from control file
-  real                                              :: free_stream_z_speed  ! read W_inf from control file
-  real                                              :: free_stream_pressure ! read P_inf from control file
-  real                                              :: free_stream_tk       ! read tk_inf from control file
-  real                                              :: free_stream_tw       ! read tw_inf from control file
-  real, dimension(:, :, :), allocatable             :: dist      ! wall distance for each cell center
+   ! read Rho_inf from control file
+   ! read U_inf from control file
+   ! read V_inf from control file
+   ! read W_inf from control file
+   ! read P_inf from control file
+   ! read tk_inf from control file
+   ! read tw_inf from control file
+   ! wall distance for each cell center
+  real                                              :: free_stream_density  
+  real                                              :: free_stream_x_speed  
+  real                                              :: free_stream_y_speed  
+  real                                              :: free_stream_z_speed  
+  real                                              :: free_stream_pressure 
+  real                                              :: free_stream_tk       
+  real                                              :: free_stream_tw       
+  real, dimension(:, :, :), allocatable             :: dist 
 
   ! state variable turbulent
   integer                                           :: sst_n_var=2
@@ -95,8 +116,8 @@ module global_vars
 !  real, dimension(:)         , allocatable, target  :: tqp_inf   ! turbulent primitive at inf
   real, dimension(:, :, :)                , pointer :: tk        ! TKE/mass
   real, dimension(:, :, :)                , pointer :: tw        ! omega
-  real                                    , pointer :: tk_inf    ! TKE/mass at inf
-  real                                    , pointer :: tw_inf    ! omega at inf
+  real*8                                    , pointer :: tk_inf    ! TKE/mass at inf
+  real*8                                    , pointer :: tw_inf    ! omega at inf
 
   ! residue variables
   real, dimension(:, :, :, :)             , pointer :: F_p
@@ -130,6 +151,9 @@ module global_vars
   integer                                           :: PB_switch
   character(len=5)                                  :: turbulence ! todo character length
   
+  real, dimension(:, :, :), allocatable             :: mu
+  real, dimension(:, :, :), allocatable, target     :: mu_t
+  real, dimension(:, :, :)              , pointer   :: sst_mu
 
   !residual specific
   real, pointer ::        resnorm     !            residue normalized
@@ -162,16 +186,17 @@ module global_vars
   real          :: energy_resnorm_0   !     energy residue normalized at iter 1
   real          ::    TKE_resnorm_0   !        TKE residue normalized at iter 1
   real          ::  omega_resnorm_0   !      omega residue normalized at iter 1
-  real          ::        resnorm_0s  !            residue normalized at iter 1 used for mpi manipulation
-  real          ::    vis_resnorm_0s  ! {rho+V+P}  residue normalized at iter 1 used for mpi manipulation
-  real          ::   turb_resnorm_0s  !  turbulent residue normalized at iter 1 used for mpi manipulation 
-  real          ::   cont_resnorm_0s  !       mass residue normalized at iter 1 used for mpi manipulation
-  real          ::  x_mom_resnorm_0s  ! x momentum residue normalized at iter 1 used for mpi manipulation
-  real          ::  y_mom_resnorm_0s  ! Y momentum residue normalized at iter 1 used for mpi manipulation
-  real          ::  z_mom_resnorm_0s  ! Z momentum residue normalized at iter 1 used for mpi manipulation
-  real          :: energy_resnorm_0s  !     energy residue normalized at iter 1 used for mpi manipulation
-  real          ::    TKE_resnorm_0s  !        TKE residue normalized at iter 1 used for mpi manipulation
-  real          ::  omega_resnorm_0s  !      omega residue normalized at iter 1 used for mpi manipulation
+  !used for MPI manipulation
+  real          ::        resnorm_0s  !            residue normalized at iter 1 
+  real          ::    vis_resnorm_0s  ! {rho+V+P}  residue normalized at iter 1 
+  real          ::   turb_resnorm_0s  !  turbulent residue normalized at iter 1  
+  real          ::   cont_resnorm_0s  !       mass residue normalized at iter 1 
+  real          ::  x_mom_resnorm_0s  ! x momentum residue normalized at iter 1 
+  real          ::  y_mom_resnorm_0s  ! Y momentum residue normalized at iter 1 
+  real          ::  z_mom_resnorm_0s  ! Z momentum residue normalized at iter 1 
+  real          :: energy_resnorm_0s  !     energy residue normalized at iter 1 
+  real          ::    TKE_resnorm_0s  !        TKE residue normalized at iter 1 
+  real          ::  omega_resnorm_0s  !      omega residue normalized at iter 1 
 
   ! grid variables
   integer                                 :: imx, jmx, kmx        ! no. of points
@@ -189,6 +214,27 @@ module global_vars
   real, dimension(:, :, :), allocatable, target ::   back_ghost_centroid
   real, dimension(:, :, :), allocatable, target ::    top_ghost_centroid
   real, dimension(:, :, :), allocatable, target :: bottom_ghost_centroid
+  
 
+  ! gradients
+
+  real, dimension(:, :, :), allocatable         :: gradu_x
+  real, dimension(:, :, :), allocatable         :: gradu_y
+  real, dimension(:, :, :), allocatable         :: gradu_z 
+  real, dimension(:, :, :), allocatable         :: gradv_x 
+  real, dimension(:, :, :), allocatable         :: gradv_y
+  real, dimension(:, :, :), allocatable         :: gradv_z
+  real, dimension(:, :, :), allocatable         :: gradw_x
+  real, dimension(:, :, :), allocatable         :: gradw_y
+  real, dimension(:, :, :), allocatable         :: gradw_z
+  real, dimension(:, :, :), allocatable         :: gradT_x
+  real, dimension(:, :, :), allocatable         :: gradT_y
+  real, dimension(:, :, :), allocatable         :: gradT_z
+  real, dimension(:, :, :), allocatable         :: gradtk_x
+  real, dimension(:, :, :), allocatable         :: gradtk_y
+  real, dimension(:, :, :), allocatable         :: gradtk_z
+  real, dimension(:, :, :), allocatable         :: gradtw_x
+  real, dimension(:, :, :), allocatable         :: gradtw_y
+  real, dimension(:, :, :), allocatable         :: gradtw_z
 end module global_vars
 

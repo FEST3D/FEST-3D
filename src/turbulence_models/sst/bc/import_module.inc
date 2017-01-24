@@ -11,4 +11,4 @@
                  x_pressure_right, x_pressure_left,&
                 y_pressure_left, y_pressure_right, z_pressure_left, z_pressure_right
 !    use wall_dist, only: dist
-    use source, only: beta1
+!    use source, only: beta1

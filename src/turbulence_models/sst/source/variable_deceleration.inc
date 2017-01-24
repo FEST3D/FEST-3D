@@ -3,7 +3,7 @@
 
     real, public, dimension(:, :, :), allocatable :: gradtk_x, gradtk_y, gradtk_z,&
                                                   gradtw_x, gradtw_y, gradtw_z,&
-                                                  F1, sst_mu
+                                                  F1,sst_mu
 
 
     !real, dimension(:, :, :), allocatable, public:: sst_mu, F1

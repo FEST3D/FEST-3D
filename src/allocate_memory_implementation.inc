@@ -54,7 +54,7 @@ subroutine alloc_rank3_real(var, start1, stop1, start2, stop2, &
             print *, 'Error: Could not allocate memory.'
         end if
         print *, 'Required extent: ', stop1 - start1 + 1, &
-                stop2 - start2 + 1, stop3 - stop3 + 1
+                stop2 - start2 + 1, stop3 - start3 + 1
         stop
     end if
 end subroutine alloc_rank3_real

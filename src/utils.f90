@@ -26,6 +26,7 @@ module utils
     end interface dealloc
 
     public :: dmsg
+    public :: turbulence_read_error
 
     contains
 
@@ -75,10 +76,17 @@ module utils
                 stop
             end if
 
-            print '(A7,I1.1,A2,A,A2,A,A,A1)', 'Debug: ', level, ' (', &
+            print '(A7,I1.1,A,I2,A2,A,A2,A,A,A1)', 'Debug: ', level," id - ", process_id, ' (', &
               trim(prog), ', ', trim(method), trim(ifmsg), ')'
 !           end if
 
         end subroutine dmsg
+        
+        subroutine turbulence_read_error()
+
+          print*, "ERROR: Turbulence model not recognised"
+          STOP
+
+        end subroutine turbulence_read_error
 
 end module utils

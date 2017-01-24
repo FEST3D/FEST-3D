@@ -109,6 +109,9 @@ module solver
 !  use state, only: turbulence
   use resnorm_, only : write_resnorm, setup_resnorm, destroy_resnorm
   use dump_solution, only : checkpoint
+  use transport    , only : setup_transport
+  use transport    , only : destroy_transport
+  use transport    , only : calculate_transport
   include "turbulence_models/include/solver/import_module.inc"
 
     use mpi
@@ -157,6 +160,7 @@ module solver
               call setup_wall_dist
               call find_wall_dist()
             end if
+            call setup_transport()
             if(mu_ref /= 0. .or. turbulence /= 'none') then
               call setup_source()
             end if
@@ -175,6 +179,7 @@ module solver
             
             call dmsg(1, 'solver', 'destroy_solver')
 
+            call destroy_transport()
             if(mu_ref /= 0. .or. turbulence /= 'none')  then 
               call destroy_source()
             end if
@@ -704,6 +709,7 @@ module solver
             call reconstruct_boundary_state(interpolant)
             call set_wall_bc_at_faces()
             call compute_fluxes()
+            call calculate_transport()
             if (mu_ref /= 0.0) then
                 if (interpolant /= "none") then
                     call extrapolate_cell_averages_to_faces()
