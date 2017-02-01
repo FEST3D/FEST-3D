@@ -18,18 +18,20 @@ module read_output_vtk
   use global_vars, only : grid_x
   use global_vars, only : grid_y
   use global_vars, only : grid_z
-  use global_vars, only : density 
-  use global_vars, only : x_speed 
-  use global_vars, only : y_speed 
-  use global_vars, only : z_speed 
-  use global_vars, only : pressure 
-  use global_vars, only : tk 
-  use global_vars, only : tw 
+  use global_vars, only : density
+  use global_vars, only : x_speed
+  use global_vars, only : y_speed
+  use global_vars, only : z_speed
+  use global_vars, only : pressure
+  use global_vars, only : tk
+  use global_vars, only : tw
   use global_vars, only : density_inf
   use global_vars, only : x_speed_inf
   use global_vars, only : y_speed_inf
   use global_vars, only : z_speed_inf
   use global_vars, only : pressure_inf 
+  use global_vars, only : mu
+  use global_vars, only : mu_t
   use global_vars, only : gm
   use global_vars, only : dist
   use global_vars, only : vis_resnorm
