@@ -151,6 +151,7 @@ module solver
                   end if
             call setup_grid(grid_file_buf)
             call setup_geometry()
+            call setup_transport()
             call setup_state()
             call setup_boundary_conditions(bc_file)
             call allocate_memory()
@@ -160,7 +161,6 @@ module solver
               call setup_wall_dist
               call find_wall_dist()
             end if
-            call setup_transport()
             if(mu_ref /= 0. .or. turbulence /= 'none') then
               call setup_source()
             end if

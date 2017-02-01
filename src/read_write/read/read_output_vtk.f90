@@ -34,6 +34,7 @@ module read_output_vtk
   use global_vars, only : mu_t
   use global_vars, only : gm
   use global_vars, only : dist
+  use global_vars, only : turbulence
   use global_vars, only : vis_resnorm
   use global_vars, only : cont_resnorm
   use global_vars, only : x_mom_resnorm
@@ -436,7 +437,7 @@ module read_output_vtk
         read(IN_FILE_UNIT) 
       end if
 
-    end subroutine read_mu
+    end subroutine read_mu_t
 
     subroutine read_dist()
       implicit none
