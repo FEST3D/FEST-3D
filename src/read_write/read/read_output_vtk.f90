@@ -81,6 +81,7 @@ module read_output_vtk
       call read_velocity()
       call read_density()
       call read_pressure()
+      call read_viscosity()
       call read_turbulence_variables()
  !     call read_resnorm()
       call close_file()
@@ -105,6 +106,17 @@ module read_output_vtk
       end select
 
     end subroutine read_turbulence_variables
+
+    subroutine read_viscosity()
+      implicit none
+
+      call read_mu()
+
+      if (turbulence/='none') then
+        call read_mu_t()
+      end if
+
+    end subroutine read_viscosity
 
     subroutine setup_file()
       implicit none
@@ -361,6 +373,68 @@ module read_output_vtk
       end if
 
     end subroutine read_omega
+
+    subroutine read_mu()
+      implicit none
+
+      call dmsg(1, 'read_output_vtk', 'read_mu')
+      ! Writing Pressure
+      if (read_data_format == "ASCII") then
+        read(IN_FILE_UNIT, *) !'SCALARS mu FLOAT'
+        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT, *) mu(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT, *) 
+      elseif (read_data_format == 'BINARY') then
+        read(IN_FILE_UNIT) !'SCALARS mu DOUBLE'
+        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT) mu(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT) 
+      end if
+
+    end subroutine read_mu
+
+    subroutine read_mu_t()
+      implicit none
+
+      call dmsg(1, 'read_output_vtk', 'read_mu_t')
+      ! Writing Pressure
+      if (read_data_format == "ASCII") then
+        read(IN_FILE_UNIT, *) !'SCALARS mu_t FLOAT'
+        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT, *) mu_t(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT, *) 
+      elseif (read_data_format == 'BINARY') then
+        read(IN_FILE_UNIT) !'SCALARS mu_t DOUBLE'
+        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT) mu_t(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT) 
+      end if
+
+    end subroutine read_mu
 
     subroutine read_dist()
       implicit none
