@@ -68,7 +68,7 @@ module write_output_vtk
       call write_velocity()
       call write_density()
       call write_pressure()
-      call write_mu()
+      call write_viscosity()
       call write_turbulent_variables()
       call write_resnorm()
 !      call close_file(outfile)
@@ -86,7 +86,6 @@ module write_output_vtk
         case ('sst')
           call write_TKE()
           call write_omega()
-          call write_mu_t()
         case DEFAULT
           call dmsg(5, 'write_output_vtk',' write_turbulent_variables',&
               'ERROR: Turbulence model not recongnised')
@@ -94,6 +93,16 @@ module write_output_vtk
       end select
 
     end subroutine write_turbulent_variables
+
+    subroutine write_viscosity()
+      implicit none
+
+      call write_mu()
+      if (turbulence/='none') then
+        call write_mu_t()
+      end if
+
+    end subroutine write_viscosity
 
     subroutine setup_file()
       implicit none
