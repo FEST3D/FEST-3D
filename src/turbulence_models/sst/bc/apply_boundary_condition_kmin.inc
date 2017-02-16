@@ -11,3 +11,6 @@
                         call copy_tw("kmin", i * cell_ind)
                     end if
 
+    if ((bc_kmn(i,j) .and. current_condition) .ne. BC_INTERFACE) then
+      call extrapolate_F1("kmin")
+    end if

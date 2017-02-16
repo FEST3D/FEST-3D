@@ -6,6 +6,10 @@ module solver
   use global, only: STRING_BUFFER_LENGTH 
   use global, only: INTERPOLANT_NAME_LENGTH
 
+  use global_sst , only : beta1
+  use global_sst , only : beta2
+  use global_sst , only : bstar
+  use global_sst , only : sst_F1
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
@@ -102,6 +106,7 @@ module solver
           destroy_boundary_conditions
   use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
   use viscous, only: compute_viscous_fluxes
+  use turbulent_flux, only: compute_turbulent_fluxes
   use boundary_state_reconstruction, only: reconstruct_boundary_state
   use layout, only: process_id, grid_file_buf, bc_file, &
   get_process_data, read_layout_file, total_process
@@ -112,6 +117,9 @@ module solver
   use transport    , only : setup_transport
   use transport    , only : destroy_transport
   use transport    , only : calculate_transport
+  use sst_F      , only : setup_sst_F1
+  use sst_F      , only : destroy_sst_F1
+  use sst_F      , only : calculate_sst_F1
   include "turbulence_models/include/solver/import_module.inc"
 
     use mpi
@@ -164,6 +172,7 @@ module solver
             if(mu_ref /= 0. .or. turbulence /= 'none') then
               call setup_source()
             end if
+            call setup_sst_F1()
             call link_aliases_solver()
             call setup_resnorm()
             call initmisc()
@@ -193,6 +202,7 @@ module solver
             call destroy_geometry()
             call destroy_grid()
             call destroy_resnorm()
+            call destroy_sst_F1()
 
         end subroutine destroy_solver
 
@@ -638,6 +648,7 @@ module solver
 
             implicit none
             integer :: i, j, k
+            real :: beta
             
             call dmsg(1, 'solver', 'update_solution')
 
@@ -687,11 +698,24 @@ module solver
              end do
             end do
 
-            if (any(density < 0) .or. any(pressure < 0)) then
+            if (any(density < 0.) .or. any(pressure < 0.)) then
                 call dmsg(5, 'solver', 'update_solution', &
                         'ERROR: Some density or pressure is negative.')
-                stop
+                !stop
             end if
+
+            do k = -2,kmx+2
+              do j = -2,jmx+2
+                do i = -2,imx+2
+                  if (density(i,j,k)<0.) then
+                    print*, process_id, i,j,k, "density: ", density(i,j,k)
+                  end if
+                  if (pressure(i,j,k)<0.) then
+                    print*, process_id, i,j,k, "pressure: ", pressure(i,j,k)
+                  end if
+                end do
+              end do
+            end do
 
         end subroutine update_solution
 
@@ -716,8 +740,11 @@ module solver
                     call set_wall_bc_at_faces()
                 end if
                 call compute_gradients_cell_centre()
+                call calculate_transport()
+                call calculate_sst_F1()
                 call add_source_term_residue()
                 call compute_viscous_fluxes(F_p, G_p, H_p)
+                call compute_turbulent_fluxes(F_p, G_p, H_p)
             end if
             call compute_residue()
             call dmsg(1, 'solver', 'step', 'Residue computed.')

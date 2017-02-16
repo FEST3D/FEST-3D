@@ -11,3 +11,6 @@
                         call copy_tk("imax", i * cell_ind)
                     end if
 
+    if ((bc_imx(i,j) .and. current_condition) .ne. BC_INTERFACE) then
+      call extrapolate_F1("imax")
+    end if

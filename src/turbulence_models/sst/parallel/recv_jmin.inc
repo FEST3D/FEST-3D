@@ -17,3 +17,12 @@
         end do
       end do
     end do
+    
+    do k = 0, kmx
+      do i = 0, imx
+        do l = 1, layers
+          sst_F1(i,1-l,k) = jmin_recv_buf(count) 
+          count = count+1
+        end do
+      end do
+    end do

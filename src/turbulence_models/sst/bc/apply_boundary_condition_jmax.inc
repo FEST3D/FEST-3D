@@ -11,3 +11,6 @@
                         call copy_tk("jmax", i * cell_ind)
                     end if
 
+    if ((bc_jmx(i,j) .and. current_condition) .ne. BC_INTERFACE) then
+      call extrapolate_F1("jmax")
+    end if

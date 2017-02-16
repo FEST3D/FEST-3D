@@ -55,6 +55,7 @@ module boundary_conditions
     use global_vars, only : tk_inf
     use global_vars, only : tw_inf
     use global_vars, only : mu_ref
+    use global_vars, only : mu_t
     use global_vars, only : R_gas
     use global_vars, only : T_ref
     use global_vars, only : Sutherland_temp
@@ -78,6 +79,8 @@ module boundary_conditions
             y_x_speed_left, y_x_speed_right, y_y_speed_left, y_y_speed_right, &
             y_z_speed_left, y_z_speed_right, z_x_speed_left, z_x_speed_right, &
             z_y_speed_left, z_y_speed_right, z_z_speed_left, z_z_speed_right
+
+    use global_sst, only : sst_F1
 
     include "turbulence_models/include/bc/import_module.inc" 
     implicit none
@@ -422,10 +425,10 @@ module boundary_conditions
                     call setup_common_boundary_conditions(bc_jmx, bc_jmx_fix_values)
                     found_new_boundary = .TRUE.
                 case ("# kmn")
-                    call setup_common_boundary_conditions(bc_kmn, bc_jmn_fix_values)
+                    call setup_common_boundary_conditions(bc_kmn, bc_kmn_fix_values)
                     found_new_boundary = .TRUE.
                 case ("# kmx")
-                    call setup_common_boundary_conditions(bc_kmx, bc_jmx_fix_values)
+                    call setup_common_boundary_conditions(bc_kmx, bc_kmx_fix_values)
                     found_new_boundary = .TRUE.
  !              case ("# imn +")
  !                  call setup_range_based_boundary_conditions(bc_imn, bc_imn_fix_values, jmx)
@@ -504,7 +507,7 @@ module boundary_conditions
 
                     if ((bc_imn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                       if (imin_flow_tangency_flag==0)then
-                        call extra_ghost_cells("imin")
+                        !call extra_ghost_cells("imin")
                       end if
                     end if
                  end do
@@ -552,7 +555,7 @@ module boundary_conditions
 
                     if ((bc_imx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                       if (imax_flow_tangency_flag==0)then
-                        call extra_ghost_cells("imax")
+                        !call extra_ghost_cells("imax")
                       end if
                     end if
                  end do
@@ -600,7 +603,7 @@ module boundary_conditions
 
                     if ((bc_jmn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                       if (jmin_flow_tangency_flag==0)then
-                        call extra_ghost_cells("jmin")
+                        !call extra_ghost_cells("jmin")
                       end if
                     end if
                  end do
@@ -696,7 +699,7 @@ module boundary_conditions
 
                     if ((bc_kmn(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                       if (kmin_flow_tangency_flag==0)then
-                        call extra_ghost_cells("kmin")
+                        !call extra_ghost_cells("kmin")
                       end if
                     end if
                  end do
@@ -744,7 +747,7 @@ module boundary_conditions
 
                     if ((bc_kmx(i, j) .and. current_condition) .ne. BC_INTERFACE) then
                       if (kmax_flow_tangency_flag==0)then
-                        call extra_ghost_cells("kmax")
+                        !call extra_ghost_cells("kmax")
                       end if
                     end if
                  end do
@@ -1168,27 +1171,27 @@ module boundary_conditions
             
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    pressure(0, 1:jmx-1, 1:kmx-1) = fixed_pressure
-                    pressure(-1, 1:jmx-1, 1:kmx-1) = fixed_pressure
-                    pressure(-2, 1:jmx-1, 1:kmx-1) = fixed_pressure
+                    pressure( 0, 1:jmx-1, 1:kmx-1)    = fixed_pressure
+                    pressure(-1, 1:jmx-1, 1:kmx-1)    = fixed_pressure
+                    pressure(-2, 1:jmx-1, 1:kmx-1)    = fixed_pressure
                 else if (face == "imax") then
-                    pressure(imx, 1:jmx-1, 1:kmx-1) = fixed_pressure
+                    pressure(imx  , 1:jmx-1, 1:kmx-1) = fixed_pressure
                     pressure(imx+1, 1:jmx-1, 1:kmx-1) = fixed_pressure
                     pressure(imx+2, 1:jmx-1, 1:kmx-1) = fixed_pressure
                 else if (face == "jmin") then
-                    pressure(1:imx-1, 0, 1:kmx-1) = fixed_pressure
-                    pressure(1:imx-1, -1, 1:kmx-1) = fixed_pressure
-                    pressure(1:imx-1, -2, 1:kmx-1) = fixed_pressure
+                    pressure(1:imx-1,  0, 1:kmx-1)    = fixed_pressure
+                    pressure(1:imx-1, -1, 1:kmx-1)    = fixed_pressure
+                    pressure(1:imx-1, -2, 1:kmx-1)    = fixed_pressure
                 else if (face == "jmax") then
-                    pressure(1:imx-1, jmx, 1:kmx-1) = fixed_pressure
+                    pressure(1:imx-1, jmx  , 1:kmx-1) = fixed_pressure
                     pressure(1:imx-1, jmx+1, 1:kmx-1) = fixed_pressure
                     pressure(1:imx-1, jmx+2, 1:kmx-1) = fixed_pressure
                 else if (face == "kmin") then
-                    pressure(1:imx-1, 1:jmx-1, 0) = fixed_pressure
-                    pressure(1:imx-1, 1:jmx-1, -1) = fixed_pressure
-                    pressure(1:imx-1, 1:jmx-1, -2) = fixed_pressure
+                    pressure(1:imx-1, 1:jmx-1,  0)    = fixed_pressure
+                    pressure(1:imx-1, 1:jmx-1, -1)    = fixed_pressure
+                    pressure(1:imx-1, 1:jmx-1, -2)    = fixed_pressure
                 else if (face == "kmax") then
-                    pressure(1:imx-1, 1:jmx-1, kmx) = fixed_pressure
+                    pressure(1:imx-1, 1:jmx-1, kmx  ) = fixed_pressure
                     pressure(1:imx-1, 1:jmx-1, kmx+1) = fixed_pressure
                     pressure(1:imx-1, 1:jmx-1, kmx+2) = fixed_pressure
                 end if
@@ -1224,27 +1227,27 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    density(0, 1:jmx-1, 1:kmx-1) = density(1, 1:jmx-1, 1:kmx-1)
-                    density(-1, 1:jmx-1, 1:kmx-1) = density(2, 1:jmx-1, 1:kmx-1)
-                    density(-2, 1:jmx-1, 1:kmx-1) = density(3, 1:jmx-1, 1:kmx-1)
+                    density( 0, 1:jmx-1, 1:kmx-1)    = density(1, 1:jmx-1, 1:kmx-1)
+                    density(-1, 1:jmx-1, 1:kmx-1)    = density(2, 1:jmx-1, 1:kmx-1)
+                    density(-2, 1:jmx-1, 1:kmx-1)    = density(3, 1:jmx-1, 1:kmx-1)
                 else if (face == "imax") then
-                    density(imx, 1:jmx-1, 1:kmx-1) = density(imx-1, 1:jmx-1, 1:kmx-1)
+                    density(imx  , 1:jmx-1, 1:kmx-1) = density(imx-1, 1:jmx-1, 1:kmx-1)
                     density(imx+1, 1:jmx-1, 1:kmx-1) = density(imx-2, 1:jmx-1, 1:kmx-1)
                     density(imx+2, 1:jmx-1, 1:kmx-1) = density(imx-3, 1:jmx-1, 1:kmx-1)
                 else if (face == "jmin") then
-                    density(1:imx-1, 0, 1:kmx-1) = density(1:imx-1, 1, 1:kmx-1)
-                    density(1:imx-1, -1, 1:kmx-1) = density(1:imx-1, 2, 1:kmx-1)
-                    density(1:imx-1, -2, 1:kmx-1) = density(1:imx-1, 3, 1:kmx-1)
+                    density(1:imx-1,  0, 1:kmx-1)    = density(1:imx-1, 1, 1:kmx-1)
+                    density(1:imx-1, -1, 1:kmx-1)    = density(1:imx-1, 2, 1:kmx-1)
+                    density(1:imx-1, -2, 1:kmx-1)    = density(1:imx-1, 3, 1:kmx-1)
                 else if (face == "jmax") then
-                    density(1:imx-1, jmx, 1:kmx-1) = density(1:imx-1, jmx-1, 1:kmx-1)
+                    density(1:imx-1, jmx  , 1:kmx-1) = density(1:imx-1, jmx-1, 1:kmx-1)
                     density(1:imx-1, jmx+1, 1:kmx-1) = density(1:imx-1, jmx-2, 1:kmx-1)
                     density(1:imx-1, jmx+2, 1:kmx-1) = density(1:imx-1, jmx-3, 1:kmx-1)
                 else if (face == "kmin") then
-                    density(1:imx-1, 1:jmx-1, 0) = density(1:imx-1, 1:jmx-1, 1)
-                    density(1:imx-1, 1:jmx-1, -1) = density(1:imx-1, 1:jmx-1, 2)
-                    density(1:imx-1, 1:jmx-1, -2) = density(1:imx-1, 1:jmx-1, 3)
+                    density(1:imx-1, 1:jmx-1,  0)    = density(1:imx-1, 1:jmx-1, 1)
+                    density(1:imx-1, 1:jmx-1, -1)    = density(1:imx-1, 1:jmx-1, 2)
+                    density(1:imx-1, 1:jmx-1, -2)    = density(1:imx-1, 1:jmx-1, 3)
                 else if (face == "kmax") then
-                    density(1:imx-1, 1:jmx-1, kmx) = density(1:imx-1, 1:jmx-1, kmx-1)
+                    density(1:imx-1, 1:jmx-1, kmx  ) = density(1:imx-1, 1:jmx-1, kmx-1)
                     density(1:imx-1, 1:jmx-1, kmx+1) = density(1:imx-1, 1:jmx-1, kmx-2)
                     density(1:imx-1, 1:jmx-1, kmx+2) = density(1:imx-1, 1:jmx-1, kmx-3)
                 end if
@@ -1270,17 +1273,29 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    x_speed(0, 1:jmx-1, 1:kmx-1) = x_speed(1, 1:jmx-1, 1:kmx-1)
+                    x_speed( 0, 1:jmx-1, 1:kmx-1)    = x_speed( 1, 1:jmx-1, 1:kmx-1)
+                    x_speed(-1, 1:jmx-1, 1:kmx-1)    = x_speed( 0, 1:jmx-1, 1:kmx-1)
+                    x_speed(-2, 1:jmx-1, 1:kmx-1)    = x_speed(-1, 1:jmx-1, 1:kmx-1)
                 else if (face == "imax") then
-                    x_speed(imx, 1:jmx-1, 1:kmx-1) = x_speed(imx-1, 1:jmx-1, 1:kmx-1)
+                    x_speed(imx  , 1:jmx-1, 1:kmx-1) = x_speed(imx-1, 1:jmx-1, 1:kmx-1)
+                    x_speed(imx+1, 1:jmx-1, 1:kmx-1) = x_speed(imx  , 1:jmx-1, 1:kmx-1)
+                    x_speed(imx+2, 1:jmx-1, 1:kmx-1) = x_speed(imx+1, 1:jmx-1, 1:kmx-1)
                 else if (face == "jmin") then
-                    x_speed(1:imx-1, 0, 1:kmx-1) = x_speed(1:imx-1, 1, 1:kmx-1)
+                    x_speed(1:imx-1, 0, 1:kmx-1)     = x_speed(1:imx-1, 1, 1:kmx-1)
+                    x_speed(1:imx-1,-1, 1:kmx-1)     = x_speed(1:imx-1, 0, 1:kmx-1)
+                    x_speed(1:imx-1,-2, 1:kmx-1)     = x_speed(1:imx-1,-1, 1:kmx-1)
                 else if (face == "jmax") then
-                    x_speed(1:imx-1, jmx, 1:kmx-1) = x_speed(1:imx-1, jmx-1, 1:kmx-1)
+                    x_speed(1:imx-1, jmx  , 1:kmx-1) = x_speed(1:imx-1, jmx-1, 1:kmx-1)
+                    x_speed(1:imx-1, jmx+1, 1:kmx-1) = x_speed(1:imx-1, jmx  , 1:kmx-1)
+                    x_speed(1:imx-1, jmx+2, 1:kmx-1) = x_speed(1:imx-1, jmx+1, 1:kmx-1)
                 else if (face == "kmin") then
-                    x_speed(1:imx-1, 1:jmx-1, 0) = x_speed(1:imx-1, 1:jmx-1, 1)
+                    x_speed(1:imx-1, 1:jmx-1, 0)     = x_speed(1:imx-1, 1:jmx-1,  1)
+                    x_speed(1:imx-1, 1:jmx-1,-1)     = x_speed(1:imx-1, 1:jmx-1,  0)
+                    x_speed(1:imx-1, 1:jmx-1,-2)     = x_speed(1:imx-1, 1:jmx-1, -1)
                 else if (face == "kmax") then
-                    x_speed(1:imx-1, 1:jmx-1, kmx) = x_speed(1:imx-1, 1:jmx-1, kmx-1)
+                    x_speed(1:imx-1, 1:jmx-1, kmx  ) = x_speed(1:imx-1, 1:jmx-1, kmx-1)
+                    x_speed(1:imx-1, 1:jmx-1, kmx+1) = x_speed(1:imx-1, 1:jmx-1, kmx  )
+                    x_speed(1:imx-1, 1:jmx-1, kmx+2) = x_speed(1:imx-1, 1:jmx-1, kmx+1)
                 end if
       !     else
       !         if (face == "imin") then
@@ -1304,17 +1319,29 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    y_speed(0, 1:jmx-1, 1:kmx-1) = y_speed(1, 1:jmx-1, 1:kmx-1)
+                    y_speed( 0, 1:jmx-1, 1:kmx-1)    = y_speed( 1, 1:jmx-1, 1:kmx-1)
+                    y_speed(-1, 1:jmx-1, 1:kmx-1)    = y_speed( 0, 1:jmx-1, 1:kmx-1)
+                    y_speed(-2, 1:jmx-1, 1:kmx-1)    = y_speed(-1, 1:jmx-1, 1:kmx-1)
                 else if (face == "imax") then
-                    y_speed(imx, 1:jmx-1, 1:kmx-1) = y_speed(imx-1, 1:jmx-1, 1:kmx-1)
+                    y_speed(imx  , 1:jmx-1, 1:kmx-1) = y_speed(imx-1, 1:jmx-1, 1:kmx-1)
+                    y_speed(imx+1, 1:jmx-1, 1:kmx-1) = y_speed(imx  , 1:jmx-1  , 1:kmx-1)
+                    y_speed(imx+2, 1:jmx-1, 1:kmx-1) = y_speed(imx+1, 1:jmx-1, 1:kmx-1)
                 else if (face == "jmin") then
-                    y_speed(1:imx-1, 0, 1:kmx-1) = y_speed(1:imx-1, 1, 1:kmx-1)
+                    y_speed(1:imx-1,  0, 1:kmx-1)    = y_speed(1:imx-1, 1, 1:kmx-1)
+                    y_speed(1:imx-1, -1, 1:kmx-1)    = y_speed(1:imx-1, 0, 1:kmx-1)
+                    y_speed(1:imx-1, -2, 1:kmx-1)    = y_speed(1:imx-1,-1, 1:kmx-1)
                 else if (face == "jmax") then
-                    y_speed(1:imx-1, jmx, 1:kmx-1) = y_speed(1:imx-1, jmx-1, 1:kmx-1)
+                    y_speed(1:imx-1, jmx  , 1:kmx-1) = y_speed(1:imx-1, jmx-1, 1:kmx-1)
+                    y_speed(1:imx-1, jmx+1, 1:kmx-1) = y_speed(1:imx-1, jmx  , 1:kmx-1)
+                    y_speed(1:imx-1, jmx+2, 1:kmx-1) = y_speed(1:imx-1, jmx+1, 1:kmx-1)
                 else if (face == "kmin") then
-                    y_speed(1:imx-1, 1:jmx-1, 0) = y_speed(1:imx-1, 1:jmx-1, 1)
+                    y_speed(1:imx-1, 1:jmx-1, 0)     = y_speed(1:imx-1, 1:jmx-1,  1)
+                    y_speed(1:imx-1, 1:jmx-1,-1)     = y_speed(1:imx-1, 1:jmx-1,  0)
+                    y_speed(1:imx-1, 1:jmx-1,-2)     = y_speed(1:imx-1, 1:jmx-1, -1)
                 else if (face == "kmax") then
-                    y_speed(1:imx-1, 1:jmx-1, kmx) = y_speed(1:imx-1, 1:jmx-1, kmx-1)
+                    y_speed(1:imx-1, 1:jmx-1, kmx  ) = y_speed(1:imx-1, 1:jmx-1, kmx-1)
+                    y_speed(1:imx-1, 1:jmx-1, kmx+1) = y_speed(1:imx-1, 1:jmx-1, kmx  )
+                    y_speed(1:imx-1, 1:jmx-1, kmx+2) = y_speed(1:imx-1, 1:jmx-1, kmx+1)
                 end if
       !     else
       !         if (face == "imin") then
@@ -1338,17 +1365,29 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    z_speed(0, 1:jmx-1, 1:kmx-1) = z_speed(1, 1:jmx-1, 1:kmx-1)
+                    z_speed( 0, 1:jmx-1, 1:kmx-1)    = z_speed( 1, 1:jmx-1, 1:kmx-1)
+                    z_speed(-1, 1:jmx-1, 1:kmx-1)    = z_speed( 0, 1:jmx-1, 1:kmx-1)
+                    z_speed(-2, 1:jmx-1, 1:kmx-1)    = z_speed(-1, 1:jmx-1, 1:kmx-1)
                 else if (face == "imax") then
-                    z_speed(imx, 1:jmx-1, 1:kmx-1) = z_speed(imx-1, 1:jmx-1, 1:kmx-1)
+                    z_speed(imx  , 1:jmx-1, 1:kmx-1) = z_speed(imx-1, 1:jmx-1, 1:kmx-1)
+                    z_speed(imx+1, 1:jmx-1, 1:kmx-1) = z_speed(imx  , 1:jmx-1, 1:kmx-1)
+                    z_speed(imx+2, 1:jmx-1, 1:kmx-1) = z_speed(imx+1, 1:jmx-1, 1:kmx-1)
                 else if (face == "jmin") then
-                    z_speed(1:imx-1, 0, 1:kmx-1) = z_speed(1:imx-1, 1, 1:kmx-1)
+                    z_speed(1:imx-1,  0, 1:kmx-1)    = z_speed(1:imx-1,  1, 1:kmx-1)
+                    z_speed(1:imx-1, -1, 1:kmx-1)    = z_speed(1:imx-1,  0, 1:kmx-1)
+                    z_speed(1:imx-1, -2, 1:kmx-1)    = z_speed(1:imx-1, -1, 1:kmx-1)
                 else if (face == "jmax") then
-                    z_speed(1:imx-1, jmx, 1:kmx-1) = z_speed(1:imx-1, jmx-1, 1:kmx-1)
+                    z_speed(1:imx-1, jmx  , 1:kmx-1) = z_speed(1:imx-1, jmx-1, 1:kmx-1)
+                    z_speed(1:imx-1, jmx+1, 1:kmx-1) = z_speed(1:imx-1, jmx  , 1:kmx-1)
+                    z_speed(1:imx-1, jmx+2, 1:kmx-1) = z_speed(1:imx-1, jmx+1, 1:kmx-1)
                 else if (face == "kmin") then
-                    z_speed(1:imx-1, 1:jmx-1, 0) = z_speed(1:imx-1, 1:jmx-1, 1)
+                    z_speed(1:imx-1, 1:jmx-1,  0)    = z_speed(1:imx-1, 1:jmx-1,  1)
+                    z_speed(1:imx-1, 1:jmx-1, -1)    = z_speed(1:imx-1, 1:jmx-1,  0)
+                    z_speed(1:imx-1, 1:jmx-1, -2)    = z_speed(1:imx-1, 1:jmx-1, -1)
                 else if (face == "kmax") then
-                    z_speed(1:imx-1, 1:jmx-1, kmx) = z_speed(1:imx-1, 1:jmx-1, kmx-1)
+                    z_speed(1:imx-1, 1:jmx-1, kmx  ) = z_speed(1:imx-1, 1:jmx-1, kmx-1)
+                    z_speed(1:imx-1, 1:jmx-1, kmx+1) = z_speed(1:imx-1, 1:jmx-1, kmx  )
+                    z_speed(1:imx-1, 1:jmx-1, kmx+2) = z_speed(1:imx-1, 1:jmx-1, kmx+1)
                 end if
       !     else
       !         if (face == "imin") then
@@ -1930,6 +1969,67 @@ module boundary_conditions
                     y_speed(1:imx-1, 1:jmx-1, kmx) = - y_speed(1:imx-1, 1:jmx-1, kmx-1)
                     z_speed(1:imx-1, 1:jmx-1, kmx) = - z_speed(1:imx-1, 1:jmx-1, kmx-1)
                 end if
+                !----------------------------------------------------------------
+                ! Extra Ghost cells
+                !---------------------------------------------------------------
+                
+                if (face == "imin") then
+                    x_speed(-1, 1:jmx-1, 1:kmx-1) = - x_speed(2, 1:jmx-1, 1:kmx-1)
+                    y_speed(-1, 1:jmx-1, 1:kmx-1) = - y_speed(2, 1:jmx-1, 1:kmx-1)
+                    z_speed(-1, 1:jmx-1, 1:kmx-1) = - z_speed(2, 1:jmx-1, 1:kmx-1)
+                else if (face == "imax") then
+                    x_speed(imx+1, 1:jmx-1, 1:kmx-1) = - x_speed(imx-2, 1:jmx-1, 1:kmx-1)
+                    y_speed(imx+1, 1:jmx-1, 1:kmx-1) = - y_speed(imx-2, 1:jmx-1, 1:kmx-1)
+                    z_speed(imx+1, 1:jmx-1, 1:kmx-1) = - z_speed(imx-2, 1:jmx-1, 1:kmx-1)
+                else if (face == "jmin") then
+                    x_speed(1:imx-1, -1, 1:kmx-1) = - x_speed(1:imx-1, 2, 1:kmx-1)
+                    y_speed(1:imx-1, -1, 1:kmx-1) = - y_speed(1:imx-1, 2, 1:kmx-1)
+                    z_speed(1:imx-1, -1, 1:kmx-1) = - z_speed(1:imx-1, 2, 1:kmx-1)
+                else if (face == "jmax") then
+                    x_speed(1:imx-1, jmx+1, 1:kmx-1) = - x_speed(1:imx-1, jmx-2, 1:kmx-1)
+                    y_speed(1:imx-1, jmx+1, 1:kmx-1) = - y_speed(1:imx-1, jmx-2, 1:kmx-1)
+                    z_speed(1:imx-1, jmx+1, 1:kmx-1) = - z_speed(1:imx-1, jmx-2, 1:kmx-1)
+                else if (face == "kmin") then
+                    x_speed(1:imx-1, 1:jmx-1, -1) = - x_speed(1:imx-1, 1:jmx-1, 2)
+                    y_speed(1:imx-1, 1:jmx-1, -1) = - y_speed(1:imx-1, 1:jmx-1, 2)
+                    z_speed(1:imx-1, 1:jmx-1, -1) = - z_speed(1:imx-1, 1:jmx-1, 2)
+                else if (face == "kmax") then
+                    x_speed(1:imx-1, 1:jmx-1, kmx+1) = - x_speed(1:imx-1, 1:jmx-1, kmx-2)
+                    y_speed(1:imx-1, 1:jmx-1, kmx+1) = - y_speed(1:imx-1, 1:jmx-1, kmx-2)
+                    z_speed(1:imx-1, 1:jmx-1, kmx+1) = - z_speed(1:imx-1, 1:jmx-1, kmx-2)
+                end if
+
+                !------------------------------------------------------------------
+                ! 3rd ghost cell
+                !-----------------------------------------------------------------
+
+                if (face == "imin") then
+                    x_speed(-2, 1:jmx-1, 1:kmx-1) = - x_speed(3, 1:jmx-1, 1:kmx-1)
+                    y_speed(-2, 1:jmx-1, 1:kmx-1) = - y_speed(3, 1:jmx-1, 1:kmx-1)
+                    z_speed(-2, 1:jmx-1, 1:kmx-1) = - z_speed(3, 1:jmx-1, 1:kmx-1)
+                else if (face == "imax") then
+                    x_speed(imx+2, 1:jmx-1, 1:kmx-1) = - x_speed(imx-3, 1:jmx-1, 1:kmx-1)
+                    y_speed(imx+2, 1:jmx-1, 1:kmx-1) = - y_speed(imx-3, 1:jmx-1, 1:kmx-1)
+                    z_speed(imx+2, 1:jmx-1, 1:kmx-1) = - z_speed(imx-3, 1:jmx-1, 1:kmx-1)
+                else if (face == "jmin") then
+                    x_speed(1:imx-1, -2, 1:kmx-1) = - x_speed(1:imx-1, 3, 1:kmx-1)
+                    y_speed(1:imx-1, -2, 1:kmx-1) = - y_speed(1:imx-1, 3, 1:kmx-1)
+                    z_speed(1:imx-1, -2, 1:kmx-1) = - z_speed(1:imx-1, 3, 1:kmx-1)
+                else if (face == "jmax") then
+                    x_speed(1:imx-1, jmx+2, 1:kmx-1) = - x_speed(1:imx-1, jmx-3, 1:kmx-1)
+                    y_speed(1:imx-1, jmx+2, 1:kmx-1) = - y_speed(1:imx-1, jmx-3, 1:kmx-1)
+                    z_speed(1:imx-1, jmx+2, 1:kmx-1) = - z_speed(1:imx-1, jmx-3, 1:kmx-1)
+                else if (face == "kmin") then
+                    x_speed(1:imx-1, 1:jmx-1, -2) = - x_speed(1:imx-1, 1:jmx-1, 3)
+                    y_speed(1:imx-1, 1:jmx-1, -2) = - y_speed(1:imx-1, 1:jmx-1, 3)
+                    z_speed(1:imx-1, 1:jmx-1, -2) = - z_speed(1:imx-1, 1:jmx-1, 3)
+                else if (face == "kmax") then
+                    x_speed(1:imx-1, 1:jmx-1, kmx+2) = - x_speed(1:imx-1, 1:jmx-1, kmx-3)
+                    y_speed(1:imx-1, 1:jmx-1, kmx+2) = - y_speed(1:imx-1, 1:jmx-1, kmx-3)
+                    z_speed(1:imx-1, 1:jmx-1, kmx+2) = - z_speed(1:imx-1, 1:jmx-1, kmx-3)
+                end if
+
+
             end if
 
             include "turbulence_models/include/bc/no_slip.inc"

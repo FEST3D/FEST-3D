@@ -10,5 +10,6 @@ module global_sst
   real, parameter  :: kappa      = 0.41
   real, parameter  :: a1         = 0.31
 
+  real, dimension(:,:,:), allocatable :: sst_F1
 
 end module global_sst

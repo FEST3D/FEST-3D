@@ -12,6 +12,7 @@ module parallel
   use global_vars, only : jmax_id
   use global_vars, only : kmin_id
   use global_vars, only : kmax_id
+  use global_sst , only : sst_F1
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
 
   use state 
@@ -1050,7 +1051,7 @@ contains
     call dmsg(1, 'parallel', 'allocating memory for buffer cells for MP')  
     !left buffer jmx+1 * kmx + 1 * (dens, x , y, z speeds, pressure)
 
-    buf = (jmx+1)*(kmx+1)*n_var*layers ! size of buffer cells left - right
+    buf = (jmx+1)*(kmx+1)*(n_var+1)*layers ! size of buffer cells left - right
     call alloc(imin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable left_buf.')
@@ -1064,7 +1065,7 @@ contains
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable right_buf.')
 
-    buf = (imx+1)*(kmx+1)*n_var*layers ! size of buffer top - bottom
+    buf = (imx+1)*(kmx+1)*(n_var+1)*layers ! size of buffer top - bottom
     call alloc(jmin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable top_buf.')
@@ -1078,7 +1079,7 @@ contains
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable bottom_buf.')
 
-    buf = (imx+1)*(jmx+1)*n_var*layers ! size of buffer front back
+    buf = (imx+1)*(jmx+1)*(n_var+1)*layers ! size of buffer front back
 
     call alloc(kmin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &

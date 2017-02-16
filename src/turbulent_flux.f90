@@ -56,6 +56,7 @@ module turbulent_flux
     use global_vars  ,only :   sst_mu
     use global_vars  ,only :   dist
     use global_vars, only : turbulence
+    use global_vars, only : process_id
     use global_sst
     use utils, only: alloc, dealloc, dmsg
     use string
@@ -66,6 +67,7 @@ module turbulent_flux
                                 y_tw_left, y_tw_right, &
                                 z_tw_left, z_tw_right
 
+    use global_sst, only: sst_F1
     implicit none
     private
 
@@ -82,16 +84,16 @@ module turbulent_flux
         real :: sst_f_mu
         real :: omega
         real :: KE
-        real :: d
+!        real :: d
         real :: rho
 
-        real ::  CD
-        real ::  CD_kw 
-        real ::  var1
-        real ::  var2
-        real ::  right
-        real ::  left
-        real ::  arg1
+ !       real ::  CD
+ !       real ::  CD_kw 
+ !       real ::  var1
+ !       real ::  var2
+ !       real ::  right
+ !       real ::  left
+ !       real ::  arg1
         real ::  F1
         real ::  sigma_k
         real ::  sigma_w
@@ -199,20 +201,22 @@ module turbulent_flux
             omega = 0.5*(     tw(i-1,j,k) +      tw(i,j,k))
             KE    = 0.5*(     tk(i-1,j,k) +      tk(i,j,k))
             rho   = 0.5*(density(i-1,j,k) + density(i,j,k)) 
-            d     = 0.5*(   dist(i-1,j,k) +    dist(i,j,k))
-            CD = 2*rho*sigma_w2*(dtwdx*dtwdx&
-                               + dtkdy*dtwdy&
-                               + dtkdz*dtwdz&
-                                )/omega
-            CD_kw = max(CD, 1e-20)
+!            d     = 0.5*(   dist(i-1,j,k) +    dist(i,j,k))
+!            d     = 0.5*(   dist(i,j,k) +    dist(i,j,k))
+!            CD = 2*rho*sigma_w2*(dtkdx*dtwdx&
+!                               + dtkdy*dtwdy&
+!                               + dtkdz*dtwdz&
+!                                )/omega
+!            CD_kw = max(CD, 1e-20)
+!
+!            var1 = sqrt(KE)/(bstar*omega*d)
+!            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
+!            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
+!            left = max(var1, var2)
+!            arg1 = min(left, right)
 
-            var1 = sqrt(KE)/(bstar*omega*d)
-            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
-            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
-            left = max(var1, var2)
-            arg1 = min(left, right)
-
-            F1 = tanh(arg1**4)
+!            F1 = tanh(arg1**4)
+            F1 = 0.5*(sst_F1(i-1,j,k) + sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
             sigma_w     =    sigma_w1*F1  +    sigma_w1*(1. - F1)
@@ -292,16 +296,16 @@ module turbulent_flux
         real :: sst_f_mu
         real :: omega
         real :: KE
-        real :: d
+!        real :: d
         real :: rho
 
-        real ::  CD
-        real ::  CD_kw 
-        real ::  var1
-        real ::  var2
-        real ::  right
-        real ::  left
-        real ::  arg1
+ !       real ::  CD
+ !       real ::  CD_kw 
+ !       real ::  var1
+ !       real ::  var2
+ !       real ::  right
+ !       real ::  left
+ !       real ::  arg1
         real ::  F1
         real ::  sigma_k
         real ::  sigma_w
@@ -406,24 +410,26 @@ module turbulent_flux
             omega = 0.5*(     tw(i,j-1,k) +      tw(i,j,k))
             KE    = 0.5*(     tk(i,j-1,k) +      tk(i,j,k))
             rho   = 0.5*(density(i,j-1,k) + density(i,j,k)) 
-            d     = 0.5*(   dist(i,j-1,k) +    dist(i,j,k))
-            CD = 2*rho*sigma_w2*(dtwdx*dtwdx&
-                               + dtkdy*dtwdy&
-                               + dtkdz*dtwdz&
-                                )/omega
-            CD_kw = max(CD, 1e-20)
-
-            var1 = sqrt(KE)/(bstar*omega*d)
-            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
-            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
-            left = max(var1, var2)
-            arg1 = min(left, right)
-
-            F1 = tanh(arg1**4)
+!            d     = 0.5*(   dist(i,j-1,k) +    dist(i,j,k))
+!            d     = 0.5*(   dist(i,j,k) +    dist(i,j,k))
+!            CD = 2*rho*sigma_w2*(dtwdx*dtwdx&
+!                               + dtkdy*dtwdy&
+!                               + dtkdz*dtwdz&
+!                                )/omega
+!            CD_kw = max(CD, 1e-20)
+!
+!            var1 = sqrt(KE)/(bstar*omega*d)
+!            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
+!            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
+!            left = max(var1, var2)
+!            arg1 = min(left, right)
+!
+!            F1 = tanh(arg1**4)
+            F1 = 0.5*(sst_F1(i,j-1,k)+sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
             sigma_w     =    sigma_w1*F1  +    sigma_w1*(1. - F1)
-            sst_f_mu = 0.5*(sst_mu(i-1, j, k) + sst_mu(i, j, k))
+            sst_f_mu = 0.5*(sst_mu(i, j-1, k) + sst_mu(i, j, k))
 
 
 !            ! Using lambda = -2 * mu / 3
@@ -477,6 +483,13 @@ module turbulent_flux
             G(i, j, k, 7) = G(i, j, k, 7) - (yA(i, j, k)*( &
                             (mu_f + sigma_w*sst_f_mu)*(dtwdx * ynx(i, j, k)&
                               +dtwdy * yny(i, j, k) + dtwdz * ynz(i, j, k))))
+!            if (process_id==1) then
+!            if ((j==1 .or. j==jmx-1) .and. i==1 .and.  k==1) then
+!              print*, "After trbulent_fluxes, j= ", j
+!              print*, "TKE: ", G(i,j,k,6) 
+!              print*, "Omg: ", G(i,j,k,7) 
+!            end if
+!            end if
           end do
          end do
         end do
@@ -500,16 +513,16 @@ module turbulent_flux
         real :: sst_f_mu
         real :: omega
         real :: KE
-        real :: d
+!        real :: d
         real :: rho
 
-        real ::  CD
-        real ::  CD_kw 
-        real ::  var1
-        real ::  var2
-        real ::  right
-        real ::  left
-        real ::  arg1
+!        real ::  CD
+!        real ::  CD_kw 
+!        real ::  var1
+!        real ::  var2
+!        real ::  right
+!        real ::  left
+!        real ::  arg1
         real ::  F1
         real ::  sigma_k
         real ::  sigma_w
@@ -614,24 +627,26 @@ module turbulent_flux
             omega = 0.5*(     tw(i,j,k-1) +      tw(i,j,k))
             KE    = 0.5*(     tk(i,j,k-1) +      tk(i,j,k))
             rho   = 0.5*(density(i,j,k-1) + density(i,j,k)) 
-            d     = 0.5*(   dist(i,j,k-1) +    dist(i,j,k))
-            CD = 2*rho*sigma_w2*(dtwdx*dtwdx&
-                               + dtkdy*dtwdy&
-                               + dtkdz*dtwdz&
-                                )/omega
-            CD_kw = max(CD, 1e-20)
-
-            var1 = sqrt(KE)/(bstar*omega*d)
-            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
-            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
-            left = max(var1, var2)
-            arg1 = min(left, right)
-
-            F1 = tanh(arg1**4)
+!            d     = 0.5*(   dist(i,j,k-1) +    dist(i,j,k))
+!            d     = 0.5*(   dist(i,j,k) +    dist(i,j,k))
+!            CD = 2*rho*sigma_w2*(dtwdx*dtwdx&
+!                               + dtkdy*dtwdy&
+!                               + dtkdz*dtwdz&
+!                                )/omega
+!            CD_kw = max(CD, 1e-20)
+!
+!            var1 = sqrt(KE)/(bstar*omega*d)
+!            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
+!            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
+!            left = max(var1, var2)
+!            arg1 = min(left, right)
+!
+!            F1 = tanh(arg1**4)
+            F1 = 0.5*(sst_F1(i,j,k-1)+sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
             sigma_w     =    sigma_w1*F1  +    sigma_w1*(1. - F1)
-            sst_f_mu = 0.5*(sst_mu(i-1, j, k) + sst_mu(i, j, k))
+            sst_f_mu = 0.5*(sst_mu(i, j, k-1) + sst_mu(i, j, k))
 
 
 !            ! Using lambda = -2 * mu / 3
@@ -686,6 +701,7 @@ module turbulent_flux
                             (mu_f + sigma_w*sst_f_mu)*(dtwdx * znx(i, j, k)&
                               +dtwdy * zny(i, j, k) + dtwdz * znz(i, j, k))))
 
+
           end do
          end do
         end do
@@ -697,11 +713,13 @@ module turbulent_flux
         implicit none
 
         real, dimension(:, :, :, :), pointer :: F, G, H
-        
+       
+        if (turbulence=='sst') then
 !        call compute_gradients_cell_centre()
         call compute_xi_turbulent_fluxes(F)
         call compute_eta_turbulent_fluxes(G)
         call compute_zeta_turbulent_fluxes(H)
+       end if
 
     end subroutine compute_turbulent_fluxes
 

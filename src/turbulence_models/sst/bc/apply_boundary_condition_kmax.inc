@@ -11,3 +11,6 @@
                         call copy_tk("kmax", i * cell_ind)
                     end if
 
+    if ((bc_kmx(i,j) .and. current_condition) .ne. BC_INTERFACE) then
+      call extrapolate_F1("kmax")
+    end if

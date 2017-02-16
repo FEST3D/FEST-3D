@@ -17,3 +17,12 @@
         end do
       end do
     end do
+    
+    do j = 0, jmx
+      do i = 0, imx
+        do l = 1, layers
+          kmax_send_buf(count) = sst_F1(i,j,kmx-l)
+          count = count+1
+        end do
+      end do
+    end do

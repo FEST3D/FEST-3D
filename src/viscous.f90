@@ -598,11 +598,11 @@ module viscous
             ! mu requires T at the face. Hence:
             ! T_L and T_R are the left and right states of the face i,j,k
             ! The values at face used instead of element values
-            T_L = x_pressure_left(i, j, k) / (x_density_left(i, j, k) * R_gas)
-            T_R = x_pressure_right(i, j, k) / (x_density_right(i, j, k) * R_gas)
-            T_face = 0.5 * (T_L + T_R)
-            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
-                          Sutherland_temp) / (T_face + Sutherland_temp))
+!            T_L = x_pressure_left(i, j, k) / (x_density_left(i, j, k) * R_gas)
+!            T_R = x_pressure_right(i, j, k) / (x_density_right(i, j, k) * R_gas)
+!            T_face = 0.5 * (T_L + T_R)
+!            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
+!                          Sutherland_temp) / (T_face + Sutherland_temp))
         !   mu = 0.5 * ( (mu_ref * (T_L / T_ref)**1.5 * (T_ref + &
         !                 Sutherland_temp) / (T_L + Sutherland_temp)) + & 
         !                (mu_ref * (T_R / T_ref)**1.5 * (T_ref + &
@@ -612,7 +612,12 @@ module viscous
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
-            mu = 0.5*(mu_v(i-1,j,k) + mu_v(i,j,k)) + 0.5*(mu_t(i-1,j,k) + mu_t(i,j,k)) 
+            if (turbulence/='none') then
+              mu = 0.5*(mu_v(i-1,j,k) + mu_v(i,j,k)) &
+                 + 0.5*(mu_t(i-1,j,k) + mu_t(i,j,k)) 
+            else
+              mu = 0.5*(mu_v(i-1,j,k) + mu_v(i,j,k))
+            end if
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_zz = 2. * mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
@@ -808,11 +813,11 @@ module viscous
             ! mu requires T at the face. Hence:
             ! T_L and T_R are the left and right states of the face i,j,k
             ! The values at face used instead of element values
-            T_L = y_pressure_left(i, j, k) / (y_density_left(i, j, k) * R_gas)
-            T_R = y_pressure_right(i, j, k) / (y_density_right(i, j, k) * R_gas)
-            T_face = 0.5 * (T_L + T_R)
-            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
-                          Sutherland_temp) / (T_face + Sutherland_temp))
+!            T_L = y_pressure_left(i, j, k) / (y_density_left(i, j, k) * R_gas)
+!            T_R = y_pressure_right(i, j, k) / (y_density_right(i, j, k) * R_gas)
+!            T_face = 0.5 * (T_L + T_R)
+!            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
+!                          Sutherland_temp) / (T_face + Sutherland_temp))
         !   mu = 0.5 * ( (mu_ref * (T_L / T_ref)**1.5 * (T_ref + &
         !                 Sutherland_temp) / (T_L + Sutherland_temp)) + & 
         !                (mu_ref * (T_R / T_ref)**1.5 * (T_ref + &
@@ -822,7 +827,13 @@ module viscous
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
-            mu = 0.5*(mu_v(i,j-1,k) + mu_v(i,j,k)) + 0.5*(mu_t(i,j-1,k) + mu_t(i,j,k)) 
+            if (turbulence/='none') then
+              mu = 0.5*(mu_v(i,j-1,k) + mu_v(i,j,k)) &
+                 + 0.5*(mu_t(i,j-1,k) + mu_t(i,j,k)) 
+            else 
+              mu = 0.5*(mu_v(i,j-1,k) + mu_v(i,j,k))
+            end if
+
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_zz = 2. * mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
@@ -878,6 +889,7 @@ module viscous
           end do
          end do
         end do
+
 
     end subroutine compute_eta_viscous_fluxes
 
@@ -1025,11 +1037,11 @@ module viscous
             ! mu is required at the face. Hence:
             ! T_L and T_R are the left and right states of the face i,j,k
             ! The values at face used instead of element values
-            T_L = z_pressure_left(i, j, k) / (z_density_left(i, j, k) * R_gas)
-            T_R = z_pressure_right(i, j, k) / (z_density_right(i, j, k) * R_gas)
-            T_face = 0.5 * (T_L + T_R)
-            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
-                          Sutherland_temp) / (T_face + Sutherland_temp))
+!            T_L = z_pressure_left(i, j, k) / (z_density_left(i, j, k) * R_gas)
+!            T_R = z_pressure_right(i, j, k) / (z_density_right(i, j, k) * R_gas)
+!            T_face = 0.5 * (T_L + T_R)
+!            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
+!                          Sutherland_temp) / (T_face + Sutherland_temp))
         !   mu = 0.5 * ( (mu_ref * (T_L / T_ref)**1.5 * (T_ref + &
         !                 Sutherland_temp) / (T_L + Sutherland_temp)) + & 
         !                (mu_ref * (T_R / T_ref)**1.5 * (T_ref + &
@@ -1039,7 +1051,13 @@ module viscous
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
-            mu = 0.5*(mu_v(i,j,k-1) + mu_v(i,j,k)) + 0.5*(mu_t(i,j,k-1) + mu_t(i,j,k)) 
+            if (turbulence/='none') then
+              mu = 0.5*(mu_v(i,j,k-1) + mu_v(i,j,k)) &
+                 + 0.5*(mu_t(i,j,k-1) + mu_t(i,j,k)) 
+            else
+              mu = 0.5*(mu_v(i,j,k-1) + mu_v(i,j,k))
+            end if
+
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_zz = 2. * mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 

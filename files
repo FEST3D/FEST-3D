@@ -32,6 +32,7 @@ files = global.f90  \
         source/sst_grad.f90 \
         source/turbulent_source.f90 \
         source.f90 \
+        sst_F1.f90 \
         turbulent_flux.f90 \
         viscous.f90 \
         parallel.f90 \

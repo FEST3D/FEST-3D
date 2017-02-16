@@ -137,3 +137,21 @@
             end if
 
         end subroutine copy_tw
+
+        subroutine extrapolate_F1(face)
+          implicit none
+          character(len=*), intent(in) :: face
+          if (face == "imin") then
+              sst_F1(0, 1:jmx-1, 1:kmx-1) = sst_F1(1, 1:jmx-1, 1:kmx-1)
+          else if (face == "imax") then
+              sst_F1(imx, 1:jmx-1, 1:kmx-1) = sst_F1(imx-1, 1:jmx-1, 1:kmx-1)
+          else if (face == "jmin") then
+              sst_F1(1:imx-1, 0, 1:kmx-1) = sst_F1(1:imx-1, 1, 1:kmx-1)
+          else if (face == "jmax") then
+              sst_F1(1:imx-1, jmx, 1:kmx-1) = sst_F1(1:imx-1, jmx-1, 1:kmx-1)
+          else if (face == "kmin") then
+              sst_F1(1:imx-1, 1:jmx-1, 0) = sst_F1(1:imx-1, 1:jmx-1, 1)
+          else if (face == "kmax") then
+              sst_F1(1:imx-1, 1:jmx-1, kmx) = sst_F1(1:imx-1, 1:jmx-1, kmx-1)
+          end if
+        end subroutine extrapolate_F1

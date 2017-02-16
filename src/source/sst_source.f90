@@ -29,7 +29,9 @@ module sst_source
   use global_vars  ,only :   gradtw_z
   use global_vars  ,only :   TKE_residue
   use global_vars  ,only : omega_residue
+  use global_sst   ,only : sst_F1
 
+  use global_vars , only : process_id
   implicit none
   private
 
@@ -71,7 +73,7 @@ module sst_source
           do i = 1,imx-1
 
             ! __ vorticity __
-            vort = sqrt( 2 * ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
+            vort = sqrt( 0.5 * ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
                             + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
                             + (gradv_x(i,j,k)- gradu_y(i,j,k))**2 &
                              )&
@@ -81,15 +83,16 @@ module sst_source
                                           + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
                                           + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
                                            )/tw(i,j,k)
-            CD_kw = max(CD, 1e-20)
-
-            var1 = sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))
-            var2 = 500*mu(i,j,k)/((dist(i,j,k)**2)*tw(i,j,k))
-            right= 4*(density(i,j,k)*sigma_w2*tk(i,j,k))/(CD_kw*dist(i,j,k)**2)
-            left = max(var1, var2)
-            arg1 = min(left, right)
-
-            F1 = tanh(arg1**4)
+!            CD_kw = max(CD, 1e-20)
+!
+!            var1 = sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))
+!            var2 = 500*mu(i,j,k)/((dist(i,j,k)**2)*tw(i,j,k))
+!            right= 4*(density(i,j,k)*sigma_w2*tk(i,j,k))/(CD_kw*dist(i,j,k)**2)
+!            left = max(var1, var2)
+!            arg1 = min(left, right)
+!
+!            F1 = tanh(arg1**4)
+            F1 = sst_F1(i,j,k)
 
 
             gama_1 = (beta1/bstar) - (sigma_w1*kappa**2)/sqrt(bstar)
@@ -120,9 +123,18 @@ module sst_source
             S_k = S_k * volume(i, j, k)
             S_w = S_w * volume(i, j, k)
 
-            TKE_residue(i, j, k)   = TKE_residue(i, j, k) + S_k
-            omega_residue(i, j, k) = omega_residue(i, j, k) + S_w
+            TKE_residue(i, j, k)   = TKE_residue(i, j, k) - S_k
+            omega_residue(i, j, k) = omega_residue(i, j, k) - S_w
 
+!            if(process_id==1)then
+!              if ((j==1 .or. j==jmx-1) .and.  k==1 .and. i==1) then
+!                print*, 'Pk: ', P_k
+!                print*, 'Dk: ', D_k
+!                print*, 'S_k ', S_k
+!                print*, TKE_residue(i, j, k)
+!                print*, omega_residue(i, j, k)
+!              end if
+!            end if
 
           end do
         end do

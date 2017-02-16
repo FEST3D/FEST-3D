@@ -11,3 +11,6 @@
                         call copy_tw("imin", i * cell_ind)
                     end if
 
+    if ((bc_imn(i,j) .and. current_condition) .ne. BC_INTERFACE) then
+      call extrapolate_F1("imin")
+    end if
