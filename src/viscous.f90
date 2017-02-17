@@ -866,7 +866,8 @@ module viscous
           
             ! Wall boundary condition
             !TODO MAKE BOUNDARY CONSTION GENERAL NOT ONY AT Y AND Z FACE
-            if ((j .eq. 1) .or. (j .eq. jmx)) then
+!            if ((j .eq. 1) .or. (j .eq. jmx)) then
+            if ((j .eq. 1)) then
                 uface = 0.0
                 vface = 0.0
                 wface = 0.0
