@@ -54,10 +54,14 @@ module res_viscous
   use utils,      only: alloc
   use layout,     only: process_id
   use layout,     only: total_process
-
+#ifdef __GFORTRAN__
   use mpi
+#endif
 
   implicit none
+#ifdef __INTEL_COMPILER
+  include "mpif.h"
+#endif
   private
 
   integer, parameter                :: n = 12 ! total viscous variable + 2

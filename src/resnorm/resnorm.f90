@@ -88,10 +88,14 @@ module resnorm_
   use res_viscous,  only: compute_viscous_resnorm
   use res_turbulent, only: compute_turbulent_resnorm
 
-
+#ifdef __GFORTRAN
   use mpi
+#endif
 
   implicit none
+#ifdef __INTEL_COMPILER
+  include "mpif.h"
+#endif
   private
 
   integer  :: write_num

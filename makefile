@@ -1,8 +1,8 @@
 #compiler options
 program := FEST3D
 subprog := wall
-FC 			 = $(GFC)
-FFLAGS	 = $(GFFLAGS)
+FC 			 = $(IFC)
+FFLAGS	 = $(IFFLAGS)
 VPATH 	:= src
 BINDIR	:= bin
 OBJDIR	:= obj
@@ -21,6 +21,7 @@ GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 #					-Werror \
 
 IFFLAGS := -O3 -free -r8 -traceback \
+           -cpp \
 					 -zero \
 					 -u \
 					 -W1 \
@@ -121,6 +122,7 @@ $(pre) : $(subobjects)
 ifeq ($(FC), mpif90)
 	$(FC)  $(subobjects) -o $(pre) -J$(MODDIR)/
 else
+	$(FC)   $(FFLAGS) -c src/wall_main.f90  -module $(MODDIR)
 	$(FC)  $(subobjects) -o $(pre) -module $(MODDIR)
 endif
 

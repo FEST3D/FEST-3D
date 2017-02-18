@@ -3,7 +3,9 @@ module layout
   ! contains routine to load layout file and sets the layout variables
   ! gets process id and total process 
   !------------------------------
+#ifdef __GFORTRAN__
   use mpi
+#endif
   use global, only: CONFIG_FILE_UNIT, RESNORM_FILE_UNIT, FILE_NAME_LENGTH, &
        STRING_BUFFER_LENGTH, INTERPOLANT_NAME_LENGTH
   use global, only: layout_file
@@ -21,7 +23,9 @@ module layout
 
   use utils, only: dmsg, DEBUG_LEVEL
   implicit none
-!  include "mpif.h"
+#ifdef __INTEL_COMPILER
+  include "mpif.h"
+#endif
   
   ! process layout
   character(len=FILE_NAME_LENGTH) :: grid_file_buf

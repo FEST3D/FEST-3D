@@ -1,10 +1,14 @@
 program main
-  use mpi
+#ifdef __GFORTRAN__
+ use mpi
+#endif
   use global_vars
   use solver
 
   implicit none
-!  include "mpif.h"
+#ifdef __INTEL_COMPILER
+  include "mpif.h"
+#endif
 
   integer :: ierr
   call MPI_INIT(ierr)

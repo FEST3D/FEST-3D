@@ -122,9 +122,13 @@ module solver
   use sst_F      , only : calculate_sst_F1
   include "turbulence_models/include/solver/import_module.inc"
 
+#ifdef __GFORTRAN__
     use mpi
+#endif    
     implicit none
-!    include "mpif.h"
+#ifdef __INTEL_COMPILER
+    include "mpif.h"
+#endif
     private
 
     real, dimension(:), allocatable, target :: qp_temp

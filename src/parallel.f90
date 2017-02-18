@@ -1,7 +1,17 @@
 module parallel
   ! contains routines to execute parallelly
+#ifdef __GFORTRAN__
   use mpi
-  use global_vars
+#endif
+  use global_vars, only : density
+  use global_vars, only : x_speed
+  use global_vars, only : y_speed
+  use global_vars, only : z_speed
+  use global_vars, only : pressure
+  use global_vars, only : tk
+  use global_vars, only : tw
+  use global_vars, only : turbulence
+  use global_vars, only : n_var
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
@@ -20,7 +30,9 @@ module parallel
 
 
   implicit none
-!  include "mpif.h"
+#ifdef __INTEL_COMPILER
+  include "mpif.h"
+#endif
 
   real, public, dimension(:),allocatable :: imin_send_buf,imin_recv_buf,&
        imax_send_buf,imax_recv_buf,jmin_send_buf,jmin_recv_buf, &
