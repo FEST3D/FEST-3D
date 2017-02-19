@@ -67,7 +67,6 @@ module turbulent_flux
                                 y_tw_left, y_tw_right, &
                                 z_tw_left, z_tw_right
 
-    use global_sst, only: sst_F1
     implicit none
     private
 

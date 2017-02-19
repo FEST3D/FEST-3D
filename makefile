@@ -126,6 +126,8 @@ else
 	$(FC)  $(subobjects) -o $(pre) -module $(MODDIR)
 endif
 
+
+.PHONY: setup
 setup:
 	@if test ! -d $(OBJDIR); then mkdir $(OBJDIR); else : ; fi
 	@if test ! -d $(MODDIR); then mkdir $(MODDIR); else : ; fi
@@ -133,6 +135,7 @@ setup:
 	@if test ! -d $(OBJDIR)/resnorm/viscous; then mkdir $(OBJDIR)/resnorm/viscous; else : ; fi
 	@if test ! -d $(OBJDIR)/resnorm/turbulent; then mkdir $(OBJDIR)/resnorm/turbulent; else : ; fi
 
+.PHONY: clean
 clean:
 	rm -f $(objects) $(modules) $(exe)
 

@@ -14,7 +14,6 @@ module turbulent_viscosity
   use global_vars    , only : mu_t
   use global_vars    , only : sst_mu
   use global_vars    , only : turbulence
-  use utils          , only : turbulence_read_error
   use sst_viscosity  , only : calculate_sst_mu
 
   use utils

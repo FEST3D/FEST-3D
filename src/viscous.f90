@@ -467,7 +467,8 @@ module viscous
                 dTdx, dTdy, dTdz
         real :: xc_L, yc_L, zc_L, xc_R, yc_R, zc_R, d_LR, normal_comp
         real :: T_LE, T_RE
-        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
+!        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
+        real :: K_heat, mu, Qx, Qy, Qz
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: F
@@ -684,7 +685,8 @@ module viscous
                 dTdx, dTdy, dTdz
         real :: xc_L, yc_L, zc_L, xc_R, yc_R, zc_R, d_LR, normal_comp
         real :: T_LE, T_RE
-        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
+!        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
+        real :: K_heat, mu, Qx, Qy, Qz
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: G
@@ -909,7 +911,8 @@ module viscous
                 dTdx, dTdy, dTdz
         real :: xc_L, yc_L, zc_L, xc_R, yc_R, zc_R, d_LR, normal_comp
         real :: T_LE, T_RE
-        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
+!        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
+        real :: K_heat, mu, Qx, Qy, Qz
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: H

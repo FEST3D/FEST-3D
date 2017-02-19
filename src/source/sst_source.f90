@@ -29,7 +29,6 @@ module sst_source
   use global_vars  ,only :   gradtw_z
   use global_vars  ,only :   TKE_residue
   use global_vars  ,only : omega_residue
-  use global_sst   ,only : sst_F1
 
   use global_vars , only : process_id
   implicit none
@@ -43,8 +42,8 @@ module sst_source
       integer :: i,j,k
 
       real :: CD
-      real :: CD_kw
-      real :: arg1
+!      real :: CD_kw
+!      real :: arg1
       real :: F1
       real :: sigma_k
       real :: sigma_w
@@ -63,11 +62,11 @@ module sst_source
 
 
       ! adjudent variables
-      real :: var1
-      real :: var2
-      real :: left
-      real :: right
-
+!      real :: var1
+!      real :: var2
+!      real :: left
+!      real :: right
+!
       do k = 1,kmx-1
         do j = 1,jmx-1
           do i = 1,imx-1

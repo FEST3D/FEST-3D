@@ -144,7 +144,7 @@ module write_output_tecplot
 
       implicit none
       character(len=64) :: buf
-      integer           :: dump
+!      integer           :: dump
       open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
       ! reading only counter first for dimension
       read(OUTIN_FILE_UNIT, *)
