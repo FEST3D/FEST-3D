@@ -1928,6 +1928,8 @@ module boundary_conditions
      !          end if
             end if
 
+          include "turbulence_models/include/bc/flow_tangency.inc"
+
         end subroutine flow_tangency
 
         subroutine no_slip(face, cell_ind)
