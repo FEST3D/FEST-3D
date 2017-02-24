@@ -70,7 +70,7 @@ module write_output_vtk
       call write_pressure()
       call write_viscosity()
       call write_turbulent_variables()
-      call write_resnorm()
+!      call write_resnorm()
 !      call close_file(outfile)
 
     end subroutine write_file
