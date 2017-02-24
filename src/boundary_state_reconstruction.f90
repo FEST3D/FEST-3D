@@ -19,6 +19,7 @@ module boundary_state_reconstruction
   implicit none
   private
 
+  integer :: ppm_flag=0
   public :: reconstruct_boundary_state
 
   contains
@@ -28,6 +29,7 @@ module boundary_state_reconstruction
       implicit none
       character(len=*), intent(in)  :: interpolant
       call dmsg(1,'boundary_state_recons', 'recons_boundary_state')
+      if (interpolant == 'ppm') ppm_flag=1
       if(interpolant /='none')then
         if(bc_imn(1,1) /= BC_INTERFACE)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imin')
@@ -82,6 +84,18 @@ module boundary_state_reconstruction
           x_qp_left(i, j, k, l) = qp(i-1, j, k, l)!0.5 * (qp(i-1, j, k, l) + qp(i, j, k, l))
           x_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
               (((1.+kappa) * psi1 * bd) + ((1.-kappa) * psi2 * fd))
+          
+          ! right state of firsrt interior cell
+          if (ppm_flag==1) then
+            fd = qp(i+2, j, k, l) - qp(i+1, j, k, l)
+            bd = qp(i+1, j, k, l) - qp(i, j, k, l)
+            r = fd / bd
+            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+            r = bd / fd
+            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+            x_qp_left(i+2, j, k, l) = qp(i+1, j, k, l) + 0.25*phi* &
+                (((1.-kappa) * psi1 * bd) + ((1.+kappa) * psi2 * fd))
+         end if
          end do
         end do
        end do
@@ -114,6 +128,17 @@ module boundary_state_reconstruction
           x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
               (((1.-kappa) * psi1 * bd) + ((1.+kappa) * psi2 * fd))
           x_qp_right(i+1, j, k, l) = qp(i+1, j, k, l) !0.5 * (qp(i+1, j, k, l) + qp(i, j, k, l))
+          ! left face of last interior cell
+          if (ppm_flag==1) then
+            fd = qp(i, j, k, l) - qp(i-1, j, k, l)
+            bd = qp(i-1, j, k, l) - qp(i-2, j, k, l)
+            r = fd / bd
+            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+            r = bd / fd
+            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+            x_qp_right(i+1, j, k, l) = qp(i+1, j, k, l) - 0.25*phi* &
+                (((1.+kappa) * psi1 * bd) + ((1.-kappa) * psi2 * fd))
+         end if
          end do
         end do
        end do
@@ -146,6 +171,18 @@ module boundary_state_reconstruction
           y_qp_left(i, j, k, l) = 0.5 * (qp(i, j, k, l) + qp(i, j-1, k, l))
           y_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
               (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
+
+          ! right face of first j cell
+          if (ppm_flag==1) then
+            fd = qp(i, j+2, k, l) - qp(i, j+1, k, l)
+            bd = qp(i, j+1, k, l) - qp(i, j, k, l)
+            r = fd / bd
+            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+            r = bd / fd
+            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+            y_qp_left(i, j+2, k, l) = qp(i, j+1, k, l) + 0.25*phi* &
+                (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
+         end if
          end do
         end do
        end do
@@ -178,6 +215,18 @@ module boundary_state_reconstruction
           y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
               (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
           y_qp_right(i, j+1, k, l) = 0.5 * (qp(i, j, k, l) + qp(i, j+1, k, l))
+          
+          ! left face of last j cell
+          if (ppm_flag==1) then
+            fd = qp(i, j, k, l) - qp(i, j-1, k, l)
+            bd = qp(i, j-1, k, l) - qp(i, j, k, l)
+            r = fd / bd
+            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+            r = bd / fd
+            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+            y_qp_right(i, j+1, k, l) = qp(i, j+1, k, l) - 0.25*phi* &
+                (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
+         end if
          end do
         end do
        end do
@@ -210,6 +259,18 @@ module boundary_state_reconstruction
           z_qp_left(i, j, k, l) = 0.5 * (qp(i, j, k, l) + qp(i, j, k-1, l))
           z_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
               (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
+          
+          ! right face of first k cell
+          if (ppm_flag==1) then
+            fd = qp(i, j, k+2, l) - qp(i, j, k+1, l)
+            bd = qp(i, j, k+1, l) - qp(i, j, k, l)
+            r = fd / bd
+            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+            r = bd / fd
+            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+            z_qp_left(i, j, k+2, l) = qp(i, j, k+1, l) + 0.25*phi* &
+                (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
+         end if
          end do
         end do
        end do
@@ -242,6 +303,18 @@ module boundary_state_reconstruction
           z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
               (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
           z_qp_right(i, j, k+1, l) = 0.5 * (qp(i, j, k, l) + qp(i, j, k+1, l))
+
+          ! left face of last k cell
+          if (ppm_flag==1) then
+            fd = qp(i, j, k, l) - qp(i, j, k-1, l)
+            bd = qp(i, j-1, k, l) - qp(i, j, k, l)
+            r = fd / bd
+            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+            r = bd / fd
+            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+            z_qp_right(i-1, j, k, l) = qp(i-1, j, k, l) - 0.25*phi* &
+                (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
+         end if
          end do
         end do
        end do
