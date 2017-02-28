@@ -927,18 +927,18 @@ module viscous
           do i = 1, imx - 1
 
             ! Gradients at face as average of gradients at cell centres
-            dudx = 0.5 * (gradu_x(i, j-1, k) + gradu_x(i, j, k))
-            dudy = 0.5 * (gradu_y(i, j-1, k) + gradu_y(i, j, k))
-            dudz = 0.5 * (gradu_z(i, j-1, k) + gradu_z(i, j, k))
-            dvdx = 0.5 * (gradv_x(i, j-1, k) + gradv_x(i, j, k))
-            dvdy = 0.5 * (gradv_y(i, j-1, k) + gradv_y(i, j, k))
-            dvdz = 0.5 * (gradv_z(i, j-1, k) + gradv_z(i, j, k))
-            dwdx = 0.5 * (gradw_x(i, j-1, k) + gradw_x(i, j, k))
-            dwdy = 0.5 * (gradw_y(i, j-1, k) + gradw_y(i, j, k))
-            dwdz = 0.5 * (gradw_z(i, j-1, k) + gradw_z(i, j, k))
-            dTdx = 0.5 * (gradT_x(i, j-1, k) + gradT_x(i, j, k))
-            dTdy = 0.5 * (gradT_y(i, j-1, k) + gradT_y(i, j, k))
-            dTdz = 0.5 * (gradT_z(i, j-1, k) + gradT_z(i, j, k))
+            dudx = 0.5 * (gradu_x(i, j, k-1) + gradu_x(i, j, k))
+            dudy = 0.5 * (gradu_y(i, j, k-1) + gradu_y(i, j, k))
+            dudz = 0.5 * (gradu_z(i, j, k-1) + gradu_z(i, j, k))
+            dvdx = 0.5 * (gradv_x(i, j, k-1) + gradv_x(i, j, k))
+            dvdy = 0.5 * (gradv_y(i, j, k-1) + gradv_y(i, j, k))
+            dvdz = 0.5 * (gradv_z(i, j, k-1) + gradv_z(i, j, k))
+            dwdx = 0.5 * (gradw_x(i, j, k-1) + gradw_x(i, j, k))
+            dwdy = 0.5 * (gradw_y(i, j, k-1) + gradw_y(i, j, k))
+            dwdz = 0.5 * (gradw_z(i, j, k-1) + gradw_z(i, j, k))
+            dTdx = 0.5 * (gradT_x(i, j, k-1) + gradT_x(i, j, k))
+            dTdy = 0.5 * (gradT_y(i, j, k-1) + gradT_y(i, j, k))
+            dTdz = 0.5 * (gradT_z(i, j, k-1) + gradT_z(i, j, k))
 
             if (k .eq. 1) then
                 xc_L = bottom_ghost_centroid(i, j, 1)
