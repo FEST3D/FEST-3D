@@ -43,6 +43,7 @@ module write_output_vtk
   use global_vars, only : energy_residue
 
   use global_vars, only : turbulence
+  use global_vars, only : mu_ref
 
   use utils
   use string
@@ -97,7 +98,9 @@ module write_output_vtk
     subroutine write_viscosity()
       implicit none
 
-      call write_mu()
+      if (mu_ref/=0.0) then
+        call write_mu()
+      end if
       if (turbulence/='none') then
         call write_mu_t()
       end if
