@@ -58,6 +58,7 @@ module read_output_vtk
   use global_vars, only :    TKE_resnorm_0
   use global_vars, only :  omega_resnorm_0
 
+  use global_vars, only : mu_ref
 
   use utils
   use string
@@ -112,9 +113,10 @@ module read_output_vtk
 
     subroutine read_viscosity()
       implicit none
-
-      call read_mu()
-
+      
+      if (mu_ref/=0.0) then
+        call read_mu()
+      end if
       if (turbulence/='none') then
         call read_mu_t()
       end if
