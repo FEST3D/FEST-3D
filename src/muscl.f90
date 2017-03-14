@@ -73,17 +73,17 @@ module muscl
 
         call alloc(y_qp_left, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_left.')
+                'y_qp_left.')
         call alloc(y_qp_right, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_right.')
+                'y_qp_right.')
 
         call alloc(z_qp_left, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_left.')
+                'z_qp_left.')
         call alloc(z_qp_right, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_right.')
+                'z_qp_right.')
 
         call alloc(pdif, 0, imx, 0, jmx, 0, kmx, &
                 errmsg='Error: Unable to allocate memory for' // &
