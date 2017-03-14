@@ -349,6 +349,12 @@ module muscl
                  (1-k_f):(1-k_f)*(kmx-1)) = &
                 pdif(1:imx-1 - i_f*(imx-2), 1:jmx-1 - j_f*(jmx-2), &
                      1:kmx-1 - k_f*(kmx-2))
+                    
+            pdif((1-i_f*(-imx+1)):(i_f)+(imx-1), (1-j_f*(-jmx+1)):(j_f)+(jmx-1), &
+                 (1-k_f*(-kmx+1)):(k_f)+(kmx-1)) = &
+                pdif(1+i_f*(imx-2):imx-1 , 1+j_f*(jmx-2):jmx-1, &
+                     1+k_f*(kmx-2):kmx-1)
+             
 
             ! Loop over faces
             do k = 1, kmx - (1 - k_f)            
