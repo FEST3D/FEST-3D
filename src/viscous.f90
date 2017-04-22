@@ -1092,15 +1092,15 @@ module viscous
                             zA(i, j, k))
             
             ! Wall boundary condition
-            if ((k .eq. 1) .or. (k .eq. kmx)) then
-                uface = 0.0
-                vface = 0.0
-                wface = 0.0
-            else
+!            if ((k .eq. 1) .or. (k .eq. kmx)) then
+!                uface = 0.0
+!                vface = 0.0
+!                wface = 0.0
+!            else
                 uface = 0.5 * (z_x_speed_left(i, j, k) + z_x_speed_right(i, j, k))
                 vface = 0.5 * (z_y_speed_left(i, j, k) + z_y_speed_right(i, j, k))
                 wface = 0.5 * (z_z_speed_left(i, j, k) + z_z_speed_right(i, j, k))
-            end if
+!            end if
 
             ! Energy flux
             ! (TijVj - Qi)ni
