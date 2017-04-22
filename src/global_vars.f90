@@ -46,6 +46,7 @@ module global_vars
   ! solver specific
   real :: CFL                  ! courrent number
   real :: tolerance            ! minimum value of resnorm after which simulation stop
+  integer :: want_to_stop=0
 
   !solver time secific
   character                                 :: time_stepping_method  ! local or global
@@ -137,6 +138,7 @@ module global_vars
   
   ! Transport properties
   real                                              :: mu_ref !viscoity
+  character(len=FILE_NAME_LENGTH)                   :: mu_variation
 
   ! sutherland law variable
   real                                              :: T_ref

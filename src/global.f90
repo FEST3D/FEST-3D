@@ -37,6 +37,8 @@ module global
     integer, parameter ::     RESTART_FILE_UNIT = 39
     integer, parameter ::       OUTIN_FILE_UNIT = 40
 
+    ! stop file
+    integer, parameter ::       STOP_FILE_UNIT = 41
 
     !Fixed file names
     character(len=*), Parameter :: control_file="system/control.md"
@@ -49,6 +51,7 @@ module global
     character(len=*), Parameter :: wall_dist_file='distance.vtk'
     character(len=*), parameter :: res_control_file='system/res_control.md'
     character(len=*), parameter :: resnorm_file='time_directories/aux/resnorm'
+    character(len=*), parameter :: stop_file='system/stopfile'
 
     ! Fixed variable
     integer, parameter :: resnorm_number=10 

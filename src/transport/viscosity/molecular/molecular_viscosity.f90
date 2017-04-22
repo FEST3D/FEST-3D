@@ -13,6 +13,7 @@ module molecular_viscosity
   use global_vars , only : Sutherland_temp
   use global_vars , only : T_ref
   use global_vars , only : R_gas
+  use global_vars , only : mu_variation
 
   use global_vars , only : pressure
   use global_vars , only : density
@@ -51,7 +52,20 @@ module molecular_viscosity
 
     subroutine calculate_molecular_viscosity()
 
-      call apply_sutherland_law()
+      select case (trim(mu_variation))
+        case ('sutherland_law')
+          call apply_sutherland_law()
+
+        case ('constant')
+          !do nothing
+          !mu will be equal to mu_ref
+
+        case DEFAULT
+          print*,"mu_variation not recognized:"
+          print*, "   found '",trim(mu_variation),"'"
+          print*, "accepted values: 1) sutherland_law"
+          print*, "                 2) constant"
+      end select
 
     end subroutine calculate_molecular_viscosity
 

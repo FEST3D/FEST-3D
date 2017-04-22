@@ -43,6 +43,7 @@ module read
   use global_vars, only: gm    !gamma
   use global_vars, only: R_gas !univarsal gas constant
   use global_vars, only: mu_ref !viscoity
+  use global_vars, only: mu_variation !viscoity variation type
   use global_vars, only: T_ref
   use global_vars, only: Sutherland_temp
   use global_vars, only: Pr !prandtl number
@@ -332,6 +333,12 @@ module read
         read(buf, *) mu_ref
         call dmsg(5, 'read', 'read_flow', &
                 msg='mu_reference = ' + mu_ref)
+
+        ! Type of variation for viscosity
+        call get_next_token(FLOW_FILE_UNIT, buf)
+        read(buf, *) mu_variation
+        call dmsg(5, 'read', 'read_flow', &
+                msg='mu_variation = ' + mu_variation)
 
         ! read T_red
         call get_next_token(FLOW_FILE_UNIT, buf)

@@ -20,7 +20,7 @@ program main
      !print *, 'Iteration', iter
 !     call flush()
      call step()
-     if (current_iter == max_iters) then
+     if (current_iter == max_iters .or. want_to_stop==1) then
         exit
      end if
   end do

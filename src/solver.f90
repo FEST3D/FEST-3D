@@ -5,6 +5,9 @@ module solver
   use global, only: FILE_NAME_LENGTH
   use global, only: STRING_BUFFER_LENGTH 
   use global, only: INTERPOLANT_NAME_LENGTH
+  use global, only: STOP_FILE_UNIT
+  use global, only: stop_file
+  use global_vars, only : want_to_stop
 
   use global_sst , only : beta1
   use global_sst , only : beta2
@@ -518,7 +521,9 @@ module solver
 
             implicit none
             integer :: i, j, k
+            real, dimension(1:imx-1,1:jmx-1,1:kmx-1) :: delta_t_0
 
+            delta_t_0 = delta_t
             ! qp at various stages is not stored but over written
             ! The residue multiplied by the inverse of the jacobian
             ! is stored for the final update equation
@@ -531,18 +536,19 @@ module solver
             ! Stage 2
             ! Not computing delta_t since qp(1) = qp(n)
             ! Update solution will over write qp
-            delta_t = 0.5 * delta_t  ! delta_t(1)
+            delta_t = 0.5 * delta_t_0  ! delta_t(1)
             call update_solution()
 
             ! Stage 3
             call sub_step()
             dEdx_2 = get_residue_primitive()
-            delta_t = 0.5 * delta_t
+            delta_t = 0.5 * delta_t_0
             call update_solution()
 
             ! Stage 4
             call sub_step()
             dEdx_3 = get_residue_primitive()
+            delta_t = delta_t_0
             call update_solution()
 
             ! qp now is qp_4
@@ -781,6 +787,9 @@ module solver
             end if
 
             call checkpoint()
+            open(STOP_FILE_UNIT, file=stop_file)
+            read(STOP_FILE_UNIT,*) want_to_stop
+            close(STOP_FILE_UNIT)
 
         end subroutine step
 
