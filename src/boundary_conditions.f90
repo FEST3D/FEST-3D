@@ -1944,6 +1944,7 @@ module boundary_conditions
             implicit none
             character(len=4), intent(in) :: face
             integer, intent(in) :: cell_ind
+            !call isothermal_wall()
 
             if (cell_ind == -1) then
                 if (face == "imin") then
@@ -2131,5 +2132,12 @@ module boundary_conditions
 
         include "turbulence_models/include/bc/fix_and_copy_turb_var.inc"
 
+        subroutine isothermal_wall()
+          implicit none
+          real*8 :: twall
+          twall = 300*(1+0.5*(1.4-1)*(0.5**2))
+          density(:,0,:) = Pressure(:,0,:)/&
+                          (R_gas*((2*twall)-(pressure(:,1,:)/(R_gas*density(:,1,:)))))
+        end subroutine isothermal_wall
 
 end module boundary_conditions
