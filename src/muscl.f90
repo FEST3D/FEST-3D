@@ -73,17 +73,17 @@ module muscl
 
         call alloc(y_qp_left, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_left.')
+                'y_qp_left.')
         call alloc(y_qp_right, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_right.')
+                'y_qp_right.')
 
         call alloc(z_qp_left, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_left.')
+                'z_qp_left.')
         call alloc(z_qp_right, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_right.')
+                'z_qp_right.')
 
         call alloc(pdif, 0, imx, 0, jmx, 0, kmx, &
                 errmsg='Error: Unable to allocate memory for' // &
@@ -349,6 +349,12 @@ module muscl
                  (1-k_f):(1-k_f)*(kmx-1)) = &
                 pdif(1:imx-1 - i_f*(imx-2), 1:jmx-1 - j_f*(jmx-2), &
                      1:kmx-1 - k_f*(kmx-2))
+                    
+            pdif((1-i_f*(-imx+1)):(i_f)+(imx-1), (1-j_f*(-jmx+1)):(j_f)+(jmx-1), &
+                 (1-k_f*(-kmx+1)):(k_f)+(kmx-1)) = &
+                pdif(1+i_f*(imx-2):imx-1 , 1+j_f*(jmx-2):jmx-1, &
+                     1+k_f*(kmx-2):kmx-1)
+             
 
             ! Loop over faces
             do k = 1, kmx - (1 - k_f)            

@@ -58,7 +58,7 @@ module read_output_vtk
   use global_vars, only :    TKE_resnorm_0
   use global_vars, only :  omega_resnorm_0
 
-  use global_vars, only :  mu_ref
+  use global_vars, only : mu_ref
 
   use utils
   use string
