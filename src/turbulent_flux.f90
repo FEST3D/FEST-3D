@@ -83,16 +83,8 @@ module turbulent_flux
         real :: sst_f_mu
         real :: omega
         real :: KE
-!        real :: d
         real :: rho
 
- !       real ::  CD
- !       real ::  CD_kw 
- !       real ::  var1
- !       real ::  var2
- !       real ::  right
- !       real ::  left
- !       real ::  arg1
         real ::  F1
         real ::  sigma_k
         real ::  sigma_w
@@ -200,71 +192,12 @@ module turbulent_flux
             omega = 0.5*(     tw(i-1,j,k) +      tw(i,j,k))
             KE    = 0.5*(     tk(i-1,j,k) +      tk(i,j,k))
             rho   = 0.5*(density(i-1,j,k) + density(i,j,k)) 
-!            d     = 0.5*(   dist(i-1,j,k) +    dist(i,j,k))
-!            d     = 0.5*(   dist(i,j,k) +    dist(i,j,k))
-!            CD = 2*rho*sigma_w2*(dtkdx*dtwdx&
-!                               + dtkdy*dtwdy&
-!                               + dtkdz*dtwdz&
-!                                )/omega
-!            CD_kw = max(CD, 1e-20)
-!
-!            var1 = sqrt(KE)/(bstar*omega*d)
-!            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
-!            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
-!            left = max(var1, var2)
-!            arg1 = min(left, right)
-
-!            F1 = tanh(arg1**4)
             F1 = 0.5*(sst_F1(i-1,j,k) + sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
             sigma_w     =    sigma_w1*F1  +    sigma_w1*(1. - F1)
             sst_f_mu = 0.5*(sst_mu(i-1, j, k) + sst_mu(i, j, k))
 
-!            ! Using lambda = -2 * mu / 3
-!            ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
-!            ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
-!            Tau_xx = 2. * sst_f_mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_yy = 2. * sst_f_mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_zz = 2. * sst_f_mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_xy = sst_f_mu * (dvdx + dudy)
-!            Tau_xz = sst_f_mu * (dwdx + dudz)
-!            Tau_yz = sst_f_mu * (dwdy + dvdz)
-!
-!            ! ! ____ TURBULENT THERMAL CONDUCTIVITY ____ ! !
-!            !TODO different prandtl number for turbulence 
-!            ! Pr: Prandtl Number
-!            ! Qx, Qy, Qz: Conduction fluxes
-!            K_heat = sst_f_mu * gm * R_gas / ((gm - 1) * Pr)
-!            Qx = K_heat*dTdx
-!            Qy = K_heat*dTdy
-!            Qz = K_heat*dTdz
-!
-!
-!            ! Note that the xi-direction faces only need the following quantities:
-!            ! Tau_xx, Tau_xy, Tau_xz -> dudx, dudy, dudz, dvdx, dvdy, dwdx, dwdz
-!            ! Qx -> dTdx
-!            ! The mass flux has no viscous component
-!            ! momentum for xi-face:
-!            F(i, j, k, 2) = F(i, j, k, 2) - ( ((Tau_xx * xnx(i, j, k)) + &
-!                            (Tau_xy * xny(i, j, k)) + (Tau_xz * xnz(i, j, k))) * &
-!                            xA(i, j, k))
-!            F(i, j, k, 3) = F(i, j, k, 3) - ( ((Tau_xy * xnx(i, j, k)) + &
-!                            (Tau_yy * xny(i, j, k)) + (Tau_yz * xnz(i, j, k))) * &
-!                            xA(i, j, k))
-!            F(i, j, k, 4) = F(i, j, k, 4) - ( ((Tau_xz * xnx(i, j, k)) + &
-!                            (Tau_yz * xny(i, j, k)) + (Tau_zz * xnz(i, j, k))) * &
-!                            xA(i, j, k))
-!           
-!            ! Energy flux
-!            ! (TijVj + Qi)ni
-!            F(i, j, k, 5) = F(i, j, k, 5) - (xA(i, j, k) * ( &
-!                            ((Tau_xx*uface + Tau_xy*vface + Tau_xz*wface + &
-!                              Qx) * xnx(i, j, k)) + &
-!                            ((Tau_xy*uface + Tau_yy*vface + Tau_yz*wface + &
-!                              Qy) * xny(i, j, k)) + &
-!                            ((Tau_xz*uface + Tau_yz*vface + Tau_zz*wface + &
-!                              Qz) * xnz(i, j, k)) ) )
             F(i, j, k, 6) = F(i, j, k, 6) - (xA(i, j, k)*( &
                             (mu_f + sigma_k*sst_f_mu)*(dtkdx * xnx(i, j, k)&
                               +dtkdy * xny(i, j, k) + dtkdz * xnz(i, j, k))))
@@ -295,16 +228,8 @@ module turbulent_flux
         real :: sst_f_mu
         real :: omega
         real :: KE
-!        real :: d
         real :: rho
 
- !       real ::  CD
- !       real ::  CD_kw 
- !       real ::  var1
- !       real ::  var2
- !       real ::  right
- !       real ::  left
- !       real ::  arg1
         real ::  F1
         real ::  sigma_k
         real ::  sigma_w
@@ -409,21 +334,6 @@ module turbulent_flux
             omega = 0.5*(     tw(i,j-1,k) +      tw(i,j,k))
             KE    = 0.5*(     tk(i,j-1,k) +      tk(i,j,k))
             rho   = 0.5*(density(i,j-1,k) + density(i,j,k)) 
-!            d     = 0.5*(   dist(i,j-1,k) +    dist(i,j,k))
-!            d     = 0.5*(   dist(i,j,k) +    dist(i,j,k))
-!            CD = 2*rho*sigma_w2*(dtwdx*dtwdx&
-!                               + dtkdy*dtwdy&
-!                               + dtkdz*dtwdz&
-!                                )/omega
-!            CD_kw = max(CD, 1e-20)
-!
-!            var1 = sqrt(KE)/(bstar*omega*d)
-!            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
-!            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
-!            left = max(var1, var2)
-!            arg1 = min(left, right)
-!
-!            F1 = tanh(arg1**4)
             F1 = 0.5*(sst_F1(i,j-1,k)+sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
@@ -431,50 +341,6 @@ module turbulent_flux
             sst_f_mu = 0.5*(sst_mu(i, j-1, k) + sst_mu(i, j, k))
 
 
-!            ! Using lambda = -2 * mu / 3
-!            ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
-!            ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
-!            Tau_xx = 2. * sst_f_mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_yy = 2. * sst_f_mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_zz = 2. * sst_f_mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_xy = sst_f_mu * (dvdx + dudy)
-!            Tau_xz = sst_f_mu * (dwdx + dudz)
-!            Tau_yz = sst_f_mu * (dwdy + dvdz)
-!
-!            ! ! ____ TURBULENT THERMAL CONDUCTIVITY ____ ! !
-!            !TODO different prandtl number for turbulence 
-!            ! Pr: Prandtl Number
-!            ! Qx, Qy, Qz: Conduction fluxes
-!            K_heat = sst_f_mu * gm * R_gas / ((gm - 1) * Pr)
-!            Qx = K_heat*dTdx
-!            Qy = K_heat*dTdy
-!            Qz = K_heat*dTdz
-!
-!
-!            ! Note that the xi-direction faces only need the following quantities:
-!            ! Tau_xx, Tau_xy, Tau_xz -> dudx, dudy, dudz, dvdx, dvdy, dwdx, dwdz
-!            ! Qx -> dTdx
-!            ! The mass flux has no viscous component
-!            ! momentum for xi-face:
-!            G(i, j, k, 2) = G(i, j, k, 2) - ( ((Tau_xx * ynx(i, j, k)) + &
-!                            (Tau_xy * yny(i, j, k)) + (Tau_xz * ynz(i, j, k))) * &
-!                            yA(i, j, k))
-!            G(i, j, k, 3) = G(i, j, k, 3) - ( ((Tau_xy * ynx(i, j, k)) + &
-!                            (Tau_yy * yny(i, j, k)) + (Tau_yz * ynz(i, j, k))) * &
-!                            yA(i, j, k))
-!            G(i, j, k, 4) = G(i, j, k, 4) - ( ((Tau_xz * ynx(i, j, k)) + &
-!                            (Tau_yz * yny(i, j, k)) + (Tau_zz * ynz(i, j, k))) * &
-!                            yA(i, j, k))
-!           
-!            ! Energy flux
-!            ! (TijVj + Qi)ni
-!            G(i, j, k, 5) = G(i, j, k, 5) - (yA(i, j, k) * ( &
-!                            ((Tau_xx*uface + Tau_xy*vface + Tau_xz*wface + &
-!                              Qx) * ynx(i, j, k)) + &
-!                            ((Tau_xy*uface + Tau_yy*vface + Tau_yz*wface + &
-!                              Qy) * yny(i, j, k)) + &
-!                            ((Tau_xz*uface + Tau_yz*vface + Tau_zz*wface + &
-!                              Qz) * ynz(i, j, k)) ) )
             G(i, j, k, 6) = G(i, j, k, 6) - (yA(i, j, k)*( &
                             (mu_f + sigma_k*sst_f_mu)*(dtkdx * ynx(i, j, k)&
                               +dtkdy * yny(i, j, k) + dtkdz * ynz(i, j, k))))
@@ -482,13 +348,6 @@ module turbulent_flux
             G(i, j, k, 7) = G(i, j, k, 7) - (yA(i, j, k)*( &
                             (mu_f + sigma_w*sst_f_mu)*(dtwdx * ynx(i, j, k)&
                               +dtwdy * yny(i, j, k) + dtwdz * ynz(i, j, k))))
-!            if (process_id==1) then
-!            if ((j==1 .or. j==jmx-1) .and. i==1 .and.  k==1) then
-!              print*, "After trbulent_fluxes, j= ", j
-!              print*, "TKE: ", G(i,j,k,6) 
-!              print*, "Omg: ", G(i,j,k,7) 
-!            end if
-!            end if
           end do
          end do
         end do
@@ -512,16 +371,8 @@ module turbulent_flux
         real :: sst_f_mu
         real :: omega
         real :: KE
-!        real :: d
         real :: rho
 
-!        real ::  CD
-!        real ::  CD_kw 
-!        real ::  var1
-!        real ::  var2
-!        real ::  right
-!        real ::  left
-!        real ::  arg1
         real ::  F1
         real ::  sigma_k
         real ::  sigma_w
@@ -626,21 +477,6 @@ module turbulent_flux
             omega = 0.5*(     tw(i,j,k-1) +      tw(i,j,k))
             KE    = 0.5*(     tk(i,j,k-1) +      tk(i,j,k))
             rho   = 0.5*(density(i,j,k-1) + density(i,j,k)) 
-!            d     = 0.5*(   dist(i,j,k-1) +    dist(i,j,k))
-!            d     = 0.5*(   dist(i,j,k) +    dist(i,j,k))
-!            CD = 2*rho*sigma_w2*(dtwdx*dtwdx&
-!                               + dtkdy*dtwdy&
-!                               + dtkdz*dtwdz&
-!                                )/omega
-!            CD_kw = max(CD, 1e-20)
-!
-!            var1 = sqrt(KE)/(bstar*omega*d)
-!            var2 = 500*mu_f/((dist(i,j,k)**2)*omega)
-!            right= 4*(rho*sigma_w2*KE)/(CD_kw*d)
-!            left = max(var1, var2)
-!            arg1 = min(left, right)
-!
-!            F1 = tanh(arg1**4)
             F1 = 0.5*(sst_F1(i,j,k-1)+sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
@@ -648,50 +484,6 @@ module turbulent_flux
             sst_f_mu = 0.5*(sst_mu(i, j, k-1) + sst_mu(i, j, k))
 
 
-!            ! Using lambda = -2 * mu / 3
-!            ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
-!            ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
-!            Tau_xx = 2. * sst_f_mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_yy = 2. * sst_f_mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_zz = 2. * sst_f_mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
-!            Tau_xy = sst_f_mu * (dvdx + dudy)
-!            Tau_xz = sst_f_mu * (dwdx + dudz)
-!            Tau_yz = sst_f_mu * (dwdy + dvdz)
-!
-!            ! ! ____ TURBULENT THERMAL CONDUCTIVITY ____ ! !
-!            !TODO different prandtl number for turbulence 
-!            ! Pr: Prandtl Number
-!            ! Qx, Qy, Qz: Conduction fluxes
-!            K_heat = sst_f_mu * gm * R_gas / ((gm - 1) * Pr)
-!            Qx = K_heat*dTdx
-!            Qy = K_heat*dTdy
-!            Qz = K_heat*dTdz
-!
-!
-!            ! Note that the xi-direction faces only need the following quantities:
-!            ! Tau_xx, Tau_xy, Tau_xz -> dudx, dudy, dudz, dvdx, dvdy, dwdx, dwdz
-!            ! Qx -> dTdx
-!            ! The mass flux has no viscous component
-!            ! momentum for xi-face:
-!            H(i, j, k, 2) = H(i, j, k, 2) - ( ((Tau_xx * znx(i, j, k)) + &
-!                            (Tau_xy * zny(i, j, k)) + (Tau_xz * znz(i, j, k))) * &
-!                            zA(i, j, k))
-!            H(i, j, k, 3) = H(i, j, k, 3) - ( ((Tau_xy * znx(i, j, k)) + &
-!                            (Tau_yy * zny(i, j, k)) + (Tau_yz * znz(i, j, k))) * &
-!                            zA(i, j, k))
-!            H(i, j, k, 4) = H(i, j, k, 4) - ( ((Tau_xz * znx(i, j, k)) + &
-!                            (Tau_yz * zny(i, j, k)) + (Tau_zz * znz(i, j, k))) * &
-!                            zA(i, j, k))
-!           
-!            ! Energy flux
-!            ! (TijVj + Qi)ni
-!            H(i, j, k, 5) = H(i, j, k, 5) - (zA(i, j, k) * ( &
-!                            ((Tau_xx*uface + Tau_xy*vface + Tau_xz*wface + &
-!                              Qx) * znx(i, j, k)) + &
-!                            ((Tau_xy*uface + Tau_yy*vface + Tau_yz*wface + &
-!                              Qy) * zny(i, j, k)) + &
-!                            ((Tau_xz*uface + Tau_yz*vface + Tau_zz*wface + &
-!                              Qz) * znz(i, j, k)) ) )
             H(i, j, k, 6) = H(i, j, k, 6) - (zA(i, j, k)*( &
                             (mu_f + sigma_k*sst_f_mu)*(dtkdx * znx(i, j, k)&
                               +dtkdy * zny(i, j, k) + dtkdz * znz(i, j, k))))
@@ -714,7 +506,6 @@ module turbulent_flux
         real, dimension(:, :, :, :), pointer :: F, G, H
        
         if (turbulence=='sst') then
-!        call compute_gradients_cell_centre()
         call compute_xi_turbulent_fluxes(F)
         call compute_eta_turbulent_fluxes(G)
         call compute_zeta_turbulent_fluxes(H)
