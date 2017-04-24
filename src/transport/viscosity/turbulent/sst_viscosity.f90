@@ -47,6 +47,7 @@ module sst_viscosity
       do k = 1,kmx-1
         do j = 1,jmx-1
           do i = 1,imx-1
+            call calculate_arg2()
             call calculate_f2()
             call calculate_vorticity()
             NUM = density(i,j,k)*a1*tk(i,j,k)

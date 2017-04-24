@@ -65,6 +65,7 @@ module molecular_viscosity
           print*, "   found '",trim(mu_variation),"'"
           print*, "accepted values: 1) sutherland_law"
           print*, "                 2) constant"
+          STOP
       end select
 
     end subroutine calculate_molecular_viscosity

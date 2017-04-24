@@ -132,8 +132,16 @@ setup:
 	@if test ! -d $(OBJDIR); then mkdir $(OBJDIR); else : ; fi
 	@if test ! -d $(MODDIR); then mkdir $(MODDIR); else : ; fi
 	@if test ! -d $(BINDIR); then mkdir $(BINDIR); else : ; fi
+	@if test ! -d $(OBJDIR)/resnorm; then mkdir $(OBJDIR)/resnorm; else : ; fi
 	@if test ! -d $(OBJDIR)/resnorm/viscous; then mkdir $(OBJDIR)/resnorm/viscous; else : ; fi
-	@if test ! -d $(OBJDIR)/resnorm/turbulent; then mkdir $(OBJDIR)/resnorm/turbulent; else : ; fi
+	@if test ! -d $(OBJDIR)/read_write; then mkdir $(OBJDIR)/read_write; else : ; fi
+	@if test ! -d $(OBJDIR)/read_write/read; then mkdir $(OBJDIR)/read_write/read; else : ; fi
+	@if test ! -d $(OBJDIR)/read_write/write; then mkdir $(OBJDIR)/read_write/write; else : ; fi
+	@if test ! -d $(OBJDIR)/transport; then mkdir $(OBJDIR)/transport; else : ; fi
+	@if test ! -d $(OBJDIR)/transport/viscosity; then mkdir $(OBJDIR)/transport/viscosity; else : ; fi
+	@if test ! -d $(OBJDIR)/transport/viscosity/molecular; then mkdir $(OBJDIR)/transport/viscosity/molecular; else : ; fi
+	@if test ! -d $(OBJDIR)/transport/viscosity/turbulent; then mkdir $(OBJDIR)/transport/viscosity/turbulent; else : ; fi
+	@if test ! -d $(OBJDIR)/source; then mkdir $(OBJDIR)/source; else : ; fi
 
 .PHONY: clean
 clean:

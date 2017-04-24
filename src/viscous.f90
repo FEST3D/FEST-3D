@@ -1,456 +1,104 @@
 module viscous
-    !-----------------------------------------------------------------
-    ! The viscous module contains the viscous flux calculations and 
-    ! the boundary conditions to be imposed
-    !-----------------------------------------------------------------
+  !-----------------------------------------------------------------
+  ! The viscous module contains the viscous flux calculations and 
+  ! the boundary conditions to be imposed
+  !-----------------------------------------------------------------
+  !TODO: Viscous: Change to single subroutine for all directions  
 
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
-    use global_vars, only : grid_x
-    use global_vars, only : grid_y
-    use global_vars, only : grid_z
+  use global     , only: FILE_NAME_LENGTH
+  use global_vars, only : imx
+  use global_vars, only : jmx
+  use global_vars, only : kmx
+  use global_vars, only : grid_x
+  use global_vars, only : grid_y
+  use global_vars, only : grid_z
 
-    use global_vars, only : xnx, xny, xnz !face unit normal x
-    use global_vars, only : ynx, yny, ynz !face unit normal y
-    use global_vars, only : znx, zny, znz !face unit normal z
-    use global_vars, only : xA, yA, zA    !face area
-    use global_vars, only : vol => volume
-    use global_vars, only :   left_ghost_centroid
-    use global_vars, only :  right_ghost_centroid
-    use global_vars, only :  front_ghost_centroid
-    use global_vars, only :   back_ghost_centroid
-    use global_vars, only :    top_ghost_centroid
-    use global_vars, only : bottom_ghost_centroid
-    
-    use global, only: FILE_NAME_LENGTH
-    use global_vars, only : gm
-    use global_vars, only : n_var
-    use global_vars, only : R_gas
-    use global_vars, only : mu_ref
-    use global_vars, only : T_ref
-    use global_vars, only : Pr
-    use global_vars, only : Sutherland_temp
-    use global_vars, only : density
-    use global_vars, only : x_speed
-    use global_vars, only : y_speed
-    use global_vars, only : z_speed
-    use global_vars, only : pressure
-    use global_vars, only : tk
-    use global_vars, only : tw
-    use global_vars  ,only : gradu_x
-    use global_vars  ,only : gradu_y
-    use global_vars  ,only : gradu_z
-    use global_vars  ,only : gradv_x
-    use global_vars  ,only : gradv_y
-    use global_vars  ,only : gradv_z
-    use global_vars  ,only : gradw_x
-    use global_vars  ,only : gradw_y
-    use global_vars  ,only : gradw_z
-    use global_vars  ,only : gradT_x
-    use global_vars  ,only : gradT_y
-    use global_vars  ,only : gradT_z
-    use global_vars  ,only : gradtk_x
-    use global_vars  ,only : gradtk_y
-    use global_vars  ,only : gradtk_z
-    use global_vars  ,only : gradtw_x
-    use global_vars  ,only : gradtw_y
-    use global_vars  ,only : gradtw_z
-    use global_vars  ,only : mu_v=>mu
-    use global_vars  ,only : mu_t
-    use global_vars, only : turbulence
-    use utils, only: alloc, dealloc, dmsg
-    use string
-    use face_interpolant, only: x_density_left, x_density_right, &
-        y_density_left, y_density_right, z_density_left, z_density_right, &
-        x_x_speed_left, x_x_speed_right, x_y_speed_left, x_y_speed_right, &
-        x_z_speed_left, x_z_speed_right, y_x_speed_left, y_x_speed_right, &
-        y_y_speed_left, y_y_speed_right, y_z_speed_left, y_z_speed_right, &
-        z_x_speed_left, z_x_speed_right, z_y_speed_left, z_y_speed_right, &
-        z_z_speed_left, z_z_speed_right, x_pressure_left, x_pressure_right, &
-        y_pressure_left, y_pressure_right, z_pressure_left, z_pressure_right
-!    use source, only: gradu_x, gradu_y, &
-!    gradu_z, gradv_x, gradv_y, gradv_z, gradw_x, gradw_y, gradw_z, &
-!    gradT_x, gradT_y, gradT_z
+  use global_vars, only : xnx, xny, xnz !face unit normal x
+  use global_vars, only : ynx, yny, ynz !face unit normal y
+  use global_vars, only : znx, zny, znz !face unit normal z
+  use global_vars, only : xA, yA, zA    !face area
+  use global_vars, only : vol => volume
+  use global_vars, only :   left_ghost_centroid
+  use global_vars, only :  right_ghost_centroid
+  use global_vars, only :  front_ghost_centroid
+  use global_vars, only :   back_ghost_centroid
+  use global_vars, only :    top_ghost_centroid
+  use global_vars, only : bottom_ghost_centroid
+  
+  use global_vars, only : gm
+  use global_vars, only : n_var
+  use global_vars, only : R_gas
+  use global_vars, only : mu_ref
+  use global_vars, only : T_ref
+  use global_vars, only : Pr
+  use global_vars, only : Sutherland_temp
+  use global_vars, only : density
+  use global_vars, only : x_speed
+  use global_vars, only : y_speed
+  use global_vars, only : z_speed
+  use global_vars, only : pressure
+  use global_vars, only : tk
+  use global_vars, only : tw
+  use global_vars, only : gradu_x
+  use global_vars, only : gradu_y
+  use global_vars, only : gradu_z
+  use global_vars, only : gradv_x
+  use global_vars, only : gradv_y
+  use global_vars, only : gradv_z
+  use global_vars, only : gradw_x
+  use global_vars, only : gradw_y
+  use global_vars, only : gradw_z
+  use global_vars, only : gradT_x
+  use global_vars, only : gradT_y
+  use global_vars, only : gradT_z
+  use global_vars, only : gradtk_x
+  use global_vars, only : gradtk_y
+  use global_vars, only : gradtk_z
+  use global_vars, only : gradtw_x
+  use global_vars, only : gradtw_y
+  use global_vars, only : gradtw_z
+  use global_vars, only : mu_v=>mu
+  use global_vars, only : mu_t
+  use global_vars, only : turbulence
+  use utils      , only : alloc, dealloc, dmsg
+  use string
+  use face_interpolant, only: x_density_left 
+  use face_interpolant, only: y_density_left
+  use face_interpolant, only: z_density_left
+  use face_interpolant, only: x_density_right
+  use face_interpolant, only: y_density_right
+  use face_interpolant, only: z_density_right
+  use face_interpolant, only: x_x_speed_left
+  use face_interpolant, only: x_y_speed_left
+  use face_interpolant, only: x_z_speed_left
+  use face_interpolant, only: x_x_speed_right
+  use face_interpolant, only: x_y_speed_right
+  use face_interpolant, only: x_z_speed_right
+  use face_interpolant, only: y_x_speed_left
+  use face_interpolant, only: y_y_speed_left
+  use face_interpolant, only: y_z_speed_left
+  use face_interpolant, only: y_x_speed_right
+  use face_interpolant, only: y_y_speed_right
+  use face_interpolant, only: y_z_speed_right
+  use face_interpolant, only: z_x_speed_left
+  use face_interpolant, only: z_y_speed_left
+  use face_interpolant, only: z_z_speed_left
+  use face_interpolant, only: z_x_speed_right
+  use face_interpolant, only: z_y_speed_right
+  use face_interpolant, only: z_z_speed_right
+  use face_interpolant, only: x_pressure_left
+  use face_interpolant, only: y_pressure_left
+  use face_interpolant, only: z_pressure_left
+  use face_interpolant, only: x_pressure_right
+  use face_interpolant, only: y_pressure_right
+  use face_interpolant, only: z_pressure_right
+  implicit none
+  private
 
-      !include tk and te face variable from face_interpolant.mod
-!      include "turbulence_models/include/transport/import_module.inc" 
+  public :: compute_viscous_fluxes
 
-    implicit none
-    private
+  contains
 
-!   real :: mu
-    
-!    real, public, dimension(:, :, :), allocatable :: gradu_x, gradu_y, &
-!    gradu_z, gradv_x, gradv_y, gradv_z, gradw_x, gradw_y, gradw_z, &
-!    gradT_x, gradT_y, gradT_z
-!    include "turbulence_models/include/transport/variables_deceleration.inc"
-!   real, public, dimension(:, :, :), allocatable :: gradu_y_f
-
-    !TODO: Viscous: Change to single subroutine for all directions  
-
-!    public :: setup_viscous
-    public :: compute_viscous_fluxes
-!    public :: destroy_viscous
-
-    contains
-
-!    subroutine setup_viscous()
-!
-!        implicit none
-!
-!        call dmsg(1, 'viscous', 'setup_viscous')
-!
-!      ! call alloc(gradu_y_f, 1, imx, 1, jmx-1, 1, kmx-1, &
-!      !         errmsg='Error: Unable to allocate memory for ' // &
-!      !             'Gradu_y_f - viscous')
-!        call alloc(gradu_x, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradu_x - viscous')
-!        call alloc(gradu_y, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradu_y - viscous')
-!        call alloc(gradu_z, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradu_z - viscous')
-!
-!        call alloc(gradv_x, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradv_x - viscous')
-!        call alloc(gradv_y, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradv_y - viscous')
-!        call alloc(gradv_z, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradv_z - viscous')
-!
-!        call alloc(gradw_x, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradw_x - viscous')
-!        call alloc(gradw_y, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradw_y - viscous')
-!        call alloc(gradw_z, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'Gradw_z - viscous')
-!
-!        call alloc(gradT_x, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'GradT_x - viscous')
-!        call alloc(gradT_y, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'GradT_y - viscous')
-!        call alloc(gradT_z, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for ' // &
-!                    'GradT_z - viscous')
-!
-!        include "turbulence_models/sst/transport/allocate_memory.inc"
-!
-!    end subroutine setup_viscous
-!
-!    subroutine destroy_viscous()
-!
-!        implicit none
-!
-!        call dmsg(1, 'viscous', 'destroy_viscous')
-!
-!        call dealloc(gradu_x)
-!        call dealloc(gradu_y)
-!        call dealloc(gradu_z)
-!
-!        call dealloc(gradv_x)
-!        call dealloc(gradv_y)
-!        call dealloc(gradv_z)
-!        
-!        call dealloc(gradw_x)
-!        call dealloc(gradw_y)
-!        call dealloc(gradw_z)
-!        
-!        call dealloc(gradT_x)
-!        call dealloc(gradT_y)
-!        call dealloc(gradT_z)
-!        
-!        include "turbulence_models/sst/transport/destroy_memory.inc"
-!
-!    end subroutine destroy_viscous
-!    
-!    subroutine compute_gradients_cell_centre()
-!    !-----------------------------------------------------------------
-!    ! Computes the gradients of velocity and temperature at the cell
-!    ! centre
-!    !-----------------------------------------------------------------
-!
-!        implicit none
-!
-!        integer :: i, j, k
-!        real :: T_r, T_l, T_face
-!
-!        include "turbulence_models/sst/transport/gradient_init.inc"
-!        
-!        gradu_x = 0.0
-!        gradu_y = 0.0
-!        gradu_z = 0.0
-!        gradv_x = 0.0
-!        gradv_y = 0.0
-!        gradv_z = 0.0
-!        gradw_x = 0.0
-!        gradw_y = 0.0
-!        gradw_z = 0.0
-!        gradT_x = 0.0
-!        gradT_y = 0.0
-!        gradT_z = 0.0
-!
-!
-!
-!        do k = 1, kmx - 1
-!         do j = 1, jmx - 1
-!          do i = 1, imx - 1
-!            
-!            ! Solving for gradu
-!            gradu_x(i,j,k) = ( &
-!                             - ((x_x_speed_left(i, j, k) + x_x_speed_right(i, j, k)) * &
-!                                  xnx(i,j,k) * xA(i,j,k)) &
-!                             + ((x_x_speed_left(i+1, j, k) + x_x_speed_right(i+1, j, k)) * &
-!                                  xnx(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_x_speed_left(i, j, k) + y_x_speed_right(i, j, k)) * &
-!                                  ynx(i, j, k) * yA(i, j, k)) &
-!                             + ((y_x_speed_left(i, j+1, k) + y_x_speed_right(i, j+1, k)) * &
-!                                  ynx(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_x_speed_left(i, j, k) + z_x_speed_right(i, j, k)) * &
-!                                  znx(i, j, k) * zA(i, j, k)) &
-!                             + ((z_x_speed_left(i, j, k+1) + z_x_speed_right(i, j, k+1)) * &
-!                                  znx(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!            gradu_y(i,j,k) = ( &
-!                             - ((x_x_speed_left(i, j, k) + x_x_speed_right(i, j, k)) * &
-!                                  xny(i,j,k) * xA(i,j,k)) &
-!                             + ((x_x_speed_left(i+1, j, k) + x_x_speed_right(i+1, j, k)) * &
-!                                  xny(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_x_speed_left(i, j, k) + y_x_speed_right(i, j, k)) * &
-!                                  yny(i, j, k) * yA(i, j, k)) &
-!                             + ((y_x_speed_left(i, j+1, k) + y_x_speed_right(i, j+1, k)) * &
-!                                  yny(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_x_speed_left(i, j, k) + z_x_speed_right(i, j, k)) * &
-!                                  zny(i, j, k) * zA(i, j, k)) &
-!                             + ((z_x_speed_left(i, j, k+1) + z_x_speed_right(i, j, k+1)) * &
-!                                  zny(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!            gradu_z(i,j,k) = ( &
-!                             - ((x_x_speed_left(i, j, k) + x_x_speed_right(i, j, k)) * &
-!                                  xnz(i,j,k) * xA(i,j,k)) &
-!                             + ((x_x_speed_left(i+1, j, k) + x_x_speed_right(i+1, j, k)) * &
-!                                  xnz(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_x_speed_left(i, j, k) + y_x_speed_right(i, j, k)) * &
-!                                  ynz(i, j, k) * yA(i, j, k)) &
-!                             + ((y_x_speed_left(i, j+1, k) + y_x_speed_right(i, j+1, k)) * &
-!                                  ynz(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_x_speed_left(i, j, k) + z_x_speed_right(i, j, k)) * &
-!                                  znz(i, j, k) * zA(i, j, k)) &
-!                             + ((z_x_speed_left(i, j, k+1) + z_x_speed_right(i, j, k+1)) * &
-!                                  znz(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!
-!            ! Solving for gradv
-!            gradv_x(i,j,k) = ( &
-!                             - ((x_y_speed_left(i, j, k) + x_y_speed_right(i, j, k)) * &
-!                                  xnx(i,j,k) * xA(i,j,k)) &
-!                             + ((x_y_speed_left(i+1, j, k) + x_y_speed_right(i+1, j, k)) * &
-!                                  xnx(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_y_speed_left(i, j, k) + y_y_speed_right(i, j, k)) * &
-!                                  ynx(i, j, k) * yA(i, j, k)) &
-!                             + ((y_y_speed_left(i, j+1, k) + y_y_speed_right(i, j+1, k)) * &
-!                                  ynx(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_y_speed_left(i, j, k) + z_y_speed_right(i, j, k)) * &
-!                                  znx(i, j, k) * zA(i, j, k)) &
-!                             + ((z_y_speed_left(i, j, k+1) + z_y_speed_right(i, j, k+1)) * &
-!                                  znx(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!            gradv_y(i,j,k) = ( &
-!                             - ((x_y_speed_left(i, j, k) + x_y_speed_right(i, j, k)) * &
-!                                  xny(i,j,k) * xA(i,j,k)) &
-!                             + ((x_y_speed_left(i+1, j, k) + x_y_speed_right(i+1, j, k)) * &
-!                                  xny(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_y_speed_left(i, j, k) + y_y_speed_right(i, j, k)) * &
-!                                  yny(i, j, k) * yA(i, j, k)) &
-!                             + ((y_y_speed_left(i, j+1, k) + y_y_speed_right(i, j+1, k)) * &
-!                                  yny(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_y_speed_left(i, j, k) + z_y_speed_right(i, j, k)) * &
-!                                  zny(i, j, k) * zA(i, j, k)) &
-!                             + ((z_y_speed_left(i, j, k+1) + z_y_speed_right(i, j, k+1)) * &
-!                                  zny(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!            gradv_z(i,j,k) = ( &
-!                             - ((x_y_speed_left(i, j, k) + x_y_speed_right(i, j, k)) * &
-!                                  xnz(i,j,k) * xA(i,j,k)) &
-!                             + ((x_y_speed_left(i+1, j, k) + x_y_speed_right(i+1, j, k)) * &
-!                                  xnz(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_y_speed_left(i, j, k) + y_y_speed_right(i, j, k)) * &
-!                                  ynz(i, j, k) * yA(i, j, k)) &
-!                             + ((y_y_speed_left(i, j+1, k) + y_y_speed_right(i, j+1, k)) * &
-!                                  ynz(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_y_speed_left(i, j, k) + z_y_speed_right(i, j, k)) * &
-!                                  znz(i, j, k) * zA(i, j, k)) &
-!                             + ((z_y_speed_left(i, j, k+1) + z_y_speed_right(i, j, k+1)) * &
-!                                  znz(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!            
-!            ! Solving for gradw
-!            gradw_x(i,j,k) = ( &
-!                             - ((x_z_speed_left(i, j, k) + x_z_speed_right(i, j, k)) * &
-!                                  xnx(i,j,k) * xA(i,j,k)) &
-!                             + ((x_z_speed_left(i+1, j, k) + x_z_speed_right(i+1, j, k)) * &
-!                                  xnx(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_z_speed_left(i, j, k) + y_z_speed_right(i, j, k)) * &
-!                                  ynx(i, j, k) * yA(i, j, k)) &
-!                             + ((y_z_speed_left(i, j+1, k) + y_z_speed_right(i, j+1, k)) * &
-!                                  ynx(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_z_speed_left(i, j, k) + z_z_speed_right(i, j, k)) * &
-!                                  znx(i, j, k) * zA(i, j, k)) &
-!                             + ((z_z_speed_left(i, j, k+1) + z_z_speed_right(i, j, k+1)) * &
-!                                  znx(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!            gradw_y(i,j,k) = ( &
-!                             - ((x_z_speed_left(i, j, k) + x_z_speed_right(i, j, k)) * &
-!                                  xny(i,j,k) * xA(i,j,k)) &
-!                             + ((x_z_speed_left(i+1, j, k) + x_z_speed_right(i+1, j, k)) * &
-!                                  xny(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_z_speed_left(i, j, k) + y_z_speed_right(i, j, k)) * &
-!                                  yny(i, j, k) * yA(i, j, k)) &
-!                             + ((y_z_speed_left(i, j+1, k) + y_z_speed_right(i, j+1, k)) * &
-!                                  yny(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_z_speed_left(i, j, k) + z_z_speed_right(i, j, k)) * &
-!                                  zny(i, j, k) * zA(i, j, k)) &
-!                             + ((z_z_speed_left(i, j, k+1) + z_z_speed_right(i, j, k+1)) * &
-!                                  zny(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!            gradw_z(i,j,k) = ( &
-!                             - ((x_z_speed_left(i, j, k) + x_z_speed_right(i, j, k)) * &
-!                                  xnz(i,j,k) * xA(i,j,k)) &
-!                             + ((x_z_speed_left(i+1, j, k) + x_z_speed_right(i+1, j, k)) * &
-!                                  xnz(i+1, j, k) * xA(i+1, j, k)) &
-!                             - ((y_z_speed_left(i, j, k) + y_z_speed_right(i, j, k)) * &
-!                                  ynz(i, j, k) * yA(i, j, k)) &
-!                             + ((y_z_speed_left(i, j+1, k) + y_z_speed_right(i, j+1, k)) * &
-!                                  ynz(i, j+1, k) * yA(i, j+1, k)) &
-!                             - ((z_z_speed_left(i, j, k) + z_z_speed_right(i, j, k)) * &
-!                                  znz(i, j, k) * zA(i, j, k)) &
-!                             + ((z_z_speed_left(i, j, k+1) + z_z_speed_right(i, j, k+1)) * &
-!                                  znz(i, j, k+1) * zA(i, j, k+1)) &
-!                             ) * 0.5 / vol(i, j, k)
-!
-!            ! Finding grad T
-!            ! Since T is not stored, each face value is calculated in-situ
-!            ! Note that grad T is in the direction of the face normal.
-!            ! Hence each term in the gradT_x, gradT_y and gradT_z are
-!            ! same and are different only by which component of the face
-!            ! normal they are multiplied by.
-!            ! In the below formulation, Tface varies with different indices
-!            ! and face directions used. Hence, the six terms that make up 
-!            ! gradT_x, gradT_y, gradT_z are of indices: 
-!            ! x_face(i,j,k)
-!            ! x_face(i+1, j, k)
-!            ! y_face(i, j, k)
-!            ! y_face(i, j+1, k)
-!            ! z_face(i, j, k)
-!            ! z_face(i, j, k+1)
-!            !
-!            ! NOTE: The factor of 0.5 will be multiplied in the end
-!
-!            ! x_face(i, j, k)
-!            T_l = x_pressure_left(i, j, k) / (x_density_left(i, j, k) * R_gas)
-!            T_r = x_pressure_right(i, j, k) / (x_density_right(i, j, k) * R_gas)
-!            T_face = (T_l + T_r)
-!            gradT_x(i, j, k) = gradT_x(i, j, k) - &
-!                               (T_face * xnx(i, j, k) * xA(i, j, k))
-!            gradT_y(i, j, k) = gradT_y(i, j, k) - &
-!                               (T_face * xny(i, j, k) * xA(i, j, k))
-!            gradT_z(i, j, k) = gradT_z(i, j, k) - &
-!                               (T_face * xnz(i, j, k) * xA(i, j, k))
-!
-!            ! x_face(i+1, j, k)
-!            T_l = x_pressure_left(i+1, j, k) / (x_density_left(i+1, j, k) * R_gas)
-!            T_r = x_pressure_right(i+1, j, k) / (x_density_right(i+1, j, k) * R_gas)
-!            T_face = (T_l + T_r)
-!            gradT_x(i, j, k) = gradT_x(i, j, k) + &
-!                               (T_face * xnx(i+1, j, k) * xA(i+1, j, k))
-!            gradT_y(i, j, k) = gradT_y(i, j, k) + &
-!                               (T_face * xny(i+1, j, k) * xA(i+1, j, k))
-!            gradT_z(i, j, k) = gradT_z(i, j, k) + &
-!                               (T_face * xnz(i+1, j, k) * xA(i+1, j, k))
-!
-!            ! y_face(i, j, k)
-!            T_l = y_pressure_left(i, j, k) / (y_density_left(i, j, k) * R_gas)
-!            T_r = y_pressure_right(i, j, k) / (y_density_right(i, j, k) * R_gas)
-!            T_face = (T_l + T_r)
-!            gradT_x(i, j, k) = gradT_x(i, j, k) - &
-!                               (T_face * ynx(i, j, k) * yA(i, j, k))
-!            gradT_y(i, j, k) = gradT_y(i, j, k) - &
-!                               (T_face * yny(i, j, k) * yA(i, j, k))
-!            gradT_z(i, j, k) = gradT_z(i, j, k) - &
-!                               (T_face * ynz(i, j, k) * yA(i, j, k))
-!
-!            ! y_face(i, j+1, k)
-!            T_l = y_pressure_left(i, j+1, k) / (y_density_left(i, j+1, k) * R_gas)
-!            T_r = y_pressure_right(i, j+1, k) / (y_density_right(i, j+1, k) * R_gas)
-!            T_face = (T_l + T_r)
-!            gradT_x(i, j, k) = gradT_x(i, j, k) + &
-!                               (T_face * ynx(i, j+1, k) * yA(i, j+1, k))
-!            gradT_y(i, j, k) = gradT_y(i, j, k) + &
-!                               (T_face * yny(i, j+1, k) * yA(i, j+1, k))
-!            gradT_z(i, j, k) = gradT_z(i, j, k) + &
-!                               (T_face * ynz(i, j+1, k) * yA(i, j+1, k))
-!
-!            ! z_face(i, j, k)
-!            T_l = z_pressure_left(i, j, k) / (z_density_left(i, j, k) * R_gas)
-!            T_r = z_pressure_right(i, j, k) / (z_density_right(i, j, k) * R_gas)
-!            T_face = (T_l + T_r)
-!            gradT_x(i, j, k) = gradT_x(i, j, k) - &
-!                               (T_face * znx(i, j, k) * zA(i, j, k))
-!            gradT_y(i, j, k) = gradT_y(i, j, k) - &
-!                               (T_face * zny(i, j, k) * zA(i, j, k))
-!            gradT_z(i, j, k) = gradT_z(i, j, k) - &
-!                               (T_face * znz(i, j, k) * zA(i, j, k))
-!
-!            ! z_face(i, j, k+1)
-!            T_l = z_pressure_left(i, j, k+1) / (z_density_left(i, j, k+1) * R_gas)
-!            T_r = z_pressure_right(i, j, k+1) / (z_density_right(i, j, k+1) * R_gas)
-!            T_face = (T_l + T_r)
-!            gradT_x(i, j, k) = gradT_x(i, j, k) + &
-!                               (T_face * znx(i, j, k+1) * zA(i, j, k+1))
-!            gradT_y(i, j, k) = gradT_y(i, j, k) + &
-!                               (T_face * zny(i, j, k+1) * zA(i, j, k+1))
-!            gradT_z(i, j, k) = gradT_z(i, j, k) + &
-!                               (T_face * znz(i, j, k+1) * zA(i, j, k+1))
-!
-!            ! Factor of volume
-!            gradT_x(i, j, k) = gradT_x(i, j, k) * 0.5 / vol(i, j, k)
-!            gradT_y(i, j, k) = gradT_y(i, j, k) * 0.5 / vol(i, j, k)
-!            gradT_z(i, j, k) = gradT_z(i, j, k) * 0.5 / vol(i, j, k)
-!
-!            include "turbulence_models/sst/transport/gradient_find.inc"
-!          end do
-!         end do
-!        end do
-!
-!    end subroutine compute_gradients_cell_centre
-!
-!   function calculate_viscosity(T) result(mu)
-
-!       implicit none
-
-!       real :: mu, T
-!       mu = mu_ref * (T / T_ref)**(3/2) * (T_ref + Sutherland_temp) / &
-!            (T + Sutherland_temp)
-
-!   end function calculate_viscosity
 
     subroutine compute_xi_viscous_fluxes(F)
     !-----------------------------------------------------------------
@@ -869,15 +517,15 @@ module viscous
             ! Wall boundary condition
             !TODO MAKE BOUNDARY CONSTION GENERAL NOT ONY AT Y AND Z FACE
 !            if ((j .eq. 1) .or. (j .eq. jmx)) then
-            if ((j .eq. 1)) then
-                uface = 0.0
-                vface = 0.0
-                wface = 0.0
-            else
+!            if ((j .eq. 1)) then
+!                uface = 0.0
+!                vface = 0.0
+!                wface = 0.0
+!            else
                 uface = 0.5 * (y_x_speed_left(i, j, k) + y_x_speed_right(i, j, k))
                 vface = 0.5 * (y_y_speed_left(i, j, k) + y_y_speed_right(i, j, k))
                 wface = 0.5 * (y_z_speed_left(i, j, k) + y_z_speed_right(i, j, k))
-            end if
+!            end if
 
             ! Energy flux
             ! (TijVj - Qi)ni
@@ -1124,7 +772,6 @@ module viscous
 
         real, dimension(:, :, :, :), pointer :: F, G, H
         
-!        call compute_gradients_cell_centre()
         call compute_xi_viscous_fluxes(F)
         call compute_eta_viscous_fluxes(G)
         call compute_zeta_viscous_fluxes(H)
