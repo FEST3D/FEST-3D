@@ -20,9 +20,10 @@ program main
      !print *, 'Iteration', iter
 !     call flush()
      call step()
-     if (current_iter == max_iters .or. want_to_stop==1) then
+     if (current_iter == max_iters) then
         exit
      end if
+     if (want_to_stop==1) max_iters=current_iter+1
   end do
   call destroy_solver()
   call MPI_FINALIZE(ierr)

@@ -82,6 +82,7 @@ module sst_source
                                           + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
                                           + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
                                            )/tw(i,j,k)
+            CD = max(CD, 1e-20)
 !            CD_kw = max(CD, 1e-20)
 !
 !            var1 = sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))

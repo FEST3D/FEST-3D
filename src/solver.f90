@@ -123,6 +123,7 @@ module solver
   use sst_F      , only : setup_sst_F1
   use sst_F      , only : destroy_sst_F1
   use sst_F      , only : calculate_sst_F1
+  use wall        , only : write_surfnode
   include "turbulence_models/include/solver/import_module.inc"
 
 #ifdef __GFORTRAN__
@@ -173,7 +174,8 @@ module solver
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
             if(turbulence /= 'none') then
-              call setup_wall_dist
+              call write_surfnode()
+              call setup_wall_dist()
               call find_wall_dist()
             end if
             if(mu_ref /= 0. .or. turbulence /= 'none') then
@@ -771,6 +773,7 @@ module solver
             !-----------------------------------------------------------
 
             implicit none
+            integer :: ierr
             call dmsg(1, 'solver', 'step')
 
             if (process_id==0) then
@@ -787,9 +790,12 @@ module solver
             end if
 
             call checkpoint()
-            open(STOP_FILE_UNIT, file=stop_file)
-            read(STOP_FILE_UNIT,*) want_to_stop
-            close(STOP_FILE_UNIT)
+            if(process_id==0)then
+              open(STOP_FILE_UNIT, file=stop_file)
+              read(STOP_FILE_UNIT,*) want_to_stop
+              close(STOP_FILE_UNIT)
+            end if
+            call MPI_BCAST(want_to_stop,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 
         end subroutine step
 

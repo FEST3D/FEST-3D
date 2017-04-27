@@ -1,47 +1,45 @@
-files = global.f90  \
-        global_vars.f90  \
-        global_sst.f90  \
-        utils.f90 \
-        layout.f90 \
-        bitwise.f90 \
-        string.f90 \
-        read_write/read/read.f90 \
-        read_write/write/write_output_vtk.f90 \
-        read_write/write/write_output_tecplot.f90 \
-        read_write/write/write_output.f90 \
-        read_write/read/read_output_vtk.f90 \
-        grid.f90 \
-        geometry.f90 \
-        state.f90 \
-        ppm.f90 \
-        muscl.f90 \
-        face_interpolant.f90 \
-        van_leer.f90 \
-        ausm.f90 \
-        ldfss0.f90 \
-        scheme.f90 \
-        wall_find.f90 \
-        surfnode.f90 \
-        wall_dist.f90 \
-        transport/viscosity/molecular/molecular_viscosity.f90 \
-        transport/viscosity/turbulent/sst_viscosity.f90 \
-        transport/viscosity/turbulent/turbulent_viscosity.f90 \
-        transport/viscosity/viscosity.f90 \
-        transport/transport.f90 \
-        source/sst_source.f90 \
-        source/sst_grad.f90 \
-        source/turbulent_source.f90 \
-        source.f90 \
-        sst_F1.f90 \
-        turbulent_flux.f90 \
-        viscous.f90 \
-        parallel.f90 \
-        boundary_conditions.f90 \
-        boundary_state_reconstruction.f90 \
-        resnorm/viscous/res_viscous.f90 \
-        resnorm/turbulent/res_turbulent.f90 \
-        resnorm/resnorm.f90 \
-        read_write/write/dump_solution.f90 \
-        solver.f90 \
-        main.f90 
-
+files=global_sst.f90 \
+parallel.f90 \
+source.f90 \
+ausm.f90 \
+sst_F1.f90 \
+face_interpolant.f90 \
+muscl.f90 \
+ldfss0.f90 \
+scheme.f90 \
+van_leer.f90 \
+global_vars.f90 \
+boundary_state_reconstruction.f90 \
+bitwise.f90 \
+viscous.f90 \
+wall_dist.f90 \
+ppm.f90 \
+geometry.f90 \
+string.f90 \
+solver.f90 \
+utils.f90 \
+state.f90 \
+main.f90 \
+layout.f90 \
+wall.f90 \
+global.f90 \
+boundary_conditions.f90 \
+grid.f90 \
+turbulent_flux.f90 \
+transport/transport.f90 \
+transport/viscosity/viscosity.f90 \
+transport/viscosity/molecular/molecular_viscosity.f90 \
+transport/viscosity/turbulent/sst_viscosity.f90 \
+transport/viscosity/turbulent/turbulent_viscosity.f90 \
+resnorm/resnorm.f90 \
+resnorm/turbulent/res_turbulent.f90 \
+resnorm/viscous/res_viscous.f90 \
+source/turbulent_source.f90 \
+source/sst_source.f90 \
+source/sst_grad.f90 \
+read_write/write/write_output_tecplot.f90 \
+read_write/write/write_output.f90 \
+read_write/write/write_output_vtk.f90 \
+read_write/write/dump_solution.f90 \
+read_write/read/read.f90 \
+read_write/read/read_output_vtk.f90 \
