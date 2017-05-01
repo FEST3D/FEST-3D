@@ -442,67 +442,68 @@ module read_output_vtk
 
     end subroutine read_mu_t
 
-    subroutine read_dist()
-      implicit none
-
-      call dmsg(1, 'read_output_vtk', 'read_dist')
-      ! Writing wall distance for each cell
-      if (read_data_format == "ASCII") then
-        read(IN_FILE_UNIT, *) !'SCALARS dist FLOAT'
-        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            read(IN_FILE_UNIT, *) dist(i, j, k)
-          end do
-         end do
-        end do
-        read(IN_FILE_UNIT, *) 
-      elseif (read_data_format == 'BINARY') then
-        read(IN_FILE_UNIT) !'SCALARS dist DOUBLE'
-        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            read(IN_FILE_UNIT) dist(i, j, k)
-          end do
-         end do
-        end do
-        read(IN_FILE_UNIT) 
-      end if
-
-    end subroutine read_dist
-
-    subroutine read_resnorm()
-      implicit none
-
-      call dmsg(1, 'read_output_vtk', 'read_resnorm')
-      ! Writing resnorm for each cell
-      if (read_data_format == "ASCII") then
-        read(IN_FILE_UNIT, *) !'SCALARS Resnorm FLOAT'
-        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            read(IN_FILE_UNIT, *) vis_resnorm
-          end do
-         end do
-        end do
-        read(IN_FILE_UNIT, *) 
-      elseif (read_data_format == 'BINARY') then
-        read(IN_FILE_UNIT) !'SCALARS Resnorm DOUBLE'
-        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            read(IN_FILE_UNIT) vis_resnorm
-          end do
-         end do
-        end do
-        read(IN_FILE_UNIT)
-      end if
-
-    end subroutine read_resnorm
+! Auxilary subroutine for special case
+!    subroutine read_dist()
+!      implicit none
+!
+!      call dmsg(1, 'read_output_vtk', 'read_dist')
+!      ! Writing wall distance for each cell
+!      if (read_data_format == "ASCII") then
+!        read(IN_FILE_UNIT, *) !'SCALARS dist FLOAT'
+!        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+!        do k = 1, kmx - 1
+!         do j = 1, jmx - 1
+!          do i = 1, imx - 1
+!            read(IN_FILE_UNIT, *) dist(i, j, k)
+!          end do
+!         end do
+!        end do
+!        read(IN_FILE_UNIT, *) 
+!      elseif (read_data_format == 'BINARY') then
+!        read(IN_FILE_UNIT) !'SCALARS dist DOUBLE'
+!        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
+!        do k = 1, kmx - 1
+!         do j = 1, jmx - 1
+!          do i = 1, imx - 1
+!            read(IN_FILE_UNIT) dist(i, j, k)
+!          end do
+!         end do
+!        end do
+!        read(IN_FILE_UNIT) 
+!      end if
+!
+!    end subroutine read_dist
+!
+!    subroutine read_resnorm()
+!      implicit none
+!
+!      call dmsg(1, 'read_output_vtk', 'read_resnorm')
+!      ! Writing resnorm for each cell
+!      if (read_data_format == "ASCII") then
+!        read(IN_FILE_UNIT, *) !'SCALARS Resnorm FLOAT'
+!        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+!        do k = 1, kmx - 1
+!         do j = 1, jmx - 1
+!          do i = 1, imx - 1
+!            read(IN_FILE_UNIT, *) vis_resnorm
+!          end do
+!         end do
+!        end do
+!        read(IN_FILE_UNIT, *) 
+!      elseif (read_data_format == 'BINARY') then
+!        read(IN_FILE_UNIT) !'SCALARS Resnorm DOUBLE'
+!        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
+!        do k = 1, kmx - 1
+!         do j = 1, jmx - 1
+!          do i = 1, imx - 1
+!            read(IN_FILE_UNIT) vis_resnorm
+!          end do
+!         end do
+!        end do
+!        read(IN_FILE_UNIT)
+!      end if
+!
+!    end subroutine read_resnorm
 
     subroutine read_restart_file()
       implicit none

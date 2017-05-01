@@ -107,46 +107,46 @@ module write_output_vtk
 
     end subroutine write_viscosity
 
-    subroutine setup_file()
-      implicit none
-      call dmsg(1, 'write_output_vtk', 'setup_file')
-      if (write_file_format == "vtk") then
-        file_format = ".vtk"
-      elseif (write_file_format == "tecplot") then
-        file_format = ".dat"
-      else
-        print*, "File format not recoganised. Accepted formats are"
-        print*, "'vtk' and 'tecplot' "
-      end if
+!    subroutine setup_file()
+!      implicit none
+!      call dmsg(1, 'write_output_vtk', 'setup_file')
+!      if (write_file_format == "vtk") then
+!        file_format = ".vtk"
+!      elseif (write_file_format == "tecplot") then
+!        file_format = ".dat"
+!      else
+!        print*, "File format not recoganised. Accepted formats are"
+!        print*, "'vtk' and 'tecplot' "
+!      end if
+!
+!      if (write_data_format == "ASCII") then
+!        data_format = "formatted"
+!      elseif (write_data_format == "BINARY") then
+!        data_format = "unformatted"
+!      else
+!        print*, "Data format not recoganised. Accepted formats are"
+!        print*, "'ASCII' and 'BINARY' "
+!      end if
+!
+!    end subroutine setup_file
+!
+!    subroutine open_file(filename)
+!      implicit none
+!      character(len=*), intent(in) :: filename 
+!      call dmsg(1, 'write_output_vtk', 'open_file')
+!
+!      open(OUT_FILE_UNIT, file=trim(filename)//trim(file_format) + '.part', form=trim(data_format))
+!
+!    end subroutine open_file
 
-      if (write_data_format == "ASCII") then
-        data_format = "formatted"
-      elseif (write_data_format == "BINARY") then
-        data_format = "unformatted"
-      else
-        print*, "Data format not recoganised. Accepted formats are"
-        print*, "'ASCII' and 'BINARY' "
-      end if
-
-    end subroutine setup_file
-
-    subroutine open_file(filename)
-      implicit none
-      character(len=*), intent(in) :: filename 
-      call dmsg(1, 'write_output_vtk', 'open_file')
-
-      open(OUT_FILE_UNIT, file=trim(filename)//trim(file_format) + '.part', form=trim(data_format))
-
-    end subroutine open_file
-
-    subroutine close_file(filename)
-      implicit none
-
-      character(len=*), intent(in) :: filename 
-      call dmsg(1, 'write_output_vtk', 'close_file')
-      call rename(trim(filename)//trim(file_format) + '.part', trim(filename)//trim(file_format))
-      close(OUT_FILE_UNIT)
-    end subroutine close_file
+!    subroutine close_file(filename)
+!      implicit none
+!
+!      character(len=*), intent(in) :: filename 
+!      call dmsg(1, 'write_output_vtk', 'close_file')
+!      call rename(trim(filename)//trim(file_format) + '.part', trim(filename)//trim(file_format))
+!      close(OUT_FILE_UNIT)
+!    end subroutine close_file
 
 
     subroutine write_header()
@@ -429,142 +429,142 @@ module write_output_vtk
 
     end subroutine write_mu_t
 
-    subroutine write_dist()
-      implicit none
-
-      call dmsg(1, 'write_output_vtk', 'write_dist')
-      ! Writing wall distance for each cell
-      if (Write_data_format == "ASCII") then
-        write(OUT_FILE_UNIT, '(a)') 'SCALARS dist FLOAT'
-        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            write(OUT_FILE_UNIT, fmt='(f0.16)') dist(i, j, k)
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT, *) 
-      elseif (write_data_format == 'BINARY') then
-        write(OUT_FILE_UNIT) 'SCALARS dist DOUBLE'
-        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            write(OUT_FILE_UNIT) dist(i, j, k)
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT) 
-      end if
-
-    end subroutine write_dist
-
-    subroutine write_resnorm()
-      implicit none
-
-      call dmsg(1, 'write_output_vtk', 'write_resnorm')
-      ! Writing resnorm for each cell
-      if (Write_data_format == "ASCII") then
-        write(OUT_FILE_UNIT, '(a)') 'SCALARS Resnorm FLOAT'
-        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
-        speed_inf = sqrt(x_speed_inf**2 + y_speed_inf**2 &
-                    + z_speed_inf**2)
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-
-            energy_resnorm = (                                      &
-                              (                                     &
-                               energy_residue(i, j, k) /            &
-                              (density_inf * speed_inf *            &
-                              ((0.5 * speed_inf * speed_inf) +      &
-                              (gm/(gm-1)*pressure_inf/density_inf)))&
-                              ) ** 2                                &
-                            )                                       
-
-            x_mom_resnorm = (                                      &
-                              (x_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-              
-            y_mom_resnorm = (                                      &
-                              (y_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-              
-            z_mom_resnorm = (                                      &
-                              (z_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-            cont_resnorm =(                                       &
-                             (mass_residue(i, j, k) /             &
-                             (density_inf * speed_inf)) ** 2      &
-                            )                                     
-            vis_resnorm =    sqrt(                    &
-                                    cont_resnorm    + &
-                                    x_mom_resnorm   + &
-                                    y_mom_resnorm   + &
-                                    z_mom_resnorm   + &
-                                    energy_resnorm    &
-                                 )
-                
-            write(OUT_FILE_UNIT, fmt='(f0.16)') vis_resnorm
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT, *) 
-      elseif (write_data_format == 'BINARY') then
-        write(OUT_FILE_UNIT) 'SCALARS Resnorm DOUBLE'
-        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
-        speed_inf = sqrt(x_speed_inf**2 + y_speed_inf**2 &
-                    + z_speed_inf**2)
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-
-            energy_resnorm = (                                      &
-                              (                                     &
-                               energy_residue(i, j, k) /            &
-                              (density_inf * speed_inf *            &
-                              ((0.5 * speed_inf * speed_inf) +      &
-                              (gm/(gm-1)*pressure_inf/density_inf)))&
-                              ) ** 2                                &
-                            )                                       
-
-            x_mom_resnorm = (                                      &
-                              (x_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-              
-            y_mom_resnorm = (                                      &
-                              (y_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-              
-            z_mom_resnorm = (                                      &
-                              (z_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-            cont_resnorm =(                                       &
-                             (mass_residue(i, j, k) /             &
-                             (density_inf * speed_inf)) ** 2      &
-                            )                                     
-            vis_resnorm =    sqrt(                    &
-                                    cont_resnorm    + &
-                                    x_mom_resnorm   + &
-                                    y_mom_resnorm   + &
-                                    z_mom_resnorm   + &
-                                    energy_resnorm    &
-                                 )
-                
-            write(OUT_FILE_UNIT) vis_resnorm
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT)
-      end if
-
-    end subroutine write_resnorm
+!    subroutine write_dist()
+!      implicit none
+!
+!      call dmsg(1, 'write_output_vtk', 'write_dist')
+!      ! Writing wall distance for each cell
+!      if (Write_data_format == "ASCII") then
+!        write(OUT_FILE_UNIT, '(a)') 'SCALARS dist FLOAT'
+!        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+!        do k = 1, kmx - 1
+!         do j = 1, jmx - 1
+!          do i = 1, imx - 1
+!            write(OUT_FILE_UNIT, fmt='(f0.16)') dist(i, j, k)
+!          end do
+!         end do
+!        end do
+!        write(OUT_FILE_UNIT, *) 
+!      elseif (write_data_format == 'BINARY') then
+!        write(OUT_FILE_UNIT) 'SCALARS dist DOUBLE'
+!        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
+!        do k = 1, kmx - 1
+!         do j = 1, jmx - 1
+!          do i = 1, imx - 1
+!            write(OUT_FILE_UNIT) dist(i, j, k)
+!          end do
+!         end do
+!        end do
+!        write(OUT_FILE_UNIT) 
+!      end if
+!
+!    end subroutine write_dist
+!
+!    subroutine write_resnorm()
+!      implicit none
+!
+!      call dmsg(1, 'write_output_vtk', 'write_resnorm')
+!      ! Writing resnorm for each cell
+!      if (Write_data_format == "ASCII") then
+!        write(OUT_FILE_UNIT, '(a)') 'SCALARS Resnorm FLOAT'
+!        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+!        speed_inf = sqrt(x_speed_inf**2 + y_speed_inf**2 &
+!                    + z_speed_inf**2)
+!        do k = 1, kmx - 1
+!         do j = 1, jmx - 1
+!          do i = 1, imx - 1
+!
+!            energy_resnorm = (                                      &
+!                              (                                     &
+!                               energy_residue(i, j, k) /            &
+!                              (density_inf * speed_inf *            &
+!                              ((0.5 * speed_inf * speed_inf) +      &
+!                              (gm/(gm-1)*pressure_inf/density_inf)))&
+!                              ) ** 2                                &
+!                            )                                       
+!
+!            x_mom_resnorm = (                                      &
+!                              (x_mom_residue(i, j, k) /            &
+!                              (density_inf * speed_inf ** 2)) ** 2 &
+!                             )                                     
+!              
+!            y_mom_resnorm = (                                      &
+!                              (y_mom_residue(i, j, k) /            &
+!                              (density_inf * speed_inf ** 2)) ** 2 &
+!                             )                                     
+!              
+!            z_mom_resnorm = (                                      &
+!                              (z_mom_residue(i, j, k) /            &
+!                              (density_inf * speed_inf ** 2)) ** 2 &
+!                             )                                     
+!            cont_resnorm =(                                       &
+!                             (mass_residue(i, j, k) /             &
+!                             (density_inf * speed_inf)) ** 2      &
+!                            )                                     
+!            vis_resnorm =    sqrt(                    &
+!                                    cont_resnorm    + &
+!                                    x_mom_resnorm   + &
+!                                    y_mom_resnorm   + &
+!                                    z_mom_resnorm   + &
+!                                    energy_resnorm    &
+!                                 )
+!                
+!            write(OUT_FILE_UNIT, fmt='(f0.16)') vis_resnorm
+!          end do
+!         end do
+!        end do
+!        write(OUT_FILE_UNIT, *) 
+!      elseif (write_data_format == 'BINARY') then
+!        write(OUT_FILE_UNIT) 'SCALARS Resnorm DOUBLE'
+!        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
+!        speed_inf = sqrt(x_speed_inf**2 + y_speed_inf**2 &
+!                    + z_speed_inf**2)
+!        do k = 1, kmx - 1
+!         do j = 1, jmx - 1
+!          do i = 1, imx - 1
+!
+!            energy_resnorm = (                                      &
+!                              (                                     &
+!                               energy_residue(i, j, k) /            &
+!                              (density_inf * speed_inf *            &
+!                              ((0.5 * speed_inf * speed_inf) +      &
+!                              (gm/(gm-1)*pressure_inf/density_inf)))&
+!                              ) ** 2                                &
+!                            )                                       
+!
+!            x_mom_resnorm = (                                      &
+!                              (x_mom_residue(i, j, k) /            &
+!                              (density_inf * speed_inf ** 2)) ** 2 &
+!                             )                                     
+!              
+!            y_mom_resnorm = (                                      &
+!                              (y_mom_residue(i, j, k) /            &
+!                              (density_inf * speed_inf ** 2)) ** 2 &
+!                             )                                     
+!              
+!            z_mom_resnorm = (                                      &
+!                              (z_mom_residue(i, j, k) /            &
+!                              (density_inf * speed_inf ** 2)) ** 2 &
+!                             )                                     
+!            cont_resnorm =(                                       &
+!                             (mass_residue(i, j, k) /             &
+!                             (density_inf * speed_inf)) ** 2      &
+!                            )                                     
+!            vis_resnorm =    sqrt(                    &
+!                                    cont_resnorm    + &
+!                                    x_mom_resnorm   + &
+!                                    y_mom_resnorm   + &
+!                                    z_mom_resnorm   + &
+!                                    energy_resnorm    &
+!                                 )
+!                
+!            write(OUT_FILE_UNIT) vis_resnorm
+!          end do
+!         end do
+!        end do
+!        write(OUT_FILE_UNIT)
+!      end if
+!
+!    end subroutine write_resnorm
 
 end module write_output_vtk

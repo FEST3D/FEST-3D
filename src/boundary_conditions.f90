@@ -2132,12 +2132,13 @@ module boundary_conditions
 
         include "turbulence_models/include/bc/fix_and_copy_turb_var.inc"
 
-        subroutine isothermal_wall()
-          implicit none
-          real*8 :: twall
-          twall = 300*(1+0.5*(1.4-1)*(0.5**2))
-          density(:,0,:) = Pressure(:,0,:)/&
-                          (R_gas*((2*twall)-(pressure(:,1,:)/(R_gas*density(:,1,:)))))
-        end subroutine isothermal_wall
+! Auxilary subroutine TODO bind it in with other boundary conditions
+!        subroutine isothermal_wall()
+!          implicit none
+!          real :: twall
+!          twall = 300*(1+0.5*(1.4-1)*(0.5**2))
+!          density(:,0,:) = Pressure(:,0,:)/&
+!                          (R_gas*((2*twall)-(pressure(:,1,:)/(R_gas*density(:,1,:)))))
+!        end subroutine isothermal_wall
 
 end module boundary_conditions

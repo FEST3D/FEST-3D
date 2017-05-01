@@ -117,8 +117,8 @@ module global_vars
 !  real, dimension(:)         , allocatable, target  :: tqp_inf   ! turbulent primitive at inf
   real, dimension(:, :, :)                , pointer :: tk        ! TKE/mass
   real, dimension(:, :, :)                , pointer :: tw        ! omega
-  real*8                                    , pointer :: tk_inf    ! TKE/mass at inf
-  real*8                                    , pointer :: tw_inf    ! omega at inf
+  real                                    , pointer :: tk_inf    ! TKE/mass at inf
+  real                                    , pointer :: tw_inf    ! omega at inf
 
   ! residue variables
   real, dimension(:, :, :, :)             , pointer :: F_p
