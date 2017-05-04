@@ -3,8 +3,9 @@
 
   if (cell_ind == -1) then
       if (face == "imin") then
-          tk(0, 1:jmx-1, 1:kmx-1) = - tk(1, 1:jmx-1, 1:kmx-1)
-          mu_t(0, 1:jmx-1, 1:kmx-1) = - mu_t(1, 1:jmx-1, 1:kmx-1)
+              tk(0, 1:jmx-1, 1:kmx-1) =   - tk(1, 1:jmx-1, 1:kmx-1)
+            mu_t(0, 1:jmx-1, 1:kmx-1) = - mu_t(1, 1:jmx-1, 1:kmx-1)
+          sst_F1(0, 1:jmx-1,1:kmx-1)=   sst_F1(1, 1:jmx-1, 1:kmx-1)
           do k = 1,kmx-1
             do j = 1,jmx-1
               T_l = pressure(0, j, k)/(density(0, j, k)*R_gas)
@@ -16,8 +17,9 @@
             end do
           end do
       else if (face == "imax") then
-          tk(imx, 1:jmx-1, 1:kmx-1) = - tk(imx-1, 1:jmx-1, 1:kmx-1)
-          mu_t(imx, 1:jmx-1, 1:kmx-1) = - mu_t(imx-1, 1:jmx-1, 1:kmx-1)
+              tk(imx, 1:jmx-1, 1:kmx-1) =   - tk(imx-1, 1:jmx-1, 1:kmx-1)
+            mu_t(imx, 1:jmx-1, 1:kmx-1) = - mu_t(imx-1, 1:jmx-1, 1:kmx-1)
+          sst_F1(imx, 1:jmx-1, 1:kmx-1) = sst_F1(imx-1, 1:jmx-1, 1:kmx-1)
           do k = 1,kmx-1
             do j = 1,jmx-1
               T_l = pressure(imx-1, j, k)/(density(imx-1, j, k)*R_gas)
@@ -29,8 +31,9 @@
             end do
           end do
       else if (face == "jmin") then
-          tk(1:imx-1, 0, 1:kmx-1) = - tk(1:imx-1, 1, 1:kmx-1)
-          mu_t(1:imx-1, 0, 1:kmx-1) = - mu_t(1:imx-1, 1, 1:kmx-1)
+              tk(1:imx-1, 0, 1:kmx-1) =     - tk(1:imx-1, 1, 1:kmx-1)
+            mu_t(1:imx-1, 0, 1:kmx-1) =   - mu_t(1:imx-1, 1, 1:kmx-1)
+          sst_F1(1:imx-1, 0, 1:kmx-1) =   sst_F1(1:imx-1, 1, 1:kmx-1)
           do k = 1,kmx-1
             do i = 1,imx-1
               T_l = pressure(i, 0, k)/(density(i, 0, k)*R_gas)
@@ -42,8 +45,9 @@
             end do
           end do
       else if (face == "jmax") then
-          tk(1:imx-1, jmx, 1:kmx-1) = - tk(1:imx-1, jmx-1, 1:kmx-1)
-          mu_t(1:imx-1, jmx, 1:kmx-1) = - mu_t(1:imx-1, jmx-1, 1:kmx-1)
+              tk(1:imx-1, jmx, 1:kmx-1) =     - tk(1:imx-1, jmx-1, 1:kmx-1)
+            mu_t(1:imx-1, jmx, 1:kmx-1) =   - mu_t(1:imx-1, jmx-1, 1:kmx-1)
+          sst_F1(1:imx-1, jmx, 1:kmx-1) =   sst_F1(1:imx-1, jmx-1, 1:kmx-1)
           do k = 1,kmx-1
             do i = 1,imx-1
               T_l = pressure(i, jmx-1, k)/(density(i, jmx-1, k)*R_gas)
@@ -55,8 +59,9 @@
             end do
           end do
       else if (face == "kmin") then
-          tk(1:imx-1, 1:jmx-1, 0) = - tk(1:imx-1, 1:jmx-1, 1)
-          mu_t(1:imx-1, 1:jmx-1, 0) = - mu_t(1:imx-1, 1:jmx-1, 1)
+              tk(1:imx-1, 1:jmx-1, 0) =     - tk(1:imx-1, 1:jmx-1, 1)
+            mu_t(1:imx-1, 1:jmx-1, 0) =   - mu_t(1:imx-1, 1:jmx-1, 1)
+          sst_F1(1:imx-1, 1:jmx-1, 0) =   sst_F1(1:imx-1, 1:jmx-1, 1)
           do j = 1,jmx-1
             do i = 1,imx-1
               T_l = pressure(i, j, 0)/(density(i, j, 0)*R_gas)
@@ -68,8 +73,9 @@
             end do
           end do
       else if (face == "kmax") then
-          tk(1:imx-1, 1:jmx-1, kmx) = - tk(1:imx-1, 1:jmx-1, kmx-1)
-          mu_t(1:imx-1, 1:jmx-1, kmx) = - mu_t(1:imx-1, 1:jmx-1, kmx-1)
+              tk(1:imx-1, 1:jmx-1, kmx) =     - tk(1:imx-1, 1:jmx-1, kmx-1)
+            mu_t(1:imx-1, 1:jmx-1, kmx) =   - mu_t(1:imx-1, 1:jmx-1, kmx-1)
+          sst_F1(1:imx-1, 1:jmx-1, kmx) =   sst_F1(1:imx-1, 1:jmx-1, kmx-1)
           do j = 1,jmx-1
             do i = 1,imx-1
               T_l = pressure(i, j, kmx-1)/(density(i, j, kmx-1)*R_gas)

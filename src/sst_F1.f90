@@ -89,6 +89,13 @@ module sst_F
           end do
         end do
       end do
+      ! extrapolate F1 value to ghost cells
+      sst_F1(      0,1:jmx-1,1:kmx-1)=sst_F1(      1,1:jmx-1,1:kmx-1)
+      sst_F1(    imx,1:jmx-1,1:kmx-1)=sst_F1(  imx-1,1:jmx-1,1:kmx-1)
+      sst_F1(1:imx-1,      0,1:kmx-1)=sst_F1(1:imx-1,      1,1:kmx-1)
+      sst_F1(1:imx-1,    jmx,1:kmx-1)=sst_F1(1:imx-1,  jmx-1,1:kmx-1)
+      sst_F1(1:imx-1,1:jmx-1,      0)=sst_F1(1:imx-1,1:jmx-1,      1)
+      sst_F1(1:imx-1,1:jmx-1,    kmx)=sst_F1(1:imx-1,1:jmx-1,  kmx-1)
 
   
 
