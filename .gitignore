@@ -20,6 +20,7 @@ archive/old_files
 
 # module  dependency file
 makefile.dep
+files
 
 #grid file or data file
 *.dat

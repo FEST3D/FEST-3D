@@ -1,8 +1,8 @@
 #compiler options
 program := FEST3D
 subprog := wall
-FC 			 = $(GFC)
-FFLAGS	 = $(GFFLAGS)
+FC 			 = $(IFC)
+FFLAGS	 = $(IFFLAGS)
 VPATH 	:= src
 BINDIR	:= bin
 OBJDIR	:= obj
@@ -127,7 +127,7 @@ setup:
 
 .PHONY: clean
 clean:
-	rm -f $(objects) $(modules) $(exe) makefile.dep files
+	rm -f $(objects) $(modules) $(exe) makefile.dep
 
 tar:
 	tar -zcvf fest3d.tar.gz $(OBJDIR)/ $(MODDIR)/ $(BINDIR)/ $(VPATH)/ setup.sh makefile \

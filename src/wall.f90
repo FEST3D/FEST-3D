@@ -181,8 +181,11 @@ module wall
       integer :: stat
 
       call dmsg(1, 'wall_find', 'setup_surface')
+      if(process_id==0)then
       open(NODESURF_FILE_UNIT, file=surface_node_points, iostat=stat)
       if(stat==0) close(NODESURF_FILE_UNIT, status='delete')
+      end if
+      call mpi_barrier(MPI_COMM_WORLD,ierr)
       call MPI_FILE_OPEN(MPI_COMM_WORLD, surface_node_points, &
                         MPI_MODE_WRONLY + MPI_MODE_CREATE + MPI_MODE_EXCL, &
                         MPI_INFO_NULL, thisfile, ierr)
