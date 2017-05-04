@@ -1609,267 +1609,267 @@ module boundary_conditions
                 if (face == "imin") then
                     x_speed(-1, 1:jmx-1, 1:kmx-1) = x_speed(2, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(2, 1:jmx-1, 1:kmx-1) * xnx(2, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(2, 1:jmx-1, 1:kmx-1) * xny(2, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(2, 1:jmx-1, 1:kmx-1) * xnz(2, 1:jmx-1, 1:kmx-1)) &
-                                ) * xnx(2, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(2, 1:jmx-1, 1:kmx-1) * xnx(1, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(2, 1:jmx-1, 1:kmx-1) * xny(1, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(2, 1:jmx-1, 1:kmx-1) * xnz(1, 1:jmx-1, 1:kmx-1)) &
+                                ) * xnx(1, 1:jmx-1, 1:kmx-1) &
                             )
                     y_speed(-1, 1:jmx-1, 1:kmx-1) = y_speed(2, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(2, 1:jmx-1, 1:kmx-1) * xnx(2, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(2, 1:jmx-1, 1:kmx-1) * xny(2, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(2, 1:jmx-1, 1:kmx-1) * xnz(2, 1:jmx-1, 1:kmx-1)) &
-                                ) * xny(2, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(2, 1:jmx-1, 1:kmx-1) * xnx(1, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(2, 1:jmx-1, 1:kmx-1) * xny(1, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(2, 1:jmx-1, 1:kmx-1) * xnz(1, 1:jmx-1, 1:kmx-1)) &
+                                ) * xny(1, 1:jmx-1, 1:kmx-1) &
                             )
                     z_speed(-1, 1:jmx-1, 1:kmx-1) = z_speed(2, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(2, 1:jmx-1, 1:kmx-1) * xnx(2, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(2, 1:jmx-1, 1:kmx-1) * xny(2, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(2, 1:jmx-1, 1:kmx-1) * xnz(2, 1:jmx-1, 1:kmx-1)) &
-                                ) * xnz(2, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(2, 1:jmx-1, 1:kmx-1) * xnx(1, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(2, 1:jmx-1, 1:kmx-1) * xny(1, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(2, 1:jmx-1, 1:kmx-1) * xnz(1, 1:jmx-1, 1:kmx-1)) &
+                                ) * xnz(1, 1:jmx-1, 1:kmx-1) &
                             )
                 else if (face == "imax") then
                     x_speed(imx+1, 1:jmx-1, 1:kmx-1) = x_speed(imx-2, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnx(imx-1, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(imx-2, 1:jmx-1, 1:kmx-1) * xny(imx-1, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnz(imx-1, 1:jmx-1, 1:kmx-1)) &
-                                ) * xnx(imx-1, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnx(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(imx-2, 1:jmx-1, 1:kmx-1) * xny(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnz(imx, 1:jmx-1, 1:kmx-1)) &
+                                ) * xnx(imx, 1:jmx-1, 1:kmx-1) &
                             )
                     y_speed(imx+1, 1:jmx-1, 1:kmx-1) = y_speed(imx-2, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnx(imx-1, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(imx-2, 1:jmx-1, 1:kmx-1) * xny(imx-1, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnz(imx-1, 1:jmx-1, 1:kmx-1)) &
-                                ) * xny(imx-1, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnx(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(imx-2, 1:jmx-1, 1:kmx-1) * xny(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnz(imx, 1:jmx-1, 1:kmx-1)) &
+                                ) * xny(imx, 1:jmx-1, 1:kmx-1) &
                             )
                     z_speed(imx+1, 1:jmx-1, 1:kmx-1) = z_speed(imx-2, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnx(imx-1, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(imx-2, 1:jmx-1, 1:kmx-1) * xny(imx-1, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnz(imx-1, 1:jmx-1, 1:kmx-1)) &
-                                ) * xnz(imx-1, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnx(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(imx-2, 1:jmx-1, 1:kmx-1) * xny(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(imx-2, 1:jmx-1, 1:kmx-1) * xnz(imx, 1:jmx-1, 1:kmx-1)) &
+                                ) * xnz(imx, 1:jmx-1, 1:kmx-1) &
                             )
                 else if (face == "jmin") then
                     x_speed(1:imx-1, -1, 1:kmx-1) = x_speed(1:imx-1, 2, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 2, 1:kmx-1) * ynx(1:imx-1, 2, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, 2, 1:kmx-1) * yny(1:imx-1, 2, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, 2, 1:kmx-1) * ynz(1:imx-1, 2, 1:kmx-1)) &
-                                ) * ynx(1:imx-1, 2, 1:kmx-1) &
+                                (x_speed(1:imx-1, 2, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, 2, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, 2, 1:kmx-1) * ynz(1:imx-1, 1, 1:kmx-1)) &
+                                ) * ynx(1:imx-1, 1, 1:kmx-1) &
                             )
                     y_speed(1:imx-1, -1, 1:kmx-1) = y_speed(1:imx-1, 2, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 2, 1:kmx-1) * ynx(1:imx-1, 2, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, 2, 1:kmx-1) * yny(1:imx-1, 2, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, 2, 1:kmx-1) * ynz(1:imx-1, 2, 1:kmx-1)) &
-                                ) * yny(1:imx-1, 2, 1:kmx-1) &
+                                (x_speed(1:imx-1, 2, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, 2, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, 2, 1:kmx-1) * ynz(1:imx-1, 1, 1:kmx-1)) &
+                                ) * yny(1:imx-1, 1, 1:kmx-1) &
                             )
                     z_speed(1:imx-1, -1, 1:kmx-1) = z_speed(1:imx-1, 2, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 2, 1:kmx-1) * ynx(1:imx-1, 2, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, 2, 1:kmx-1) * yny(1:imx-1, 2, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, 2, 1:kmx-1) * ynz(1:imx-1, 2, 1:kmx-1)) &
-                                ) * ynz(1:imx-1, 2, 1:kmx-1) &
+                                (x_speed(1:imx-1, 2, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, 2, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, 2, 1:kmx-1) * ynz(1:imx-1, 1, 1:kmx-1)) &
+                                ) * ynz(1:imx-1, 1, 1:kmx-1) &
                             )
                 else if (face == "jmax") then
                     x_speed(1:imx-1, jmx+1, 1:kmx-1) = x_speed(1:imx-1, jmx-2, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, jmx-2, 1:kmx-1) * ynx(1:imx-1, jmx-1, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, jmx-2, 1:kmx-1) * yny(1:imx-1, jmx-1, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, jmx-2, 1:kmx-1) * ynz(1:imx-1, jmx-1, 1:kmx-1)) &
-                                ) * ynx(1:imx-1, jmx-1, 1:kmx-1) &
+                                (x_speed(1:imx-1, jmx-2, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, jmx-2, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, jmx-2, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+                                ) * ynx(1:imx-1, jmx, 1:kmx-1) &
                             )
                     y_speed(1:imx-1, jmx+1, 1:kmx-1) = y_speed(1:imx-1, jmx-2, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, jmx-2, 1:kmx-1) * ynx(1:imx-1, jmx-1, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, jmx-2, 1:kmx-1) * yny(1:imx-1, jmx-1, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, jmx-2, 1:kmx-1) * ynz(1:imx-1, jmx-1, 1:kmx-1)) &
-                                ) * yny(1:imx-1, jmx-1, 1:kmx-1) &
+                                (x_speed(1:imx-1, jmx-2, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, jmx-2, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, jmx-2, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+                                ) * yny(1:imx-1, jmx, 1:kmx-1) &
                             )
                     z_speed(1:imx-1, jmx+1, 1:kmx-1) = z_speed(1:imx-1, jmx-2, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, jmx-2, 1:kmx-1) * ynx(1:imx-1, jmx-1, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, jmx-2, 1:kmx-1) * yny(1:imx-1, jmx-1, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, jmx-2, 1:kmx-1) * ynz(1:imx-1, jmx-1, 1:kmx-1)) &
-                                ) * ynz(1:imx-1, jmx-1, 1:kmx-1) &
+                                (x_speed(1:imx-1, jmx-2, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, jmx-2, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, jmx-2, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+                                ) * ynz(1:imx-1, jmx, 1:kmx-1) &
                             )
                 else if (face == "kmin") then
                     x_speed(1:imx-1, 1:jmx-1, -1) = x_speed(1:imx-1, 1:jmx-1, 2) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, 2) * znx(1:imx-1, 1:jmx-1, 2)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, 2) * zny(1:imx-1, 1:jmx-1, 2)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, 2) * znz(1:imx-1, 1:jmx-1, 2)) &
-                                ) * znx(1:imx-1, 1:jmx-1, 2) &
+                                (x_speed(1:imx-1, 1:jmx-1, 2) * znx(1:imx-1, 1:jmx-1, 1)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, 2) * zny(1:imx-1, 1:jmx-1, 1)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, 2) * znz(1:imx-1, 1:jmx-1, 1)) &
+                                ) * znx(1:imx-1, 1:jmx-1, 1) &
                             )
                     y_speed(1:imx-1, 1:jmx-1, -1) = y_speed(1:imx-1, 1:jmx-1, 2) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, 2) * znx(1:imx-1, 1:jmx-1, 2)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, 2) * zny(1:imx-1, 1:jmx-1, 2)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, 2) * znz(1:imx-1, 1:jmx-1, 2)) &
-                                ) * zny(1:imx-1, 1:jmx-1, 2) &
+                                (x_speed(1:imx-1, 1:jmx-1, 2) * znx(1:imx-1, 1:jmx-1, 1)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, 2) * zny(1:imx-1, 1:jmx-1, 1)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, 2) * znz(1:imx-1, 1:jmx-1, 1)) &
+                                ) * zny(1:imx-1, 1:jmx-1, 1) &
                             )
                     z_speed(1:imx-1, 1:jmx-1, -1) = z_speed(1:imx-1, 1:jmx-1, 2) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, 2) * znx(1:imx-1, 1:jmx-1, 2)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, 2) * zny(1:imx-1, 1:jmx-1, 2)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, 2) * znz(1:imx-1, 1:jmx-1, 2)) &
-                                ) * znz(1:imx-1, 1:jmx-1, 2) &
+                                (x_speed(1:imx-1, 1:jmx-1, 2) * znx(1:imx-1, 1:jmx-1, 1)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, 2) * zny(1:imx-1, 1:jmx-1, 1)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, 2) * znz(1:imx-1, 1:jmx-1, 1)) &
+                                ) * znz(1:imx-1, 1:jmx-1, 1) &
                             )
                 else if (face == "kmax") then
                     x_speed(1:imx-1, 1:jmx-1, kmx+1) = x_speed(1:imx-1, 1:jmx-1, kmx-2) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, kmx-2) * znx(1:imx-1, 1:jmx-1, kmx-1)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, kmx-2) * zny(1:imx-1, 1:jmx-1, kmx-1)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, kmx-2) * znz(1:imx-1, 1:jmx-1, kmx-1)) &
-                                ) * znx(1:imx-1, 1:jmx-1, kmx-1) &
+                                (x_speed(1:imx-1, 1:jmx-1, kmx-2) * znx(1:imx-1, 1:jmx-1, kmx)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, kmx-2) * zny(1:imx-1, 1:jmx-1, kmx)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, kmx-2) * znz(1:imx-1, 1:jmx-1, kmx)) &
+                                ) * znx(1:imx-1, 1:jmx-1, kmx) &
                             )
                     y_speed(1:imx-1, 1:jmx-1, kmx+1) = y_speed(1:imx-1, 1:jmx-1, kmx-2) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, kmx-2) * znx(1:imx-1, 1:jmx-1, kmx-1)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, kmx-2) * zny(1:imx-1, 1:jmx-1, kmx-1)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, kmx-2) * znz(1:imx-1, 1:jmx-1, kmx-1)) &
-                                ) * zny(1:imx-1, 1:jmx-1, kmx-1) &
+                                (x_speed(1:imx-1, 1:jmx-1, kmx-2) * znx(1:imx-1, 1:jmx-1, kmx)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, kmx-2) * zny(1:imx-1, 1:jmx-1, kmx)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, kmx-2) * znz(1:imx-1, 1:jmx-1, kmx)) &
+                                ) * zny(1:imx-1, 1:jmx-1, kmx) &
                             )
                     z_speed(1:imx-1, 1:jmx-1, kmx+1) = z_speed(1:imx-1, 1:jmx-1, kmx-2) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, kmx-2) * znx(1:imx-1, 1:jmx-1, kmx-1)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, kmx-2) * zny(1:imx-1, 1:jmx-1, kmx-1)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, kmx-2) * znz(1:imx-1, 1:jmx-1, kmx-1)) &
-                                ) * znz(1:imx-1, 1:jmx-1, kmx-1) &
+                                (x_speed(1:imx-1, 1:jmx-1, kmx-2) * znx(1:imx-1, 1:jmx-1, kmx)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, kmx-2) * zny(1:imx-1, 1:jmx-1, kmx)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, kmx-2) * znz(1:imx-1, 1:jmx-1, kmx)) &
+                                ) * znz(1:imx-1, 1:jmx-1, kmx) &
                             )
                 end if
                 if (face == "imin") then
                     x_speed(-2, 1:jmx-1, 1:kmx-1) = x_speed(3, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(3, 1:jmx-1, 1:kmx-1) * xnx(3, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(3, 1:jmx-1, 1:kmx-1) * xny(3, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(3, 1:jmx-1, 1:kmx-1) * xnz(3, 1:jmx-1, 1:kmx-1)) &
-                                ) * xnx(3, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(3, 1:jmx-1, 1:kmx-1) * xnx(1, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(3, 1:jmx-1, 1:kmx-1) * xny(1, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(3, 1:jmx-1, 1:kmx-1) * xnz(1, 1:jmx-1, 1:kmx-1)) &
+                                ) * xnx(1, 1:jmx-1, 1:kmx-1) &
                             )
                     y_speed(-2, 1:jmx-1, 1:kmx-1) = y_speed(3, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(3, 1:jmx-1, 1:kmx-1) * xnx(3, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(3, 1:jmx-1, 1:kmx-1) * xny(3, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(3, 1:jmx-1, 1:kmx-1) * xnz(3, 1:jmx-1, 1:kmx-1)) &
-                                ) * xny(3, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(3, 1:jmx-1, 1:kmx-1) * xnx(1, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(3, 1:jmx-1, 1:kmx-1) * xny(1, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(3, 1:jmx-1, 1:kmx-1) * xnz(1, 1:jmx-1, 1:kmx-1)) &
+                                ) * xny(1, 1:jmx-1, 1:kmx-1) &
                             )
                     z_speed(-2, 1:jmx-1, 1:kmx-1) = z_speed(3, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(3, 1:jmx-1, 1:kmx-1) * xnx(3, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(3, 1:jmx-1, 1:kmx-1) * xny(3, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(3, 1:jmx-1, 1:kmx-1) * xnz(3, 1:jmx-1, 1:kmx-1)) &
-                                ) * xnz(3, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(3, 1:jmx-1, 1:kmx-1) * xnx(1, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(3, 1:jmx-1, 1:kmx-1) * xny(1, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(3, 1:jmx-1, 1:kmx-1) * xnz(1, 1:jmx-1, 1:kmx-1)) &
+                                ) * xnz(1, 1:jmx-1, 1:kmx-1) &
                             )
                 else if (face == "imax") then
                     x_speed(imx+2, 1:jmx-1, 1:kmx-1) = x_speed(imx-3, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnx(imx-2, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(imx-3, 1:jmx-1, 1:kmx-1) * xny(imx-2, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnz(imx-2, 1:jmx-1, 1:kmx-1)) &
-                                ) * xnx(imx-2, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnx(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(imx-3, 1:jmx-1, 1:kmx-1) * xny(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnz(imx, 1:jmx-1, 1:kmx-1)) &
+                                ) * xnx(imx, 1:jmx-1, 1:kmx-1) &
                             )
                     y_speed(imx+2, 1:jmx-1, 1:kmx-1) = y_speed(imx-3, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnx(imx-2, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(imx-3, 1:jmx-1, 1:kmx-1) * xny(imx-2, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnz(imx-2, 1:jmx-1, 1:kmx-1)) &
-                                ) * xny(imx-2, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnx(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(imx-3, 1:jmx-1, 1:kmx-1) * xny(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnz(imx, 1:jmx-1, 1:kmx-1)) &
+                                ) * xny(imx, 1:jmx-1, 1:kmx-1) &
                             )
                     z_speed(imx+2, 1:jmx-1, 1:kmx-1) = z_speed(imx-3, 1:jmx-1, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnx(imx-2, 1:jmx-1, 1:kmx-1)) + &
-                                (y_speed(imx-3, 1:jmx-1, 1:kmx-1) * xny(imx-2, 1:jmx-1, 1:kmx-1)) + &
-                                (z_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnz(imx-2, 1:jmx-1, 1:kmx-1)) &
-                                ) * xnz(imx-2, 1:jmx-1, 1:kmx-1) &
+                                (x_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnx(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (y_speed(imx-3, 1:jmx-1, 1:kmx-1) * xny(imx, 1:jmx-1, 1:kmx-1)) + &
+                                (z_speed(imx-3, 1:jmx-1, 1:kmx-1) * xnz(imx, 1:jmx-1, 1:kmx-1)) &
+                                ) * xnz(imx, 1:jmx-1, 1:kmx-1) &
                             )
                 else if (face == "jmin") then
                     x_speed(1:imx-1, -2, 1:kmx-1) = x_speed(1:imx-1, 3, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 3, 1:kmx-1) * ynx(1:imx-1, 3, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, 3, 1:kmx-1) * yny(1:imx-1, 3, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, 3, 1:kmx-1) * ynz(1:imx-1, 3, 1:kmx-1)) &
-                                ) * ynx(1:imx-1, 3, 1:kmx-1) &
+                                (x_speed(1:imx-1, 3, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, 3, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, 3, 1:kmx-1) * ynz(1:imx-1, 1, 1:kmx-1)) &
+                                ) * ynx(1:imx-1, 1, 1:kmx-1) &
                             )
                     y_speed(1:imx-1, -2, 1:kmx-1) = y_speed(1:imx-1, 3, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 3, 1:kmx-1) * ynx(1:imx-1, 3, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, 3, 1:kmx-1) * yny(1:imx-1, 3, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, 3, 1:kmx-1) * ynz(1:imx-1, 3, 1:kmx-1)) &
-                                ) * yny(1:imx-1, 3, 1:kmx-1) &
+                                (x_speed(1:imx-1, 3, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, 3, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, 3, 1:kmx-1) * ynz(1:imx-1, 1, 1:kmx-1)) &
+                                ) * yny(1:imx-1, 1, 1:kmx-1) &
                             )
                     z_speed(1:imx-1, -2, 1:kmx-1) = z_speed(1:imx-1, 3, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 3, 1:kmx-1) * ynx(1:imx-1, 3, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, 3, 1:kmx-1) * yny(1:imx-1, 3, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, 3, 1:kmx-1) * ynz(1:imx-1, 3, 1:kmx-1)) &
-                                ) * ynz(1:imx-1, 3, 1:kmx-1) &
+                                (x_speed(1:imx-1, 3, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, 3, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, 3, 1:kmx-1) * ynz(1:imx-1, 1, 1:kmx-1)) &
+                                ) * ynz(1:imx-1, 1, 1:kmx-1) &
                             )
                 else if (face == "jmax") then
                     x_speed(1:imx-1, jmx+2, 1:kmx-1) = x_speed(1:imx-1, jmx-3, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, jmx-3, 1:kmx-1) * ynx(1:imx-1, jmx-2, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, jmx-3, 1:kmx-1) * yny(1:imx-1, jmx-2, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, jmx-3, 1:kmx-1) * ynz(1:imx-1, jmx-2, 1:kmx-1)) &
-                                ) * ynx(1:imx-1, jmx-2, 1:kmx-1) &
+                                (x_speed(1:imx-1, jmx-3, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, jmx-3, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, jmx-3, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+                                ) * ynx(1:imx-1, jmx, 1:kmx-1) &
                             )
                     y_speed(1:imx-1, jmx+2, 1:kmx-1) = y_speed(1:imx-1, jmx-2, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, jmx-3, 1:kmx-1) * ynx(1:imx-1, jmx-2, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, jmx-3, 1:kmx-1) * yny(1:imx-1, jmx-2, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, jmx-3, 1:kmx-1) * ynz(1:imx-1, jmx-2, 1:kmx-1)) &
-                                ) * yny(1:imx-1, jmx-2, 1:kmx-1) &
+                                (x_speed(1:imx-1, jmx-3, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, jmx-3, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, jmx-3, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+                                ) * yny(1:imx-1, jmx, 1:kmx-1) &
                             )
                     z_speed(1:imx-1, jmx+2, 1:kmx-1) = z_speed(1:imx-1, jmx-3, 1:kmx-1) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, jmx-3, 1:kmx-1) * ynx(1:imx-1, jmx-2, 1:kmx-1)) + &
-                                (y_speed(1:imx-1, jmx-3, 1:kmx-1) * yny(1:imx-1, jmx-2, 1:kmx-1)) + &
-                                (z_speed(1:imx-1, jmx-3, 1:kmx-1) * ynz(1:imx-1, jmx-2, 1:kmx-1)) &
-                                ) * ynz(1:imx-1, jmx-2, 1:kmx-1) &
+                                (x_speed(1:imx-1, jmx-3, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) + &
+                                (y_speed(1:imx-1, jmx-3, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) + &
+                                (z_speed(1:imx-1, jmx-3, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1)) &
+                                ) * ynz(1:imx-1, jmx, 1:kmx-1) &
                             )
                 else if (face == "kmin") then
                     x_speed(1:imx-1, 1:jmx-1, -2) = x_speed(1:imx-1, 1:jmx-1, 3) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, 3) * znx(1:imx-1, 1:jmx-1, 3)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, 3) * zny(1:imx-1, 1:jmx-1, 3)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, 3) * znz(1:imx-1, 1:jmx-1, 3)) &
-                                ) * znx(1:imx-1, 1:jmx-1, 2) &
+                                (x_speed(1:imx-1, 1:jmx-1, 3) * znx(1:imx-1, 1:jmx-1, 1)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, 3) * zny(1:imx-1, 1:jmx-1, 1)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, 3) * znz(1:imx-1, 1:jmx-1, 1)) &
+                                ) * znx(1:imx-1, 1:jmx-1, 1) &
                             )
                     y_speed(1:imx-1, 1:jmx-1, -2) = y_speed(1:imx-1, 1:jmx-1, 3) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, 3) * znx(1:imx-1, 1:jmx-1, 3)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, 3) * zny(1:imx-1, 1:jmx-1, 3)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, 3) * znz(1:imx-1, 1:jmx-1, 3)) &
-                                ) * zny(1:imx-1, 1:jmx-1, 3) &
+                                (x_speed(1:imx-1, 1:jmx-1, 3) * znx(1:imx-1, 1:jmx-1, 1)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, 3) * zny(1:imx-1, 1:jmx-1, 1)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, 3) * znz(1:imx-1, 1:jmx-1, 1)) &
+                                ) * zny(1:imx-1, 1:jmx-1, 1) &
                             )
                     z_speed(1:imx-1, 1:jmx-1, -2) = z_speed(1:imx-1, 1:jmx-1, 3) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, 3) * znx(1:imx-1, 1:jmx-1, 3)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, 3) * zny(1:imx-1, 1:jmx-1, 3)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, 3) * znz(1:imx-1, 1:jmx-1, 3)) &
-                                ) * znz(1:imx-1, 1:jmx-1, 3) &
+                                (x_speed(1:imx-1, 1:jmx-1, 3) * znx(1:imx-1, 1:jmx-1, 1)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, 3) * zny(1:imx-1, 1:jmx-1, 1)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, 3) * znz(1:imx-1, 1:jmx-1, 1)) &
+                                ) * znz(1:imx-1, 1:jmx-1, 1) &
                             )
                 else if (face == "kmax") then
                     x_speed(1:imx-1, 1:jmx-1, kmx+2) = x_speed(1:imx-1, 1:jmx-1, kmx-3) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, kmx-3) * znx(1:imx-1, 1:jmx-1, kmx-2)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, kmx-3) * zny(1:imx-1, 1:jmx-1, kmx-2)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, kmx-3) * znz(1:imx-1, 1:jmx-1, kmx-2)) &
-                                ) * znx(1:imx-1, 1:jmx-1, kmx-2) &
+                                (x_speed(1:imx-1, 1:jmx-1, kmx-3) * znx(1:imx-1, 1:jmx-1, kmx)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, kmx-3) * zny(1:imx-1, 1:jmx-1, kmx)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, kmx-3) * znz(1:imx-1, 1:jmx-1, kmx)) &
+                                ) * znx(1:imx-1, 1:jmx-1, kmx) &
                             )
                     y_speed(1:imx-1, 1:jmx-1, kmx+2) = y_speed(1:imx-1, 1:jmx-1, kmx-3) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, kmx-3) * znx(1:imx-1, 1:jmx-1, kmx-2)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, kmx-3) * zny(1:imx-1, 1:jmx-1, kmx-2)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, kmx-3) * znz(1:imx-1, 1:jmx-1, kmx-2)) &
-                                ) * zny(1:imx-1, 1:jmx-1, kmx-2) &
+                                (x_speed(1:imx-1, 1:jmx-1, kmx-3) * znx(1:imx-1, 1:jmx-1, kmx)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, kmx-3) * zny(1:imx-1, 1:jmx-1, kmx)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, kmx-3) * znz(1:imx-1, 1:jmx-1, kmx)) &
+                                ) * zny(1:imx-1, 1:jmx-1, kmx) &
                             )
                     z_speed(1:imx-1, 1:jmx-1, kmx+2) = z_speed(1:imx-1, 1:jmx-1, kmx-3) - &
                             (2. * ( &
-                                (x_speed(1:imx-1, 1:jmx-1, kmx-3) * znx(1:imx-1, 1:jmx-1, kmx-2)) + &
-                                (y_speed(1:imx-1, 1:jmx-1, kmx-3) * zny(1:imx-1, 1:jmx-1, kmx-2)) + &
-                                (z_speed(1:imx-1, 1:jmx-1, kmx-3) * znz(1:imx-1, 1:jmx-1, kmx-2)) &
-                                ) * znz(1:imx-1, 1:jmx-1, kmx-2) &
+                                (x_speed(1:imx-1, 1:jmx-1, kmx-3) * znx(1:imx-1, 1:jmx-1, kmx)) + &
+                                (y_speed(1:imx-1, 1:jmx-1, kmx-3) * zny(1:imx-1, 1:jmx-1, kmx)) + &
+                                (z_speed(1:imx-1, 1:jmx-1, kmx-3) * znz(1:imx-1, 1:jmx-1, kmx)) &
+                                ) * znz(1:imx-1, 1:jmx-1, kmx) &
                             )
                 end if
      !      else
