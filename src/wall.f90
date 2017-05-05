@@ -60,54 +60,46 @@ module wall
 
     subroutine write_surfnode()
       implicit none
-      integer(kind=mpi_offset_kind) ::disp
       integer :: count
       integer :: i
       call setup_surface()
-!      if(n_wall>0) then
-        call surface_points()
-        call MPI_GATHER(n_wall, 1, MPI_Integer, n_wall_buf, 1, &
-                        MPI_integer,0, MPI_COMM_WORLD, ierr)
-        total_n_wall = sum(n_wall_buf(:))
-        call MPI_Bcast(total_n_wall,1, MPI_Integer, 0, &
-                         MPI_COMM_WORLD, ierr)
-        call MPI_Bcast(n_wall_buf, total_process, MPI_Integer, 0, &
-                         MPI_COMM_WORLD, ierr)
+      call surface_points()
+      call MPI_GATHER(n_wall, 1, MPI_Integer, n_wall_buf, 1, &
+                      MPI_integer,0, MPI_COMM_WORLD, ierr)
+      total_n_wall = sum(n_wall_buf(:))
+      call MPI_Bcast(total_n_wall,1, MPI_Integer, 0, &
+                       MPI_COMM_WORLD, ierr)
+      call MPI_Bcast(n_wall_buf, total_process, MPI_Integer, 0, &
+                       MPI_COMM_WORLD, ierr)
 
-        write_flag=0
-        count=0
-        do i=1,total_process
-          if(n_wall_buf(i)>0) then
-            write_flag(i)=count
-            count = count+1
-          end if
-        end do
-        call MPI_TYPE_CONTIGUOUS(maxlen,MPI_Character, new_type, ierr)
-        call MPI_TYPE_COMMIT(new_type, ierr)
-!        disp=sum(n_wall_buf(1:process_id-1))*maxlen*2
-        
-!        disp=write_flag(process_id+1)*maxlen*1
-        print*, 'disp', disp, process_id
-!        call mpi_file_set_view(NODESURF_FILE_UNIT, disp, new_type, new_type, 'native', MPI_INFO_NULL,ierr)
-        if(process_id==0)then
-        write(line, '(I0)') total_n_wall
+      write_flag=0
+      count=0
+      do i=1,total_process
+        if(n_wall_buf(i)>0) then
+          write_flag(i)=count
+          count = count+1
+        end if
+      end do
+      call MPI_TYPE_CONTIGUOUS(maxlen,MPI_Character, new_type, ierr)
+      call MPI_TYPE_COMMIT(new_type, ierr)
+      if(process_id==0)then
+      write(line, '(I0)') total_n_wall
+      line(len(line):len(line))=lf
+      call MPI_FILE_WRITE_shared(thisfile, line, 1, &
+                              new_type, &
+                              MPI_STATUS_IGNORE, ierr)
+      end if
+      call mpi_barrier(MPI_COMM_WORLD,ierr)
+      if(n_wall>0)then
+      do i=1,n_wall
+        write(line, '(3(ES18.10E3,4x))') wall_x(i), wall_y(i), wall_z(i)
         line(len(line):len(line))=lf
         call MPI_FILE_WRITE_shared(thisfile, line, 1, &
                                 new_type, &
                                 MPI_STATUS_IGNORE, ierr)
-        end if
-        call mpi_barrier(MPI_COMM_WORLD,ierr)
-        if(n_wall>0)then
-        do i=1,n_wall
-          write(line, '(3(ES18.10E3,4x))') wall_x(i), wall_y(i), wall_z(i)
-          line(len(line):len(line))=lf
-          print*, line
-          call MPI_FILE_WRITE_shared(thisfile, line, 1, &
-                                  new_type, &
-                                  MPI_STATUS_IGNORE, ierr)
-        end do
-        end if
-        call mpi_barrier(MPI_COMM_WORLD,ierr)
+      end do
+      end if
+      call mpi_barrier(MPI_COMM_WORLD,ierr)
       call destroy_surface()
 
     end subroutine write_surfnode

@@ -68,7 +68,7 @@ module state
     use utils, only: alloc, dealloc, dmsg
     use layout, only: process_id
     use string
-  use read_output_vtk, only: read_file
+  use read_output, only: read_file
 
     implicit none
     private

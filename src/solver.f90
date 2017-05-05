@@ -168,6 +168,9 @@ module solver
             call setup_grid(grid_file_buf)
             call setup_geometry()
             call setup_transport()
+            if(turbulence /= 'none') then
+              call setup_wall_dist()
+            end if
             call setup_state()
             call setup_boundary_conditions(bc_file)
             call allocate_memory()
@@ -175,7 +178,7 @@ module solver
             call setup_scheme()
             if(turbulence /= 'none') then
               call write_surfnode()
-              call setup_wall_dist()
+!              call setup_wall_dist()
               call find_wall_dist()
             end if
             if(mu_ref /= 0. .or. turbulence /= 'none') then

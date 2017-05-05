@@ -3,10 +3,9 @@ module read_output_vtk
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
-  use global     , only :      IN_FILE_UNIT
-  use global     , only : RESTART_FILE_UNIT
-  use global_vars, only :      infile
-  use global_vars, only : restartfile
+  use global     , only :    IN_FILE_UNIT
+  use global     , only : OUTIN_FILE_UNIT
+  use global     , only : outin_file
 
   use global_vars, only : read_data_format
   use global_vars, only : read_file_format
@@ -67,9 +66,13 @@ module read_output_vtk
   private
   integer :: i,j,k
   real    :: speed_inf
+  integer :: counter
+  integer :: read_control_file_flag=0
   character(len=8) :: file_format
   character(len=16) :: data_format
   character(len=16) :: read_flow_type
+  character(len=64), dimension(:), allocatable :: read_list
+  
 
   public :: read_file
 
@@ -77,19 +80,108 @@ module read_output_vtk
 
     subroutine read_file()
       implicit none
-      call setup_file
-      call open_file(infile)
-      call read_restart_file()
+      integer :: n
+!      call setup_file
+!      call open_file(infile)
+!      call read_restart_file()
+      if(read_control_file_flag==0)call read_control_file()
       call read_header()
       call read_grid()
-      call read_velocity()
-      call read_density()
-      call read_pressure()
-      call read_viscosity()
-      call read_turbulence_variables()
+      do n = 1,counter
+
+        select case (trim(read_list(n)))
+        
+          case('U')
+            call read_velocity()
+
+          case('Density')
+            call read_density()
+          
+          case('Pressure')
+            call read_pressure()
+            
+          case('Mu')
+            if (mu_ref/=0.0) then
+              call read_mu()
+            else
+              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+            end if
+            
+          case('Mu_t')
+            if (turbulence/='none') then
+              call read_mu_t()
+            else
+              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+            end if
+            
+          case('TKE')
+            if(turbulence=="sst")then
+            call read_TKE()
+            else
+              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+            end if
+
+          case('Omega')
+            if(turbulence=="sst") then
+            call read_omega()
+            else
+              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+            end if
+
+          case('Wall_distance')
+            if(turbulence/="none") then
+            call read_dist()
+            else
+              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+            end if
+
+          case('Resnorm')
+            call read_resnorm()
+
+          case Default
+            print*, "read_error: cannot read variable "//trim(read_list(n))//" to file"
+
+        end select
+      end do
+
+!      call read_velocity()
+!      call read_density()
+!      call read_pressure()
+!      call read_viscosity()
+!      call read_turbulence_variables()
  !     call read_resnorm()
-      call close_file()
+!      call close_file()
+      deallocate(read_list)
     end subroutine read_file
+
+
+    subroutine read_control_file()
+      implicit none
+      character(len=64) :: buf
+      read_control_file_flag=1
+      open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
+      ! reading only counter first for dimension
+      read(OUTIN_FILE_UNIT, *)
+      read(OUTIN_FILE_UNIT, *)
+      buf=" not } "
+      counter = 0
+      do while (.true.)
+        read(OUTIN_FILE_UNIT, *) buf
+        if (trim(buf)=='}') EXIT
+        counter = counter + 1
+      end do
+      allocate(read_list(1:counter))
+      ! reading data types only, dumping counter
+      rewind(OUTIN_FILE_UNIT)
+      read(OUTIN_FILE_UNIT, *)
+      read(OUTIN_FILE_UNIT, *)
+      buf=" "
+      do i = 1,counter
+        read(OUTIN_FILE_UNIT, *) buf
+        read(buf,*) read_list(i)
+      end do
+      close(OUTIN_FILE_UNIT)
+    end subroutine read_control_file
 
     subroutine read_turbulence_variables()
       implicit none
@@ -123,53 +215,6 @@ module read_output_vtk
       end if
 
     end subroutine read_viscosity
-
-    subroutine setup_file()
-      implicit none
-      call dmsg(1, 'read_output_vtk', 'setup_file')
-      if (read_file_format == "vtk") then
-        file_format = ".vtk"
-      elseif (read_file_format == "tecplot") then
-        file_format = ".dat"
-      else
-        print*, "File format not recoganised. Accepted formats are"
-        print*, "'vtk' and 'tecplot' "
-      end if
-
-      if (read_data_format == "ASCII") then
-        data_format = "formatted"
-      elseif (read_data_format == "BINARY") then
-        data_format = "unformatted"
-      else
-        print*, "Data format not recoganised. Accepted formats are"
-        print*, "'ASCII' and 'BINARY' "
-      end if
-
-      !write(infile,'(a,i4.4,a,i2.2)') 'time_directories/',start_from,'process_',process_id
-
-    end subroutine setup_file
-
-    subroutine open_file(filename)
-      implicit none
-      character(len=*), intent(in) :: filename 
-      call dmsg(1, 'read_output_vtk', 'open_file')
-
-      write(restartfile, '(A,I4.4,A,I2.2)') 'time_directories/',start_from,&
-                          '/restart/process_', process_id
-      open(IN_FILE_UNIT, file=trim(filename)//trim(file_format))!, form=trim(data_format))
-      open(RESTART_FILE_UNIT, file=restartfile, status='old')
-
-    end subroutine open_file
-
-    subroutine close_file()
-      implicit none
-
-      call dmsg(1, 'read_output_vtk', 'close_files')
-      close(IN_FILE_UNIT)
-      close(RESTART_FILE_UNIT)
-
-    end subroutine close_file
-
 
     subroutine read_header()
       implicit none
@@ -443,82 +488,66 @@ module read_output_vtk
     end subroutine read_mu_t
 
 ! Auxilary subroutine for special case
-!    subroutine read_dist()
-!      implicit none
-!
-!      call dmsg(1, 'read_output_vtk', 'read_dist')
-!      ! Writing wall distance for each cell
-!      if (read_data_format == "ASCII") then
-!        read(IN_FILE_UNIT, *) !'SCALARS dist FLOAT'
-!        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
-!        do k = 1, kmx - 1
-!         do j = 1, jmx - 1
-!          do i = 1, imx - 1
-!            read(IN_FILE_UNIT, *) dist(i, j, k)
-!          end do
-!         end do
-!        end do
-!        read(IN_FILE_UNIT, *) 
-!      elseif (read_data_format == 'BINARY') then
-!        read(IN_FILE_UNIT) !'SCALARS dist DOUBLE'
-!        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
-!        do k = 1, kmx - 1
-!         do j = 1, jmx - 1
-!          do i = 1, imx - 1
-!            read(IN_FILE_UNIT) dist(i, j, k)
-!          end do
-!         end do
-!        end do
-!        read(IN_FILE_UNIT) 
-!      end if
-!
-!    end subroutine read_dist
-!
-!    subroutine read_resnorm()
-!      implicit none
-!
-!      call dmsg(1, 'read_output_vtk', 'read_resnorm')
-!      ! Writing resnorm for each cell
-!      if (read_data_format == "ASCII") then
-!        read(IN_FILE_UNIT, *) !'SCALARS Resnorm FLOAT'
-!        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
-!        do k = 1, kmx - 1
-!         do j = 1, jmx - 1
-!          do i = 1, imx - 1
-!            read(IN_FILE_UNIT, *) vis_resnorm
-!          end do
-!         end do
-!        end do
-!        read(IN_FILE_UNIT, *) 
-!      elseif (read_data_format == 'BINARY') then
-!        read(IN_FILE_UNIT) !'SCALARS Resnorm DOUBLE'
-!        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
-!        do k = 1, kmx - 1
-!         do j = 1, jmx - 1
-!          do i = 1, imx - 1
-!            read(IN_FILE_UNIT) vis_resnorm
-!          end do
-!         end do
-!        end do
-!        read(IN_FILE_UNIT)
-!      end if
-!
-!    end subroutine read_resnorm
-
-    subroutine read_restart_file()
+    subroutine read_dist()
       implicit none
-      read(RESTART_FILE_UNIT, *) read_flow_type
 
-      read(RESTART_FILE_UNIT, *)        resnorm_0
-      read(RESTART_FILE_UNIT, *)    vis_resnorm_0
-      read(RESTART_FILE_UNIT, *)   turb_resnorm_0
-      read(RESTART_FILE_UNIT, *)   cont_resnorm_0
-      read(RESTART_FILE_UNIT, *)  x_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *)  y_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *)  z_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *) energy_resnorm_0
-      read(RESTART_FILE_UNIT, *)    TKE_resnorm_0
-      read(RESTART_FILE_UNIT, *)  omega_resnorm_0
-    end subroutine read_restart_file
+      call dmsg(1, 'read_output_vtk', 'read_dist')
+      ! Writing wall distance for each cell
+      if (read_data_format == "ASCII") then
+        read(IN_FILE_UNIT, *) !'SCALARS dist FLOAT'
+        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT, *) dist(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT, *) 
+      elseif (read_data_format == 'BINARY') then
+        read(IN_FILE_UNIT) !'SCALARS dist DOUBLE'
+        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT) dist(i, j, k)
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT) 
+      end if
+
+    end subroutine read_dist
+
+    subroutine read_resnorm()
+      implicit none
+
+      call dmsg(1, 'read_output_vtk', 'read_resnorm')
+      ! Writing resnorm for each cell
+      if (read_data_format == "ASCII") then
+        read(IN_FILE_UNIT, *) !'SCALARS Resnorm FLOAT'
+        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT, *) vis_resnorm
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT, *) 
+      elseif (read_data_format == 'BINARY') then
+        read(IN_FILE_UNIT) !'SCALARS Resnorm DOUBLE'
+        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            read(IN_FILE_UNIT) vis_resnorm
+          end do
+         end do
+        end do
+        read(IN_FILE_UNIT)
+      end if
+
+    end subroutine read_resnorm
 
 end module read_output_vtk
