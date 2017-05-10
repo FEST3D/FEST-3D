@@ -52,6 +52,7 @@ module state
     use global_vars, only  : free_stream_pressure
     use global_vars, only  : free_stream_tk
     use global_vars, only  : free_stream_tw
+    use global_vars, only  : vel_mag
 
   use global_vars, only: mass_residue
   use global_vars, only: x_mom_residue
@@ -65,9 +66,9 @@ module state
   use global_vars, only:  z_mom_resnorm
   use global_vars, only: energy_resnorm
 
-    use utils, only: alloc, dealloc, dmsg
-    use layout, only: process_id
-    use string
+  use utils,       only: alloc, dealloc, dmsg
+  use layout,      only: process_id
+  use string
   use read_output, only: read_file
 
     implicit none

@@ -94,6 +94,8 @@ module solver
   use grid, only: setup_grid, destroy_grid
   use geometry, only: setup_geometry, destroy_geometry
   use state, only:  setup_state, destroy_state
+  use gradients, only : setup_gradients
+  use gradients, only : destroy_gradients
 
   use face_interpolant, only: interpolant, &
           x_qp_left, x_qp_right, &
@@ -102,7 +104,7 @@ module solver
           extrapolate_cell_averages_to_faces
   use scheme, only: scheme_name, setup_scheme, destroy_scheme, &
           compute_fluxes, compute_residue
-  use source, only: setup_source, destroy_source, add_source_term_residue, &
+  use source, only: add_source_term_residue, &
                     compute_gradients_cell_centre
   use boundary_conditions, only: setup_boundary_conditions, &
           apply_boundary_conditions, set_wall_bc_at_faces, &
@@ -120,10 +122,11 @@ module solver
   use transport    , only : setup_transport
   use transport    , only : destroy_transport
   use transport    , only : calculate_transport
-  use sst_F      , only : setup_sst_F1
-  use sst_F      , only : destroy_sst_F1
-  use sst_F      , only : calculate_sst_F1
+  use blending_function , only : setup_sst_F1
+  use blending_function , only : destroy_sst_F1
+  use blending_function , only : calculate_sst_F1
   use wall        , only : write_surfnode
+  use ghost_gradients, only : apply_gradient_bc
   include "turbulence_models/include/solver/import_module.inc"
 
 #ifdef __GFORTRAN__
@@ -169,21 +172,22 @@ module solver
             call setup_geometry()
             call setup_transport()
             if(turbulence /= 'none') then
-              call setup_wall_dist()
+!              call setup_wall_dist() ! only if there is wall_distance in restart file
             end if
             call setup_state()
+            call setup_gradients()
             call setup_boundary_conditions(bc_file)
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
             if(turbulence /= 'none') then
               call write_surfnode()
-!              call setup_wall_dist()
+              call setup_wall_dist()
               call find_wall_dist()
             end if
-            if(mu_ref /= 0. .or. turbulence /= 'none') then
-              call setup_source()
-            end if
+!            if(mu_ref /= 0. .or. turbulence /= 'none') then
+!              call setup_source()
+!            end if
             call setup_sst_F1()
             call link_aliases_solver()
             call setup_resnorm()
@@ -201,9 +205,10 @@ module solver
             call dmsg(1, 'solver', 'destroy_solver')
 
             call destroy_transport()
-            if(mu_ref /= 0. .or. turbulence /= 'none')  then 
-              call destroy_source()
-            end if
+!            if(mu_ref /= 0. .or. turbulence /= 'none')  then 
+!              call destroy_source()
+!            end if
+            call destroy_gradients()
             if(turbulence /= 'none') then
               call destroy_wall_dist()
             end if
@@ -748,7 +753,7 @@ module solver
             call reconstruct_boundary_state(interpolant)
             call set_wall_bc_at_faces()
             call compute_fluxes()
-            call calculate_transport()
+!            call calculate_transport()
             if (mu_ref /= 0.0) then
                 if (interpolant /= "none") then
                     call extrapolate_cell_averages_to_faces()
@@ -758,6 +763,7 @@ module solver
                 call calculate_transport()
                 call calculate_sst_F1()
                 call add_source_term_residue()
+                call apply_gradient_bc()
                 call compute_viscous_fluxes(F_p, G_p, H_p)
                 call compute_turbulent_fluxes(F_p, G_p, H_p)
             end if

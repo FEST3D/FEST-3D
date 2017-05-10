@@ -74,7 +74,7 @@ module sst_viscosity
       real :: var2
 
       var1 = 2*sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))
-      var2 = 500*mu(i,j,k)*(dist(i,j,k)**2)*tw(i,j,k)
+      var2 = 500*(mu(i,j,k)/density(i,j,k))/((dist(i,j,k)**2)*tw(i,j,k))
       arg2 = max(var1, var2)
 
     end subroutine calculate_arg2

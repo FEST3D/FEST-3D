@@ -83,7 +83,7 @@ module sst_source
                                           + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
                                           + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
                                            )/tw(i,j,k)
-            CD = max(CD, 1e-20)
+            !CD = max(CD, 1e-20)
             F1 = sst_F1(i,j,k)
 
 
@@ -100,8 +100,8 @@ module sst_source
 
             ! ____ PRODUCTION term____ 
             P_k = sst_mu(i,j,k)*(vort**2)
-            P_k = min(P_k,20*D_k)
-            P_w = min(gama*density(i,j,k)*P_k*sst_mu(i,j,k), 10.0*D_w)
+            P_k = min(P_k,20.0*D_k)
+            P_w = min(gama*density(i,j,k)*P_k/sst_mu(i,j,k), 20.0*D_w)
 
             ! ____ cross diffusion term ___
             lamda = (1. - F1)*CD
@@ -111,6 +111,9 @@ module sst_source
 
             S_k = S_k * volume(i, j, k)
             S_w = S_w * volume(i, j, k)
+            if (j==2 .and. k==1) then
+            !print*, i, S_k, TKE_residue(i,j,k)
+            end if
 
             TKE_residue(i, j, k)   = TKE_residue(i, j, k) - S_k
             omega_residue(i, j, k) = omega_residue(i, j, k) - S_w

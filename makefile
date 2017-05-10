@@ -31,6 +31,10 @@ IFFLAGS := -O3 -free -r8 -traceback \
 					 -warn declaration \
 					 -warn uncalled \
 					 -warn unused
+           
+#           -I /sware/intel/impi/4.1.0.024/include64/ \
+#           -L /sware/intel/impi/4.1.0.024/lib64 -lmpich -lmpi \
+
 subpath:= resnorm \
 				 resnorm/viscous \
 				 resnorm/turbulent

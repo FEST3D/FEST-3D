@@ -15,6 +15,9 @@ module ausm
     use global_vars, only : gm
     use global_vars, only : n_var
     use global_vars, only : turbulence
+    use global_vars, only : process_id
+    use global_vars, only : current_iter
+    use global_vars, only : max_iters
 
     use utils, only: alloc, dealloc, dmsg
     use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
@@ -106,7 +109,7 @@ module ausm
             !include compute_flux_variable and select.inc before select
             !as it contains variables deceleration
             include "turbulence_models/include/ausm/compute_flux_var.inc"
-            include "turbulence_models/include/ausm/compute_flux_select.inc"
+!            include "turbulence_models/include/ausm/compute_flux_select.inc"
 
             call dmsg(1, 'ausm', 'compute_flux')
             
@@ -312,6 +315,9 @@ module ausm
                residue(i, j, k, l) = F(i+1, j, k, l) - F(i, j, k, l) &
                                    + G(i, j+1, k, l) - G(i, j, k, l) &
                                    + H(i, j, k+1, l) - H(i, j, k, l)
+                if (process_id==1 .and. current_iter==max_iters-1 .and. j==1 .and. k==1) then
+                  write(*,'(I0,2x,7(f0.16,2x))') i, residue(i,j,k,l)
+                end if
                end do
               end do
              end do

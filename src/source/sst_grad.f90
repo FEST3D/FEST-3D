@@ -43,44 +43,44 @@ module sst_grad
   implicit none
   private
 
-  public :: setup_sst_grad
-  public :: destroy_sst_grad
+!  public :: setup_sst_grad
+!  public :: destroy_sst_grad
   public :: calculate_sst_grad
 
 
   contains
 
-    subroutine setup_sst_grad()
-      implicit none
-      character(len=*), parameter :: err = "ERROR: Unable to allocate memory to "
-
-      call dmsg(1, 'sst_grad', 'setup_sst_grad')
-
-      call alloc(gradtk_x, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtk_x')
-      call alloc(gradtk_y, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtk_y')
-      call alloc(gradtk_z, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtk_z')
-
-      call alloc(gradtw_x, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtw_x')
-      call alloc(gradtw_y, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtw_y')
-      call alloc(gradtw_z, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtw_z')
-
-    end subroutine setup_sst_grad
-
-    subroutine destroy_sst_grad()
-      implicit none
-
-      call dmsg(1, 'sst_grad', 'destroy_sst_grad')
-
-      call dealloc(gradtk_x)
-      call dealloc(gradtk_y)
-      call dealloc(gradtk_z)
-
-      call dealloc(gradtw_x)
-      call dealloc(gradtw_y)
-      call dealloc(gradtw_z)
-
-    end subroutine destroy_sst_grad
-
+!    subroutine setup_sst_grad()
+!      implicit none
+!      character(len=*), parameter :: err = "ERROR: Unable to allocate memory to "
+!
+!      call dmsg(1, 'sst_grad', 'setup_sst_grad')
+!
+!      call alloc(gradtk_x, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtk_x')
+!      call alloc(gradtk_y, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtk_y')
+!      call alloc(gradtk_z, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtk_z')
+!
+!      call alloc(gradtw_x, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtw_x')
+!      call alloc(gradtw_y, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtw_y')
+!      call alloc(gradtw_z, 0,imx, 0,jmx, 0,kmx, errmsg=err//'Gradtw_z')
+!
+!    end subroutine setup_sst_grad
+!
+!    subroutine destroy_sst_grad()
+!      implicit none
+!
+!      call dmsg(1, 'sst_grad', 'destroy_sst_grad')
+!
+!      call dealloc(gradtk_x)
+!      call dealloc(gradtk_y)
+!      call dealloc(gradtk_z)
+!
+!      call dealloc(gradtw_x)
+!      call dealloc(gradtw_y)
+!      call dealloc(gradtw_z)
+!
+!    end subroutine destroy_sst_grad
+!
     subroutine calculate_sst_grad()
       implicit none
       integer :: i,j,k
@@ -229,9 +229,9 @@ module sst_grad
         gradtk_x(0,:,:) = gradtk_x(1,:,:)
         gradtw_x(0,:,:) = gradtw_x(1,:,:)
         gradtk_y(0,:,:) = gradtk_y(1,:,:)
-        gradtw_y(0,:,:) = gradtw_y(1,:,:)
-        gradtk_z(0,:,:) = gradtk_z(1,:,:)
-        gradtw_z(0,:,:) = gradtw_z(1,:,:)
+        gradtw_y(0,:,:) = -gradtw_y(1,:,:)
+        gradtk_z(0,:,:) = -gradtk_z(1,:,:)
+        gradtw_z(0,:,:) = -gradtw_z(1,:,:)
 
         ! right ghost cells
         gradtk_x(imx,:,:) = gradtk_x(imx-1,:,:)
@@ -245,33 +245,33 @@ module sst_grad
         gradtk_x(:,0,:) = gradtk_x(:,1,:)
         gradtw_x(:,0,:) = gradtw_x(:,1,:)
         gradtk_y(:,0,:) = gradtk_y(:,1,:)
-        gradtw_y(:,0,:) = gradtw_y(:,1,:)
-        gradtk_z(:,0,:) = gradtk_z(:,1,:)
-        gradtw_z(:,0,:) = gradtw_z(:,1,:)
+        gradtw_y(:,0,:) = -gradtw_y(:,1,:)
+        gradtk_z(:,0,:) = -gradtk_z(:,1,:)
+        gradtw_z(:,0,:) = -gradtw_z(:,1,:)
 
         ! top ghost cells
         gradtk_x(:,jmx,:) = gradtk_x(:,jmx-1,:)
         gradtw_x(:,jmx,:) = gradtw_x(:,jmx-1,:)
         gradtk_y(:,jmx,:) = gradtk_y(:,jmx-1,:)
-        gradtw_y(:,jmx,:) = gradtw_y(:,jmx-1,:)
-        gradtk_z(:,jmx,:) = gradtk_z(:,jmx-1,:)
-        gradtw_z(:,jmx,:) = gradtw_z(:,jmx-1,:)
+        gradtw_y(:,jmx,:) = -gradtw_y(:,jmx-1,:)
+        gradtk_z(:,jmx,:) = -gradtk_z(:,jmx-1,:)
+        gradtw_z(:,jmx,:) = -gradtw_z(:,jmx-1,:)
 
         ! front ghost cells
         gradtk_x(:,:,0) = gradtk_x(:,:,1)
         gradtw_x(:,:,0) = gradtw_x(:,:,1)
         gradtk_y(:,:,0) = gradtk_y(:,:,1)
-        gradtw_y(:,:,0) = gradtw_y(:,:,1)
-        gradtk_z(:,:,0) = gradtk_z(:,:,1)
-        gradtw_z(:,:,0) = gradtw_z(:,:,1)
+        gradtw_y(:,:,0) = -gradtw_y(:,:,1)
+        gradtk_z(:,:,0) = -gradtk_z(:,:,1)
+        gradtw_z(:,:,0) = -gradtw_z(:,:,1)
 
         ! back ghost cells
         gradtk_x(:,:,kmx) = gradtk_x(:,:,kmx-1)
         gradtw_x(:,:,kmx) = gradtw_x(:,:,kmx-1)
         gradtk_y(:,:,kmx) = gradtk_y(:,:,kmx-1)
-        gradtw_y(:,:,kmx) = gradtw_y(:,:,kmx-1)
-        gradtk_z(:,:,kmx) = gradtk_z(:,:,kmx-1)
-        gradtw_z(:,:,kmx) = gradtw_z(:,:,kmx-1)
+        gradtw_y(:,:,kmx) = -gradtw_y(:,:,kmx-1)
+        gradtk_z(:,:,kmx) = -gradtk_z(:,:,kmx-1)
+        gradtw_z(:,:,kmx) = -gradtw_z(:,:,kmx-1)
 
     end subroutine calculate_sst_grad
 

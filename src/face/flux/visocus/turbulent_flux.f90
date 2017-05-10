@@ -388,12 +388,12 @@ module turbulent_flux
           do i = 1, imx - 1
 
             ! Gradients at face as average of gradients at cell centres
-            dtkdx = 0.5 * (gradtk_x(i, j-1, k) + gradtk_x(i, j, k))
-            dtkdy = 0.5 * (gradtk_y(i, j-1, k) + gradtk_y(i, j, k))
-            dtkdz = 0.5 * (gradtk_z(i, j-1, k) + gradtk_z(i, j, k))
-            dtwdx = 0.5 * (gradtw_x(i, j-1, k) + gradtw_x(i, j, k))
-            dtwdy = 0.5 * (gradtw_y(i, j-1, k) + gradtw_y(i, j, k))
-            dtwdz = 0.5 * (gradtw_z(i, j-1, k) + gradtw_z(i, j, k))
+            dtkdx = 0.5 * (gradtk_x(i, j, k-1) + gradtk_x(i, j, k))
+            dtkdy = 0.5 * (gradtk_y(i, j, k-1) + gradtk_y(i, j, k))
+            dtkdz = 0.5 * (gradtk_z(i, j, k-1) + gradtk_z(i, j, k))
+            dtwdx = 0.5 * (gradtw_x(i, j, k-1) + gradtw_x(i, j, k))
+            dtwdy = 0.5 * (gradtw_y(i, j, k-1) + gradtw_y(i, j, k))
+            dtwdz = 0.5 * (gradtw_z(i, j, k-1) + gradtw_z(i, j, k))
 
             if (k .eq. 1) then
                 xc_L = bottom_ghost_centroid(i, j, 1)

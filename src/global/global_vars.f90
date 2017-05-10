@@ -79,7 +79,7 @@ module global_vars
    ! v pointer, point to slice of qp_inf
    ! w pointer, point to slice of qp_inf
    ! p pointer, point to slice of qp_inf
-  integer                                           :: n_var        
+  integer                                           :: n_var=5
   real, dimension(:, :, :, :), allocatable, target  :: qp           
   real, dimension(:)         , allocatable, target  :: qp_inf       
   real, dimension(:, :, :)                , pointer :: density      
@@ -109,10 +109,12 @@ module global_vars
   real                                              :: free_stream_pressure 
   real                                              :: free_stream_tk       
   real                                              :: free_stream_tw       
+  real                                              :: vel_mag ! free_stream velocity magnitude
   real, dimension(:, :, :), allocatable             :: dist 
 
   ! state variable turbulent
   integer                                           :: sst_n_var=2
+  integer                                           :: sst_n_grad=2
 !  real, dimension(:, :, :, :), allocatable, target  :: tqp       ! turbulent primitive
 !  real, dimension(:)         , allocatable, target  :: tqp_inf   ! turbulent primitive at inf
   real, dimension(:, :, :)                , pointer :: tk        ! TKE/mass
@@ -219,24 +221,35 @@ module global_vars
   
 
   ! gradients
+  integer                                           :: n_grad=4
+  real, dimension(:, :, :, :), allocatable, target  :: gradqp_x
+  real, dimension(:, :, :, :), allocatable, target  :: gradqp_y
+  real, dimension(:, :, :, :), allocatable, target  :: gradqp_z
 
-  real, dimension(:, :, :), allocatable         :: gradu_x
-  real, dimension(:, :, :), allocatable         :: gradu_y
-  real, dimension(:, :, :), allocatable         :: gradu_z 
-  real, dimension(:, :, :), allocatable         :: gradv_x 
-  real, dimension(:, :, :), allocatable         :: gradv_y
-  real, dimension(:, :, :), allocatable         :: gradv_z
-  real, dimension(:, :, :), allocatable         :: gradw_x
-  real, dimension(:, :, :), allocatable         :: gradw_y
-  real, dimension(:, :, :), allocatable         :: gradw_z
-  real, dimension(:, :, :), allocatable         :: gradT_x
-  real, dimension(:, :, :), allocatable         :: gradT_y
-  real, dimension(:, :, :), allocatable         :: gradT_z
-  real, dimension(:, :, :), allocatable         :: gradtk_x
-  real, dimension(:, :, :), allocatable         :: gradtk_y
-  real, dimension(:, :, :), allocatable         :: gradtk_z
-  real, dimension(:, :, :), allocatable         :: gradtw_x
-  real, dimension(:, :, :), allocatable         :: gradtw_y
-  real, dimension(:, :, :), allocatable         :: gradtw_z
+  real, dimension(:, :, :),                 pointer :: gradu_x
+  real, dimension(:, :, :),                 pointer :: gradu_y
+  real, dimension(:, :, :),                 pointer :: gradu_z 
+  real, dimension(:, :, :),                 pointer :: gradv_x 
+  real, dimension(:, :, :),                 pointer :: gradv_y
+  real, dimension(:, :, :),                 pointer :: gradv_z
+  real, dimension(:, :, :),                 pointer :: gradw_x
+  real, dimension(:, :, :),                 pointer :: gradw_y
+  real, dimension(:, :, :),                 pointer :: gradw_z
+  real, dimension(:, :, :),                 pointer :: gradT_x
+  real, dimension(:, :, :),                 pointer :: gradT_y
+  real, dimension(:, :, :),                 pointer :: gradT_z
+  real, dimension(:, :, :),                 pointer :: gradtk_x
+  real, dimension(:, :, :),                 pointer :: gradtk_y
+  real, dimension(:, :, :),                 pointer :: gradtk_z
+  real, dimension(:, :, :),                 pointer :: gradtw_x
+  real, dimension(:, :, :),                 pointer :: gradtw_y
+  real, dimension(:, :, :),                 pointer :: gradtw_z
+
+  ! boundary condition for gradients; pointer to ghost and interior cell
+  real, dimension(:, :, :),                 pointer :: gradqp_G
+  real, dimension(:, :, :),                 pointer :: gradqp_I
+  real, dimension(:, :, :),                 pointer :: gradqp_R !right face of wall
+  real, dimension(:, :, :),                 pointer :: gradqp_L !left face of wall
+
 end module global_vars
 

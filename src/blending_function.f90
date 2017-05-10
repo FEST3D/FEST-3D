@@ -1,4 +1,4 @@
-module sst_F
+module blending_function
 
   use global_sst , only : sst_F1
   use global_sst , only : sigma_w2
@@ -80,8 +80,8 @@ module sst_F
                      1e-20)
 
             var1 = sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))
-            var2 = 500*mu(i,j,k)/((dist(i,j,k)**2)*tw(i,j,k))
-            right = 4*(density(i,j,k)*sigma_w2*tk(i,j,k))
+            var2 = 500*(mu(i,j,k)/density(i,j,k))/((dist(i,j,k)**2)*tw(i,j,k))
+            right = 4*(density(i,j,k)*sigma_w2*tk(i,j,k))/(CD*(dist(i,j,k)**2))
             left = max(var1, var2)
             arg1 = min(left, right)
             sst_F1 = tanh(arg1**4)
@@ -121,5 +121,5 @@ module sst_F
 
     end subroutine calculate_sst_F1
 
-end module sst_F
+end module blending_function
 
