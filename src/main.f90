@@ -4,6 +4,8 @@ program main
 #endif
   use global_vars
   use solver
+  use start_finish, only:  start_run
+  use start_finish, only: finish_run
 
   implicit none
 #ifdef __INTEL_COMPILER
@@ -11,9 +13,10 @@ program main
 #endif
 
   integer :: ierr
-  call MPI_INIT(ierr)
-
-  call setup_solver()
+!  call MPI_INIT(ierr)
+!
+!  call setup_solver()
+  call start_run()
 
 !  do while (.not. converged())
   do while (.true.)
@@ -25,6 +28,7 @@ program main
      end if
      if (want_to_stop==1) max_iters=current_iter+1
   end do
-  call destroy_solver()
-  call MPI_FINALIZE(ierr)
+  call finish_run()
+!  call destroy_solver()
+!  call MPI_FINALIZE(ierr)
 end program main
