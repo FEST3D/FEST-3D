@@ -62,6 +62,7 @@ module boundary_conditions
     use global_vars, only : turbulence
     use global_vars, only : dist
     use global_vars, only : process_id
+    use global_vars, only : accur
 
     use global_sst , only : beta1
 
@@ -103,6 +104,11 @@ module boundary_conditions
     ! Boundary conditions list
     include "bclist_declaration.inc"
 
+    ! higher order boundary conditions coefficients
+    real :: c2
+    real :: c3
+    real :: c1
+
     ! Public methods
     public :: setup_boundary_conditions
     public :: destroy_boundary_conditions
@@ -113,6 +119,7 @@ module boundary_conditions
 
         subroutine setup_boundary_conditions(bc_filename)
             implicit none
+            ! setup higher order bc coeffiecents
             character(len=*), intent(in) :: bc_filename
             call dmsg(1, 'boundary_conditions', 'setup_boundary_conditions')
             include "bclist_definition.inc"
@@ -126,6 +133,9 @@ module boundary_conditions
             end do
             call initialize_remaining()
             close(BOUNDARY_CONDITIONS_FILE_UNIT)
+            c2 = 1.0 + accur
+            c3 = 0.5 * accur
+            c1 = c2  - c3
             call dmsg(1, 'boundary_conditions', 'setup_boundary_conditions', 'done')
         end subroutine setup_boundary_conditions
 
@@ -1227,29 +1237,29 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    density( 0, 1:jmx-1, 1:kmx-1)    = density(1, 1:jmx-1, 1:kmx-1)
-                    density(-1, 1:jmx-1, 1:kmx-1)    = density(2, 1:jmx-1, 1:kmx-1)
-                    density(-2, 1:jmx-1, 1:kmx-1)    = density(3, 1:jmx-1, 1:kmx-1)
+                    density( 0, 1:jmx-1, 1:kmx-1)    = (c2*density(1, 1:jmx-1, 1:kmx-1)-c3*density(2, 1:jmx-1, 1:kmx-1))/c1
+                    density(-1, 1:jmx-1, 1:kmx-1)    = (c2*density(2, 1:jmx-1, 1:kmx-1)-c3*density(3, 1:jmx-1, 1:kmx-1))/c1
+                    density(-2, 1:jmx-1, 1:kmx-1)    = (c2*density(3, 1:jmx-1, 1:kmx-1)-c3*density(4, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "imax") then
-                    density(imx  , 1:jmx-1, 1:kmx-1) = density(imx-1, 1:jmx-1, 1:kmx-1)
-                    density(imx+1, 1:jmx-1, 1:kmx-1) = density(imx-2, 1:jmx-1, 1:kmx-1)
-                    density(imx+2, 1:jmx-1, 1:kmx-1) = density(imx-3, 1:jmx-1, 1:kmx-1)
+                    density(imx  , 1:jmx-1, 1:kmx-1) = (c2*density(imx-1, 1:jmx-1, 1:kmx-1)-c3*density(imx-2, 1:jmx-1, 1:kmx-1))/c1
+                    density(imx+1, 1:jmx-1, 1:kmx-1) = (c2*density(imx-2, 1:jmx-1, 1:kmx-1)-c3*density(imx-3, 1:jmx-1, 1:kmx-1))/c1
+                    density(imx+2, 1:jmx-1, 1:kmx-1) = (c2*density(imx-3, 1:jmx-1, 1:kmx-1)-c3*density(imx-4, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "jmin") then
-                    density(1:imx-1,  0, 1:kmx-1)    = density(1:imx-1, 1, 1:kmx-1)
-                    density(1:imx-1, -1, 1:kmx-1)    = density(1:imx-1, 2, 1:kmx-1)
-                    density(1:imx-1, -2, 1:kmx-1)    = density(1:imx-1, 3, 1:kmx-1)
+                    density(1:imx-1,  0, 1:kmx-1)    = (c2*density(1:imx-1, 1, 1:kmx-1)-c3*density(1:imx-1, 2, 1:kmx-1))/c1
+                    density(1:imx-1, -1, 1:kmx-1)    = (c2*density(1:imx-1, 2, 1:kmx-1)-c3*density(1:imx-1, 3, 1:kmx-1))/c1
+                    density(1:imx-1, -2, 1:kmx-1)    = (c2*density(1:imx-1, 3, 1:kmx-1)-c3*density(1:imx-1, 4, 1:kmx-1))/c1
                 else if (face == "jmax") then
-                    density(1:imx-1, jmx  , 1:kmx-1) = density(1:imx-1, jmx-1, 1:kmx-1)
-                    density(1:imx-1, jmx+1, 1:kmx-1) = density(1:imx-1, jmx-2, 1:kmx-1)
-                    density(1:imx-1, jmx+2, 1:kmx-1) = density(1:imx-1, jmx-3, 1:kmx-1)
+                    density(1:imx-1, jmx  , 1:kmx-1) = (c2*density(1:imx-1, jmx-1, 1:kmx-1)-c3*density(1:imx-1, jmx-2, 1:kmx-1))/c1
+                    density(1:imx-1, jmx+1, 1:kmx-1) = (c2*density(1:imx-1, jmx-2, 1:kmx-1)-c3*density(1:imx-1, jmx-3, 1:kmx-1))/c1
+                    density(1:imx-1, jmx+2, 1:kmx-1) = (c2*density(1:imx-1, jmx-3, 1:kmx-1)-c3*density(1:imx-1, jmx-4, 1:kmx-1))/c1
                 else if (face == "kmin") then
-                    density(1:imx-1, 1:jmx-1,  0)    = density(1:imx-1, 1:jmx-1, 1)
-                    density(1:imx-1, 1:jmx-1, -1)    = density(1:imx-1, 1:jmx-1, 2)
-                    density(1:imx-1, 1:jmx-1, -2)    = density(1:imx-1, 1:jmx-1, 3)
+                    density(1:imx-1, 1:jmx-1,  0)    = (c2*density(1:imx-1, 1:jmx-1, 1)-c3*density(1:imx-1, 1:jmx-1, 2))/c1
+                    density(1:imx-1, 1:jmx-1, -1)    = (c2*density(1:imx-1, 1:jmx-1, 2)-c3*density(1:imx-1, 1:jmx-1, 3))/c1
+                    density(1:imx-1, 1:jmx-1, -2)    = (c2*density(1:imx-1, 1:jmx-1, 3)-c3*density(1:imx-1, 1:jmx-1, 4))/c1
                 else if (face == "kmax") then
-                    density(1:imx-1, 1:jmx-1, kmx  ) = density(1:imx-1, 1:jmx-1, kmx-1)
-                    density(1:imx-1, 1:jmx-1, kmx+1) = density(1:imx-1, 1:jmx-1, kmx-2)
-                    density(1:imx-1, 1:jmx-1, kmx+2) = density(1:imx-1, 1:jmx-1, kmx-3)
+                    density(1:imx-1, 1:jmx-1, kmx  ) = (c2*density(1:imx-1, 1:jmx-1, kmx-1)-c3*density(1:imx-1, 1:jmx-1, kmx-2))/c1
+                    density(1:imx-1, 1:jmx-1, kmx+1) = (c2*density(1:imx-1, 1:jmx-1, kmx-2)-c3*density(1:imx-1, 1:jmx-1, kmx-3))/c1
+                    density(1:imx-1, 1:jmx-1, kmx+2) = (c2*density(1:imx-1, 1:jmx-1, kmx-3)-c3*density(1:imx-1, 1:jmx-1, kmx-4))/c1
                 end if
     !       else
     !           if (face == "imin") then
@@ -1273,29 +1283,29 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    x_speed( 0, 1:jmx-1, 1:kmx-1)    = x_speed( 1, 1:jmx-1, 1:kmx-1)
-                    x_speed(-1, 1:jmx-1, 1:kmx-1)    = x_speed( 0, 1:jmx-1, 1:kmx-1)
-                    x_speed(-2, 1:jmx-1, 1:kmx-1)    = x_speed(-1, 1:jmx-1, 1:kmx-1)
+                    x_speed( 0, 1:jmx-1, 1:kmx-1)    = (c2*x_speed( 1, 1:jmx-1, 1:kmx-1)-c3*x_speed( 2, 1:jmx-1, 1:kmx-1))/c1
+                    x_speed(-1, 1:jmx-1, 1:kmx-1)    = (c2*x_speed( 0, 1:jmx-1, 1:kmx-1)-c3*x_speed( 1, 1:jmx-1, 1:kmx-1))/c1
+                    x_speed(-2, 1:jmx-1, 1:kmx-1)    = (c2*x_speed(-1, 1:jmx-1, 1:kmx-1)-c3*x_speed( 0, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "imax") then
-                    x_speed(imx  , 1:jmx-1, 1:kmx-1) = x_speed(imx-1, 1:jmx-1, 1:kmx-1)
-                    x_speed(imx+1, 1:jmx-1, 1:kmx-1) = x_speed(imx  , 1:jmx-1, 1:kmx-1)
-                    x_speed(imx+2, 1:jmx-1, 1:kmx-1) = x_speed(imx+1, 1:jmx-1, 1:kmx-1)
+                    x_speed(imx  , 1:jmx-1, 1:kmx-1) = (c2*x_speed(imx-1, 1:jmx-1, 1:kmx-1)-c3*x_speed(imx-2, 1:jmx-1, 1:kmx-1))/c1
+                    x_speed(imx+1, 1:jmx-1, 1:kmx-1) = (c2*x_speed(imx  , 1:jmx-1, 1:kmx-1)-c3*x_speed(imx-1, 1:jmx-1, 1:kmx-1))/c1
+                    x_speed(imx+2, 1:jmx-1, 1:kmx-1) = (c2*x_speed(imx+1, 1:jmx-1, 1:kmx-1)-c3*x_speed(imx  , 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "jmin") then
-                    x_speed(1:imx-1, 0, 1:kmx-1)     = x_speed(1:imx-1, 1, 1:kmx-1)
-                    x_speed(1:imx-1,-1, 1:kmx-1)     = x_speed(1:imx-1, 0, 1:kmx-1)
-                    x_speed(1:imx-1,-2, 1:kmx-1)     = x_speed(1:imx-1,-1, 1:kmx-1)
+                    x_speed(1:imx-1, 0, 1:kmx-1)     = (c2*x_speed(1:imx-1, 1, 1:kmx-1)-c3*x_speed(1:imx-1, 2, 1:kmx-1))/c1
+                    x_speed(1:imx-1,-1, 1:kmx-1)     = (c2*x_speed(1:imx-1, 0, 1:kmx-1)-c3*x_speed(1:imx-1, 1, 1:kmx-1))/c1
+                    x_speed(1:imx-1,-2, 1:kmx-1)     = (c2*x_speed(1:imx-1,-1, 1:kmx-1)-c3*x_speed(1:imx-1, 0, 1:kmx-1))/c1
                 else if (face == "jmax") then
-                    x_speed(1:imx-1, jmx  , 1:kmx-1) = x_speed(1:imx-1, jmx-1, 1:kmx-1)
-                    x_speed(1:imx-1, jmx+1, 1:kmx-1) = x_speed(1:imx-1, jmx  , 1:kmx-1)
-                    x_speed(1:imx-1, jmx+2, 1:kmx-1) = x_speed(1:imx-1, jmx+1, 1:kmx-1)
+                    x_speed(1:imx-1, jmx  , 1:kmx-1) = (c2*x_speed(1:imx-1, jmx-1, 1:kmx-1)-c3*x_speed(1:imx-1, jmx-2, 1:kmx-1))/c1
+                    x_speed(1:imx-1, jmx+1, 1:kmx-1) = (c2*x_speed(1:imx-1, jmx  , 1:kmx-1)-c3*x_speed(1:imx-1, jmx-1, 1:kmx-1))/c1
+                    x_speed(1:imx-1, jmx+2, 1:kmx-1) = (c2*x_speed(1:imx-1, jmx+1, 1:kmx-1)-c3*x_speed(1:imx-1, jmx  , 1:kmx-1))/c1
                 else if (face == "kmin") then
-                    x_speed(1:imx-1, 1:jmx-1, 0)     = x_speed(1:imx-1, 1:jmx-1,  1)
-                    x_speed(1:imx-1, 1:jmx-1,-1)     = x_speed(1:imx-1, 1:jmx-1,  0)
-                    x_speed(1:imx-1, 1:jmx-1,-2)     = x_speed(1:imx-1, 1:jmx-1, -1)
+                    x_speed(1:imx-1, 1:jmx-1, 0)     = (c2*x_speed(1:imx-1, 1:jmx-1,  1)-c3*x_speed(1:imx-1, 1:jmx-1,  2))/c1
+                    x_speed(1:imx-1, 1:jmx-1,-1)     = (c2*x_speed(1:imx-1, 1:jmx-1,  0)-c3*x_speed(1:imx-1, 1:jmx-1,  1))/c1
+                    x_speed(1:imx-1, 1:jmx-1,-2)     = (c2*x_speed(1:imx-1, 1:jmx-1, -1)-c3*x_speed(1:imx-1, 1:jmx-1,  0))/c1
                 else if (face == "kmax") then
-                    x_speed(1:imx-1, 1:jmx-1, kmx  ) = x_speed(1:imx-1, 1:jmx-1, kmx-1)
-                    x_speed(1:imx-1, 1:jmx-1, kmx+1) = x_speed(1:imx-1, 1:jmx-1, kmx  )
-                    x_speed(1:imx-1, 1:jmx-1, kmx+2) = x_speed(1:imx-1, 1:jmx-1, kmx+1)
+                    x_speed(1:imx-1, 1:jmx-1, kmx  ) = (c2*x_speed(1:imx-1, 1:jmx-1, kmx-1)-c3*x_speed(1:imx-1, 1:jmx-1, kmx-2))/c1
+                    x_speed(1:imx-1, 1:jmx-1, kmx+1) = (c2*x_speed(1:imx-1, 1:jmx-1, kmx  )-c3*x_speed(1:imx-1, 1:jmx-1, kmx-1))/c1
+                    x_speed(1:imx-1, 1:jmx-1, kmx+2) = (c2*x_speed(1:imx-1, 1:jmx-1, kmx+1)-c3*x_speed(1:imx-1, 1:jmx-1, kmx  ))/c1
                 end if
       !     else
       !         if (face == "imin") then
@@ -1319,29 +1329,29 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    y_speed( 0, 1:jmx-1, 1:kmx-1)    = y_speed( 1, 1:jmx-1, 1:kmx-1)
-                    y_speed(-1, 1:jmx-1, 1:kmx-1)    = y_speed( 0, 1:jmx-1, 1:kmx-1)
-                    y_speed(-2, 1:jmx-1, 1:kmx-1)    = y_speed(-1, 1:jmx-1, 1:kmx-1)
+                    y_speed( 0, 1:jmx-1, 1:kmx-1)    = (c2*y_speed( 1, 1:jmx-1, 1:kmx-1)-c3*y_speed( 2, 1:jmx-1, 1:kmx-1))/c1
+                    y_speed(-1, 1:jmx-1, 1:kmx-1)    = (c2*y_speed( 0, 1:jmx-1, 1:kmx-1)-c3*y_speed( 1, 1:jmx-1, 1:kmx-1))/c1
+                    y_speed(-2, 1:jmx-1, 1:kmx-1)    = (c2*y_speed(-1, 1:jmx-1, 1:kmx-1)-c3*y_speed( 0, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "imax") then
-                    y_speed(imx  , 1:jmx-1, 1:kmx-1) = y_speed(imx-1, 1:jmx-1, 1:kmx-1)
-                    y_speed(imx+1, 1:jmx-1, 1:kmx-1) = y_speed(imx  , 1:jmx-1  , 1:kmx-1)
-                    y_speed(imx+2, 1:jmx-1, 1:kmx-1) = y_speed(imx+1, 1:jmx-1, 1:kmx-1)
+                    y_speed(imx  , 1:jmx-1, 1:kmx-1) = (c2*y_speed(imx-1, 1:jmx-1, 1:kmx-1)-c3*y_speed(imx-2, 1:jmx-1, 1:kmx-1))/c1
+                    y_speed(imx+1, 1:jmx-1, 1:kmx-1) = (c2*y_speed(imx  , 1:jmx-1, 1:kmx-1)-c3*y_speed(imx-1, 1:jmx-1, 1:kmx-1))/c1
+                    y_speed(imx+2, 1:jmx-1, 1:kmx-1) = (c2*y_speed(imx+1, 1:jmx-1, 1:kmx-1)-c3*y_speed(imx  , 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "jmin") then
-                    y_speed(1:imx-1,  0, 1:kmx-1)    = y_speed(1:imx-1, 1, 1:kmx-1)
-                    y_speed(1:imx-1, -1, 1:kmx-1)    = y_speed(1:imx-1, 0, 1:kmx-1)
-                    y_speed(1:imx-1, -2, 1:kmx-1)    = y_speed(1:imx-1,-1, 1:kmx-1)
+                    y_speed(1:imx-1,  0, 1:kmx-1)    = (c2*y_speed(1:imx-1, 1, 1:kmx-1)-c3*y_speed(1:imx-1, 2, 1:kmx-1))/c1
+                    y_speed(1:imx-1, -1, 1:kmx-1)    = (c2*y_speed(1:imx-1, 0, 1:kmx-1)-c3*y_speed(1:imx-1, 1, 1:kmx-1))/c1
+                    y_speed(1:imx-1, -2, 1:kmx-1)    = (c2*y_speed(1:imx-1,-1, 1:kmx-1)-c3*y_speed(1:imx-1, 0, 1:kmx-1))/c1
                 else if (face == "jmax") then
-                    y_speed(1:imx-1, jmx  , 1:kmx-1) = y_speed(1:imx-1, jmx-1, 1:kmx-1)
-                    y_speed(1:imx-1, jmx+1, 1:kmx-1) = y_speed(1:imx-1, jmx  , 1:kmx-1)
-                    y_speed(1:imx-1, jmx+2, 1:kmx-1) = y_speed(1:imx-1, jmx+1, 1:kmx-1)
+                    y_speed(1:imx-1, jmx  , 1:kmx-1) = (c2*y_speed(1:imx-1, jmx-1, 1:kmx-1)-c3*y_speed(1:imx-1, jmx-2, 1:kmx-1))/c1
+                    y_speed(1:imx-1, jmx+1, 1:kmx-1) = (c2*y_speed(1:imx-1, jmx  , 1:kmx-1)-c3*y_speed(1:imx-1, jmx-1, 1:kmx-1))/c1
+                    y_speed(1:imx-1, jmx+2, 1:kmx-1) = (c2*y_speed(1:imx-1, jmx+1, 1:kmx-1)-c3*y_speed(1:imx-1, jmx  , 1:kmx-1))/c1
                 else if (face == "kmin") then
-                    y_speed(1:imx-1, 1:jmx-1, 0)     = y_speed(1:imx-1, 1:jmx-1,  1)
-                    y_speed(1:imx-1, 1:jmx-1,-1)     = y_speed(1:imx-1, 1:jmx-1,  0)
-                    y_speed(1:imx-1, 1:jmx-1,-2)     = y_speed(1:imx-1, 1:jmx-1, -1)
+                    y_speed(1:imx-1, 1:jmx-1, 0)     = (c2*y_speed(1:imx-1, 1:jmx-1,  1)-c3*y_speed(1:imx-1, 1:jmx-1,  2))/c1
+                    y_speed(1:imx-1, 1:jmx-1,-1)     = (c2*y_speed(1:imx-1, 1:jmx-1,  0)-c3*y_speed(1:imx-1, 1:jmx-1,  1))/c1
+                    y_speed(1:imx-1, 1:jmx-1,-2)     = (c2*y_speed(1:imx-1, 1:jmx-1, -1)-c3*y_speed(1:imx-1, 1:jmx-1,  0))/c1
                 else if (face == "kmax") then
-                    y_speed(1:imx-1, 1:jmx-1, kmx  ) = y_speed(1:imx-1, 1:jmx-1, kmx-1)
-                    y_speed(1:imx-1, 1:jmx-1, kmx+1) = y_speed(1:imx-1, 1:jmx-1, kmx  )
-                    y_speed(1:imx-1, 1:jmx-1, kmx+2) = y_speed(1:imx-1, 1:jmx-1, kmx+1)
+                    y_speed(1:imx-1, 1:jmx-1, kmx  ) = (c2*y_speed(1:imx-1, 1:jmx-1, kmx-1)-c3*y_speed(1:imx-1, 1:jmx-1, kmx-2))/c1
+                    y_speed(1:imx-1, 1:jmx-1, kmx+1) = (c2*y_speed(1:imx-1, 1:jmx-1, kmx  )-c3*y_speed(1:imx-1, 1:jmx-1, kmx-1))/c1
+                    y_speed(1:imx-1, 1:jmx-1, kmx+2) = (c2*y_speed(1:imx-1, 1:jmx-1, kmx+1)-c3*y_speed(1:imx-1, 1:jmx-1, kmx  ))/c1
                 end if
       !     else
       !         if (face == "imin") then
@@ -1365,29 +1375,29 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    z_speed( 0, 1:jmx-1, 1:kmx-1)    = z_speed( 1, 1:jmx-1, 1:kmx-1)
-                    z_speed(-1, 1:jmx-1, 1:kmx-1)    = z_speed( 0, 1:jmx-1, 1:kmx-1)
-                    z_speed(-2, 1:jmx-1, 1:kmx-1)    = z_speed(-1, 1:jmx-1, 1:kmx-1)
+                    z_speed( 0, 1:jmx-1, 1:kmx-1)    = (c2*z_speed( 1, 1:jmx-1, 1:kmx-1)-c3*z_speed( 2, 1:jmx-1, 1:kmx-1))/c1
+                    z_speed(-1, 1:jmx-1, 1:kmx-1)    = (c2*z_speed( 0, 1:jmx-1, 1:kmx-1)-c3*z_speed( 1, 1:jmx-1, 1:kmx-1))/c1
+                    z_speed(-2, 1:jmx-1, 1:kmx-1)    = (c2*z_speed(-1, 1:jmx-1, 1:kmx-1)-c3*z_speed( 0, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "imax") then
-                    z_speed(imx  , 1:jmx-1, 1:kmx-1) = z_speed(imx-1, 1:jmx-1, 1:kmx-1)
-                    z_speed(imx+1, 1:jmx-1, 1:kmx-1) = z_speed(imx  , 1:jmx-1, 1:kmx-1)
-                    z_speed(imx+2, 1:jmx-1, 1:kmx-1) = z_speed(imx+1, 1:jmx-1, 1:kmx-1)
+                    z_speed(imx  , 1:jmx-1, 1:kmx-1) = (c2*z_speed(imx-1, 1:jmx-1, 1:kmx-1)-c3*z_speed(imx-2, 1:jmx-1, 1:kmx-1))/c1
+                    z_speed(imx+1, 1:jmx-1, 1:kmx-1) = (c2*z_speed(imx  , 1:jmx-1, 1:kmx-1)-c3*z_speed(imx-1, 1:jmx-1, 1:kmx-1))/c1
+                    z_speed(imx+2, 1:jmx-1, 1:kmx-1) = (c2*z_speed(imx+1, 1:jmx-1, 1:kmx-1)-c3*z_speed(imx  , 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "jmin") then
-                    z_speed(1:imx-1,  0, 1:kmx-1)    = z_speed(1:imx-1,  1, 1:kmx-1)
-                    z_speed(1:imx-1, -1, 1:kmx-1)    = z_speed(1:imx-1,  0, 1:kmx-1)
-                    z_speed(1:imx-1, -2, 1:kmx-1)    = z_speed(1:imx-1, -1, 1:kmx-1)
+                    z_speed(1:imx-1,  0, 1:kmx-1)    = (c2*z_speed(1:imx-1,  1, 1:kmx-1)-c3*z_speed(1:imx-1,  2, 1:kmx-1))/c1
+                    z_speed(1:imx-1, -1, 1:kmx-1)    = (c2*z_speed(1:imx-1,  0, 1:kmx-1)-c3*z_speed(1:imx-1,  1, 1:kmx-1))/c1
+                    z_speed(1:imx-1, -2, 1:kmx-1)    = (c2*z_speed(1:imx-1, -1, 1:kmx-1)-c3*z_speed(1:imx-1,  0, 1:kmx-1))/c1
                 else if (face == "jmax") then
-                    z_speed(1:imx-1, jmx  , 1:kmx-1) = z_speed(1:imx-1, jmx-1, 1:kmx-1)
-                    z_speed(1:imx-1, jmx+1, 1:kmx-1) = z_speed(1:imx-1, jmx  , 1:kmx-1)
-                    z_speed(1:imx-1, jmx+2, 1:kmx-1) = z_speed(1:imx-1, jmx+1, 1:kmx-1)
+                    z_speed(1:imx-1, jmx  , 1:kmx-1) = (c2*z_speed(1:imx-1, jmx-1, 1:kmx-1)-c3*z_speed(1:imx-1, jmx-2, 1:kmx-1))/c1
+                    z_speed(1:imx-1, jmx+1, 1:kmx-1) = (c2*z_speed(1:imx-1, jmx  , 1:kmx-1)-c3*z_speed(1:imx-1, jmx-1, 1:kmx-1))/c1
+                    z_speed(1:imx-1, jmx+2, 1:kmx-1) = (c2*z_speed(1:imx-1, jmx+1, 1:kmx-1)-c3*z_speed(1:imx-1, jmx  , 1:kmx-1))/c1
                 else if (face == "kmin") then
-                    z_speed(1:imx-1, 1:jmx-1,  0)    = z_speed(1:imx-1, 1:jmx-1,  1)
-                    z_speed(1:imx-1, 1:jmx-1, -1)    = z_speed(1:imx-1, 1:jmx-1,  0)
-                    z_speed(1:imx-1, 1:jmx-1, -2)    = z_speed(1:imx-1, 1:jmx-1, -1)
+                    z_speed(1:imx-1, 1:jmx-1,  0)    = (c2*z_speed(1:imx-1, 1:jmx-1,  1)-c3*z_speed(1:imx-1, 1:jmx-1,  2))/c1
+                    z_speed(1:imx-1, 1:jmx-1, -1)    = (c2*z_speed(1:imx-1, 1:jmx-1,  0)-c3*z_speed(1:imx-1, 1:jmx-1,  1))/c1
+                    z_speed(1:imx-1, 1:jmx-1, -2)    = (c2*z_speed(1:imx-1, 1:jmx-1, -1)-c3*z_speed(1:imx-1, 1:jmx-1,  0))/c1
                 else if (face == "kmax") then
-                    z_speed(1:imx-1, 1:jmx-1, kmx  ) = z_speed(1:imx-1, 1:jmx-1, kmx-1)
-                    z_speed(1:imx-1, 1:jmx-1, kmx+1) = z_speed(1:imx-1, 1:jmx-1, kmx  )
-                    z_speed(1:imx-1, 1:jmx-1, kmx+2) = z_speed(1:imx-1, 1:jmx-1, kmx+1)
+                    z_speed(1:imx-1, 1:jmx-1, kmx  ) = (c2*z_speed(1:imx-1, 1:jmx-1, kmx-1)-c3*z_speed(1:imx-1, 1:jmx-1, kmx-2))/c1
+                    z_speed(1:imx-1, 1:jmx-1, kmx+1) = (c2*z_speed(1:imx-1, 1:jmx-1, kmx  )-c3*z_speed(1:imx-1, 1:jmx-1, kmx-1))/c1
+                    z_speed(1:imx-1, 1:jmx-1, kmx+2) = (c2*z_speed(1:imx-1, 1:jmx-1, kmx+1)-c3*z_speed(1:imx-1, 1:jmx-1, kmx  ))/c1
                 end if
       !     else
       !         if (face == "imin") then
@@ -1411,29 +1421,29 @@ module boundary_conditions
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    pressure(0, 1:jmx-1, 1:kmx-1) = pressure(1, 1:jmx-1, 1:kmx-1)
-                    pressure(-1, 1:jmx-1, 1:kmx-1) = pressure(2, 1:jmx-1, 1:kmx-1)
-                    pressure(-2, 1:jmx-1, 1:kmx-1) = pressure(3, 1:jmx-1, 1:kmx-1)
+                    pressure(0, 1:jmx-1, 1:kmx-1)  = (c2*pressure(1,1:jmx-1,1:kmx-1)-c3*pressure(2,1:jmx-1,1:kmx-1))/c1
+                    pressure(-1, 1:jmx-1, 1:kmx-1) = (c2*pressure(2,1:jmx-1,1:kmx-1)-c3*pressure(3,1:jmx-1,1:kmx-1))/c1
+                    pressure(-2, 1:jmx-1, 1:kmx-1) = (c2*pressure(3,1:jmx-1,1:kmx-1)-c3*pressure(4,1:jmx-1,1:kmx-1))/c1
                  else if (face == "imax") then
-                    pressure(imx, 1:jmx-1, 1:kmx-1) = pressure(imx-1, 1:jmx-1, 1:kmx-1)
-                    pressure(imx+1, 1:jmx-1, 1:kmx-1) = pressure(imx-2, 1:jmx-1, 1:kmx-1)
-                    pressure(imx+2, 1:jmx-1, 1:kmx-1) = pressure(imx-3, 1:jmx-1, 1:kmx-1)
+                    pressure(imx, 1:jmx-1, 1:kmx-1)   = (c2*pressure(imx-1,1:jmx-1,1:kmx-1)-c3*pressure(imx-2, 1:jmx-1, 1:kmx-1))/c1
+                    pressure(imx+1, 1:jmx-1, 1:kmx-1) = (c2*pressure(imx-2,1:jmx-1,1:kmx-1)-c3*pressure(imx-3, 1:jmx-1, 1:kmx-1))/c1
+                    pressure(imx+2, 1:jmx-1, 1:kmx-1) = (c2*pressure(imx-3,1:jmx-1,1:kmx-1)-c3*pressure(imx-4, 1:jmx-1, 1:kmx-1))/c1
                  else if (face == "jmin") then
-                    pressure(1:imx-1, 0, 1:kmx-1) = pressure(1:imx-1, 1, 1:kmx-1)
-                    pressure(1:imx-1, -1, 1:kmx-1) = pressure(1:imx-1, 2, 1:kmx-1)
-                    pressure(1:imx-1, -2, 1:kmx-1) = pressure(1:imx-1, 3, 1:kmx-1)
+                    pressure(1:imx-1, 0, 1:kmx-1)  = (c2*pressure(1:imx-1, 1, 1:kmx-1)-c3*pressure(1:imx-1, 2, 1:kmx-1))/c1
+                    pressure(1:imx-1, -1, 1:kmx-1) = (c2*pressure(1:imx-1, 2, 1:kmx-1)-c3*pressure(1:imx-1, 3, 1:kmx-1))/c1
+                    pressure(1:imx-1, -2, 1:kmx-1) = (c2*pressure(1:imx-1, 3, 1:kmx-1)-c3*pressure(1:imx-1, 4, 1:kmx-1))/c1
                 else if (face == "jmax") then
-                    pressure(1:imx-1, jmx, 1:kmx-1) = pressure(1:imx-1, jmx-1, 1:kmx-1)
-                    pressure(1:imx-1, jmx+1, 1:kmx-1) = pressure(1:imx-1, jmx-2, 1:kmx-1)
-                    pressure(1:imx-1, jmx+2, 1:kmx-1) = pressure(1:imx-1, jmx-3, 1:kmx-1)
+                    pressure(1:imx-1, jmx, 1:kmx-1)   = (c2*pressure(1:imx-1, jmx-1, 1:kmx-1)-c3*pressure(1:imx-1, jmx-2, 1:kmx-1))/c1
+                    pressure(1:imx-1, jmx+1, 1:kmx-1) = (c2*pressure(1:imx-1, jmx-2, 1:kmx-1)-c3*pressure(1:imx-1, jmx-3, 1:kmx-1))/c1
+                    pressure(1:imx-1, jmx+2, 1:kmx-1) = (c2*pressure(1:imx-1, jmx-3, 1:kmx-1)-c3*pressure(1:imx-1, jmx-4, 1:kmx-1))/c1
                 else if (face == "kmin") then
-                    pressure(1:imx-1, 1:jmx-1, 0) = pressure(1:imx-1, 1:jmx-1, 1)
-                    pressure(1:imx-1, 1:jmx-1, -1) = pressure(1:imx-1, 1:jmx-1, 2)
-                    pressure(1:imx-1, 1:jmx-1, -2) = pressure(1:imx-1, 1:jmx-1, 3)
+                    pressure(1:imx-1, 1:jmx-1, 0)  = (c2*pressure(1:imx-1, 1:jmx-1, 1)-c3*pressure(1:imx-1, 1:jmx-1, 2))/c1
+                    pressure(1:imx-1, 1:jmx-1, -1) = (c2*pressure(1:imx-1, 1:jmx-1, 2)-c3*pressure(1:imx-1, 1:jmx-1, 3))/c1
+                    pressure(1:imx-1, 1:jmx-1, -2) = (c2*pressure(1:imx-1, 1:jmx-1, 3)-c3*pressure(1:imx-1, 1:jmx-1, 4))/c1
                 else if (face == "kmax") then
-                    pressure(1:imx-1, 1:jmx-1, kmx) = pressure(1:imx-1, 1:jmx-1, kmx-1)
-                    pressure(1:imx-1, 1:jmx-1, kmx+1) = pressure(1:imx-1, 1:jmx-1, kmx-2)
-                    pressure(1:imx-1, 1:jmx-1, kmx+2) = pressure(1:imx-1, 1:jmx-1, kmx-3)
+                    pressure(1:imx-1, 1:jmx-1, kmx)   = (c2*pressure(1:imx-1, 1:jmx-1, kmx-1)-c3*pressure(1:imx-1, 1:jmx-1, kmx-2))/c1
+                    pressure(1:imx-1, 1:jmx-1, kmx+1) = (c2*pressure(1:imx-1, 1:jmx-1, kmx-2)-c3*pressure(1:imx-1, 1:jmx-1, kmx-3))/c1
+                    pressure(1:imx-1, 1:jmx-1, kmx+2) = (c2*pressure(1:imx-1, 1:jmx-1, kmx-3)-c3*pressure(1:imx-1, 1:jmx-1, kmx-4))/c1
                 end if
         !   else
         !       if (face == "imin") then

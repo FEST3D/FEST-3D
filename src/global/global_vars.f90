@@ -245,11 +245,7 @@ module global_vars
   real, dimension(:, :, :),                 pointer :: gradtw_y
   real, dimension(:, :, :),                 pointer :: gradtw_z
 
-  ! boundary condition for gradients; pointer to ghost and interior cell
-  real, dimension(:, :, :),                 pointer :: gradqp_G
-  real, dimension(:, :, :),                 pointer :: gradqp_I
-  real, dimension(:, :, :),                 pointer :: gradqp_R !right face of wall
-  real, dimension(:, :, :),                 pointer :: gradqp_L !left face of wall
-
+  ! higher order boundary condtioion
+  integer  :: accur=1
 end module global_vars
 

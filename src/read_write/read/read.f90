@@ -49,6 +49,7 @@ module read
   use global_vars, only: Pr !prandtl number
   use global_vars, only: ilimiter_switch
   use global_vars, only: PB_switch
+  use global_vars, only: accur
   
   use global_vars, only: interpolant
   use global_vars, only: scheme_name
@@ -257,6 +258,12 @@ module read
         read(buf, *) time_step_accuracy
         call dmsg(5, 'read', 'read_scheme', &
                 msg='time_step_accuracy  = ' + time_step_accuracy)
+
+        ! read higher order boundary
+        call get_next_token(SCHEME_FILE_UNIT, buf)
+        read(buf, *) accur
+        call dmsg(5, 'read', 'read_scheme', &
+                msg='higher order boundary  = ' + accur)
 
 
         close(SCHEME_FILE_UNIT)

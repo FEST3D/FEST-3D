@@ -97,17 +97,17 @@
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    tk(0, 1:jmx-1, 1:kmx-1) = tk(1, 1:jmx-1, 1:kmx-1)
+                    tk(0, 1:jmx-1, 1:kmx-1)   = (c2*tk(1, 1:jmx-1, 1:kmx-1)-c3*tk(2, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "imax") then
-                    tk(imx, 1:jmx-1, 1:kmx-1) = tk(imx-1, 1:jmx-1, 1:kmx-1)
+                    tk(imx, 1:jmx-1, 1:kmx-1) = (c2*tk(imx-1, 1:jmx-1, 1:kmx-1)-c3*tk(imx-2, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "jmin") then
-                    tk(1:imx-1, 0, 1:kmx-1) = tk(1:imx-1, 1, 1:kmx-1)
+                    tk(1:imx-1, 0, 1:kmx-1)   = (c2*tk(1:imx-1, 1, 1:kmx-1)-c3*tk(1:imx-1, 2, 1:kmx-1))/c1
                 else if (face == "jmax") then
-                    tk(1:imx-1, jmx, 1:kmx-1) = tk(1:imx-1, jmx-1, 1:kmx-1)
+                    tk(1:imx-1, jmx, 1:kmx-1) = (c2*tk(1:imx-1, jmx-1, 1:kmx-1)-c3*tk(1:imx-1, jmx-2, 1:kmx-1))/c1
                 else if (face == "kmin") then
-                    tk(1:imx-1, 1:jmx-1, 0) = tk(1:imx-1, 1:jmx-1, 1)
+                    tk(1:imx-1, 1:jmx-1, 0)   = (c2*tk(1:imx-1, 1:jmx-1, 1)-c3*tk(1:imx-1, 1:jmx-1, 2))/c1
                 else if (face == "kmax") then
-                    tk(1:imx-1, 1:jmx-1, kmx) = tk(1:imx-1, 1:jmx-1, kmx-1)
+                    tk(1:imx-1, 1:jmx-1, kmx) = (c2*tk(1:imx-1, 1:jmx-1, kmx-1)-c3*tk(1:imx-1, 1:jmx-1, kmx-2))/c1
                 end if
             end if
 
@@ -122,17 +122,17 @@
 
             if (cell_ind == -1) then
                 if (face == "imin") then
-                    tw(0, 1:jmx-1, 1:kmx-1) = tw(1, 1:jmx-1, 1:kmx-1)
+                    tw(0, 1:jmx-1, 1:kmx-1)   = (c2*tw(1, 1:jmx-1, 1:kmx-1)-c3*tw(2, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "imax") then
-                    tw(imx, 1:jmx-1, 1:kmx-1) = tw(imx-1, 1:jmx-1, 1:kmx-1)
+                    tw(imx, 1:jmx-1, 1:kmx-1) = (c2*tw(imx-1, 1:jmx-1, 1:kmx-1)-c3*tw(imx-2, 1:jmx-1, 1:kmx-1))/c1
                 else if (face == "jmin") then
-                    tw(1:imx-1, 0, 1:kmx-1) = tw(1:imx-1, 1, 1:kmx-1)
+                    tw(1:imx-1, 0, 1:kmx-1)   = (c2*tw(1:imx-1, 1, 1:kmx-1)-c3*tw(1:imx-1, 2, 1:kmx-1))/c1
                 else if (face == "jmax") then
-                    tw(1:imx-1, jmx, 1:kmx-1) = tw(1:imx-1, jmx-1, 1:kmx-1)
+                    tw(1:imx-1, jmx, 1:kmx-1) = (c2*tw(1:imx-1, jmx-1, 1:kmx-1)-c3*tw(1:imx-1, jmx-2, 1:kmx-1))/c1
                 else if (face == "kmin") then
-                    tw(1:imx-1, 1:jmx-1, 0) = tw(1:imx-1, 1:jmx-1, 1)
+                    tw(1:imx-1, 1:jmx-1, 0)   = (c2*tw(1:imx-1, 1:jmx-1, 1)-c3*tw(1:imx-1, 1:jmx-1, 2))/c1
                 else if (face == "kmax") then
-                    tw(1:imx-1, 1:jmx-1, kmx) = tw(1:imx-1, 1:jmx-1, kmx-1)
+                    tw(1:imx-1, 1:jmx-1, kmx) = (c2*tw(1:imx-1, 1:jmx-1, kmx-1)-c3*tw(1:imx-1, 1:jmx-1, kmx-2))/c1
                 end if
             end if
 
