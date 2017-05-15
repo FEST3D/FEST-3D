@@ -29,3 +29,5 @@
                        *(omega_residue(i,j,k))/density_temp)
                tk(i, j, k) = tk_temp
                tw(i, j, k) = tw_temp
+
+               if (tk(i,j,k)<0.) tk(i,j,k) =0.

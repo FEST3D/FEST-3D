@@ -47,6 +47,8 @@ module write_output_vtk
   use global_vars, only : mu_ref
   use global_vars, only : current_iter
   use global_vars, only : max_iters
+  use global_vars, only : n_write
+  use global_vars, only : rw_list
 
   use utils
   use string
@@ -55,10 +57,8 @@ module write_output_vtk
   private
   integer :: i,j,k
   real    :: speed_inf
-  integer :: counter
   character(len=8) :: file_format
   character(len=16) :: data_format
-  character(len=64), dimension(:), allocatable :: data_list
 
   public :: write_file
 
@@ -68,13 +68,12 @@ module write_output_vtk
       implicit none
       integer :: n
 
-      if(current_iter==0)call read_control_file()
       call write_header()
       call write_grid()
 
-      do n = 1,counter
+      do n = 1,n_write
 
-        select case (trim(data_list(n)))
+        select case (trim(rw_list(n)))
         
           case('U')
             call write_velocity()
@@ -89,76 +88,48 @@ module write_output_vtk
             if (mu_ref/=0.0) then
               call write_mu()
             else
-              print*, "Write error: Asked to write non-existing variable- ", data_list(n)
+              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
             end if
             
           case('Mu_t')
             if (turbulence/='none') then
               call write_mu_t()
             else
-              print*, "Write error: Asked to write non-existing variable- ", data_list(n)
+              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
             end if
             
           case('TKE')
             if(turbulence=="sst")then
             call write_TKE()
             else
-              print*, "Write error: Asked to write non-existing variable- ", data_list(n)
+              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
             end if
 
           case('Omega')
             if(turbulence=="sst") then
             call write_omega()
             else
-              print*, "Write error: Asked to write non-existing variable- ", data_list(n)
+              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
             end if
 
           case('Wall_distance')
             if(turbulence/="none") then
             call write_dist()
             else
-              print*, "Write error: Asked to write non-existing variable- ", data_list(n)
+              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
             end if
 
           case('Resnorm')
             call write_resnorm()
 
           case Default
-            print*, "Write_error: cannot write variable "//trim(data_list(n))//" to file"
+            print*, "Write_error: cannot write variable "//trim(rw_list(n))//" to file"
 
         end select
       end do
-      if(current_iter==max_iters) deallocate(data_list)
 
     end subroutine write_file
 
-
-    subroutine read_control_file()
-      implicit none
-      character(len=64) :: buf
-      open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
-      ! reading only counter first for dimension
-      read(OUTIN_FILE_UNIT, *)
-      read(OUTIN_FILE_UNIT, *)
-      buf=" not } "
-      counter = 0
-      do while (.true.)
-        read(OUTIN_FILE_UNIT, *) buf
-        if (trim(buf)=='}') EXIT
-        counter = counter + 1
-      end do
-      allocate(data_list(1:counter))
-      ! reading data types only, dumping counter
-      rewind(OUTIN_FILE_UNIT)
-      read(OUTIN_FILE_UNIT, *)
-      read(OUTIN_FILE_UNIT, *)
-      buf=" "
-      do i = 1,counter
-        read(OUTIN_FILE_UNIT, *) buf
-        read(buf,*) data_list(i)
-      end do
-      close(OUTIN_FILE_UNIT)
-    end subroutine read_control_file
 
     subroutine write_turbulent_variables()
       implicit none

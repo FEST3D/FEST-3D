@@ -58,6 +58,8 @@ module read_output_vtk
   use global_vars, only :  omega_resnorm_0
 
   use global_vars, only : mu_ref
+  use global_vars, only : n_write
+  use global_vars, only : rw_list
 
   use utils
   use string
@@ -71,7 +73,6 @@ module read_output_vtk
   character(len=8) :: file_format
   character(len=16) :: data_format
   character(len=16) :: read_flow_type
-  character(len=64), dimension(:), allocatable :: read_list
   
 
   public :: read_file
@@ -81,15 +82,12 @@ module read_output_vtk
     subroutine read_file()
       implicit none
       integer :: n
-!      call setup_file
-!      call open_file(infile)
-!      call read_restart_file()
-      if(read_control_file_flag==0)call read_control_file()
+
       call read_header()
       call read_grid()
-      do n = 1,counter
+      do n = 1,n_write
 
-        select case (trim(read_list(n)))
+        select case (trim(rw_list(n)))
         
           case('U')
             call read_velocity()
@@ -104,84 +102,48 @@ module read_output_vtk
             if (mu_ref/=0.0) then
               call read_mu()
             else
-              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+              print*, "Read error: Asked to read non-existing variable- "//trim(rw_list(n))
             end if
             
           case('Mu_t')
             if (turbulence/='none') then
               call read_mu_t()
             else
-              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+              print*, "Read error: Asked to read non-existing variable- "//trim(rw_list(n))
             end if
             
           case('TKE')
             if(turbulence=="sst")then
             call read_TKE()
             else
-              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+              print*, "Read error: Asked to read non-existing variable- "//trim(rw_list(n))
             end if
 
           case('Omega')
             if(turbulence=="sst") then
             call read_omega()
             else
-              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+              print*, "Read error: Asked to read non-existing variable- "//trim(rw_list(n))
             end if
 
           case('Wall_distance')
             if(turbulence/="none") then
             call read_dist()
             else
-              print*, "Read error: Asked to read non-existing variable- ", read_list(n)
+              print*, "Read error: Asked to read non-existing variable- "//trim(rw_list(n))
             end if
 
           case('Resnorm')
             call read_resnorm()
 
           case Default
-            print*, "read_error: cannot read variable "//trim(read_list(n))//" to file"
+            print*, "read_error: cannot read variable "//trim(rw_list(n))//" to file"
 
         end select
       end do
 
-!      call read_velocity()
-!      call read_density()
-!      call read_pressure()
-!      call read_viscosity()
-!      call read_turbulence_variables()
- !     call read_resnorm()
-!      call close_file()
-      deallocate(read_list)
     end subroutine read_file
 
-
-    subroutine read_control_file()
-      implicit none
-      character(len=64) :: buf
-      read_control_file_flag=1
-      open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
-      ! reading only counter first for dimension
-      read(OUTIN_FILE_UNIT, *)
-      read(OUTIN_FILE_UNIT, *)
-      buf=" not } "
-      counter = 0
-      do while (.true.)
-        read(OUTIN_FILE_UNIT, *) buf
-        if (trim(buf)=='}') EXIT
-        counter = counter + 1
-      end do
-      allocate(read_list(1:counter))
-      ! reading data types only, dumping counter
-      rewind(OUTIN_FILE_UNIT)
-      read(OUTIN_FILE_UNIT, *)
-      read(OUTIN_FILE_UNIT, *)
-      buf=" "
-      do i = 1,counter
-        read(OUTIN_FILE_UNIT, *) buf
-        read(buf,*) read_list(i)
-      end do
-      close(OUTIN_FILE_UNIT)
-    end subroutine read_control_file
 
     subroutine read_turbulence_variables()
       implicit none

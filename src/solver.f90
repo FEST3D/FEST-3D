@@ -80,6 +80,7 @@ module solver
   use global_vars, only: TKE_residue
   use global_vars, only: omega_residue
   use global_vars, only: res_write_interval
+  use global_vars, only: rw_list
 
   use utils, only: alloc
   use utils, only:  dealloc 
@@ -87,9 +88,7 @@ module solver
   use utils, only:  DEBUG_LEVEL
 
   use string
-  use read, only : read_controls
-  use read, only : read_scheme
-  use read, only : read_flow
+  use read, only : read_input_and_controls
 
   use grid, only: setup_grid, destroy_grid
   use geometry, only: setup_geometry, destroy_geometry
@@ -161,9 +160,7 @@ module solver
             call get_process_data() ! parallel calls
             call read_layout_file(process_id) ! reads layout file calls
             
-            call read_controls()
-            call read_scheme()
-            call read_flow()
+            call read_input_and_controls()
                   !todo make it general for all turbulence model
                   if(turbulence=="sst")then
                     n_var=n_var+sst_n_var
@@ -220,6 +217,8 @@ module solver
             call destroy_grid()
             call destroy_resnorm()
             call destroy_sst_F1()
+
+            if(allocated(rw_list)) deallocate(rw_list)
 
         end subroutine destroy_solver
 

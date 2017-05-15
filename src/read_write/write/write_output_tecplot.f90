@@ -38,6 +38,8 @@ module write_output_tecplot
   use global_vars, only : mu_t
 
   use global_vars, only : turbulence
+  use global_vars, only : n_write
+  use global_vars, only : rw_list
 
   use utils, only : alloc, dmsg, dealloc
   use string
@@ -65,13 +67,11 @@ module write_output_tecplot
   real                                  :: node_mu_t
   real                                  :: node_dist
 
-  character(len=64), dimension(:), allocatable  :: data_list
   ! string1 and string2 are for storage when string0 is full
   character(len=LONG_BUFFER_LENGTH)   :: string0
   character(len=LONG_BUFFER_LENGTH)   :: string1
   character(len=LONG_BUFFER_LENGTH)   :: string2
   integer :: kk, kj, ki
-  integer           :: counter
 
   public :: write_file
 
@@ -79,10 +79,8 @@ module write_output_tecplot
 
     subroutine write_file()
 
-      call read_input_file()
       call write_header()
       call write_data
-      deallocate(data_list)
 
     end subroutine write_file
 
@@ -91,9 +89,9 @@ module write_output_tecplot
       implicit none
       integer :: n
 
-      do n = 1,counter
+      do n = 1,n_write
 
-        select case (data_list(n))
+        select case (rw_list(n))
           
           case ('Density')
             call patch_8_verticies(density)
@@ -118,7 +116,7 @@ module write_output_tecplot
 
           case DEFAULT
             call dmsg(1,'write_output_tecplot', 'write_data', &
-              'not apply patch to'//data_list(n))
+              'not apply patch to'//rw_list(n))
 
         end select
 
@@ -140,35 +138,6 @@ module write_output_tecplot
 
     end subroutine write_data
     
-    subroutine read_input_file()
-
-      implicit none
-      character(len=64) :: buf
-!      integer           :: dump
-      open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
-      ! reading only counter first for dimension
-      read(OUTIN_FILE_UNIT, *)
-      read(OUTIN_FILE_UNIT, *)
-      buf=" not } "
-      counter = 0
-      do while (.true.)
-        read(OUTIN_FILE_UNIT, *) buf
-        if (trim(buf)=='}') EXIT
-        counter = counter + 1
-      end do
-      allocate(data_list(1:counter))
-      ! reading data types only, dumping counter
-      rewind(OUTIN_FILE_UNIT)
-      read(OUTIN_FILE_UNIT, *)
-      read(OUTIN_FILE_UNIT, *)
-      buf=" "
-      do i = 1,counter
-        read(OUTIN_FILE_UNIT, *) buf
-        read(buf,*) data_list(i)
-      end do
-      close(OUTIN_FILE_UNIT)
-
-    end subroutine read_input_file
 
     subroutine write_header()
       implicit none
@@ -184,8 +153,8 @@ module write_output_tecplot
       if (write_data_format == 'ASCII') then
 
           write(header, '(A)') "VARIABLES = X Y Z "
-        do n =  1, counter
-          write(header, '(A)') trim(header)//" "//trim(data_list(n))
+        do n =  1, n_write
+          write(header, '(A)') trim(header)//" "//trim(rw_list(n))
         end do
           write(OUT_FILE_UNIT, '(A)') trim(header)
           write(OUT_FILE_UNIT, '(A)') "zone i= "//trim(simx)//&
@@ -195,8 +164,8 @@ module write_output_tecplot
       else if (write_data_format == 'BINARY') then
 
           write(header, '(A)') "VARIABLES = X Y Z "
-        do n =  1, counter
-          write(header, '(A)') trim(header)//" "//trim(data_list(n))
+        do n =  1, n_write
+          write(header, '(A)') trim(header)//" "//trim(rw_list(n))
         end do
           write(OUT_FILE_UNIT) trim(header)
           write(OUT_FILE_UNIT) "zone i= "//trim(simx)//&
@@ -221,9 +190,9 @@ module write_output_tecplot
                                       grid_y(ki,kj,kk), &
                                       grid_z(ki,kj,kk)
 
-      do n = 1,counter
+      do n = 1,n_write
         call check_string_limit()
-        call add_to_string(data_list(n))
+        call add_to_string(rw_list(n))
       end do
 
     end subroutine get_write_string

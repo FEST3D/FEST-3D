@@ -16,6 +16,7 @@ module global
     integer, parameter :: ERROR_MESSAGE_LENGTH = 256
     integer, parameter :: LONG_BUFFER_LENGTH = 256
     integer, parameter :: FORMAT_LENGTH = 16
+    integer, parameter :: STATE_NAME_LENGTH = 64
     ! File unit numbers
     integer, parameter :: CONFIG_FILE_UNIT = 1
     integer, parameter :: GRID_FILE_UNIT = 2

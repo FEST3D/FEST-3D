@@ -16,6 +16,8 @@ module read
   use global, only:  scheme_file
   use global, only:    flow_file
   use global, only: STRING_BUFFER_LENGTH
+  use global, only : OUTIN_FILE_UNIT
+  use global, only : outin_file
 
   use global_vars, only: CFL
   use global_vars, only: max_iters
@@ -54,17 +56,27 @@ module read
   use global_vars, only: interpolant
   use global_vars, only: scheme_name
   use global_vars, only: turbulence
+  use global_vars, only: rw_list
+  use global_vars, only: n_write
   use utils      , only: DEBUG_LEVEL
   use utils      , only: dmsg
   use string
 
   implicit none
+  private
 
-  public :: read_controls
-  public :: read_scheme
-  public :: read_flow
+  public :: read_input_and_controls
 
     contains
+
+      subroutine read_input_and_controls()
+        implicit none
+        call read_controls()
+        call read_scheme()
+        call read_flow()
+        call read_output_control()
+      end subroutine read_input_and_controls
+
 
       subroutine get_next_token(token_file_unit, buf)
         !-----------------------------------------------------------
@@ -383,4 +395,40 @@ module read
       end subroutine read_flow
 
         
+
+      subroutine read_output_control()
+        implicit none
+        integer           :: i
+        character(len=64) :: buf
+
+        open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
+
+        ! reading only counter first for dimension
+        read(OUTIN_FILE_UNIT, *)
+        read(OUTIN_FILE_UNIT, *)
+        buf=" not } "
+        n_write = 0
+        do while (.true.)
+          read(OUTIN_FILE_UNIT, *) buf
+          if (trim(buf)=='}') EXIT
+          n_write = n_write + 1
+        end do
+
+        allocate(rw_list(1:n_write))
+
+        ! reading data types only, dumping n_write
+        rewind(OUTIN_FILE_UNIT)
+        read(OUTIN_FILE_UNIT, *)
+        read(OUTIN_FILE_UNIT, *)
+        buf=" "
+        do i = 1,n_write
+          read(OUTIN_FILE_UNIT, *) buf
+          read(buf,*) rw_list(i)
+        end do
+        print*, rw_list
+
+        close(OUTIN_FILE_UNIT)
+
+      end subroutine read_output_control
+
 end module read

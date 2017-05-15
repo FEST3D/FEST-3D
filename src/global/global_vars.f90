@@ -8,6 +8,7 @@ module global_vars
   use global, only : FORMAT_LENGTH
   use global, only : SCHEME_NAME_LENGTH
   use global, only : FILE_NAME_LENGTH
+  use global, only : STATE_NAME_LENGTH
 
   implicit none
   public
@@ -32,6 +33,7 @@ module global_vars
   integer :: current_iter       ! current iteration number
 
   !write controls
+  integer :: n_write
   integer :: res_write_interval                      ! resnorm write interval
   integer :: purge_write                             ! number of output files per process to keep
   integer :: write_percision                         ! number of place after decimal 
@@ -42,6 +44,7 @@ module global_vars
   character(len=FILE_NAME_LENGTH)::     outfile          ! name of output file
   character(len=FILE_NAME_LENGTH)::      infile          ! name of load file
   character(len=FILE_NAME_LENGTH):: restartfile          ! name of restart log file
+  character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  rw_list ! output control list
 
   ! solver specific
   real :: CFL                  ! courrent number
