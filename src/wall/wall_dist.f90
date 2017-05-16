@@ -90,7 +90,6 @@ module wall_dist
 
       integer :: i,j,k
       integer :: id,jd,kd
-      real :: cc_x, cc_y, cc_z  !cell center
       call dmsg(1, 'wall_dist', 'find_wall_dist')
 
       do k = 1,kmx-1
@@ -101,44 +100,49 @@ module wall_dist
             jd = 1
             kd = 1
 
-            cc_x = 0.125 *(                                   &  
-                                  grid_x(i, j, k )            & 
-                                  + grid_x(i+id, j, k)        & 
-                                  + grid_x(i, j+jd, k)        &  
-                                  + grid_x(i, j, k+kd)        &    
-                                  + grid_x(i, j+jd, k+kd)     &    
-                                  + grid_x(i+id, j, k+kd)     &  
-                                  + grid_x(i+id, j+jd, k)     &  
-                                  + grid_x(i+id, j+jd, k+kd)  &  
-                          )
-            cc_y = 0.125 *(                                   &  
-                                    grid_y(i, j, k )          & 
-                                  + grid_y(i+id, j, k)        & 
-                                  + grid_y(i, j+jd, k)        &  
-                                  + grid_y(i, j, k+kd)        &    
-                                  + grid_y(i, j+jd, k+kd)     &    
-                                  + grid_y(i+id, j, k+kd)     &  
-                                  + grid_y(i+id, j+jd, k)     &  
-                                  + grid_y(i+id, j+jd, k+kd)  &  
-                          )
-            cc_z = 0.125 *(                                   &  
-                                    grid_z(i, j, k )          & 
-                                  + grid_z(i+id, j, k)        & 
-                                  + grid_z(i, j+jd, k)        &  
-                                  + grid_z(i, j, k+kd)        &    
-                                  + grid_z(i, j+jd, k+kd)     &    
-                                  + grid_z(i+id, j, k+kd)     &  
-                                  + grid_z(i+id, j+jd, k)     &  
-                                  + grid_z(i+id, j+jd, k+kd)  &  
-                          )
-            dist(i, j, k) =  minval(                                   & 
-                                   sqrt(                            &
-                                         (wall_x(:) - cc_x)**2      &
-                                       + (wall_y(:) - cc_y)**2      &
-                                       + (wall_z(:) - cc_z)**2      &
-                              )                                     &
-                      )
-         
+            dist(i,j,k) = 0.125*(                                                        &
+                                  minval(sqrt(                                           &
+                                               (wall_x(:)-grid_x(i   , j   , k   ))**2   &
+                                              +(wall_y(:)-grid_y(i   , j   , k   ))**2   &
+                                              +(wall_z(:)-grid_z(i   , j   , k   ))**2   &
+                                        )    )                                           &
+                                 +minval(sqrt(                                           &
+                                               (wall_x(:)-grid_x(i+id, j   , k   ))**2   &
+                                              +(wall_y(:)-grid_y(i+id, j   , k   ))**2   &
+                                              +(wall_z(:)-grid_z(i+id, j   , k   ))**2   &
+                                        )    )                                           &
+                                 +minval(sqrt(                                           &
+                                               (wall_x(:)-grid_x(i   , j+jd, k   ))**2   &
+                                              +(wall_y(:)-grid_y(i   , j+jd, k   ))**2   &
+                                              +(wall_z(:)-grid_z(i   , j+jd, k   ))**2   &
+                                        )    )                                           &
+                                 +minval(sqrt(                                           &
+                                               (wall_x(:)-grid_x(i   , j   , k+kd))**2   &
+                                              +(wall_y(:)-grid_y(i   , j   , k+kd))**2   &
+                                              +(wall_z(:)-grid_z(i   , j   , k+kd))**2   &
+                                        )    )                                           &
+                                 +minval(sqrt(                                           &
+                                               (wall_x(:)-grid_x(i   , j+jd, k+kd))**2   &
+                                              +(wall_y(:)-grid_y(i   , j+jd, k+kd))**2   &
+                                              +(wall_z(:)-grid_z(i   , j+jd, k+kd))**2   &
+                                        )    )                                           &
+                                 +minval(sqrt(                                           &
+                                               (wall_x(:)-grid_x(i+id, j   , k+kd))**2   &
+                                              +(wall_y(:)-grid_y(i+id, j   , k+kd))**2   &
+                                              +(wall_z(:)-grid_z(i+id, j   , k+kd))**2   &
+                                        )    )                                           &
+                                 +minval(sqrt(                                           &
+                                               (wall_x(:)-grid_x(i+id, j+jd, k   ))**2   &
+                                              +(wall_y(:)-grid_y(i+id, j+jd, k   ))**2   &
+                                              +(wall_z(:)-grid_z(i+id, j+jd, k   ))**2   &
+                                        )    )                                           &
+                                 +minval(sqrt(                                           &
+                                               (wall_x(:)-grid_x(i+id, j+jd, k+kd))**2   &
+                                              +(wall_y(:)-grid_y(i+id, j+jd, k+kd))**2   &
+                                              +(wall_z(:)-grid_z(i+id, j+jd, k+kd))**2   &
+                                        )    )                                           &
+                                )
+
           end do
         end do
       end do
