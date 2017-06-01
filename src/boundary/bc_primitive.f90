@@ -292,17 +292,17 @@ module bc_primitive
 
         select case(type)
           case("anti")
-            a1 =  1.
-            a2 = -1.
-            a3 =  0.
+            a1 =  1. ; i1 = 1
+            a2 = -1. ; i2 = 2
+            a3 =  0. ; i3 = 3
           case("flat")
-            i1 =  1
-            i2 =  1
-            i3 =  1
+            a1 =  1. ; i1 = 1
+            a2 =  1. ; i2 = 1
+            a3 =  0. ; i3 = 1
           case("symm")
-            a1 =c1
-            a2 =c2
-            a3 =c3
+            a1 =  c1 ; i1 = 1
+            a2 =  c2 ; i2 = 2
+            a3 =  c3 ; i3 = 3
             ! do nothing
             ! use default value
             continue
@@ -323,9 +323,6 @@ module bc_primitive
               var(1:imx-1,       0, 1:kmx-1) = (a2*var(1:imx-1,      i1, 1:kmx-1)-a3*var(1:imx-1 ,    i1+1, 1:kmx-1))/a1
               var(1:imx-1,      -1, 1:kmx-1) = (a2*var(1:imx-1,      i2, 1:kmx-1)-a3*var(1:imx-1 ,    i2+1, 1:kmx-1))/a1
               var(1:imx-1,      -2, 1:kmx-1) = (a2*var(1:imx-1,      i3, 1:kmx-1)-a3*var(1:imx-1 ,    i3+1, 1:kmx-1))/a1
-              print*, var(1, i1, 1), var(1,  0, 1)
-              print*, var(1, i2, 1), var(1, -1, 1)
-              print*, var(1, i3, 1), var(1, -2, 1)
           case("jmax")
               var(1:imx-1,   jmx  , 1:kmx-1) = (a2*var(1:imx-1,  jmx-i1, 1:kmx-1)-a3*var(1:imx-1 ,jmx-i1-1, 1:kmx-1))/a1
               var(1:imx-1,   jmx+1, 1:kmx-1) = (a2*var(1:imx-1,  jmx-i2, 1:kmx-1)-a3*var(1:imx-1 ,jmx-i2-1, 1:kmx-1))/a1

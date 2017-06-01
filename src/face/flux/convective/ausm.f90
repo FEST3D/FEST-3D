@@ -315,9 +315,6 @@ module ausm
                residue(i, j, k, l) = F(i+1, j, k, l) - F(i, j, k, l) &
                                    + G(i, j+1, k, l) - G(i, j, k, l) &
                                    + H(i, j, k+1, l) - H(i, j, k, l)
-                if (process_id==1 .and. current_iter==max_iters-1 .and. j==1 .and. k==1) then
-                  write(*,'(I0,2x,7(f0.16,2x))') i, residue(i,j,k,l)
-                end if
                end do
               end do
              end do
