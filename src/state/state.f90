@@ -271,6 +271,7 @@ module state
                 write(infile,'(a,i4.4,a,i2.2)') &
                   "time_directories/",start_from,"/process_",process_id
                 !call readstate_vtk(state_file)
+                call init_state_with_infinity_values()
                 call read_file()
 
             end if

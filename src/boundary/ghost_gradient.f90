@@ -107,7 +107,7 @@ module ghost_gradients
                 gradqp_z(i-1,j,k,:) = (qp_I - qp_G)*c_z
                 gradqp_x(i-1,j,k,4) = ( T_I -  T_G)*c_x
                 gradqp_y(i-1,j,k,4) = ( T_I -  T_G)*c_y
-                gradqp_z(i-1,j,k,4) = ( T_I -  T_G)*c_x
+                gradqp_z(i-1,j,k,4) = ( T_I -  T_G)*c_z
               end do
             end do
           end do
@@ -129,7 +129,7 @@ module ghost_gradients
                 gradqp_z(i,j,k,:) = -(qp_I - qp_G)*c_z
                 gradqp_x(i,j,k,4) = -( T_I -  T_G)*c_x
                 gradqp_y(i,j,k,4) = -( T_I -  T_G)*c_y
-                gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_x
+                gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_z
               end do
             end do
           end do
@@ -152,7 +152,7 @@ module ghost_gradients
                 gradqp_z(i,j-1,k,:) = (qp_I - qp_G)*c_z
                 gradqp_x(i,j-1,k,4) = ( T_I -  T_G)*c_x
                 gradqp_y(i,j-1,k,4) = ( T_I -  T_G)*c_y
-                gradqp_z(i,j-1,k,4) = ( T_I -  T_G)*c_x
+                gradqp_z(i,j-1,k,4) = ( T_I -  T_G)*c_z
               end do
             end do
           end do
@@ -174,7 +174,7 @@ module ghost_gradients
                 gradqp_z(i,j,k,:) = -(qp_I - qp_G)*c_z
                 gradqp_x(i,j,k,4) = -( T_I -  T_G)*c_x
                 gradqp_y(i,j,k,4) = -( T_I -  T_G)*c_y
-                gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_x
+                gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_z
               end do
             end do
           end do
@@ -197,7 +197,7 @@ module ghost_gradients
                 gradqp_z(i,j,k-1,:) = (qp_I - qp_G)*c_z
                 gradqp_x(i,j,k-1,4) = ( T_I -  T_G)*c_x
                 gradqp_y(i,j,k-1,4) = ( T_I -  T_G)*c_y
-                gradqp_z(i,j,k-1,4) = ( T_I -  T_G)*c_x
+                gradqp_z(i,j,k-1,4) = ( T_I -  T_G)*c_z
               end do
             end do
           end do
@@ -219,7 +219,7 @@ module ghost_gradients
                 gradqp_z(i,j,k,:) = -(qp_I - qp_G)*c_z
                 gradqp_x(i,j,k,4) = -( T_I -  T_G)*c_x
                 gradqp_y(i,j,k,4) = -( T_I -  T_G)*c_y
-                gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_x
+                gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_z
               end do
             end do
           end do

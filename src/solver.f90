@@ -82,6 +82,7 @@ module solver
   use global_vars, only: res_write_interval
   use global_vars, only: rw_list
 
+
   use utils, only: alloc
   use utils, only:  dealloc 
   use utils, only:  dmsg
@@ -127,6 +128,9 @@ module solver
   use wall        , only : write_surfnode
   use ghost_gradients, only : apply_gradient_bc
   include "turbulence_models/include/solver/import_module.inc"
+  use bc, only: setup_bc
+  use bc_primitive, only: populate_ghost_primitive
+  use bc_transport, only: populate_ghost_transport
 
 #ifdef __GFORTRAN__
     use mpi
@@ -174,6 +178,7 @@ module solver
             call setup_state()
             call setup_gradients()
             call setup_boundary_conditions(bc_file)
+            call setup_bc()
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
@@ -747,7 +752,8 @@ module solver
 
             call dmsg(1, 'solver', 'sub_step')
             call send_recv(3) ! parallel call-argument:no of layers 
-            call apply_boundary_conditions()
+ !           call apply_boundary_conditions()
+            call populate_ghost_primitive()
             call compute_face_interpolant()
             call reconstruct_boundary_state(interpolant)
             call set_wall_bc_at_faces()
@@ -760,8 +766,9 @@ module solver
                 end if
                 call compute_gradients_cell_centre()
                 call calculate_transport()
-                call calculate_sst_F1()
                 call add_source_term_residue()
+                call calculate_sst_F1()
+                call populate_ghost_transport()
                 call apply_gradient_bc()
                 call compute_viscous_fluxes(F_p, G_p, H_p)
                 call compute_turbulent_fluxes(F_p, G_p, H_p)

@@ -425,7 +425,6 @@ module read
           read(OUTIN_FILE_UNIT, *) buf
           read(buf,*) rw_list(i)
         end do
-        print*, rw_list
 
         close(OUTIN_FILE_UNIT)
 

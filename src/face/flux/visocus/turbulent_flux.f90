@@ -195,7 +195,7 @@ module turbulent_flux
             F1 = 0.5*(sst_F1(i-1,j,k) + sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
-            sigma_w     =    sigma_w1*F1  +    sigma_w1*(1. - F1)
+            sigma_w     =    sigma_w1*F1  +    sigma_w2*(1. - F1)
             sst_f_mu = 0.5*(sst_mu(i-1, j, k) + sst_mu(i, j, k))
 
             F(i, j, k, 6) = F(i, j, k, 6) - (xA(i, j, k)*( &
@@ -266,6 +266,7 @@ module turbulent_flux
                         ) * 0.125
                 yc_L = (grid_y(i, j-1, k) + grid_y(i+1, j-1, k) + &
                         grid_y(i+1, j, k) + grid_y(i, j, k) + &
+                        grid_y(i, j-1, k+1) + grid_y(i+1, j-1, k+1) + &
                         grid_y(i+1, j, k+1) + grid_y(i, j, k+1) &
                         ) * 0.125
                 zc_L = (grid_z(i, j-1, k) + grid_z(i+1, j-1, k) + &
@@ -337,7 +338,7 @@ module turbulent_flux
             F1 = 0.5*(sst_F1(i,j-1,k)+sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
-            sigma_w     =    sigma_w1*F1  +    sigma_w1*(1. - F1)
+            sigma_w     =    sigma_w1*F1  +    sigma_w2*(1. - F1)
             sst_f_mu = 0.5*(sst_mu(i, j-1, k) + sst_mu(i, j, k))
 
 
@@ -480,7 +481,7 @@ module turbulent_flux
             F1 = 0.5*(sst_F1(i,j,k-1)+sst_F1(i,j,k))
 
             sigma_k     =    sigma_k1*F1  +    sigma_k2*(1. - F1)
-            sigma_w     =    sigma_w1*F1  +    sigma_w1*(1. - F1)
+            sigma_w     =    sigma_w1*F1  +    sigma_w2*(1. - F1)
             sst_f_mu = 0.5*(sst_mu(i, j, k-1) + sst_mu(i, j, k))
 
 

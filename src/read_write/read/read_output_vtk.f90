@@ -60,6 +60,7 @@ module read_output_vtk
   use global_vars, only : mu_ref
   use global_vars, only : n_write
   use global_vars, only : rw_list
+  use global_vars, only : previous_flow_type
 
   use utils
   use string
@@ -113,21 +114,21 @@ module read_output_vtk
             end if
             
           case('TKE')
-            if(turbulence=="sst")then
+            if(turbulence=="sst" .and. previous_flow_type=="sst")then
             call read_TKE()
             else
               print*, "Read error: Asked to read non-existing variable- "//trim(rw_list(n))
             end if
 
           case('Omega')
-            if(turbulence=="sst") then
+            if(turbulence=="sst" .and. previous_flow_type=="sst") then
             call read_omega()
             else
               print*, "Read error: Asked to read non-existing variable- "//trim(rw_list(n))
             end if
 
           case('Wall_distance')
-            if(turbulence/="none") then
+            if(turbulence/="none" .and. previous_flow_type/="viscous") then
             call read_dist()
             else
               print*, "Read error: Asked to read non-existing variable- "//trim(rw_list(n))
@@ -144,39 +145,39 @@ module read_output_vtk
 
     end subroutine read_file
 
-
-    subroutine read_turbulence_variables()
-      implicit none
-
-      select case (read_flow_type)
-
-        case ('viscous')
-          !do nothing
-          !restart turbulent varibale with infinity condition !todo
-          continue
-        case ('sst')
-          call read_TKE()
-          call read_omega()
-        case DEFAULT
-          call dmsg(5,'read_output_vtk', 'read_turbulence_variables',&
-            'ERROR: Read flow type not recognised')
-          STOP
-      end select
-
-    end subroutine read_turbulence_variables
-
-    subroutine read_viscosity()
-      implicit none
-
-      if (mu_ref/=0.0) then
-        call read_mu()
-      end if
-
-      if (turbulence/='none') then
-        call read_mu_t()
-      end if
-
-    end subroutine read_viscosity
+!
+!    subroutine read_turbulence_variables()
+!      implicit none
+!
+!      select case (read_flow_type)
+!
+!        case ('viscous')
+!          !do nothing
+!          !restart turbulent varibale with infinity condition !todo
+!          continue
+!        case ('sst')
+!          call read_TKE()
+!          call read_omega()
+!        case DEFAULT
+!          call dmsg(5,'read_output_vtk', 'read_turbulence_variables',&
+!            'ERROR: Read flow type not recognised')
+!          STOP
+!      end select
+!
+!    end subroutine read_turbulence_variables
+!
+!    subroutine read_viscosity()
+!      implicit none
+!
+!      if (mu_ref/=0.0) then
+!        call read_mu()
+!      end if
+!
+!      if (turbulence/='none') then
+!        call read_mu_t()
+!      end if
+!
+!    end subroutine read_viscosity
 
     subroutine read_header()
       implicit none

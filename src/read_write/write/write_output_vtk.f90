@@ -50,6 +50,26 @@ module write_output_vtk
   use global_vars, only : n_write
   use global_vars, only : rw_list
 
+  use global_sst , only : sst_F1
+  use global_vars, only : gradu_x
+  use global_vars, only : gradu_y
+  use global_vars, only : gradu_z
+  use global_vars, only : gradv_x
+  use global_vars, only : gradv_y
+  use global_vars, only : gradv_z
+  use global_vars, only : gradw_x
+  use global_vars, only : gradw_y
+  use global_vars, only : gradw_z
+  use global_vars, only : gradT_x
+  use global_vars, only : gradT_y
+  use global_vars, only : gradT_z
+  use global_vars, only : gradtk_x
+  use global_vars, only : gradtk_y
+  use global_vars, only : gradtk_z
+  use global_vars, only : gradtw_x
+  use global_vars, only : gradtw_y
+  use global_vars, only : gradtw_z
+
   use utils
   use string
 
@@ -67,6 +87,7 @@ module write_output_vtk
     subroutine write_file()
       implicit none
       integer :: n
+      character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
       call write_header()
       call write_grid()
@@ -88,79 +109,105 @@ module write_output_vtk
             if (mu_ref/=0.0) then
               call write_mu()
             else
-              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
+              print*, err//trim(rw_list(n))
             end if
             
           case('Mu_t')
             if (turbulence/='none') then
-              call write_mu_t()
+              call write_scalar(mu_t, "Mu_t")
             else
-              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
+              print*, err//trim(rw_list(n))
             end if
             
           case('TKE')
             if(turbulence=="sst")then
-            call write_TKE()
+            call write_scalar(tk, "TKE")
             else
-              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
+              print*, err//trim(rw_list(n))
             end if
 
           case('Omega')
             if(turbulence=="sst") then
-            call write_omega()
+            call write_scalar(tw, "Omega")
             else
-              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
+              print*, err//trim(rw_list(n))
             end if
 
           case('Wall_distance')
             if(turbulence/="none") then
-            call write_dist()
+            call write_scalar(dist, "dist")
             else
-              print*, "Write error: Asked to write non-existing variable- "//trim(rw_list(n))
+              print*, err//trim(rw_list(n))
             end if
 
           case('Resnorm')
             call write_resnorm()
 
+          case('F1')
+            call write_scalar(sst_F1 ,"F1")
+
+          case('Dudx')
+            call write_scalar(gradu_x ,"dudx ")
+
+          case('Dudy')
+            call write_scalar(gradu_y ,"dudy ")
+
+          case('Dudz')
+            call write_scalar(gradu_z ,"dudz ")
+
+          case('Dvdx')
+            call write_scalar(gradv_x ,"dvdx ")
+
+          case('Dvdy')
+            call write_scalar(gradv_y ,"dvdy ")
+
+          case('Dvdz')
+            call write_scalar(gradv_z ,"dvdz ")
+
+          case('Dwdx')
+            call write_scalar(gradw_x ,"dwdx ")
+
+          case('Dwdy')
+            call write_scalar(gradw_y ,"dwdy ")
+
+          case('Dwdz')
+            call write_scalar(gradw_z ,"dwdz ")
+
+          case('DTdx')
+            call write_scalar(gradT_x ,"dTdx ")
+
+          case('DTdy')
+            call write_scalar(gradT_y ,"dTdy ")
+
+          case('DTdz')
+            call write_scalar(gradT_z ,"dTdz ")
+
+          case('Dtkdx')
+            call write_scalar(gradtk_x,"dtkdx")
+
+          case('Dtkdy')
+            call write_scalar(gradtk_y,"dtkdy")
+
+          case('Dtkdz')
+            call write_scalar(gradtk_z,"dtkdz")
+
+          case('Dtwdx')
+            call write_scalar(gradtw_x,"dtwdx")
+
+          case('Dtwdy')
+            call write_scalar(gradtw_y,"dtwdy")
+
+          case('Dtwdz')
+            call write_scalar(gradtw_z,"dtwdz")
+
           case Default
-            print*, "Write_error: cannot write variable "//trim(rw_list(n))//" to file"
+            print*, err//trim(rw_list(n))//" to file"
 
         end select
       end do
 
+
     end subroutine write_file
-
-
-    subroutine write_turbulent_variables()
-      implicit none
-
-      select case (turbulence)
-        
-        case ('none')
-          !do nothing
-          continue
-        case ('sst')
-          call write_TKE()
-          call write_omega()
-        case DEFAULT
-          call dmsg(5, 'write_output_vtk',' write_turbulent_variables',&
-              'ERROR: Turbulence model not recongnised')
-          STOP
-      end select
-
-    end subroutine write_turbulent_variables
-
-    subroutine write_viscosity()
-      implicit none
-
-      if (mu_ref/=0.0) then
-        call write_mu()
-      end if
-      if (turbulence/='none') then
-        call write_mu_t()
-      end if
-
-    end subroutine write_viscosity
 
 
     subroutine write_header()
@@ -580,5 +627,43 @@ module write_output_vtk
       end if
 
     end subroutine write_resnorm
+
+
+    subroutine write_scalar(var, name)
+      implicit none
+      real, dimension(:,:,:), intent(in) :: var
+      character(len=*),       intent(in):: name
+      character                          :: newline=achar(10)
+      character(len=32)                  :: line
+
+      call dmsg(1, 'write_output_vtk', trim(name))
+
+      if (Write_data_format == "ASCII") then
+        write(OUT_FILE_UNIT, '(a)') 'SCALARS '//trim(name)//' FLOAT'
+        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(OUT_FILE_UNIT, fmt='(f0.16)') var(i, j, k)
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT, *)
+      elseif (write_data_format == 'BINARY') then
+        write(OUT_FILE_UNIT) 'SCALARS '//trim(name)//' FLOAT'//newline
+        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'//newline
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+            write(line, "(f0.16)") var(i,j,k)
+            write(OUT_FILE_UNIT) trim(line)//newline
+          end do
+         end do
+        end do
+        write(OUT_FILE_UNIT)  newline
+      end if
+
+    end subroutine write_scalar
+
 
 end module write_output_vtk

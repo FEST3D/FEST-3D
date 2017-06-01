@@ -27,7 +27,6 @@
                        *(-1.*tw(i,j,k)*mass_residue(i,j,k)/density_temp&
                        + 1./(1. + 2.*beta*tw(i,j,k)*delta_t(i,j,k))&
                        *(omega_residue(i,j,k))/density_temp)
-               tk(i, j, k) = tk_temp
-               tw(i, j, k) = tw_temp
 
-               if (tk(i,j,k)<0.) tk(i,j,k) =0.
+               if (tk_temp>0.) tk(i, j, k) = tk_temp
+               if (tw_temp>0.) tw(i, j, k) = tw_temp

@@ -22,6 +22,7 @@ module read_output
   use global_vars, only : energy_resnorm_0
   use global_vars, only :    TKE_resnorm_0
   use global_vars, only :  omega_resnorm_0
+  use global_vars, only : previous_flow_type
 
   use global_vars, only : mu_ref
 
@@ -109,7 +110,7 @@ module read_output
 
     subroutine read_restart_file()
       implicit none
-      read(RESTART_FILE_UNIT, *) read_flow_type
+      read(RESTART_FILE_UNIT, *) previous_flow_type
 
       read(RESTART_FILE_UNIT, *)        resnorm_0
       read(RESTART_FILE_UNIT, *)    vis_resnorm_0

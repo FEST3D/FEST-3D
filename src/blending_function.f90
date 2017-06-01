@@ -84,20 +84,12 @@ module blending_function
             right = 4*(density(i,j,k)*sigma_w2*tk(i,j,k))/(CD*(dist(i,j,k)**2))
             left = max(var1, var2)
             arg1 = min(left, right)
-            sst_F1 = tanh(arg1**4)
+            sst_F1(i,j,k) = tanh(arg1**4)
 
           end do
         end do
       end do
-      ! extrapolate F1 value to ghost cells
-      sst_F1(      0,1:jmx-1,1:kmx-1)=sst_F1(      1,1:jmx-1,1:kmx-1)
-      sst_F1(    imx,1:jmx-1,1:kmx-1)=sst_F1(  imx-1,1:jmx-1,1:kmx-1)
-      sst_F1(1:imx-1,      0,1:kmx-1)=sst_F1(1:imx-1,      1,1:kmx-1)
-      sst_F1(1:imx-1,    jmx,1:kmx-1)=sst_F1(1:imx-1,  jmx-1,1:kmx-1)
-      sst_F1(1:imx-1,1:jmx-1,      0)=sst_F1(1:imx-1,1:jmx-1,      1)
-      sst_F1(1:imx-1,1:jmx-1,    kmx)=sst_F1(1:imx-1,1:jmx-1,  kmx-1)
 
-  
 
     end subroutine calculate
 

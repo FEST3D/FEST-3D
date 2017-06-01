@@ -225,54 +225,6 @@ module sst_grad
     end do
 
 
-        ! left ghost cells
-        gradtk_x(0,:,:) = gradtk_x(1,:,:)
-        gradtw_x(0,:,:) = gradtw_x(1,:,:)
-        gradtk_y(0,:,:) = gradtk_y(1,:,:)
-        gradtw_y(0,:,:) = -gradtw_y(1,:,:)
-        gradtk_z(0,:,:) = -gradtk_z(1,:,:)
-        gradtw_z(0,:,:) = -gradtw_z(1,:,:)
-
-        ! right ghost cells
-        gradtk_x(imx,:,:) = gradtk_x(imx-1,:,:)
-        gradtw_x(imx,:,:) = gradtw_x(imx-1,:,:)
-        gradtk_y(imx,:,:) = gradtk_y(imx-1,:,:)
-        gradtw_y(imx,:,:) = gradtw_y(imx-1,:,:)
-        gradtk_z(imx,:,:) = gradtk_z(imx-1,:,:)
-        gradtw_z(imx,:,:) = gradtw_z(imx-1,:,:)
-
-        ! bottom ghost cells
-        gradtk_x(:,0,:) = gradtk_x(:,1,:)
-        gradtw_x(:,0,:) = gradtw_x(:,1,:)
-        gradtk_y(:,0,:) = gradtk_y(:,1,:)
-        gradtw_y(:,0,:) = -gradtw_y(:,1,:)
-        gradtk_z(:,0,:) = -gradtk_z(:,1,:)
-        gradtw_z(:,0,:) = -gradtw_z(:,1,:)
-
-        ! top ghost cells
-        gradtk_x(:,jmx,:) = gradtk_x(:,jmx-1,:)
-        gradtw_x(:,jmx,:) = gradtw_x(:,jmx-1,:)
-        gradtk_y(:,jmx,:) = gradtk_y(:,jmx-1,:)
-        gradtw_y(:,jmx,:) = -gradtw_y(:,jmx-1,:)
-        gradtk_z(:,jmx,:) = -gradtk_z(:,jmx-1,:)
-        gradtw_z(:,jmx,:) = -gradtw_z(:,jmx-1,:)
-
-        ! front ghost cells
-        gradtk_x(:,:,0) = gradtk_x(:,:,1)
-        gradtw_x(:,:,0) = gradtw_x(:,:,1)
-        gradtk_y(:,:,0) = gradtk_y(:,:,1)
-        gradtw_y(:,:,0) = -gradtw_y(:,:,1)
-        gradtk_z(:,:,0) = -gradtk_z(:,:,1)
-        gradtw_z(:,:,0) = -gradtw_z(:,:,1)
-
-        ! back ghost cells
-        gradtk_x(:,:,kmx) = gradtk_x(:,:,kmx-1)
-        gradtw_x(:,:,kmx) = gradtw_x(:,:,kmx-1)
-        gradtk_y(:,:,kmx) = gradtk_y(:,:,kmx-1)
-        gradtw_y(:,:,kmx) = -gradtw_y(:,:,kmx-1)
-        gradtk_z(:,:,kmx) = -gradtk_z(:,:,kmx-1)
-        gradtw_z(:,:,kmx) = -gradtw_z(:,:,kmx-1)
-
     end subroutine calculate_sst_grad
 
 

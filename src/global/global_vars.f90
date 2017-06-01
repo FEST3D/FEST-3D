@@ -9,6 +9,7 @@ module global_vars
   use global, only : SCHEME_NAME_LENGTH
   use global, only : FILE_NAME_LENGTH
   use global, only : STATE_NAME_LENGTH
+  use global, only : FLOW_TYPE_LENGTH
 
   implicit none
   public
@@ -45,6 +46,7 @@ module global_vars
   character(len=FILE_NAME_LENGTH)::      infile          ! name of load file
   character(len=FILE_NAME_LENGTH):: restartfile          ! name of restart log file
   character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  rw_list ! output control list
+  character(len=FLOW_TYPE_LENGTH):: previous_flow_type
 
   ! solver specific
   real :: CFL                  ! courrent number
@@ -207,6 +209,7 @@ module global_vars
 
   ! grid variables
   integer                                 :: imx, jmx, kmx        ! no. of points
+  integer                                 :: imn, jmn, kmn
   real, dimension(:, :, :), allocatable  :: grid_x, grid_y, grid_z! point coordinates
 
   ! geometry variables
@@ -250,5 +253,32 @@ module global_vars
 
   ! higher order boundary condtioion
   integer  :: accur=1
+  character(len=4), dimension(6) :: face_names
+  integer,          dimension(6) :: id
+  real                           :: c1
+  real                           :: c2
+  real                           :: c3
+
+  ! store fix values for 6 faces of domain
+  real, dimension(6) :: fixed_density  = 0.
+  real, dimension(6) :: fixed_pressure = 0.
+  real, dimension(6) :: fixed_x_speed  = 0.
+  real, dimension(6) :: fixed_y_speed  = 0.
+  real, dimension(6) :: fixed_z_speed  = 0.
+  real, dimension(6) :: fixed_tk       = 0.
+  real, dimension(6) :: fixed_tw       = 0.
+
+  ! variable for post_processing
+  integer :: N_blocks
+  integer :: I_blocks
+  integer :: J_blocks
+  integer :: K_blocks
+  integer, dimension(:), allocatable:: imin
+  integer, dimension(:), allocatable:: imax
+  integer, dimension(:), allocatable:: jmin
+  integer, dimension(:), allocatable:: jmax
+  integer, dimension(:), allocatable:: kmin
+  integer, dimension(:), allocatable:: kmax
+
 end module global_vars
 

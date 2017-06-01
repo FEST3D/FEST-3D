@@ -77,9 +77,9 @@ module molecular_viscosity
 
       ST = Sutherland_temp
 
-      do k = 1,kmx
-        do j = 1,jmx
-          do i = 1,imx
+      do k = 0,kmx
+        do j = 0,jmx
+          do i = 0,imx
             T = pressure(i,j,k)/(density(i,j,k)*R_gas)
             mu(i,j,k) = mu_ref * ((T/T_ref)**(1.5)) *((T_ref + ST)/(T + ST))
           end do
