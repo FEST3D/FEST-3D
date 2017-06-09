@@ -60,6 +60,9 @@ module viscous
   use global_vars, only : mu_v=>mu
   use global_vars, only : mu_t
   use global_vars, only : turbulence
+  use global_sst , only : sst_F1
+  use global_sst , only : sigma_k1
+  use global_sst , only : sigma_k2
   use utils      , only : alloc, dealloc, dmsg
   use string
   use face_interpolant, only: x_density_left 
@@ -117,6 +120,10 @@ module viscous
         real :: T_LE, T_RE
 !        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
         real :: K_heat, mu, Qx, Qy, Qz
+        real :: muv_f
+        real :: mut_f
+        real :: F1
+        real :: sigma_k
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: F
@@ -262,11 +269,13 @@ module viscous
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
             if (turbulence/='none') then
-              mu = 0.5*(mu_v(i-1,j,k) + mu_v(i,j,k)) &
-                 + 0.5*(mu_t(i-1,j,k) + mu_t(i,j,k)) 
+              muv_f = 0.5*(mu_v(i-1,j,k) + mu_v(i,j,k))
+              mut_f = 0.5*(mu_t(i-1,j,k) + mu_t(i,j,k)) 
             else
-              mu = 0.5*(mu_v(i-1,j,k) + mu_v(i,j,k))
+              muv_f = 0.5*(mu_v(i-1,j,k) + mu_v(i,j,k))
+              mut_f = 0. 
             end if
+            mu = muv_f + mut_f
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_zz = 2. * mu * (dwdz - ((dudx + dvdy + dwdz) / 3.)) 
@@ -276,7 +285,12 @@ module viscous
 
             ! Pr: Prandtl Number
             ! Qx, Qy, Qz: Conduction fluxes
-            K_heat = mu * gm * R_gas / ((gm - 1) * Pr)
+            K_heat = (muv_f/Pr + mut_f/0.9)* gm * R_gas / (gm - 1)
+            if(turbulence=="sst") then
+              F1 = 0.5*(sst_F1(i,j,k) + sst_F1(i-1,j,k))
+              sigma_k = F1*sigma_k1   + (1. - F1)*sigma_k2
+              k_heat = k_heat + muv_f + mut_f/sigma_k
+            end if
             Qx = K_heat*dTdx
             Qy = K_heat*dTdy
             Qz = K_heat*dTdz
@@ -335,6 +349,10 @@ module viscous
         real :: T_LE, T_RE
 !        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
         real :: K_heat, mu, Qx, Qy, Qz
+        real :: muv_f
+        real :: mut_f
+        real :: F1
+        real :: sigma_k
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: G
@@ -478,11 +496,13 @@ module viscous
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
             if (turbulence/='none') then
-              mu = 0.5*(mu_v(i,j-1,k) + mu_v(i,j,k)) &
-                 + 0.5*(mu_t(i,j-1,k) + mu_t(i,j,k)) 
+              muv_f = 0.5*(mu_v(i,j-1,k) + mu_v(i,j,k))
+              mut_f = 0.5*(mu_t(i,j-1,k) + mu_t(i,j,k))
             else 
-              mu = 0.5*(mu_v(i,j-1,k) + mu_v(i,j,k))
+              muv_f = 0.5*(mu_v(i,j-1,k) + mu_v(i,j,k))
+              mut_f = 0.
             end if
+            mu    = muv_f + mut_f
 
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
@@ -494,7 +514,12 @@ module viscous
             
             ! Pr: Prandtl Number
             ! Qx, Qy, Qz: Conduction fluxes
-            K_heat = mu * gm * R_gas / ((gm - 1) * Pr)
+            K_heat = (muv_f/Pr + mut_f/0.9) * gm * R_gas / (gm - 1)
+            if(turbulence=="sst") then
+              F1 = 0.5*(sst_F1(i,j,k) + sst_F1(i,j-1,k))
+              sigma_k = F1*sigma_k1   + (1. - F1)*sigma_k2
+              k_heat = k_heat + muv_f + mut_f/sigma_k
+            end if
             Qx = K_heat*dTdx
             Qy = K_heat*dTdy
             Qz = K_heat*dTdz
@@ -561,6 +586,10 @@ module viscous
         real :: T_LE, T_RE
 !        real :: T_L, T_R, T_face, K_heat, mu, Qx, Qy, Qz
         real :: K_heat, mu, Qx, Qy, Qz
+        real :: muv_f
+        real :: mut_f
+        real :: F1
+        real :: sigma_k
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: H
@@ -704,11 +733,13 @@ module viscous
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
             if (turbulence/='none') then
-              mu = 0.5*(mu_v(i,j,k-1) + mu_v(i,j,k)) &
-                 + 0.5*(mu_t(i,j,k-1) + mu_t(i,j,k)) 
+              muv_f = 0.5*(mu_v(i,j,k-1) + mu_v(i,j,k))
+              mut_f = 0.5*(mu_t(i,j,k-1) + mu_t(i,j,k)) 
             else
-              mu = 0.5*(mu_v(i,j,k-1) + mu_v(i,j,k))
+              muv_f = 0.5*(mu_v(i,j,k-1) + mu_v(i,j,k))
+              mut_f = 0.0
             end if
+            mu  = muv_f + mut_f
 
             Tau_xx = 2. * mu * (dudx - ((dudx + dvdy + dwdz) / 3.)) 
             Tau_yy = 2. * mu * (dvdy - ((dudx + dvdy + dwdz) / 3.)) 
@@ -719,7 +750,12 @@ module viscous
 
             ! Pr: Prandtl Number
             ! Qx, Qy, Qz: Conduction fluxes
-            K_heat = mu * gm * R_gas / ((gm - 1) * Pr)
+            K_heat = (muv_f/Pr + mut_f/0.9) * gm * R_gas / (gm - 1)
+            if(turbulence=="sst") then
+              F1 = 0.5*(sst_F1(i,j,k) + sst_F1(i,j,k-1))
+              sigma_k = F1*sigma_k1   + (1. - F1)*sigma_k2
+              k_heat = k_heat + muv_f + mut_f/sigma_k
+            end if
             Qx = K_heat*dTdx
             Qy = K_heat*dTdy
             Qz = K_heat*dTdz

@@ -75,6 +75,7 @@ module resnorm_
   use global_vars, only: current_iter
   use global_vars, only: res_write_interval
   use global_vars, only: write_percision
+  use global_vars, only: merror
 
   use global_vars, only: turbulence
 
@@ -87,6 +88,7 @@ module resnorm_
 
   use res_viscous,  only: compute_viscous_resnorm
   use res_turbulent, only: compute_turbulent_resnorm
+  use mass_error, only: calculate_mass_error
 
 #ifdef __GFORTRAN
   use mpi
@@ -118,8 +120,9 @@ module resnorm_
       call compute_resnorm()
 
       if (process_id == 0) then
-        write(frm, '(A, I0, A)') "(I0, ", write_num, "e20.10E2, 4x)"
-        write(RESNORM_FILE_UNIT, frm) current_iter, write_data(1:write_num) 
+        write_data(0)=merror
+        write(frm, '(A, I0, A)') "(I0, ", write_num+1, "e20.10E2, 4x)"
+        write(RESNORM_FILE_UNIT, frm) current_iter, write_data(0:write_num) 
       end if
     end subroutine write_resnorm
 
@@ -146,6 +149,7 @@ module resnorm_
 
 
       call compute_viscous_resnorm()
+      call calculate_mass_error()
       if (turbulence /= 'none') then
         call compute_turbulent_resnorm()
       end if
@@ -179,10 +183,11 @@ module resnorm_
       write_num = sum(write_permission)
 
       
-      call alloc(write_data, 1,resnorm_number*2,&
+      call alloc(write_data, 0,resnorm_number*2,&
                 errmsg='Unable to allocate memory to write_data in resnorm module')
-      allocate(write_name(1:write_num))
+      allocate(write_name(0:write_num))
 
+      write_name(0) = "mass_error"
       if (write_permission(1,1) == 1) then
         forward_count = forward_count + 1
         write_name(forward_count) = 'resnorm '
@@ -364,7 +369,7 @@ module resnorm_
       end if
 
       header = " iter "
-      do i = 1, write_num
+      do i = 0, write_num
         write(header,'(A)') trim(header)//"  "//trim(write_name(i))
       end do
       
@@ -376,6 +381,7 @@ module resnorm_
 
       ! intializing whole resnorm to 0.
       write_data = 0.
+      write_data(0) = merror
 !             resnorm_0   = 0.
 !         vis_resnorm_0   = 0.
 !        turb_resnorm_0   = 0.

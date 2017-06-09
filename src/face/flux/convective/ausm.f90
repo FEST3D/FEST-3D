@@ -18,6 +18,13 @@ module ausm
     use global_vars, only : process_id
     use global_vars, only : current_iter
     use global_vars, only : max_iters
+    use global_vars, only : imin_id
+    use global_vars, only : imax_id
+    use global_vars, only : jmin_id
+    use global_vars, only : jmax_id
+    use global_vars, only : kmin_id
+    use global_vars, only : kmax_id
+    use global_vars, only : merror
 
     use utils, only: alloc, dealloc, dmsg
     use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
@@ -105,6 +112,7 @@ module ausm
             real :: scrD_plus, scrD_minus
             real :: sound_speed_avg, face_normal_speeds
             real :: temp_c
+            integer :: id
 
             !include compute_flux_variable and select.inc before select
             !as it contains variables deceleration
@@ -223,6 +231,9 @@ module ausm
 
                 ! F plus mass flux
                 F_plus(1) = f_density_left(i, j, k) * sound_speed_avg * c_plus
+                ! F minus mass flux
+                F_minus(1) = f_density_right(i, j, k) * sound_speed_avg * c_minus
+                include "mass_flux.inc"
 
                 ! Construct other fluxes in terms of the F mass flux
                 F_plus(2) = (F_plus(1) * f_x_speed_left(i, j, k)) + &
@@ -239,8 +250,6 @@ module ausm
                              f_density_left(i, j, k)))
 
 
-                ! F minus mass flux
-                F_minus(1) = f_density_right(i, j, k) * sound_speed_avg * c_minus
                 
                 ! Construct other fluxes in terms of the F mass flux
                 F_minus(2) = (F_minus(1) * f_x_speed_right(i, j, k)) + &
@@ -289,7 +298,11 @@ module ausm
                 stop
             end if    
             
-            call compute_flux('z')
+            if(kmx==2) then
+              H = 0.
+            else
+              call compute_flux('z')
+            end if
             if (any(isnan(H))) then
                 call dmsg(5, 'ausm', 'compute_residue', 'ERROR: H flux Nan detected')
                 stop

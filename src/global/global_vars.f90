@@ -206,6 +206,7 @@ module global_vars
   real          :: energy_resnorm_0s  !     energy residue normalized at iter 1 
   real          ::    TKE_resnorm_0s  !        TKE residue normalized at iter 1 
   real          ::  omega_resnorm_0s  !      omega residue normalized at iter 1 
+  real          :: merror=0.
 
   ! grid variables
   integer                                 :: imx, jmx, kmx        ! no. of points
@@ -213,9 +214,12 @@ module global_vars
   real, dimension(:, :, :), allocatable  :: grid_x, grid_y, grid_z! point coordinates
 
   ! geometry variables
-  real, dimension(:, :, :), allocatable, target :: xnx, xny, xnz !face unit norm x
-  real, dimension(:, :, :), allocatable, target :: ynx, yny, ynz !face unit norm y
-  real, dimension(:, :, :), allocatable, target :: znx, zny, znz !face unit norm z
+  real, dimension(:, :, :,:), allocatable, target :: xn           !face unit norm x
+  real, dimension(:, :, :,:), allocatable, target :: yn           !face unit norm y
+  real, dimension(:, :, :,:), allocatable, target :: zn           !face unit norm z
+  real, dimension(:, :, :)             , pointer :: xnx, xny, xnz !face unit norm x
+  real, dimension(:, :, :)             , pointer :: ynx, yny, ynz !face unit norm y
+  real, dimension(:, :, :)             , pointer :: znx, zny, znz !face unit norm z
   real, dimension(:, :, :), allocatable, target :: xA, yA, zA    !face area
   real, dimension(:, :, :), allocatable, target :: volume
   real, dimension(:, :, :), allocatable, target ::   left_ghost_centroid

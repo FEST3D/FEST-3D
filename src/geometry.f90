@@ -14,6 +14,9 @@ module geometry
     use global_vars, only : grid_y
     use global_vars, only : grid_z
 
+    use global_vars, only : xn           !face unit norm x
+    use global_vars, only : yn           !face unit norm y
+    use global_vars, only : zn           !face unit norm z
     use global_vars, only : xnx, xny, xnz !face unit normal x
     use global_vars, only : ynx, yny, ynz !face unit normal y
     use global_vars, only : znx, zny, znz !face unit normal z
@@ -72,24 +75,24 @@ module geometry
                         
             implicit none
 
-            call alloc(xnx, 1, imx, 1, jmx-1, 1, kmx-1, &
+            call alloc(xn, 1, imx, 1, jmx-1, 1, kmx-1, 1,3, &
                     errmsg='Error: Unable to allocate memory for xnx.')
-            call alloc(xny, 1, imx, 1, jmx-1, 1, kmx-1, &
-                    errmsg='Error: Unable to allocate memory for xny.')
-            call alloc(xnz, 1, imx, 1, jmx-1, 1, kmx-1, &
-                    errmsg='Error: Unable to allocate memory for xny.')
-            call alloc(ynx, 1, imx-1, 1, jmx, 1, kmx-1, &
+            call alloc(yn, 1, imx-1, 1, jmx, 1, kmx-1, 1,3, &
                     errmsg='Error: Unable to allocate memory for ynx.')
-            call alloc(yny, 1, imx-1, 1, jmx, 1, kmx-1, &
-                    errmsg='Error: Unable to allocate memory for yny.')
-            call alloc(ynz, 1, imx-1, 1, jmx, 1, kmx-1, &
+            call alloc(zn, 1, imx-1, 1, jmx-1, 1, kmx, 1,3, &
                     errmsg='Error: Unable to allocate memory for ynx.')
-            call alloc(znx, 1, imx-1, 1, jmx-1, 1, kmx, &
-                    errmsg='Error: Unable to allocate memory for ynx.')
-            call alloc(zny, 1, imx-1, 1, jmx-1, 1, kmx, &
-                    errmsg='Error: Unable to allocate memory for yny.')
-            call alloc(znz, 1, imx-1, 1, jmx-1, 1, kmx, &
-                    errmsg='Error: Unable to allocate memory for ynx.')
+
+            xnx(1:imx,1:jmx-1,1:kmx-1) => xn(:,:,:,1)
+            xny(1:imx,1:jmx-1,1:kmx-1) => xn(:,:,:,2)
+            xnz(1:imx,1:jmx-1,1:kmx-1) => xn(:,:,:,3)
+
+            ynx(1:imx-1,1:jmx,1:kmx-1) => yn(:,:,:,1)
+            yny(1:imx-1,1:jmx,1:kmx-1) => yn(:,:,:,2)
+            ynz(1:imx-1,1:jmx,1:kmx-1) => yn(:,:,:,3)
+
+            znx(1:imx-1,1:jmx-1,1:kmx) => zn(:,:,:,1)
+            zny(1:imx-1,1:jmx-1,1:kmx) => zn(:,:,:,2)
+            znz(1:imx-1,1:jmx-1,1:kmx) => zn(:,:,:,3)
 
         end subroutine allocate_memory_normals
 
@@ -137,12 +140,12 @@ module geometry
 
             call dmsg(1, 'geometry', 'deallocate_memory')
 
-            call dealloc(xnx)
-            call dealloc(xny)
-            call dealloc(ynx)
-            call dealloc(yny)
+            call dealloc(xn)
+            call dealloc(yn)
+            call dealloc(zn)
             call dealloc(xA)
             call dealloc(yA)
+            call dealloc(zA)
             call dealloc(volume)
             call dealloc(left_ghost_centroid)
             call dealloc(right_ghost_centroid)
@@ -814,6 +817,15 @@ module geometry
             
             call dmsg(1, 'geometry', 'destroy_geometry')
 
+            nullify(xnx)
+            nullify(xny)
+            nullify(xnz)
+            nullify(ynx)
+            nullify(yny)
+            nullify(ynz)
+            nullify(znx)
+            nullify(zny)
+            nullify(znz)
             call deallocate_memory()
 
         end subroutine destroy_geometry

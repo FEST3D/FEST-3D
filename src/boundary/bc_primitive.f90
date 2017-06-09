@@ -48,14 +48,13 @@ module bc_primitive
   use global_vars, only: tw_inf
   use global_vars, only: face_names
   use global_vars, only: id
-  use global_vars, only: c1
-  use global_vars, only: c2
-  use global_vars, only: c3
 
   use global_sst , only: beta1
   use utils,       only: turbulence_read_error
 
-  use read_bc   , only: read_fixed_values
+  use read_bc   , only : read_fixed_values
+  use copy_bc   , only : copy3
+  use FT_bc     , only : flow_tangency
 
   implicit none
   private
@@ -63,35 +62,9 @@ module bc_primitive
   integer                        :: face_num
 
   public :: populate_ghost_primitive
-  public :: set_wall_flux_zero
-!  public :: setup_bc
 
 
   contains
-
-!    subroutine setup_bc()
-!      implicit none
-!      face_names(1) = "imin"
-!      face_names(2) = "imax"
-!      face_names(3) = "jmin"
-!      face_names(4) = "jmax"
-!      face_names(5) = "kmin"
-!      face_names(6) = "kmax"
-!      
-!      id(1) =  imin_id
-!      id(2) =  imax_id
-!      id(3) =  jmin_id
-!      id(4) =  jmax_id
-!      id(5) =  kmin_id
-!      id(6) =  kmax_id
-!
-!      c2 = 1 + accur
-!      c3 = 0.5*accur
-!      c1 = c2-c3
-!      call read_fixed_values()
-!
-!    end subroutine setup_bc
-
 
     subroutine populate_ghost_primitive()
       implicit none
@@ -160,18 +133,18 @@ module bc_primitive
       subroutine supersonic_outlet(face)
         implicit none
         character(len=*), intent(in) :: face
-        call copy(density , "flat", face)
-        call copy(x_speed , "flat", face)
-        call copy(y_speed , "flat", face)
-        call copy(z_speed , "flat", face)
-        call copy(pressure, "flat", face)
+        call copy3(density , "flat", face)
+        call copy3(x_speed , "flat", face)
+        call copy3(y_speed , "flat", face)
+        call copy3(z_speed , "flat", face)
+        call copy3(pressure, "flat", face)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sst')
-            call copy(tk, "flat", face)
-            call copy(tw, "flat", face)
+            call copy3(tk, "flat", face)
+            call copy3(tw, "flat", face)
           case DEFAULT
             call turbulence_read_error()
         end select
@@ -185,7 +158,7 @@ module bc_primitive
         call fix(x_speed , fixed_x_speed , face)
         call fix(y_speed , fixed_y_speed , face)
         call fix(z_speed , fixed_z_speed , face)
-        call copy(pressure, "flat", face)
+        call copy3(pressure, "flat", face)
         select case (turbulence)
           case('none')
             !do nothing
@@ -203,18 +176,18 @@ module bc_primitive
       subroutine pressure_outlet(face)
         implicit none
         character(len=*), intent(in) :: face
-        call copy(density, "flat", face)
-        call copy(x_speed, "flat", face)
-        call copy(y_speed, "flat", face)
-        call copy(z_speed, "flat", face)
+        call copy3(density, "flat", face)
+        call copy3(x_speed, "flat", face)
+        call copy3(y_speed, "flat", face)
+        call copy3(z_speed, "flat", face)
         call fix(pressure, fixed_pressure, face)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sst')
-            call copy(tk, "flat", face)
-            call copy(tw, "flat", face)
+            call copy3(tk, "flat", face)
+            call copy3(tw, "flat", face)
           case DEFAULT
             call turbulence_read_error()
         end select
@@ -223,8 +196,8 @@ module bc_primitive
       subroutine adiabatic_wall(face)
         implicit none
         character(len=*), intent(in) :: face
-        call copy(density , "symm",  face)
-        call copy(pressure, "symm",  face)
+        call copy3(density , "symm",  face)
+        call copy3(pressure, "symm",  face)
         call no_slip(face)
       end subroutine adiabatic_wall
 
@@ -232,8 +205,18 @@ module bc_primitive
       subroutine slip_wall(face)
         implicit none
         character(len=*), intent(in) :: face
-        call copy(density , "symm", face)
-        call copy(pressure, "symm", face)
+        call copy3(density , "symm", face)
+        call copy3(pressure, "symm", face)
+        select case (turbulence)
+          case('none')
+            !do nothing
+            continue
+          case('sst')
+            call copy3(tk, "symm", face)
+            call copy3(tw, "symm", face)
+          case DEFAULT
+            call turbulence_read_error()
+        end select
         call flow_tangency(face)
       end subroutine slip_wall
 
@@ -276,227 +259,18 @@ module bc_primitive
       end subroutine fix
 
 
-      subroutine copy(var, type, face)
-        implicit none
-        character(len=*), intent(in) :: face
-        character(len=*), intent(in) :: type
-        real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
-
-        real :: a1=1
-        real :: a2=1
-        real :: a3=0
-
-        integer :: i1=1
-        integer :: i2=2
-        integer :: i3=3
-
-        select case(type)
-          case("anti")
-            a1 =  1. ; i1 = 1
-            a2 = -1. ; i2 = 2
-            a3 =  0. ; i3 = 3
-          case("flat")
-            a1 =  1. ; i1 = 1
-            a2 =  1. ; i2 = 1
-            a3 =  0. ; i3 = 1
-          case("symm")
-            a1 =  c1 ; i1 = 1
-            a2 =  c2 ; i2 = 2
-            a3 =  c3 ; i3 = 3
-            ! do nothing
-            ! use default value
-            continue
-          case DEFAULT
-            print*, "ERROR: Wrong boundary condition type"
-        end select
-
-        select case(face)
-          case("imin")
-              var(      0, 1:jmx-1, 1:kmx-1) = (a2*var(     i1, 1:jmx-1, 1:kmx-1)-a3*var(    i1+1, 1:jmx-1, 1:kmx-1))/a1
-              var(     -1, 1:jmx-1, 1:kmx-1) = (a2*var(     i2, 1:jmx-1, 1:kmx-1)-a3*var(    i2+1, 1:jmx-1, 1:kmx-1))/a1
-              var(     -2, 1:jmx-1, 1:kmx-1) = (a2*var(     i3, 1:jmx-1, 1:kmx-1)-a3*var(    i3+1, 1:jmx-1, 1:kmx-1))/a1
-          case("imax")
-              var(  imx  , 1:jmx-1, 1:kmx-1) = (a2*var( imx-i1, 1:jmx-1, 1:kmx-1)-a3*var(imx-i1-1, 1:jmx-1, 1:kmx-1))/a1
-              var(  imx+1, 1:jmx-1, 1:kmx-1) = (a2*var( imx-i2, 1:jmx-1, 1:kmx-1)-a3*var(imx-i2-1, 1:jmx-1, 1:kmx-1))/a1
-              var(  imx+2, 1:jmx-1, 1:kmx-1) = (a2*var( imx-i3, 1:jmx-1, 1:kmx-1)-a3*var(imx-i3-1, 1:jmx-1, 1:kmx-1))/a1
-          case("jmin")
-              var(1:imx-1,       0, 1:kmx-1) = (a2*var(1:imx-1,      i1, 1:kmx-1)-a3*var(1:imx-1 ,    i1+1, 1:kmx-1))/a1
-              var(1:imx-1,      -1, 1:kmx-1) = (a2*var(1:imx-1,      i2, 1:kmx-1)-a3*var(1:imx-1 ,    i2+1, 1:kmx-1))/a1
-              var(1:imx-1,      -2, 1:kmx-1) = (a2*var(1:imx-1,      i3, 1:kmx-1)-a3*var(1:imx-1 ,    i3+1, 1:kmx-1))/a1
-          case("jmax")
-              var(1:imx-1,   jmx  , 1:kmx-1) = (a2*var(1:imx-1,  jmx-i1, 1:kmx-1)-a3*var(1:imx-1 ,jmx-i1-1, 1:kmx-1))/a1
-              var(1:imx-1,   jmx+1, 1:kmx-1) = (a2*var(1:imx-1,  jmx-i2, 1:kmx-1)-a3*var(1:imx-1 ,jmx-i2-1, 1:kmx-1))/a1
-              var(1:imx-1,   jmx+2, 1:kmx-1) = (a2*var(1:imx-1,  jmx-i3, 1:kmx-1)-a3*var(1:imx-1 ,jmx-i3-1, 1:kmx-1))/a1
-          case("kmin")
-              var(1:imx-1, 1:jmx-1,       0) = (a2*var(1:imx-1, 1:jmx-1,      i1)-a3*var(1:imx-1 , 1:jmx-1,    i1+1))/a1
-              var(1:imx-1, 1:jmx-1,      -1) = (a2*var(1:imx-1, 1:jmx-1,      i2)-a3*var(1:imx-1 , 1:jmx-1,    i2+1))/a1
-              var(1:imx-1, 1:jmx-1,      -2) = (a2*var(1:imx-1, 1:jmx-1,      i3)-a3*var(1:imx-1 , 1:jmx-1,    i3+1))/a1
-          case("kmax")
-              var(1:imx-1, 1:jmx-1,   kmx  ) = (a2*var(1:imx-1, 1:jmx-1,  kmx-i1)-a3*var(1:imx-1 , 1:jmx-1,kmx-i1-1))/a1
-              var(1:imx-1, 1:jmx-1,   kmx+1) = (a2*var(1:imx-1, 1:jmx-1,  kmx-i2)-a3*var(1:imx-1 , 1:jmx-1,kmx-i2-1))/a1
-              var(1:imx-1, 1:jmx-1,   kmx+2) = (a2*var(1:imx-1, 1:jmx-1,  kmx-i3)-a3*var(1:imx-1 , 1:jmx-1,kmx-i3-1))/a1
-          case DEFAULT
-            print*, "ERROR: wrong face for boundary condition"
-        end select
-      end subroutine copy
-
-
-      subroutine flow_tangency(face)
-        implicit none
-        character(len=*), intent(in) :: face
-        real, dimension(:,:), allocatable :: dot
-
-
-        select case(face)
-          case("imin")
-            allocate(dot(1:jmx-1, 1:kmx-1))
-            call find_dot(dot,1,face)
-            x_speed(      0, 1:jmx-1, 1:kmx-1) = x_speed(     1, 1:jmx-1, 1:kmx-1) - (2*dot*xnx(      1, 1:jmx-1, 1:kmx-1))
-            y_speed(      0, 1:jmx-1, 1:kmx-1) = y_speed(     1, 1:jmx-1, 1:kmx-1) - (2*dot*xny(      1, 1:jmx-1, 1:kmx-1))
-            z_speed(      0, 1:jmx-1, 1:kmx-1) = z_speed(     1, 1:jmx-1, 1:kmx-1) - (2*dot*xnz(      1, 1:jmx-1, 1:kmx-1))
-            call find_dot(dot,2,face)
-            x_speed(     -1, 1:jmx-1, 1:kmx-1) = x_speed(     2, 1:jmx-1, 1:kmx-1) - (2*dot*xnx(      1, 1:jmx-1, 1:kmx-1))
-            y_speed(     -1, 1:jmx-1, 1:kmx-1) = y_speed(     2, 1:jmx-1, 1:kmx-1) - (2*dot*xny(      1, 1:jmx-1, 1:kmx-1))
-            z_speed(     -1, 1:jmx-1, 1:kmx-1) = z_speed(     2, 1:jmx-1, 1:kmx-1) - (2*dot*xnz(      1, 1:jmx-1, 1:kmx-1))
-            call find_dot(dot,3,face)
-            x_speed(     -2, 1:jmx-1, 1:kmx-1) = x_speed(     3, 1:jmx-1, 1:kmx-1) - (2*dot*xnx(      1, 1:jmx-1, 1:kmx-1))
-            y_speed(     -2, 1:jmx-1, 1:kmx-1) = y_speed(     3, 1:jmx-1, 1:kmx-1) - (2*dot*xny(      1, 1:jmx-1, 1:kmx-1))
-            z_speed(     -2, 1:jmx-1, 1:kmx-1) = z_speed(     3, 1:jmx-1, 1:kmx-1) - (2*dot*xnz(      1, 1:jmx-1, 1:kmx-1))
-            deallocate(dot)
-          case("imax")
-            allocate(dot(1:jmx-1, 1:kmx-1))
-            call find_dot(dot,1,face)
-            x_speed(  imx+0, 1:jmx-1, 1:kmx-1) = x_speed( imx-1, 1:jmx-1, 1:kmx-1) - (2*dot*xnx(    imx, 1:jmx-1, 1:kmx-1))
-            y_speed(  imx+0, 1:jmx-1, 1:kmx-1) = y_speed( imx-1, 1:jmx-1, 1:kmx-1) - (2*dot*xny(    imx, 1:jmx-1, 1:kmx-1))
-            z_speed(  imx+0, 1:jmx-1, 1:kmx-1) = z_speed( imx-1, 1:jmx-1, 1:kmx-1) - (2*dot*xnz(    imx, 1:jmx-1, 1:kmx-1))
-            call find_dot(dot,2,face)
-            x_speed(  imx+1, 1:jmx-1, 1:kmx-1) = x_speed( imx-2, 1:jmx-1, 1:kmx-1) - (2*dot*xnx(    imx, 1:jmx-1, 1:kmx-1))
-            y_speed(  imx+1, 1:jmx-1, 1:kmx-1) = y_speed( imx-2, 1:jmx-1, 1:kmx-1) - (2*dot*xny(    imx, 1:jmx-1, 1:kmx-1))
-            z_speed(  imx+1, 1:jmx-1, 1:kmx-1) = z_speed( imx-2, 1:jmx-1, 1:kmx-1) - (2*dot*xnz(    imx, 1:jmx-1, 1:kmx-1))
-            call find_dot(dot,3,face)
-            x_speed(  imx+2, 1:jmx-1, 1:kmx-1) = x_speed( imx-3, 1:jmx-1, 1:kmx-1) - (2*dot*xnx(    imx, 1:jmx-1, 1:kmx-1))
-            y_speed(  imx+2, 1:jmx-1, 1:kmx-1) = y_speed( imx-3, 1:jmx-1, 1:kmx-1) - (2*dot*xny(    imx, 1:jmx-1, 1:kmx-1))
-            z_speed(  imx+2, 1:jmx-1, 1:kmx-1) = z_speed( imx-3, 1:jmx-1, 1:kmx-1) - (2*dot*xnz(    imx, 1:jmx-1, 1:kmx-1))
-            deallocate(dot)
-          case ("jmin")
-            allocate(dot(1:imx-1, 1:kmx-1))
-            call find_dot(dot,1,face)
-            x_speed(1:imx-1,       0, 1:kmx-1) = x_speed(1:imx-1,      1, 1:kmx-1) - (2*dot*ynx(1:imx-1,       1, 1:kmx-1))
-            y_speed(1:imx-1,       0, 1:kmx-1) = y_speed(1:imx-1,      1, 1:kmx-1) - (2*dot*yny(1:imx-1,       1, 1:kmx-1))
-            z_speed(1:imx-1,       0, 1:kmx-1) = z_speed(1:imx-1,      1, 1:kmx-1) - (2*dot*ynz(1:imx-1,       1, 1:kmx-1))
-            call find_dot(dot,2,face)
-            x_speed(1:imx-1,      -1, 1:kmx-1) = x_speed(1:imx-1,      2, 1:kmx-1) - (2*dot*ynx(1:imx-1,       1, 1:kmx-1))
-            y_speed(1:imx-1,      -1, 1:kmx-1) = y_speed(1:imx-1,      2, 1:kmx-1) - (2*dot*yny(1:imx-1,       1, 1:kmx-1))
-            z_speed(1:imx-1,      -1, 1:kmx-1) = z_speed(1:imx-1,      2, 1:kmx-1) - (2*dot*ynz(1:imx-1,       1, 1:kmx-1))
-            call find_dot(dot,3,face)
-            x_speed(1:imx-1,      -2, 1:kmx-1) = x_speed(1:imx-1,      3, 1:kmx-1) - (2*dot*ynx(1:imx-1,       1, 1:kmx-1))
-            y_speed(1:imx-1,      -2, 1:kmx-1) = y_speed(1:imx-1,      3, 1:kmx-1) - (2*dot*yny(1:imx-1,       1, 1:kmx-1))
-            z_speed(1:imx-1,      -2, 1:kmx-1) = z_speed(1:imx-1,      3, 1:kmx-1) - (2*dot*ynz(1:imx-1,       1, 1:kmx-1))
-            deallocate(dot)
-          case ("jmax")
-            allocate(dot(1:imx-1, 1:kmx-1))
-            call find_dot(dot,1,face)
-            x_speed(1:imx-1,     jmx, 1:kmx-1) = x_speed(1:imx-1,  jmx-1, 1:kmx-1) - (2*dot*ynx(1:imx-1,     jmx, 1:kmx-1))
-            y_speed(1:imx-1,     jmx, 1:kmx-1) = y_speed(1:imx-1,  jmx-1, 1:kmx-1) - (2*dot*yny(1:imx-1,     jmx, 1:kmx-1))
-            z_speed(1:imx-1,     jmx, 1:kmx-1) = z_speed(1:imx-1,  jmx-1, 1:kmx-1) - (2*dot*ynz(1:imx-1,     jmx, 1:kmx-1))
-            call find_dot(dot,2,face)
-            x_speed(1:imx-1,   jmx+1, 1:kmx-1) = x_speed(1:imx-1,  jmx-2, 1:kmx-1) - (2*dot*ynx(1:imx-1,     jmx, 1:kmx-1))
-            y_speed(1:imx-1,   jmx+1, 1:kmx-1) = y_speed(1:imx-1,  jmx-2, 1:kmx-1) - (2*dot*yny(1:imx-1,     jmx, 1:kmx-1))
-            z_speed(1:imx-1,   jmx+1, 1:kmx-1) = z_speed(1:imx-1,  jmx-2, 1:kmx-1) - (2*dot*ynz(1:imx-1,     jmx, 1:kmx-1))
-            call find_dot(dot,3,face)
-            x_speed(1:imx-1,   jmx+2, 1:kmx-1) = x_speed(1:imx-1,  jmx-3, 1:kmx-1) - (2*dot*ynx(1:imx-1,     jmx, 1:kmx-1))
-            y_speed(1:imx-1,   jmx+2, 1:kmx-1) = y_speed(1:imx-1,  jmx-3, 1:kmx-1) - (2*dot*yny(1:imx-1,     jmx, 1:kmx-1))
-            z_speed(1:imx-1,   jmx+2, 1:kmx-1) = z_speed(1:imx-1,  jmx-3, 1:kmx-1) - (2*dot*ynz(1:imx-1,     jmx, 1:kmx-1))
-            deallocate(dot)
-          case("kmin")
-            allocate(dot(1:imx-1, 1:jmx-1))
-            call find_dot(dot,1,face)
-            x_speed(1:imx-1, 1:jmx-1,       0) = x_speed(1:imx-1, 1:jmx-1,      1) - (2*dot*znx(1:imx-1, 1:jmx-1,       1))
-            y_speed(1:imx-1, 1:jmx-1,       0) = y_speed(1:imx-1, 1:jmx-1,      1) - (2*dot*zny(1:imx-1, 1:jmx-1,       1))
-            z_speed(1:imx-1, 1:jmx-1,       0) = z_speed(1:imx-1, 1:jmx-1,      1) - (2*dot*znz(1:imx-1, 1:jmx-1,       1))
-            call find_dot(dot,2,face)
-            x_speed(1:imx-1, 1:jmx-1,      -1) = x_speed(1:imx-1, 1:jmx-1,      2) - (2*dot*znx(1:imx-1, 1:jmx-1,       1))
-            y_speed(1:imx-1, 1:jmx-1,      -1) = y_speed(1:imx-1, 1:jmx-1,      2) - (2*dot*zny(1:imx-1, 1:jmx-1,       1))
-            z_speed(1:imx-1, 1:jmx-1,      -1) = z_speed(1:imx-1, 1:jmx-1,      2) - (2*dot*znz(1:imx-1, 1:jmx-1,       1))
-            call find_dot(dot,3,face)
-            x_speed(1:imx-1, 1:jmx-1,      -2) = x_speed(1:imx-1, 1:jmx-1,      3) - (2*dot*znx(1:imx-1, 1:jmx-1,       1))
-            y_speed(1:imx-1, 1:jmx-1,      -2) = y_speed(1:imx-1, 1:jmx-1,      3) - (2*dot*zny(1:imx-1, 1:jmx-1,       1))
-            z_speed(1:imx-1, 1:jmx-1,      -2) = z_speed(1:imx-1, 1:jmx-1,      3) - (2*dot*znz(1:imx-1, 1:jmx-1,       1))
-            deallocate(dot)
-          case("kmax")
-            allocate(dot(1:imx-1, 1:jmx-1))
-            call find_dot(dot,1,face)
-            x_speed(1:imx-1, 1:jmx-1,   kmx  ) = x_speed(1:imx-1, 1:jmx-1,  kmx-1) - (2*dot*znx(1:imx-1, 1:jmx-1,     kmx))
-            y_speed(1:imx-1, 1:jmx-1,   kmx  ) = y_speed(1:imx-1, 1:jmx-1,  kmx-1) - (2*dot*zny(1:imx-1, 1:jmx-1,     kmx))
-            z_speed(1:imx-1, 1:jmx-1,   kmx  ) = z_speed(1:imx-1, 1:jmx-1,  kmx-1) - (2*dot*znz(1:imx-1, 1:jmx-1,     kmx))
-            call find_dot(dot,2,face)
-            x_speed(1:imx-1, 1:jmx-1,   kmx+1) = x_speed(1:imx-1, 1:jmx-1,  kmx-2) - (2*dot*znx(1:imx-1, 1:jmx-1,     kmx))
-            y_speed(1:imx-1, 1:jmx-1,   kmx+1) = y_speed(1:imx-1, 1:jmx-1,  kmx-2) - (2*dot*zny(1:imx-1, 1:jmx-1,     kmx))
-            z_speed(1:imx-1, 1:jmx-1,   kmx+1) = z_speed(1:imx-1, 1:jmx-1,  kmx-2) - (2*dot*znz(1:imx-1, 1:jmx-1,     kmx))
-            call find_dot(dot,3,face)
-            x_speed(1:imx-1, 1:jmx-1,   kmx+2) = x_speed(1:imx-1, 1:jmx-1,  kmx-3) - (2*dot*znx(1:imx-1, 1:jmx-1,     kmx))
-            y_speed(1:imx-1, 1:jmx-1,   kmx+2) = y_speed(1:imx-1, 1:jmx-1,  kmx-3) - (2*dot*zny(1:imx-1, 1:jmx-1,     kmx))
-            z_speed(1:imx-1, 1:jmx-1,   kmx+2) = z_speed(1:imx-1, 1:jmx-1,  kmx-3) - (2*dot*znz(1:imx-1, 1:jmx-1,     kmx))
-            deallocate(dot)
-        end select
-        select case(turbulence)
-          case("none")
-            !do nothing
-            continue
-          case("sst")
-            call copy(tk  , "symm", face)
-            call copy(tw  , "symm", face)
-          case DEFAULT
-            call turbulence_read_error()
-        end select
-      end subroutine flow_tangency
-      
-      subroutine find_dot(dot,i, face)
-        implicit none
-        integer, intent(in) :: i
-        character(len=*), intent(in) :: face
-        real, dimension(:,:), intent(out) :: dot
-
-        select case(face)
-          case("imin")
-            dot = (x_speed(i, 1:jmx-1, 1:kmx-1) * xnx(1, 1:jmx-1, 1:kmx-1)) + &
-                  (y_speed(i, 1:jmx-1, 1:kmx-1) * xny(1, 1:jmx-1, 1:kmx-1)) + &
-                  (z_speed(i, 1:jmx-1, 1:kmx-1) * xnz(1, 1:jmx-1, 1:kmx-1))
-          case("imax")
-            dot = (x_speed(imx-i, 1:jmx-1, 1:kmx-1) * xnx(imx, 1:jmx-1, 1:kmx-1)) + &
-                  (y_speed(imx-i, 1:jmx-1, 1:kmx-1) * xny(imx, 1:jmx-1, 1:kmx-1)) + &
-                  (z_speed(imx-i, 1:jmx-1, 1:kmx-1) * xnz(imx, 1:jmx-1, 1:kmx-1))
-          case ("jmin")
-            dot = (x_speed(1:imx-1, i, 1:kmx-1) * ynx(1:imx-1, 1, 1:kmx-1)) + &
-                  (y_speed(1:imx-1, i, 1:kmx-1) * yny(1:imx-1, 1, 1:kmx-1)) + &
-                  (z_speed(1:imx-1, i, 1:kmx-1) * ynz(1:imx-1, 1, 1:kmx-1))
-          case ("jmax")
-            dot = (x_speed(1:imx-1, jmx-i, 1:kmx-1) * ynx(1:imx-1, jmx, 1:kmx-1)) + &
-                  (y_speed(1:imx-1, jmx-i, 1:kmx-1) * yny(1:imx-1, jmx, 1:kmx-1)) + &
-                  (z_speed(1:imx-1, jmx-i, 1:kmx-1) * ynz(1:imx-1, jmx, 1:kmx-1))
-          case("kmin")
-            dot = (x_speed(1:imx-1, 1:jmx-1, i) * znx(1:imx-1, 1:jmx-1, 1)) + &
-                  (y_speed(1:imx-1, 1:jmx-1, i) * zny(1:imx-1, 1:jmx-1, 1)) + &
-                  (z_speed(1:imx-1, 1:jmx-1, i) * znz(1:imx-1, 1:jmx-1, 1))
-          case("kmax")
-            dot = (x_speed(1:imx-1, 1:jmx-1, kmx-i) * znx(1:imx-1, 1:jmx-1, kmx)) + &
-                  (y_speed(1:imx-1, 1:jmx-1, kmx-i) * zny(1:imx-1, 1:jmx-1, kmx)) + &
-                  (z_speed(1:imx-1, 1:jmx-1, kmx-i) * znz(1:imx-1, 1:jmx-1, kmx))
-        end select
-      end subroutine find_dot
-
       subroutine no_slip(face)
         implicit none
         character(len=*), intent(in) :: face
-        call copy(x_speed, "anti", face)
-        call copy(y_speed, "anti", face)
-        call copy(z_speed, "anti", face)
+        call copy3(x_speed, "anti", face)
+        call copy3(y_speed, "anti", face)
+        call copy3(z_speed, "anti", face)
         select case(turbulence)
           case("none")
             !do nothing
             continue
           case("sst")
-            call copy(tk  , "anti", face)
+            call copy3(tk  , "anti", face)
             call set_omega_at_wall(face)
           case DEFAULT
             call turbulence_read_error()
@@ -571,50 +345,6 @@ module bc_primitive
 
       end select
     end subroutine set_omega_at_wall
-
-      
-    subroutine set_wall_flux_zero()
-      implicit none
-      integer :: i
-      character(len=4) :: face
-      
-      do i = 1,6
-
-        face = face_names(i)
-
-        select case(id(i))
-
-          case(-5)
-            !call making_flux_zero(face)
-
-          case(-6)
-            !call making_flux_zero(face)
-
-        end select
-      end do
-
-    end subroutine set_wall_flux_zero
-
-!    subroutine making_flux_zero(face)
-!      implicit none
-!      character(len=*), intent(in) :: face
-!
-!      select case(face)
-!        case("imin")
-!          F(1,:,:)   = 0.
-!        case("imax")
-!          F(imx,:,:) = 0.
-!        case("jmin")
-!          G(:,1,:)   = 0.
-!        case("jmax")
-!          G(:,jmx,:) = 0.
-!        case("kmin")
-!          H(:,:,1)   = 0.
-!        case("kmax")
-!          H(:,:,kmx) = 0.
-!      end select
-!
-!    end subroutine making_flux_zero
 
     subroutine check_if_value_fixed(model)
       implicit none

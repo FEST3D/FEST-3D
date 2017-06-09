@@ -27,6 +27,9 @@ module sst_viscosity
   use global_vars   , only : gradv_z
   use global_vars   , only : gradw_x
   use global_vars   , only : gradw_y
+  use global_vars   , only : id
+  use global_vars   , only : face_names
+  use copy_bc       , only : copy1
 
   private
 
@@ -79,6 +82,17 @@ module sst_viscosity
           end do
         end do
       end do
+
+      ! populating ghost cell
+      do i = 1,6
+        select case(id(i))
+          case(-4:-1,-6)
+            call copy1(sst_mu, "symm", face_names(i))
+          case(-5)
+            call copy1(sst_mu, "anti", face_names(i))
+        end select
+      end do
+
 
     end subroutine calculate_sst_mu
 

@@ -19,7 +19,6 @@ module bc_transport
   use global_vars, only: face_names
   use global_vars, only: id
 
-  use global_sst , only: sst_F1
   use utils,       only: turbulence_read_error
 
   implicit none
@@ -28,6 +27,7 @@ module bc_transport
   integer                        :: face_num
 
   public :: populate_ghost_transport
+  public :: copy
 
 
   contains
@@ -44,23 +44,11 @@ module bc_transport
 
         select case(id(face_num))
 
-          case(-1)
-            call supersonic_inlet(face)
-
-          case(-2)
-            call supersonic_outlet(face)
-
-          case(-3)
-            call pressure_inlet(face)
-
-          case(-4)
-            call pressure_outlet(face)
+          case(-4:-1,-6)
+            call extrapolate(face)
 
           case(-5)
             call adiabatic_wall(face)
-
-          case(-6)
-            call slip_wall(face)
 
           case Default
             if(id(i)>=0) then
@@ -74,7 +62,7 @@ module bc_transport
       end subroutine populate_ghost_transport
 
 
-      subroutine supersonic_inlet(face)
+      subroutine extrapolate(face)
         implicit none
         character(len=*), intent(in) :: face
         select case (turbulence)
@@ -83,59 +71,10 @@ module bc_transport
             continue
           case('sst')
             call copy(mu_t   , "symm", face)
-            call copy(sst_F1 , "symm", face)
           case DEFAULT
             call turbulence_read_error()
         end select
-      end subroutine supersonic_inlet
-
-
-      subroutine supersonic_outlet(face)
-        implicit none
-        character(len=*), intent(in) :: face
-        select case (turbulence)
-          case('none')
-            !do nothing
-            continue
-          case('sst')
-            call copy(mu_t   , "symm", face)
-            call copy(sst_F1 , "symm", face)
-          case DEFAULT
-            call turbulence_read_error()
-        end select
-      end subroutine supersonic_outlet
-
-
-      subroutine pressure_inlet(face)
-        implicit none
-        character(len=*), intent(in) :: face
-        select case (turbulence)
-          case('none')
-            !do nothing
-            continue
-          case('sst')
-            call copy(mu_t   , "symm", face)
-            call copy(sst_F1 , "symm", face)
-          case DEFAULT
-            call turbulence_read_error()
-        end select
-      end subroutine pressure_inlet
-
-
-      subroutine pressure_outlet(face)
-        implicit none
-        character(len=*), intent(in) :: face
-        select case (turbulence)
-          case('none')
-            !do nothing
-            continue
-          case('sst')
-            call copy(mu_t   , "symm", face)
-            call copy(sst_F1 , "symm", face)
-          case DEFAULT
-            call turbulence_read_error()
-        end select
-      end subroutine pressure_outlet
+      end subroutine extrapolate
 
       subroutine adiabatic_wall(face)
         implicit none
@@ -146,29 +85,10 @@ module bc_transport
             continue
           case('sst')
             call copy(mu_t   , "anti", face)
-            call copy(sst_F1 , "symm", face)
           case DEFAULT
             call turbulence_read_error()
         end select
       end subroutine adiabatic_wall
-
-
-      subroutine slip_wall(face)
-        implicit none
-        character(len=*), intent(in) :: face
-        select case (turbulence)
-          case('none')
-            !do nothing
-            continue
-          case('sst')
-            call copy(mu_t   , "symm", face)
-            call copy(sst_F1 , "symm", face)
-          case DEFAULT
-            call turbulence_read_error()
-        end select
-      end subroutine slip_wall
-
-
 
       subroutine copy(var, type, face)
         implicit none
@@ -181,9 +101,7 @@ module bc_transport
           case("anti")
             a2 = -1
           case("symm")
-            ! do nothing
-            ! use default value
-            continue
+            a2 =  1
           case DEFAULT
             print*, "ERROR: Wrong boundary condition type"
         end select

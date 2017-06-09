@@ -118,20 +118,20 @@ module read_output_vtk
             !Skip
             continue
 
-          case('dudx', 'dudy', 'dudz',)
+          case('Dudx', 'Dudy', 'Dudz')
             !skip
             continue
 
-          case('dvdx', 'dvdy', 'dvdz',)
+          case('Dvdx', 'Dvdy', 'Dvdz')
             !skip
             continue
 
-          case('dwdx', 'dwdy', 'dwdz',)
+          case('Dwdx', 'Dwdy', 'Dwdz')
             !skip
             continue
 
           case Default
-            print*, err//trim(rw_list(n))//
+            print*, err//trim(rw_list(n))
 
         end select
       end do
@@ -171,7 +171,7 @@ module read_output_vtk
         do k = 1, kmx
          do j = 1, jmx
           do i = 1, imx
-              read(IN_FILE_UNIT, *) !grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
+            read(IN_FILE_UNIT, *) !grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
           end do
          end do
         end do

@@ -43,7 +43,6 @@ module write_output_vtk
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
   use global_vars, only : TKE_residue
-  use global_vars, only : tk_con_res
 
   use global_vars, only : turbulence
   use global_vars, only : mu_ref
@@ -152,9 +151,6 @@ module write_output_vtk
 
           case('TKE_residue')
             call write_scalar(TKE_residue ,"TKE_residue", 1)
-
-          case('TKE_res_con')
-            call write_scalar(tk_con_res , "TKE_res_con", 1)
 
           case('F1')
             call write_scalar(sst_F1 ,"F1", -2)

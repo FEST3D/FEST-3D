@@ -48,6 +48,7 @@ module res_viscous
   use global_vars, only: energy_resnorm_d1
   use global_vars, only: current_iter
   use global_vars, only: res_write_interval
+  use global_vars, only: vel_mag
 
   use utils,      only: dmsg
   use utils,      only: dealloc
@@ -78,8 +79,7 @@ module res_viscous
       implicit none
       call dmsg(1, 'res_viscous', 'compute_viscous_resnorm')
 
-      speed_inf = sqrt(x_speed_inf ** 2. + y_speed_inf ** 2. + &
-                        z_speed_inf ** 2.)
+      speed_inf = vel_mag
 
         call compute_block_resnorm()
         if (current_iter == 1) then

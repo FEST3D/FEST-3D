@@ -20,6 +20,7 @@ module read_bc
   use global_vars, only: fixed_tk
   use global_vars, only: fixed_tw
   use global_vars, only: process_id
+  use global_vars, only: turbulence
   use layout     , only: bc_file
 
   implicit none
@@ -75,15 +76,28 @@ module read_bc
             case ("FIX_PRESSURE")
               call set_value(fixed_pressure, fix_val, pressure_inf, count, ios)
 
-            case ("FIX_tk")
-              call set_value(fixed_tk      , fix_val, tk_inf      , count, ios)
+          end select
 
-            case ("FIX_tw")
-              call set_value(fixed_tw      , fix_val, tw_inf      , count, ios)
+          select case (turbulence)
 
-            case DEFAULT
-              ! no a value to fix
+            case ("none")
+              !do nothing
               continue
+
+            case ("sst")
+              select case(buf(3:index(buf(3:), " ")+1))
+
+                case ("FIX_tk")
+                  call set_value(fixed_tk      , fix_val, tk_inf      , count, ios)
+
+                case ("FIX_tw")
+                  call set_value(fixed_tw      , fix_val, tw_inf      , count, ios)
+
+                case DEFAULT
+                  ! no a value to fix
+                  continue
+
+              end select
 
           end select
 

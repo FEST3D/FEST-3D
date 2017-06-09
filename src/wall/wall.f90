@@ -9,17 +9,11 @@ module wall
   use global_vars, only : grid_z
   use global_vars, only : process_id
   use global_vars, only : total_process
+  use global_vars, only : id
 
   use string
   use bitwise
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
-  use boundary_conditions, only : bc_imn
-  use boundary_conditions, only : bc_imx
-  use boundary_conditions, only : bc_jmn
-  use boundary_conditions, only : bc_jmx
-  use boundary_conditions, only : bc_kmn
-  use boundary_conditions, only : bc_kmx
-  use boundary_conditions, only : BC_NO_SLIP
 
 #ifdef __GFORTRAN__
   use mpi
@@ -204,21 +198,12 @@ module wall
     subroutine find_wall()
 
       implicit none
+      integer :: i
 
-
-      if    ((bc_imn(1,1) .and. BC_NO_SLIP) .eq. BC_NO_SLIP) then
-        NO_slip_flag(1)=1
-      elseif((bc_imx(1,1) .and. BC_NO_SLIP) .eq. BC_NO_SLIP) then
-        NO_slip_flag(2)=1
-      elseif((bc_jmn(1,1) .and. BC_NO_SLIP) .eq. BC_NO_SLIP) then
-        NO_slip_flag(3)=1
-      elseif((bc_jmx(1,1) .and. BC_NO_SLIP) .eq. BC_NO_SLIP) then
-        NO_slip_flag(4)=1
-      elseif((bc_kmn(1,1) .and. BC_NO_SLIP) .eq. BC_NO_SLIP) then
-        NO_slip_flag(5)=1
-      elseif((bc_kmx(1,1) .and. BC_NO_SLIP) .eq. BC_NO_SLIP) then
-        NO_slip_flag(6)=1
-      end if
+      NO_slip_flag=0
+      do i = 1,6
+        if(id(i)==-5) NO_SLIP_FLAG(i)=1
+      end do
 
     end subroutine find_wall
 

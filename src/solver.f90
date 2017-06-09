@@ -81,7 +81,7 @@ module solver
   use global_vars, only: omega_residue
   use global_vars, only: res_write_interval
   use global_vars, only: rw_list
-
+  use global_vars, only: merror
 
   use utils, only: alloc
   use utils, only:  dealloc 
@@ -104,11 +104,7 @@ module solver
           extrapolate_cell_averages_to_faces
   use scheme, only: scheme_name, setup_scheme, destroy_scheme, &
           compute_fluxes, compute_residue
-  use source, only: add_source_term_residue, &
-                    compute_gradients_cell_centre
-  use boundary_conditions, only: setup_boundary_conditions, &
-          apply_boundary_conditions, set_wall_bc_at_faces, &
-          destroy_boundary_conditions
+  use source, only: add_source_term_residue
   use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
   use viscous, only: compute_viscous_fluxes
   use turbulent_flux, only: compute_turbulent_fluxes
@@ -126,11 +122,10 @@ module solver
   use blending_function , only : destroy_sst_F1
   use blending_function , only : calculate_sst_F1
   use wall        , only : write_surfnode
-  use ghost_gradients, only : apply_gradient_bc
   include "turbulence_models/include/solver/import_module.inc"
   use bc, only: setup_bc
   use bc_primitive, only: populate_ghost_primitive
-  use bc_transport, only: populate_ghost_transport
+  use summon_grad_evaluation, only : evaluate_all_gradients
 
 #ifdef __GFORTRAN__
     use mpi
@@ -177,7 +172,6 @@ module solver
             end if
             call setup_state()
             call setup_gradients()
-            call setup_boundary_conditions(bc_file)
             call setup_bc()
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
@@ -712,12 +706,12 @@ module solver
                        ((gm - 1.) * energy_residue(i, j, k)) ) * &
                        delta_t(i, j, k) / volume(i, j, k) ) 
 
+               include "turbulence_models/include/solver/update_solution.inc"
                density(i, j, k) = density_temp
                x_speed(i, j, k) = x_speed_temp
                y_speed(i, j, k) = y_speed_temp
                z_speed(i, j, k) = z_speed_temp
                pressure(i, j, k) = pressure_temp
-               include "turbulence_models/include/solver/update_solution.inc"
               end do
              end do
             end do
@@ -751,29 +745,21 @@ module solver
             !TODO: Better name for this??
 
             call dmsg(1, 'solver', 'sub_step')
+            merror=0.
             call send_recv(3) ! parallel call-argument:no of layers 
- !           call apply_boundary_conditions()
             call populate_ghost_primitive()
             call compute_face_interpolant()
             call reconstruct_boundary_state(interpolant)
-            call set_wall_bc_at_faces()
             call compute_fluxes()
-!            call calculate_transport()
             if (mu_ref /= 0.0) then
-                if (interpolant /= "none") then
-                    call extrapolate_cell_averages_to_faces()
-                    call set_wall_bc_at_faces()
-                end if
-                call compute_gradients_cell_centre()
-                call calculate_transport()
-                call add_source_term_residue()
-                call calculate_sst_F1()
-                call populate_ghost_transport()
-                call apply_gradient_bc()
-                call compute_viscous_fluxes(F_p, G_p, H_p)
-                call compute_turbulent_fluxes(F_p, G_p, H_p)
+              call evaluate_all_gradients()
+              call calculate_transport()
+              call calculate_sst_F1()
+              call compute_viscous_fluxes(F_p, G_p, H_p)
+              call compute_turbulent_fluxes(F_p, G_p, H_p)
             end if
             call compute_residue()
+            call add_source_term_residue()
             call dmsg(1, 'solver', 'step', 'Residue computed.')
             call compute_time_step()
 

@@ -29,6 +29,7 @@ module Res_turbulent
   use global_vars, only: current_iter
   use global_vars, only: res_write_interval
   use global_vars, only: turbulence
+  use global_vars, only: vel_mag
 
   use utils,      only: dmsg
   use utils,      only: dealloc
@@ -45,7 +46,6 @@ module Res_turbulent
 #endif
   private
   integer, parameter                :: n = 6    !total number of turbulent variables
-  real                              :: speed_inf
   real, dimension(n)                :: res_send_buf
   real, dimension(:),   allocatable :: root_res_recv_buf
   real, dimension(:,:), allocatable :: global_resnorm
@@ -110,7 +110,7 @@ module Res_turbulent
 
       TKE_resnorm = sum(                               &
                         (TKE_residue(:, :, :)/         &
-                        (density_inf * tk_inf)) ** 2   &
+                        (density_inf * vel_mag * tk_inf)) ** 2   &
                        )                               
 
     end subroutine R_TKE
@@ -120,7 +120,7 @@ module Res_turbulent
 
       omega_resnorm = sum(                              &
                           (omega_residue(:, :, :)/      &
-                          (density_inf * tw_inf)) ** 2  &
+                          (density_inf * vel_mag *  tw_inf)) ** 2  &
                          )                              
 
     end subroutine R_omega

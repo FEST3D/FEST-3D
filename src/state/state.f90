@@ -205,6 +205,7 @@ module state
             y_speed_inf = free_stream_y_speed
             z_speed_inf = free_stream_z_speed
             pressure_inf = free_stream_pressure
+            vel_mag = sqrt(x_speed_inf**2 + y_speed_inf**2 + z_speed_inf**2)
             include "turbulence_models/include/state/init_infinity_values.inc"
 
         end subroutine init_infinity_values

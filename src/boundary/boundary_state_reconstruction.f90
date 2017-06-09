@@ -4,6 +4,12 @@ module boundary_state_reconstruction
   use global_vars,          only: imx
   use global_vars,          only: jmx
   use global_vars,          only: kmx
+  use global_vars,          only: imin_id
+  use global_vars,          only: jmin_id
+  use global_vars,          only: kmin_id
+  use global_vars,          only: imax_id
+  use global_vars,          only: jmax_id
+  use global_vars,          only: kmax_id
 
   use global_vars,          only: qp
   use global_vars,          only: n_var
@@ -13,10 +19,6 @@ module boundary_state_reconstruction
   use face_interpolant,     only: x_qp_left, x_qp_right
   use face_interpolant,     only: y_qp_left, y_qp_right
   use face_interpolant,     only: z_qp_left, z_qp_right
-  use boundary_conditions,  only: bc_imn, bc_imx
-  use boundary_conditions,  only: bc_jmn, bc_jmx
-  use boundary_conditions,  only: bc_kmn, bc_kmx
-  use boundary_conditions,  only: BC_INTERFACE
 
   implicit none
   private
@@ -33,27 +35,27 @@ module boundary_state_reconstruction
       call dmsg(1,'boundary_state_recons', 'recons_boundary_state')
       if (interpolant == 'ppm') ppm_flag=1
       if(interpolant /='none')then
-        if(bc_imn(1,1) /= BC_INTERFACE)then
+        if(imin_id<0)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imin')
           call reconstruct_imin()
         end if
-        if(bc_imx(1,1) /= BC_INTERFACE)then
+        if(imax_id<0)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imax')
           call reconstruct_imax()
         end if
-        if(bc_jmn(1,1) /= BC_INTERFACE)then
+        if(jmin_id<0)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'jmin')
           call reconstruct_jmin()
         end if
-        if(bc_jmx(1,1) /= BC_INTERFACE)then
+        if(jmax_id<0)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'jmax')
           call reconstruct_jmax()
         end if
-        if(bc_kmn(1,1) /= BC_INTERFACE)then
+        if(kmin_id<0)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'kmin')
           call reconstruct_kmin()
         end if
-        if(bc_kmx(1,1) /= BC_INTERFACE)then
+        if(kmax_id<0)then
         call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'kmax')
           call reconstruct_kmax()
         end if

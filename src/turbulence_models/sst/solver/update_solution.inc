@@ -16,6 +16,9 @@
 !                            delta_t(i, j, k) / volume(i, j, k))
 
       beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
+              pressure_temp = pressure_temp - &
+                              (-(gm-1)*TKE_residue(i,j,k))*&
+                              (delta_t(i,j,k)/volume(i,j,k))
               tk_temp = tk(i,j,k) - &
                         (1.*delta_t(i,j,k)/volume(i,j,k))&
                        *(-1.*tk(i,j,k)*mass_residue(i,j,k)/density_temp &

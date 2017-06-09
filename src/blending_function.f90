@@ -11,7 +11,6 @@ module blending_function
   use global_vars , only : dist
   
   ! gradients
-
   use global_vars, only : gradu_x
   use global_vars, only : gradu_y
   use global_vars, only : gradu_z 
@@ -35,6 +34,9 @@ module blending_function
   use global_vars, only : jmx
   use global_vars, only : kmx
   use global_vars, only : turbulence
+  use global_vars, only : id
+  use global_vars, only : face_names
+  use copy_bc    , only : copy1
 
   use utils
 
@@ -90,6 +92,10 @@ module blending_function
         end do
       end do
 
+      ! populating ghost cells
+      do i = 1,6
+        if(id(i)<0)call copy1(sst_F1,"symm", face_names(i)) 
+      end do
 
     end subroutine calculate
 
@@ -109,9 +115,7 @@ module blending_function
           call turbulence_read_error()
 
       end select
-  
 
     end subroutine calculate_sst_F1
 
 end module blending_function
-

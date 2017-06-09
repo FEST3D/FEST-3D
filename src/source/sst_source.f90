@@ -73,7 +73,7 @@ module sst_source
           do i = 1,imx-1
 
             ! __ vorticity __
-            vort = sqrt( 0.5 * ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
+            vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
                             + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
                             + (gradv_x(i,j,k)- gradu_y(i,j,k))**2 &
                              )&
@@ -111,9 +111,6 @@ module sst_source
 
             S_k = S_k * volume(i, j, k)
             S_w = S_w * volume(i, j, k)
-            if (j==2 .and. k==1) then
-            !print*, i, S_k, TKE_residue(i,j,k)
-            end if
 
             TKE_residue(i, j, k)   = TKE_residue(i, j, k) - S_k
             omega_residue(i, j, k) = omega_residue(i, j, k) - S_w
