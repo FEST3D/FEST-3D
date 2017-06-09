@@ -42,6 +42,8 @@ module write_output_vtk
   use global_vars, only :  y_mom_residue
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
+  use global_vars, only : TKE_residue
+  use global_vars, only : tk_con_res
 
   use global_vars, only : turbulence
   use global_vars, only : mu_ref
@@ -79,6 +81,7 @@ module write_output_vtk
   real    :: speed_inf
   character(len=8) :: file_format
   character(len=16) :: data_format
+  character                          :: newline=achar(10)
 
   public :: write_file
 
@@ -99,43 +102,47 @@ module write_output_vtk
           case('U')
             call write_velocity()
 
+          case('V', 'W')
+            !Skip
+            continue
+
           case('Density')
-            call write_scalar(density ,"Density")
+            call write_scalar(density ,"Density", -2)
           
           case('Pressure')
-            call write_scalar(pressure ,"Pressure")
+            call write_scalar(pressure ,"Pressure", -2)
             
           case('Mu')
             if (mu_ref/=0.0) then
-              call write_scalar(mu ,"Mu")
+              call write_scalar(mu ,"Mu", -2)
             else
               print*, err//trim(rw_list(n))
             end if
             
           case('Mu_t')
             if (turbulence/='none') then
-              call write_scalar(mu_t, "Mu_t")
+              call write_scalar(mu_t, "Mu_t", -2)
             else
               print*, err//trim(rw_list(n))
             end if
             
           case('TKE')
             if(turbulence=="sst")then
-            call write_scalar(tk, "TKE")
+            call write_scalar(tk, "TKE", -2)
             else
               print*, err//trim(rw_list(n))
             end if
 
           case('Omega')
             if(turbulence=="sst") then
-            call write_scalar(tw, "Omega")
+            call write_scalar(tw, "Omega", -2)
             else
               print*, err//trim(rw_list(n))
             end if
 
           case('Wall_distance')
             if(turbulence/="none") then
-            call write_scalar(dist, "dist")
+            call write_scalar(dist, "dist", 1)
             else
               print*, err//trim(rw_list(n))
             end if
@@ -143,62 +150,68 @@ module write_output_vtk
           case('Resnorm')
             call write_resnorm()
 
+          case('TKE_residue')
+            call write_scalar(TKE_residue ,"TKE_residue", 1)
+
+          case('TKE_res_con')
+            call write_scalar(tk_con_res , "TKE_res_con", 1)
+
           case('F1')
-            call write_scalar(sst_F1 ,"F1")
+            call write_scalar(sst_F1 ,"F1", -2)
 
           case('Dudx')
-            call write_scalar(gradu_x ,"dudx ")
+            call write_scalar(gradu_x ,"dudx ", 0)
 
           case('Dudy')
-            call write_scalar(gradu_y ,"dudy ")
+            call write_scalar(gradu_y ,"dudy ", 0)
 
           case('Dudz')
-            call write_scalar(gradu_z ,"dudz ")
+            call write_scalar(gradu_z ,"dudz ", 0)
 
           case('Dvdx')
-            call write_scalar(gradv_x ,"dvdx ")
+            call write_scalar(gradv_x ,"dvdx ", 0)
 
           case('Dvdy')
-            call write_scalar(gradv_y ,"dvdy ")
+            call write_scalar(gradv_y ,"dvdy ", 0)
 
           case('Dvdz')
-            call write_scalar(gradv_z ,"dvdz ")
+            call write_scalar(gradv_z ,"dvdz ", 0)
 
           case('Dwdx')
-            call write_scalar(gradw_x ,"dwdx ")
+            call write_scalar(gradw_x ,"dwdx ", 0)
 
           case('Dwdy')
-            call write_scalar(gradw_y ,"dwdy ")
+            call write_scalar(gradw_y ,"dwdy ", 0)
 
           case('Dwdz')
-            call write_scalar(gradw_z ,"dwdz ")
+            call write_scalar(gradw_z ,"dwdz ", 0)
 
           case('DTdx')
-            call write_scalar(gradT_x ,"dTdx ")
+            call write_scalar(gradT_x ,"dTdx ", 0)
 
           case('DTdy')
-            call write_scalar(gradT_y ,"dTdy ")
+            call write_scalar(gradT_y ,"dTdy ", 0)
 
           case('DTdz')
-            call write_scalar(gradT_z ,"dTdz ")
+            call write_scalar(gradT_z ,"dTdz ", 0)
 
           case('Dtkdx')
-            call write_scalar(gradtk_x,"dtkdx")
+            call write_scalar(gradtk_x,"dtkdx", 0)
 
           case('Dtkdy')
-            call write_scalar(gradtk_y,"dtkdy")
+            call write_scalar(gradtk_y,"dtkdy", 0)
 
           case('Dtkdz')
-            call write_scalar(gradtk_z,"dtkdz")
+            call write_scalar(gradtk_z,"dtkdz", 0)
 
           case('Dtwdx')
-            call write_scalar(gradtw_x,"dtwdx")
+            call write_scalar(gradtw_x,"dtwdx", 0)
 
           case('Dtwdy')
-            call write_scalar(gradtw_y,"dtwdy")
+            call write_scalar(gradtw_y,"dtwdy", 0)
 
           case('Dtwdz')
-            call write_scalar(gradtw_z,"dtwdz")
+            call write_scalar(gradtw_z,"dtwdz", 0)
 
           case Default
             print*, err//trim(rw_list(n))//" to file"
@@ -222,11 +235,11 @@ module write_output_vtk
         write(OUT_FILE_UNIT, '(a)') 'DATASET STRUCTURED_GRID'
         write(OUT_FILE_UNIT, *)
       elseif (write_data_format == 'BINARY') then
-        write(OUT_FILE_UNIT) '# vtk DataFile Version 3.1'
-        write(OUT_FILE_UNIT) 'cfd-iitm output'
-        write(OUT_FILE_UNIT) trim(Write_data_format)
-        write(OUT_FILE_UNIT) 'DATASET STRUCTURED_GRID'
-        write(OUT_FILE_UNIT)
+        write(OUT_FILE_UNIT) '# vtk DataFile Version 3.1'//newline
+        write(OUT_FILE_UNIT) 'cfd-iitm output'//newline
+        write(OUT_FILE_UNIT) trim(Write_data_format)//newline
+        write(OUT_FILE_UNIT) 'DATASET STRUCTURED_GRID'//newline
+        write(OUT_FILE_UNIT) newline
       end if
 
 
@@ -260,7 +273,7 @@ module write_output_vtk
          do j = 1, jmx
           do i = 1, imx
               write(OUT_FILE_UNIT) &
-                  grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
+                  grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k), newline
           end do
          end do
         end do
@@ -294,7 +307,7 @@ module write_output_vtk
          do j = 1, jmx - 1
           do i = 1, imx - 1
             write(OUT_FILE_UNIT) &
-                x_speed(i, j, k), ' ', y_speed(i, j, k), ' ', z_speed(i, j, k)
+                x_speed(i, j, k), ' ', y_speed(i, j, k), ' ', z_speed(i, j, k), newline
           end do
          end do
         end do
@@ -411,12 +424,12 @@ module write_output_vtk
     end subroutine write_resnorm
 
 
-    subroutine write_scalar(var, name)
+    subroutine write_scalar(var, name, index)
       implicit none
-      real, dimension(:,:,:), intent(in) :: var
+      integer, intent(in) :: index
+      real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var
       character(len=*),       intent(in):: name
-      character                          :: newline=achar(10)
-      character(len=32)                  :: line
+      character(len=128)                  :: line
 
       call dmsg(1, 'write_output_vtk', trim(name))
 
