@@ -22,8 +22,10 @@ module parallel
   use global_vars, only : jmax_id
   use global_vars, only : kmin_id
   use global_vars, only : kmax_id
+  use global_vars, only : mu_t
   use global_sst , only : sst_F1
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
+  use utils, only: turbulence_read_error
 
   use state 
 
@@ -38,6 +40,7 @@ module parallel
        imax_send_buf,imax_recv_buf,jmin_send_buf,jmin_recv_buf, &
        jmax_send_buf,jmax_recv_buf,kmin_send_buf,kmin_recv_buf,&
        kmax_send_buf,kmax_recv_buf
+  integer :: comm_var
   public :: allocate_buffer_cells
   public :: send_recv_i
   public :: send_recv_j
@@ -146,7 +149,7 @@ contains
        include "turbulence_models/include/parallel/send_imin.inc"
        !print *,"count is ", count 
        ! send message to left process
-       buf = (jmx+1)*(kmx+1)*n_var*layers ! three cells       
+       buf = (jmx+1)*(kmx+1)*comm_var*layers ! three cells       
        !do k = 1, buf
        !print *,'left send - ', process_id, k ,left_send_buf(k)
        !end do       
@@ -234,7 +237,7 @@ contains
 
     if(imax_id >= 0) then
        !print *,"right id is ", process_id,right_id
-       buf = (jmx+1)*(kmx+1)*n_var*layers
+       buf = (jmx+1)*(kmx+1)*comm_var*layers
        call MPI_RECV(imax_recv_buf,buf,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD,status,ierr)
        ! updating solution       
        count = 1
@@ -481,7 +484,7 @@ contains
        include "turbulence_models/include/parallel/send_jmin.inc"
        !print *,"count is ", count 
        ! send message to left process
-       buf = (imx+1)*(kmx+1)*n_var*layers ! three layers       
+       buf = (imx+1)*(kmx+1)*comm_var*layers ! three layers       
        !do k = 1, buf
        !print *,'left send - ', process_id, k ,left_send_buf(k)
        !end do       
@@ -568,7 +571,7 @@ contains
 
     if(jmax_id >= 0) then
        !print *,"right id is ", process_id,right_id
-       buf = (imx+1)*(kmx+1)*n_var*layers
+       buf = (imx+1)*(kmx+1)*comm_var*layers
        call MPI_RECV(jmax_recv_buf,buf,MPI_DOUBLE_PRECISION,jmax_id,1,MPI_COMM_WORLD,status,ierr)
        ! updating solution       
        count = 1
@@ -813,7 +816,7 @@ contains
        include "turbulence_models/include/parallel/send_kmin.inc"
        !print *,"count is ", count 
        ! send message to left process
-       buf = (jmx+1)*(imx+1)*n_var*layers ! three cells       
+       buf = (jmx+1)*(imx+1)*comm_var*layers ! three cells       
        !do k = 1, buf
        !print *,'left send - ', process_id, k ,left_send_buf(k)
        !end do       
@@ -900,7 +903,7 @@ contains
 
     if(kmax_id >= 0) then
        !print *,"right id is ", process_id,right_id
-       buf = (jmx+1)*(imx+1)*n_var*layers
+       buf = (jmx+1)*(imx+1)*comm_var*layers
        call MPI_RECV(kmax_recv_buf,buf,MPI_DOUBLE_PRECISION,kmax_id,1,MPI_COMM_WORLD,status,ierr)
        ! updating solution       
        count = 1
@@ -1061,9 +1064,18 @@ contains
     integer :: buf
     integer, intent(in) :: layers
     call dmsg(1, 'parallel', 'allocating memory for buffer cells for MP')  
-    !left buffer jmx+1 * kmx + 1 * (dens, x , y, z speeds, pressure)
 
-    buf = (jmx+1)*(kmx+1)*(n_var+1)*layers ! size of buffer cells left - right
+    select case(turbulence)
+      case('none')
+        comm_var=n_var !rho,u,v,w,P
+      case('sst')
+        comm_var=n_var+2 !k, omega, F1, mu_t
+      case Default
+        comm_var=n_var
+        call turbulence_read_error()
+    end select
+
+    buf = (jmx+1)*(kmx+1)*comm_var*layers ! size of buffer cells left - right
     call alloc(imin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable left_buf.')
@@ -1077,7 +1089,7 @@ contains
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable right_buf.')
 
-    buf = (imx+1)*(kmx+1)*(n_var+1)*layers ! size of buffer top - bottom
+    buf = (imx+1)*(kmx+1)*comm_var*layers ! size of buffer top - bottom
     call alloc(jmin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable top_buf.')
@@ -1091,7 +1103,7 @@ contains
          errmsg='Error: Unable to allocate memory for buffer ' // &
          'variable bottom_buf.')
 
-    buf = (imx+1)*(jmx+1)*(n_var+1)*layers ! size of buffer front back
+    buf = (imx+1)*(jmx+1)*comm_var*layers ! size of buffer front back
 
     call alloc(kmin_send_buf, 1,buf, &
          errmsg='Error: Unable to allocate memory for buffer ' // &
