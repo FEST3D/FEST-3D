@@ -32,6 +32,15 @@ module face_interpolant
             y_qp_right_ppm => y_qp_right, &
             z_qp_left_ppm => z_qp_left, &
             z_qp_right_ppm => z_qp_right
+    use weno, only: setup_scheme_weno => setup_scheme, &
+            destroy_scheme_weno => destroy_scheme, &
+            compute_weno_states, &
+             x_qp_left_weno => x_qp_left, &
+            x_qp_right_weno => x_qp_right, &
+             y_qp_left_weno => y_qp_left, &
+            y_qp_right_weno => y_qp_right, &
+             z_qp_left_weno => z_qp_left, &
+            z_qp_right_weno => z_qp_right
     include "turbulence_models/include/face_interpolant/import_module.inc"
 
     implicit none
@@ -174,6 +183,8 @@ module face_interpolant
                     call setup_scheme_ppm()
                 case ("muscl")
                     call setup_scheme_muscl()
+                case ("weno")
+                    call setup_scheme_weno()
                 case default
                     call dmsg(5, 'state_interpolant', &
                             'setup_interpolant_scheme', &
@@ -254,6 +265,8 @@ module face_interpolant
                     call destroy_scheme_ppm()
                 case ("muscl")
                     call destroy_scheme_muscl()
+                case ("weno")
+                    call destroy_scheme_weno()
                 case default
                     call dmsg(5, 'state_interpolant', &
                             'destroy_interpolant_scheme', &
@@ -296,6 +309,14 @@ module face_interpolant
                     y_qp_right = y_qp_right_muscl
                     z_qp_left = z_qp_left_muscl
                     z_qp_right = z_qp_right_muscl
+                case ("weno")
+                    call compute_weno_states()
+                    x_qp_left  =  x_qp_left_weno
+                    x_qp_right = x_qp_right_weno
+                    y_qp_left  =  y_qp_left_weno
+                    y_qp_right = y_qp_right_weno
+                    z_qp_left  =  z_qp_left_weno
+                    z_qp_right = z_qp_right_weno
                 case default
                     call dmsg(5, 'state_interpolant', &
                             'compute_face_interpolant', &
