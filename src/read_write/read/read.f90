@@ -26,6 +26,8 @@ module read
   use global_vars, only: res_write_interval
   use global_vars, only: write_file_format
   use global_vars, only: write_data_format
+  use global_vars, only: read_file_format
+  use global_vars, only: read_data_format
   use global_vars, only: write_percision
   use global_vars, only: purge_write
   use global_vars, only: tolerance
@@ -56,11 +58,14 @@ module read
   use global_vars, only: interpolant
   use global_vars, only: scheme_name
   use global_vars, only: turbulence
-  use global_vars, only: rw_list
-  use global_vars, only: n_write
+  use global_vars, only: r_list
+  use global_vars, only: w_list
+  use global_vars, only: r_count
+  use global_vars, only: w_count
   use utils      , only: DEBUG_LEVEL
   use utils      , only: dmsg
   use string
+  use fclose     , only: close_file
 
   implicit none
   private
@@ -173,6 +178,18 @@ module read
         read(buf, *) write_data_format
         call dmsg(5, 'read', 'read_controls', &
                 msg='solution file data format = ' + write_data_format)
+
+        ! READ read_file_format
+        call get_next_token(CONTROL_FILE_UNIT, buf)
+        read(buf, *) read_file_format
+        call dmsg(5, 'read', 'read_controls', &
+                msg='Restart file format  = ' + read_file_format)
+
+        ! READ_read data_format
+        call get_next_token(CONTROL_FILE_UNIT, buf)
+        read(buf, *) read_data_format
+        call dmsg(5, 'read', 'read_controls', &
+                msg='Restart file data format = ' + read_data_format)
 
         ! READ write_percision
         call get_next_token(CONTROL_FILE_UNIT, buf)
@@ -400,34 +417,94 @@ module read
         implicit none
         integer           :: i
         character(len=64) :: buf
-
+        integer :: ios
+        
+        call get_rw_count()
+        call close_file(OUTIN_FILE_UNIT)
         open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
 
-        ! reading only counter first for dimension
-        read(OUTIN_FILE_UNIT, *)
-        read(OUTIN_FILE_UNIT, *)
-        buf=" not } "
-        n_write = 0
-        do while (.true.)
+        ! variables to write
+        do while(.true.)
+          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          if(trim(buf)=='{') EXIT
+          if(is_iostat_end(ios)) EXIT
+        end do
+        do i = 1,w_count
           read(OUTIN_FILE_UNIT, *) buf
-          if (trim(buf)=='}') EXIT
-          n_write = n_write + 1
+          read(buf,*) w_list(i)
         end do
 
-        allocate(rw_list(1:n_write))
-
-        ! reading data types only, dumping n_write
-        rewind(OUTIN_FILE_UNIT)
-        read(OUTIN_FILE_UNIT, *)
-        read(OUTIN_FILE_UNIT, *)
-        buf=" "
-        do i = 1,n_write
-          read(OUTIN_FILE_UNIT, *) buf
-          read(buf,*) rw_list(i)
+        ! restart variables to read
+        do while(.true.)
+          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          if(trim(buf)=='{') EXIT
+          if(is_iostat_end(ios)) EXIT
         end do
+        do i = 1,r_count
+          read(OUTIN_FILE_UNIT, *) buf
+          read(buf,*) r_list(i)
+        end do
+        if(r_count==0) r_list=w_list
 
         close(OUTIN_FILE_UNIT)
 
       end subroutine read_output_control
+
+      subroutine get_rw_count()
+        implicit none
+        integer :: ios
+        character(len=64) :: buf
+
+        r_count=0
+        w_count=0
+        call close_file(OUTIN_FILE_UNIT)
+        open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
+
+        ! write list dimension
+        do while(.true.)
+          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          if(trim(buf)=='{') EXIT
+          if(is_iostat_end(ios)) EXIT
+        end do
+        w_count = 0
+        do while (.true.)
+          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          if (trim(buf)=='}') EXIT
+          if(is_iostat_end(ios)) EXIT
+          w_count = w_count + 1
+        end do
+
+        if(w_count>0) then
+          allocate(w_list(1:w_count))
+        else
+          w_count=3
+          allocate(w_list(1:w_count))
+          w_list(1) = "Velocity"
+          w_list(2) = "Density"
+          w_list(3) = "Pressure"
+        end if
+
+        ! read list dimesnion 
+        do while(.true.)
+          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          if(trim(buf)=='{') EXIT
+          if(is_iostat_end(ios)) EXIT
+        end do
+        r_count = 0
+        do while (.true.)
+          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          if (trim(buf)=='}') EXIT
+          if(is_iostat_end(ios)) EXIT
+          r_count = r_count + 1
+        end do
+        if(r_count==0) then
+          allocate(r_list(1:w_count))
+        else
+          allocate(r_list(1:r_count))
+        end if
+
+        close(OUTIN_FILE_UNIT)
+
+      end subroutine get_rw_count
 
 end module read

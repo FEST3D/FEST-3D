@@ -23,6 +23,7 @@ module state
     use global_vars, only : znx, zny, znz !face unit normal z
 
     use global_vars, only : n_var
+    use global_vars, only : sst_n_var
     use global_vars, only : qp
     use global_vars, only : qp_inf
     use global_vars, only : density
@@ -65,11 +66,14 @@ module state
   use global_vars, only:  y_mom_resnorm
   use global_vars, only:  z_mom_resnorm
   use global_vars, only: energy_resnorm
+  use global_vars, only: r_list
+  use global_vars, only: w_list
 
   use utils,       only: alloc, dealloc, dmsg
   use layout,      only: process_id
   use string
   use read_output, only: read_file
+  use check_output_control, only : verify_write_control
 
     implicit none
     private
@@ -165,6 +169,7 @@ module state
 
             call dmsg(1, 'state', 'setup_state')
 
+            call set_n_var_value()
             call allocate_memory()
             call link_aliases()
             call init_infinity_values()
@@ -265,13 +270,16 @@ module state
             
             call dmsg(1, 'state', 'initstate')
 
+            call  verify_write_control()
+
             if (start_from .eq. 0) then
                 ! Set the state to the infinity values
                 call init_state_with_infinity_values()
             else
                 write(infile,'(a,i4.4,a,i2.2)') &
                   "time_directories/",start_from,"/process_",process_id
-                !call readstate_vtk(state_file)
+                ! Set the state to the infinity values so if some
+                ! variable are not restart variable they get free_stream value
                 call init_state_with_infinity_values()
                 call read_file()
 
@@ -292,79 +300,20 @@ module state
             do i = 1,n_var
                 qp(:, :, :, i) = qp_inf(i)
             end do 
-            !!!!include only when turblent variables are differetn than qp(6:7)
-            !include "turbulence_models/sst/state/init_state_with_infinity_values.inc"
             
         end subroutine init_state_with_infinity_values
 
-!        subroutine readstate_vtk(state_file)
-!            !-----------------------------------------------------------
-!            ! Read the state of the system from a file
-!            !-----------------------------------------------------------
-!
-!            implicit none
-!            character(len=FILE_NAME_LENGTH), intent(in) :: state_file
-!            integer :: i, j, k
-!            
-!            call dmsg(1, 'state', 'readstate_vtk')
-!
-!            open(OUT_FILE_UNIT, file=state_file)
-!
-!            read(OUT_FILE_UNIT, *) ! Skip first line
-!            read(OUT_FILE_UNIT, *) ! Skip comment
-!            read(OUT_FILE_UNIT, *) ! Skip ASCII
-!            read(OUT_FILE_UNIT, *) ! Skip DATASET
-!            read(OUT_FILE_UNIT, *) ! Skip Extra line
-!
-!            read(OUT_FILE_UNIT, *) ! Skip DIMENSIONS
-!            read(OUT_FILE_UNIT, *) ! Skip POINTS
-!            do k = 1, kmx
-!             do j = 1, jmx
-!              do i = 1, imx
-!                read(OUT_FILE_UNIT, *) ! Skip grid points
-!              end do
-!             end do
-!            end do
-!            read(OUT_FILE_UNIT, *) ! Skip blank space
-!
-!            ! Cell data
-!            read(OUT_FILE_UNIT, *) ! Skip CELL_DATA
-!            read(OUT_FILE_UNIT, *) ! Skip VECTORS Velocity
-! 
-!            do k = 1, kmx - 1
-!             do j = 1, jmx - 1
-!              do i = 1, imx - 1
-!                read(OUT_FILE_UNIT, *) x_speed(i, j, k), y_speed(i, j, k), z_speed(i, j, k)
-!              end do
-!             end do
-!            end do
-!
-!            read(OUT_FILE_UNIT, *) ! Skip Blank line
-!            read(OUT_FILE_UNIT, *) ! Skip SCALARS DENSITY
-!            read(OUT_FILE_UNIT, *) ! Skip LOOKUP_TABLE
-!            do k = 1, kmx - 1
-!             do j = 1, jmx - 1
-!              do i = 1, imx - 1
-!                read(OUT_FILE_UNIT, *) density(i, j, k)
-!              end do
-!             end do
-!            end do
-!
-!            read(OUT_FILE_UNIT, *) ! Skip Blank line
-!            read(OUT_FILE_UNIT, *) ! Skip SCALARS Pressure
-!            read(OUT_FILE_UNIT, *) ! Skip LOOKUP_TABLE
-!            do k = 1, kmx - 1
-!             do j = 1, jmx - 1
-!              do i = 1, imx - 1
-!                read(OUT_FILE_UNIT, *) pressure(i, j, k)
-!              end do
-!             end do
-!            end do
-!            ! Extra var not needed for state
-!            include "turbulence_models/include/state/readstate_vtk.inc"
-!
-!            close(OUT_FILE_UNIT)
-!
-!        end subroutine readstate_vtk
+
+        subroutine set_n_var_value()
+          implicit none
+          select case (trim(turbulence))
+            case('none')
+              n_var=5
+            case('sst')
+              n_var=7!n_var+sst_n_var
+            case DEFAULT
+              n_var=5
+          end select
+        end subroutine set_n_var_value
 
 end module state

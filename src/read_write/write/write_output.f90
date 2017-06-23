@@ -7,7 +7,7 @@ module write_output
   use utils
   use string
   use write_output_vtk       ,only : write_file_vtk     => write_file
-  use write_output_tecplot   ,only : write_file_tecplot => write_file
+  use write_output_tec       ,only : write_file_tec => write_file
 
   implicit none
   private
@@ -71,7 +71,7 @@ module write_output
           call write_file_vtk()
 
         case ('tecplot')
-          call write_file_tecplot()
+          call write_file_tec()
 
         case DEFAULT
           call dmsg(5, 'write_output', 'write_file',&

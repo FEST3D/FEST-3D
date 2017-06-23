@@ -28,6 +28,7 @@ module fclose
   private
 
   public :: close_all_files
+  public :: close_file
 
   contains
 

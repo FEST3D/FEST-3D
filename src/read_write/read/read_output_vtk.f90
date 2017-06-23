@@ -58,8 +58,8 @@ module read_output_vtk
   use global_vars, only :  omega_resnorm_0
 
   use global_vars, only : mu_ref
-  use global_vars, only : n_write
-  use global_vars, only : rw_list
+  use global_vars, only : r_count
+  use global_vars, only : r_list
   use global_vars, only : previous_flow_type
 
   use utils
@@ -68,13 +68,6 @@ module read_output_vtk
   implicit none
   private
   integer :: i,j,k
-  real    :: speed_inf
-  integer :: counter
-  integer :: read_control_file_flag=0
-  character(len=8) :: file_format
-  character(len=16) :: data_format
-  character(len=16) :: read_flow_type
-  
 
   public :: read_file
 
@@ -83,15 +76,14 @@ module read_output_vtk
     subroutine read_file()
       implicit none
       integer :: n
-      character(len=*), parameter :: err="Read error: asked to read non_existing variable- "
 
       call read_header()
       call read_grid()
-      do n = 1,n_write
+      do n = 1,r_count
 
-        select case (trim(rw_list(n)))
+        select case (trim(r_list(n)))
         
-          case('U')
+          case('Velocity')
             call read_velocity()
 
           case('Density')
@@ -101,37 +93,17 @@ module read_output_vtk
             call read_scalar(pressure, 'Pressure', -2)
             
           case('TKE')
-            if(turbulence=="sst" .and. previous_flow_type=="sst")then
             call read_scalar(tk, 'TKE', -2)
-            else
-              print*, err//trim(rw_list(n))
-            end if
 
           case('Omega')
-            if(turbulence=="sst" .and. previous_flow_type=="sst") then
             call read_scalar(tw, 'Omega', -2)
-            else
-              print*, err//trim(rw_list(n))
-            end if
 
-          case('V','W', 'Mu', 'Mu_t', 'Wall_distance', 'Resnorm')
-            !Skip
-            continue
-
-          case('Dudx', 'Dudy', 'Dudz')
-            !skip
-            continue
-
-          case('Dvdx', 'Dvdy', 'Dvdz')
-            !skip
-            continue
-
-          case('Dwdx', 'Dwdy', 'Dwdz')
-            !skip
+          case('do not read')
+            !skip 
             continue
 
           case Default
-            print*, err//trim(rw_list(n))
+            Print*, "read error: list var : "//trim(r_list(n))
 
         end select
       end do
@@ -142,20 +114,11 @@ module read_output_vtk
       implicit none
 
       call dmsg(1, 'read_output_vtk', 'read_header')
-
-      if (read_data_format == "ASCII") then
-        read(IN_FILE_UNIT, *) !'# vtk DataFile Version 3.1'
-        read(IN_FILE_UNIT, *) !'cfd-iitm output'   ! comment line
-        read(IN_FILE_UNIT, *) !trim(read_data_format)
-        read(IN_FILE_UNIT, *) !'DATASET STRUCTURED_GRID'
-        read(IN_FILE_UNIT, *)
-      elseif (read_data_format == 'BINARY') then
-        read(IN_FILE_UNIT) !'# vtk DataFile Version 3.1'
-        read(IN_FILE_UNIT) !'cfd-iitm output'
-        read(IN_FILE_UNIT) !trim(read_data_format)
-        read(IN_FILE_UNIT) !'DATASET STRUCTURED_GRID'
-        read(IN_FILE_UNIT)
-      end if
+      read(IN_FILE_UNIT, *) !'# vtk DataFile Version 3.1'
+      read(IN_FILE_UNIT, *) !'cfd-iitm output'   ! comment line
+      read(IN_FILE_UNIT, *) !trim(read_data_format)
+      read(IN_FILE_UNIT, *) !'DATASET STRUCTURED_GRID'
+      read(IN_FILE_UNIT, *)
 
 
     end subroutine read_header
@@ -165,61 +128,33 @@ module read_output_vtk
 
       ! read grid point coordinates
       call dmsg(1, 'read_output_vtk', 'read_grid')
-      if (read_data_format == "ASCII") then
-        read(IN_FILE_UNIT, * ) !'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
-        read(IN_FILE_UNIT, * ) !'POINTS ', imx*jmx*kmx, ' DOUBLE'
-        do k = 1, kmx
-         do j = 1, jmx
-          do i = 1, imx
-            read(IN_FILE_UNIT, *) !grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
-          end do
-         end do
+      read(IN_FILE_UNIT, * ) !'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
+      read(IN_FILE_UNIT, * ) !'POINTS ', imx*jmx*kmx, ' DOUBLE'
+      do k = 1, kmx
+       do j = 1, jmx
+        do i = 1, imx
+          read(IN_FILE_UNIT, *) !grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
         end do
-        read(IN_FILE_UNIT, *) 
-      elseif (read_data_format == 'BINARY') then
-        read(IN_FILE_UNIT) !'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
-        read(IN_FILE_UNIT) !'POINTS ', imx*jmx*kmx, ' DOUBLE'
-        do k = 1, kmx
-         do j = 1, jmx
-          do i = 1, imx
-              read(IN_FILE_UNIT) !grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
-          end do
-         end do
-        end do
-        read(IN_FILE_UNIT) 
-      end if
+       end do
+      end do
+      read(IN_FILE_UNIT, *) 
 
     end subroutine read_grid
 
     subroutine read_velocity()
       implicit none
-      call dmsg(1, 'read_output_vtk', 'read_velocity')
 
-        ! Cell data
-        ! Writing Velocity
-      if (read_data_format == "ASCII") then
-        read(IN_FILE_UNIT, *) !'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
-        read(IN_FILE_UNIT, *) !'VECTORS Velocity FLOAT'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            read(IN_FILE_UNIT, *) x_speed(i, j, k), y_speed(i, j, k), z_speed(i, j, k)
-          end do
-         end do
+      call dmsg(1, 'read_output_vtk', 'read_velocity')
+      read(IN_FILE_UNIT, *) !'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
+      read(IN_FILE_UNIT, *) !'VECTORS Velocity FLOAT'
+      do k = 1, kmx - 1
+       do j = 1, jmx - 1
+        do i = 1, imx - 1
+          read(IN_FILE_UNIT, *) x_speed(i, j, k), y_speed(i, j, k), z_speed(i, j, k)
         end do
-        read(IN_FILE_UNIT, *) 
-      elseif (read_data_format == 'BINARY') then
-        read(IN_FILE_UNIT) !'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
-        read(IN_FILE_UNIT) !'VECTORS Velocity DOUBLE'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            read(IN_FILE_UNIT) x_speed(i, j, k), y_speed(i, j, k), z_speed(i, j, k)
-          end do
-         end do
-        end do
-        read(IN_FILE_UNIT) 
-      end if
+       end do
+      end do
+      read(IN_FILE_UNIT, *) 
 
     end subroutine read_velocity
 
@@ -230,30 +165,16 @@ module read_output_vtk
       character(len=*), intent(in) :: name
 
       call dmsg(1, 'read_output_vtk', trim(name))
-
-      if (read_data_format == "ASCII") then
-        read(IN_FILE_UNIT, *) !'SCALARS '//trim(name)//' FLOAT'
-        read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            read(IN_FILE_UNIT, *) var(i, j, k)
-          end do
-         end do
+      read(IN_FILE_UNIT, *) !'SCALARS '//trim(name)//' FLOAT'
+      read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+      do k = 1, kmx - 1
+       do j = 1, jmx - 1
+        do i = 1, imx - 1
+          read(IN_FILE_UNIT, *) var(i, j, k)
         end do
-        read(IN_FILE_UNIT, *)
-      elseif (read_data_format == 'BINARY') then
-        read(IN_FILE_UNIT) !'SCALARS '//trim(name)//' FLOAT'//newline
-        read(IN_FILE_UNIT) !'LOOKUP_TABLE default'//newline
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            read(IN_FILE_UNIT) var(i,j,k)
-          end do
-         end do
-        end do
-        read(IN_FILE_UNIT)
-      end if
+       end do
+      end do
+      read(IN_FILE_UNIT, *)
 
     end subroutine read_scalar
 

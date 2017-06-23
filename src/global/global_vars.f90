@@ -34,7 +34,8 @@ module global_vars
   integer :: current_iter       ! current iteration number
 
   !write controls
-  integer :: n_write
+  integer :: r_count=0
+  integer :: w_count=0
   integer :: res_write_interval                      ! resnorm write interval
   integer :: purge_write                             ! number of output files per process to keep
   integer :: write_percision                         ! number of place after decimal 
@@ -45,8 +46,9 @@ module global_vars
   character(len=FILE_NAME_LENGTH)::     outfile          ! name of output file
   character(len=FILE_NAME_LENGTH)::      infile          ! name of load file
   character(len=FILE_NAME_LENGTH):: restartfile          ! name of restart log file
-  character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  rw_list ! output control list
-  character(len=FLOW_TYPE_LENGTH):: previous_flow_type
+  character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  r_list ! read  control list
+  character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  w_list ! write control list
+  character(len=FLOW_TYPE_LENGTH):: previous_flow_type="none"
 
   ! solver specific
   real :: CFL                  ! courrent number

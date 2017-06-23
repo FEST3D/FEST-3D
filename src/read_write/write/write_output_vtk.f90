@@ -48,8 +48,8 @@ module write_output_vtk
   use global_vars, only : mu_ref
   use global_vars, only : current_iter
   use global_vars, only : max_iters
-  use global_vars, only : n_write
-  use global_vars, only : rw_list
+  use global_vars, only : w_count
+  use global_vars, only : w_list
 
   use global_sst , only : sst_F1
   use global_vars, only : gradu_x
@@ -94,16 +94,12 @@ module write_output_vtk
       call write_header()
       call write_grid()
 
-      do n = 1,n_write
+      do n = 1,w_count
 
-        select case (trim(rw_list(n)))
+        select case (trim(w_list(n)))
         
-          case('U')
+          case('Velocity')
             call write_velocity()
-
-          case('V', 'W')
-            !Skip
-            continue
 
           case('Density')
             call write_scalar(density ,"Density", -2)
@@ -112,39 +108,19 @@ module write_output_vtk
             call write_scalar(pressure ,"Pressure", -2)
             
           case('Mu')
-            if (mu_ref/=0.0) then
-              call write_scalar(mu ,"Mu", -2)
-            else
-              print*, err//trim(rw_list(n))
-            end if
+            call write_scalar(mu ,"Mu", -2)
             
           case('Mu_t')
-            if (turbulence/='none') then
-              call write_scalar(mu_t, "Mu_t", -2)
-            else
-              print*, err//trim(rw_list(n))
-            end if
+            call write_scalar(mu_t, "Mu_t", -2)
             
           case('TKE')
-            if(turbulence=="sst")then
             call write_scalar(tk, "TKE", -2)
-            else
-              print*, err//trim(rw_list(n))
-            end if
 
           case('Omega')
-            if(turbulence=="sst") then
             call write_scalar(tw, "Omega", -2)
-            else
-              print*, err//trim(rw_list(n))
-            end if
 
           case('Wall_distance')
-            if(turbulence/="none") then
             call write_scalar(dist, "dist", 1)
-            else
-              print*, err//trim(rw_list(n))
-            end if
 
           case('Resnorm')
             call write_resnorm()
@@ -210,7 +186,7 @@ module write_output_vtk
             call write_scalar(gradtw_z,"dtwdz", 0)
 
           case Default
-            print*, err//trim(rw_list(n))//" to file"
+            print*, err//trim(w_list(n))//" to file"
 
         end select
       end do
