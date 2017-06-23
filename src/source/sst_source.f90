@@ -101,7 +101,7 @@ module sst_source
             ! ____ PRODUCTION term____ 
             P_k = sst_mu(i,j,k)*(vort**2)
             P_k = min(P_k,20.0*D_k)
-            P_w = (density(i,j,k)*gama/sst_mu(i,j,k))*P_k!min(gama*density(i,j,k)*P_k/sst_mu(i,j,k), 20.0*D_w)
+            P_w = (density(i,j,k)*gama/sst_mu(i,j,k))*P_k
 
             ! ____ cross diffusion term ___
             lamda = (1. - F1)*CD

@@ -68,13 +68,13 @@ module sst_viscosity
             F = tanh(arg2**2)
 
             ! calculate_vorticity(
-            wx = 0.5*(gradw_y(i,j,k) - gradv_z(i,j,k))
-            wy = 0.5*(gradu_z(i,j,k) - gradw_x(i,j,k))
-            wz = 0.5*(gradv_x(i,j,k) - gradu_y(i,j,k))
+            wx = (gradw_y(i,j,k) - gradv_z(i,j,k))
+            wy = (gradu_z(i,j,k) - gradw_x(i,j,k))
+            wz = (gradv_x(i,j,k) - gradu_y(i,j,k))
 
             wijwij = wx**2 + wy**2 + wz**2
 
-            vort = sqrt(2*wijwij)
+            vort = sqrt(wijwij)
 
             NUM = density(i,j,k)*a1*tk(i,j,k)
             DENOM = max((a1*tw(i,j,k)), vort*F)

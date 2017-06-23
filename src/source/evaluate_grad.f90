@@ -60,6 +60,9 @@ module evaluate_grad
         ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,3)
         nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,3)
       case DEFAULT
+        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,1)
+        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,1)
+        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,1)
         print*, "ERROR: gradient direction error"
     end select
     grad = 0.0
@@ -110,6 +113,9 @@ module evaluate_grad
         ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,3)
         nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,3)
       case DEFAULT
+        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,1)
+        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,1)
+        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,1)
         print*, "ERROR: gradient direction error"
     end select
     grad = 0.0

@@ -33,7 +33,7 @@ module boundary_state_reconstruction
       implicit none
       character(len=*), intent(in)  :: interpolant
       call dmsg(1,'boundary_state_recons', 'recons_boundary_state')
-      if (interpolant == 'ppm') ppm_flag=1
+      if (interpolant == 'ppm' .or. interpolant=='weno') ppm_flag=1
       if(interpolant /='none')then
         if(imin_id<0)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imin')

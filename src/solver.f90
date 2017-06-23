@@ -80,7 +80,8 @@ module solver
   use global_vars, only: TKE_residue
   use global_vars, only: omega_residue
   use global_vars, only: res_write_interval
-  use global_vars, only: rw_list
+  use global_vars, only: r_list
+  use global_vars, only: w_list
   use global_vars, only: merror
 
   use utils, only: alloc
@@ -217,7 +218,8 @@ module solver
             call destroy_resnorm()
             call destroy_sst_F1()
 
-            if(allocated(rw_list)) deallocate(rw_list)
+            if(allocated(r_list)) deallocate(r_list)
+            if(allocated(w_list)) deallocate(w_list)
 
         end subroutine destroy_solver
 
@@ -633,6 +635,7 @@ module solver
             implicit none
 
             real, dimension(1:imx-1, 1:jmx-1, 1:kmx-1, n_var) :: dEdx
+            real, dimension(1:imx-1, 1:jmx-1, 1:kmx-1) :: beta
             dEdx(:, :, :, 1) = mass_residue
             dEdx(:, :, :, 2) = ( (-1 * x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
                                        density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
@@ -761,7 +764,6 @@ module solver
             call compute_residue()
             call add_source_term_residue()
             call dmsg(1, 'solver', 'step', 'Residue computed.')
-            call compute_time_step()
 
         end subroutine sub_step
         
@@ -781,6 +783,7 @@ module solver
               print*, current_iter
             end if
             call sub_step()
+            call compute_time_step()
 
             call get_next_solution()
             call update_simulation_clock()

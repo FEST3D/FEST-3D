@@ -122,8 +122,6 @@ module viscous
         real :: K_heat, mu, Qx, Qy, Qz
         real :: muv_f
         real :: mut_f
-        real :: F1
-        real :: sigma_k
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: F
@@ -286,11 +284,6 @@ module viscous
             ! Pr: Prandtl Number
             ! Qx, Qy, Qz: Conduction fluxes
             K_heat = (muv_f/Pr + mut_f/0.9)* gm * R_gas / (gm - 1)
-            if(turbulence=="sst") then
-              F1 = 0.5*(sst_F1(i,j,k) + sst_F1(i-1,j,k))
-              sigma_k = F1*sigma_k1   + (1. - F1)*sigma_k2
-              k_heat = k_heat + muv_f + mut_f/sigma_k
-            end if
             Qx = K_heat*dTdx
             Qy = K_heat*dTdy
             Qz = K_heat*dTdz
@@ -351,8 +344,6 @@ module viscous
         real :: K_heat, mu, Qx, Qy, Qz
         real :: muv_f
         real :: mut_f
-        real :: F1
-        real :: sigma_k
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: G
@@ -515,11 +506,6 @@ module viscous
             ! Pr: Prandtl Number
             ! Qx, Qy, Qz: Conduction fluxes
             K_heat = (muv_f/Pr + mut_f/0.9) * gm * R_gas / (gm - 1)
-            if(turbulence=="sst") then
-              F1 = 0.5*(sst_F1(i,j,k) + sst_F1(i,j-1,k))
-              sigma_k = F1*sigma_k1   + (1. - F1)*sigma_k2
-              k_heat = k_heat + muv_f + mut_f/sigma_k
-            end if
             Qx = K_heat*dTdx
             Qy = K_heat*dTdy
             Qz = K_heat*dTdz
@@ -588,8 +574,6 @@ module viscous
         real :: K_heat, mu, Qx, Qy, Qz
         real :: muv_f
         real :: mut_f
-        real :: F1
-        real :: sigma_k
         real :: uface, vface, wface
         integer :: i, j, k
         real, dimension(:, :, :, :), pointer :: H
@@ -751,11 +735,6 @@ module viscous
             ! Pr: Prandtl Number
             ! Qx, Qy, Qz: Conduction fluxes
             K_heat = (muv_f/Pr + mut_f/0.9) * gm * R_gas / (gm - 1)
-            if(turbulence=="sst") then
-              F1 = 0.5*(sst_F1(i,j,k) + sst_F1(i,j,k-1))
-              sigma_k = F1*sigma_k1   + (1. - F1)*sigma_k2
-              k_heat = k_heat + muv_f + mut_f/sigma_k
-            end if
             Qx = K_heat*dTdx
             Qy = K_heat*dTdy
             Qz = K_heat*dTdz
