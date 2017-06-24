@@ -38,8 +38,14 @@ module state
     use global_vars, only : pressure_inf
     use global_vars, only : tk
     use global_vars, only : tw
+    use global_vars, only : te
+    use global_vars, only : tv
+    use global_vars, only : tkl
     use global_vars, only : tk_inf
     use global_vars, only : tw_inf
+    use global_vars, only : te_inf
+    use global_vars, only : tv_inf
+    use global_vars, only : tkl_inf
     use global_vars, only : gm
     use global_vars, only : mu_ref
     use global_vars, only : supersonic_flag
@@ -309,8 +315,10 @@ module state
           select case (trim(turbulence))
             case('none')
               n_var=5
-            case('sst')
-              n_var=7!n_var+sst_n_var
+            case('ss')
+              n_var=6
+            case('sst','bsl', 'kw', 'ke', 'Kkl', 'Des-kw')
+              n_var=7
             case DEFAULT
               n_var=5
           end select

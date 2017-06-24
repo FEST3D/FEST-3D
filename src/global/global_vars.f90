@@ -116,6 +116,9 @@ module global_vars
   real                                              :: free_stream_pressure 
   real                                              :: free_stream_tk       
   real                                              :: free_stream_tw       
+  real                                              :: free_stream_te
+  real                                              :: free_stream_tv
+  real                                              :: free_stream_tkl
   real                                              :: vel_mag ! free_stream velocity magnitude
   real, dimension(:, :, :), allocatable             :: dist 
 
@@ -126,8 +129,14 @@ module global_vars
 !  real, dimension(:)         , allocatable, target  :: tqp_inf   ! turbulent primitive at inf
   real, dimension(:, :, :)                , pointer :: tk        ! TKE/mass
   real, dimension(:, :, :)                , pointer :: tw        ! omega
+  real, dimension(:, :, :)                , pointer :: te        ! Dissipation
+  real, dimension(:, :, :)                , pointer :: tv        ! sa visocity
+  real, dimension(:, :, :)                , pointer :: tkl       ! KL K-KL method
   real                                    , pointer :: tk_inf    ! TKE/mass at inf
   real                                    , pointer :: tw_inf    ! omega at inf
+  real                                    , pointer :: te_inf    ! dissipation at inf
+  real                                    , pointer :: tv_inf    ! SA viscosity at inf
+  real                                    , pointer :: tkl_inf   ! kl at inf
 
   ! residue variables
   real, dimension(:, :, :, :)             , pointer :: F_p

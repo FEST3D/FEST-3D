@@ -53,20 +53,49 @@ module check_output_control
             end if
             
           case('tke','tk','turbulent_kinetic_enrgy','k')
-            if(turbulence=="sst")then
-              w_list(n) = "TKE"
-            else
-              print*, err//trim(w_list(n))//" to file"
-              w_list(n) = "do not write"
-            end if
+            select case (trim(turbulence))
+              case('sst','kw','bsl','kkl','ke','des-sst')
+                w_list(n) = "TKE"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
 
           case('omega','tw')
-            if(turbulence=="sst") then
-              w_list(n) = "Omega"
-            else
-              print*, err//trim(w_list(n))//" to file"
-              w_list(n) = "do not write"
-            end if
+            select case (trim(turbulence))
+              case('sst','kw','bsl','des-sst')
+                w_list(n) = "Omega"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('dissipation','te','teps','eps')
+            select case (trim(turbulence))
+              case('ke')
+                w_list(n) = "Dissipation"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('kl')
+            select case (trim(turbulence))
+              case('kkl')
+                w_list(n) = "Kl"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('tv')
+            select case (trim(turbulence))
+              case('sa')
+                w_list(n) = "tv"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
 
           case('wall_distance', 'dist', 'wall_dist', 'wdist')
             if(turbulence/="none") then
@@ -122,22 +151,139 @@ module check_output_control
             w_list(n) = "DTdz"
 
           case('dtkdx')
-            w_list(n) = "Dtkdx"
+            select case (trim(turbulence))
+              case('sst','kw','bsl','kkl','ke','des-sst')
+                w_list(n) = "Dtkdx"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
 
           case('dtkdy')
-            w_list(n) = "Dtkdy"
+            select case (trim(turbulence))
+              case('sst','kw','bsl','kkl','ke','des-sst')
+                w_list(n) = "Dtkdy"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
 
           case('dtkdz')
-            w_list(n) = "Dtkdz"
+            select case (trim(turbulence))
+              case('sst','kw','bsl','kkl','ke','des-sst')
+                w_list(n) = "Dtkdz"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
 
           case('dtwdx')
-            w_list(n) = "Dtwdx"
+            select case (trim(turbulence))
+              case('sst','kw','bsl','des-sst')
+                w_list(n) = "Dtwdx"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
 
           case('dtwdy')
-            w_list(n) = "Dtwdy"
+            select case (trim(turbulence))
+              case('sst','kw','bsl','des-sst')
+                w_list(n) = "Dtwdy"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
 
           case('dtwdz')
-            w_list(n) = "Dtwdz"
+            select case (trim(turbulence))
+              case('sst','kw','bsl','des-sst')
+                w_list(n) = "Dtwdz"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
+
+          case('dtedx')
+            select case (trim(turbulence))
+              case('ke')
+                w_list(n) = "Dtedx"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
+
+          case('dtedy')
+            select case (trim(turbulence))
+              case('ke')
+                w_list(n) = "Dtedy"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
+
+          case('dtedz')
+            select case (trim(turbulence))
+              case('ke')
+                w_list(n) = "Dtedz"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+            end select
+
+          case('dtkldx')
+            select case (trim(turbulence))
+              case('kkl')
+                w_list(n) = "Dtkldx"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('dtkldy')
+            select case (trim(turbulence))
+              case('kkl')
+                w_list(n) = "Dtkldy"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('dtkldz')
+            select case (trim(turbulence))
+              case('kkl')
+                w_list(n) = "Dtkldz"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('dtvdx')
+            select case (trim(turbulence))
+              case('sa')
+                w_list(n) = "Dtvdx"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('dtvdy')
+            select case (trim(turbulence))
+              case('sa')
+                w_list(n) = "Dtvdy"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('dtvdz')
+            select case (trim(turbulence))
+              case('sa')
+                w_list(n) = "Dtvdz"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
 
           case Default
             print*, err//trim(w_list(n))//" to file"
@@ -185,20 +331,76 @@ module check_output_control
             !end if
             
           case('tke','tk','turbulent_kinetic_enrgy','k')
-            if(turbulence=="sst" .and. previous_flow_type=="sst")then
-              r_list(n) = "TKE"
-            else
-              print*, err//trim(r_list(n))//" from file"
-              r_list(n) = "do not read"
-            end if
+            select case (trim(turbulence))
+              case('sst','kw','bsl','kkl','ke','des-sst')
+                select case (trim(previous_flow_type))
+                  case('sst','kw','bsl','kkl','ke','des-sst')
+                    r_list(n) = "TKE"
+                end select
+              case DEFAULT
+                print*, err//trim(w_list(n))//" from file"
+                r_list(n) = "do not read"
+            end select
 
           case('omega','tw')
-            if(turbulence=="sst" .and. previous_flow_type=="sst") then
-              r_list(n) = "Omega"
-            else
-              print*, err//trim(r_list(n))//" from file"
-              r_list(n) = "do not read"
-            end if
+            select case (trim(turbulence))
+              case('sst','kw','bsl','des-sst')
+                select case (trim(previous_flow_type))
+                  case('sst','kw','bsl','des-sst')
+                    r_list(n) = "Omega"
+                  case DEFAULT
+                    print*, err//trim(w_list(n))//" from file"
+                    r_list(n) = "do not read"
+                end select
+              case DEFAULT
+                print*, err//trim(w_list(n))//" from file"
+                r_list(n) = "do not read"
+            end select
+
+          case('dissipation','te','teps','eps')
+            select case (trim(turbulence))
+              case('ke')
+                select case (trim(previous_flow_type))
+                  case('ke')
+                    r_list(n) = "Dissipation"
+                  case DEFAULT
+                    print*, err//trim(w_list(n))//" to file"
+                    r_list(n) = "do not write"
+                end select
+              case DEFAULT
+                print*, err//trim(w_list(n))//" from file"
+                r_list(n) = "do not read"
+            end select
+
+          case('kl')
+            select case (trim(turbulence))
+              case('kkl')
+                select case (trim(previous_flow_type))
+                  case('kkl')
+                    r_list(n) = "Kl"
+                  case DEFAULT
+                    print*, err//trim(w_list(n))//" to file"
+                    r_list(n) = "do not write"
+                end select
+              case DEFAULT
+                print*, err//trim(w_list(n))//" from file"
+                r_list(n) = "do not read"
+            end select
+
+          case('tv')
+            select case (trim(turbulence))
+              case('sa')
+                select case (trim(previous_flow_type))
+                  case('sa')
+                    r_list(n) = "tv"
+                  case DEFAULT
+                    print*, err//trim(w_list(n))//" to file"
+                    r_list(n) = "do not write"
+                end select
+              case DEFAULT
+                print*, err//trim(w_list(n))//" from file"
+                r_list(n) = "do not read"
+            end select
 
           case('wall_distance', 'dist', 'wall_dist', 'wdist')
             r_list(n) = "do not read"
