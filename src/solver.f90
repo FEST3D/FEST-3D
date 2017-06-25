@@ -777,13 +777,15 @@ module solver
 
             implicit none
             integer :: ierr
+            integer :: i,j,k
             call dmsg(1, 'solver', 'step')
 
             if (process_id==0) then
               print*, current_iter
             end if
             call sub_step()
-            call compute_time_step()
+            !call compute_time_step()
+            include "compute_time_step.inc"
 
             call get_next_solution()
             call update_simulation_clock()
