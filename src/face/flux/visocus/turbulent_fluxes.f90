@@ -4,6 +4,7 @@ module turbulent_fluxes
   ! AIM: to add source term residue to already calculate residuals
   !      if requires
   !-----------------------------------------------------------------
+#include "../../../error.inc"
   use global_vars, only : turbulence
   use utils      , only : dmsg
   use utils      , only : turbulence_read_error
@@ -37,7 +38,8 @@ module turbulent_fluxes
           call compute_kkl_fluxes(F,G,H)
 
         case DEFAULT
-          call turbulence_read_error()
+          !call turbulence_read_error()
+          Error
 
       end select
 

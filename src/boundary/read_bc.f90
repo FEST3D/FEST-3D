@@ -3,6 +3,7 @@ module read_bc
   ! 170516  Jatinder Pal Singh Sandhu
   ! Aim : get all the fixed valed from bc_**.md file
   !-----------------------------------------------------
+#include "../error.inc"
   use global     , only: BOUNDARY_CONDITIONS_FILE_UNIT
   use global     , only: STRING_BUFFER_LENGTH
   use global_vars, only: density_inf
@@ -12,6 +13,9 @@ module read_bc
   use global_vars, only: pressure_inf
   use global_vars, only: tk_inf
   use global_vars, only: tw_inf
+  use global_vars, only: tv_inf
+  use global_vars, only: te_inf
+  use global_vars, only: tkl_inf
   use global_vars, only: fixed_density
   use global_vars, only: fixed_x_speed
   use global_vars, only: fixed_y_speed
@@ -19,6 +23,9 @@ module read_bc
   use global_vars, only: fixed_pressure
   use global_vars, only: fixed_tk
   use global_vars, only: fixed_tw
+  use global_vars, only: fixed_te
+  use global_vars, only: fixed_tv
+  use global_vars, only: fixed_tkl
   use global_vars, only: process_id
   use global_vars, only: turbulence
   use layout     , only: bc_file
@@ -84,19 +91,26 @@ module read_bc
               !do nothing
               continue
 
-            case ("sst")
+            case ("sst", 'tw')
               select case(buf(3:index(buf(3:), " ")+1))
-
                 case ("FIX_tk")
                   call set_value(fixed_tk      , fix_val, tk_inf      , count, ios)
-
                 case ("FIX_tw")
                   call set_value(fixed_tw      , fix_val, tw_inf      , count, ios)
-
                 case DEFAULT
                   ! no a value to fix
                   continue
-
+              end select
+              
+            case ("kkl")
+              select case(buf(3:index(buf(3:), " ")+1))
+                case ("FIX_tk")
+                  call set_value(fixed_tk      , fix_val, tk_inf      , count, ios)
+                case ("FIX_tkl")
+                  call set_value(fixed_tkl     , fix_val, tkl_inf     , count, ios)
+                case DEFAULT
+                  ! no a value to fix
+                  continue
               end select
 
           end select

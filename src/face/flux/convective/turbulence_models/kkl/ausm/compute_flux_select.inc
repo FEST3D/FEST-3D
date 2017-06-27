@@ -8,8 +8,8 @@
                 case ('y')
                     f_tk_left  => y_tk_left
                     f_tk_right => y_tk_right
-                    f_tkl_left  => y_tw_left
-                    f_tkl_right => y_tw_right
+                    f_tkl_left  => y_tkl_left
+                    f_tkl_right => y_tkl_right
                 case ('z')
                     f_tk_left  => z_tk_left
                     f_tk_right => z_tk_right

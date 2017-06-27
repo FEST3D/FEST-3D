@@ -1,5 +1,6 @@
 module blending_function
 
+#include "error.inc"
   use global_sst , only : sst_F1
   use global_sst , only : sigma_w2
   use global_sst , only : bstar
@@ -111,8 +112,13 @@ module blending_function
         case ('sst')
           call calculate()
 
+        case ('kkl')
+          !call calculate()
+          continue
+
         case Default
-          call turbulence_read_error()
+         ! call turbulence_read_error()
+         Error
 
       end select
 

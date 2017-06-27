@@ -1,5 +1,6 @@
 module parallel
   ! contains routines to execute parallelly
+#include "error.inc"
 #ifdef __GFORTRAN__
   use mpi
 #endif
@@ -10,6 +11,9 @@ module parallel
   use global_vars, only : pressure
   use global_vars, only : tk
   use global_vars, only : tw
+  use global_vars, only : tv
+  use global_vars, only : te
+  use global_vars, only : tkl
   use global_vars, only : turbulence
   use global_vars, only : n_var
   use global_vars, only : imx
@@ -1074,7 +1078,8 @@ contains
         comm_var= 8 !n_var+2 !k, kl, mu_t
       case Default
         comm_var=n_var
-        call turbulence_read_error()
+        !call turbulence_read_error()
+        Error
     end select
 
     buf = (jmx+1)*(kmx+1)*comm_var*layers ! size of buffer cells left - right

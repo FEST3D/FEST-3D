@@ -9,6 +9,9 @@
           case ("sst")
               include "turbulence_models/sst/parallel/send_jmax.inc"
 
+          case ("kkl")
+              include "turbulence_models/kkl/parallel/send_jmax.inc"
+
           case DEFAULT
               call dmsg(5, "turbulence_models/include/parallel", "send_jmax", &
                         "ERROR: Turbulence model not recognised")
