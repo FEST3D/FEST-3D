@@ -1,4 +1,0 @@
-need to remove the duolicaion of select case in compute fluxes for both
-ldfss0 and ausm scheme. 
-
-why is complier throwing error if select file and Fcompute file are used seperately.?

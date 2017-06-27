@@ -8,6 +8,7 @@ module source
   use utils      , only : dmsg
   use utils      , only : turbulence_read_error
   use sst_source , only : add_sst_source
+  use kkl_source , only : add_kkl_source
 
   implicit none
   private
@@ -30,6 +31,9 @@ module source
 
         case ('sst')
           call add_sst_source()
+
+        case ('kkl')
+          call add_kkl_source()
 
         case DEFAULT
           call turbulence_read_error()

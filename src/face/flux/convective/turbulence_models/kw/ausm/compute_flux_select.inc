@@ -1,10 +1,4 @@
 !should be included in ausm file in compte flux subroutine
-
-            real, dimension(:, :, :), pointer :: f_tk_left, f_tk_right, &
-                                                 f_tw_left, f_tw_right
-
-            call dmsg(1, 'turbulence_models/sst/ldfss0', 'compute_flux.inc')
-            
             select case (f_dir)
                 case ('x')
                     f_tk_left => x_tk_left
@@ -22,7 +16,8 @@
                     f_tw_left => z_tw_left
                     f_tw_right => z_tw_right
                 case default
-                    call dmsg(5, 'turbulence_models/sst/ldfss0', 'compute_flux.inc', &
+                    call dmsg(5, 'turbulence_models/kw/ausm', 'compute_flux.inc', &
                             'Direction not recognised')
                     stop
             end select
+

@@ -18,6 +18,9 @@ module scheme
     use global_vars, only : energy_residue
     use global_vars, only : TKE_residue
     use global_vars, only : omega_residue
+    use global_vars, only : KL_residue
+    use global_vars, only : dissipation_residue
+    use global_vars, only : tv_residue
     use global_vars, only : turbulence
 
     use global_vars, only : scheme_name

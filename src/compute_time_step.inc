@@ -1,5 +1,5 @@
 ! this include file calcuolate time step 
-  if(time_stepping_method .eq. 'g' .or. time_stepping_method .eq. 'l') then
+!  if(time_stepping_method .eq. 'g' .or. time_stepping_method .eq. 'l') then
     if (time_stepping_method .eq. 'g' .and. global_time_step > 0) then
       delta_t = global_time_step
     else
@@ -66,10 +66,10 @@
       end do
       if (time_stepping_method .eq. 'g' .and. global_time_step <= 0) delta_t=Minval(delta_t)
     end if
-  else
-      call dmsg(5, 'solver', 'compute_time_step', &
-              msg='Value for time_stepping_method (' // &
-                  time_stepping_method // ') not recognized.')
-      stop
-  end if
+!  else
+!      call dmsg(5, 'solver', 'compute_time_step', &
+!              msg='Value for time_stepping_method (' // &
+!                  time_stepping_method // ') not recognized.')
+!      stop
+!  end if
 

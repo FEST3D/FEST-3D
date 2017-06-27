@@ -1069,7 +1069,9 @@ contains
       case('none')
         comm_var=n_var !rho,u,v,w,P
       case('sst')
-        comm_var=n_var+2 !k, omega, F1, mu_t
+        comm_var= 9 !n_var+2 !k, omega, F1, mu_t
+      case('kkl')
+        comm_var= 8 !n_var+2 !k, kl, mu_t
       case Default
         comm_var=n_var
         call turbulence_read_error()

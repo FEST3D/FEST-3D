@@ -149,6 +149,9 @@ module global_vars
   real, dimension(:, :, :)                , pointer :: energy_residue
   real, dimension(:, :, :)                , pointer :: TKE_residue
   real, dimension(:, :, :)                , pointer :: omega_residue
+  real, dimension(:, :, :)                , pointer :: KL_residue
+  real, dimension(:, :, :)                , pointer :: dissipation_residue
+  real, dimension(:, :, :)                , pointer :: tv_residue
 
   ! thermal properties
   real                                              :: gm    !gamma
@@ -174,6 +177,7 @@ module global_vars
   real, dimension(:, :, :), allocatable             :: mu
   real, dimension(:, :, :), allocatable, target     :: mu_t
   real, dimension(:, :, :)              , pointer   :: sst_mu
+  real, dimension(:, :, :)              , pointer   :: kkl_mu
 
   !residual specific
   real, pointer ::        resnorm     !            residue normalized
@@ -265,6 +269,15 @@ module global_vars
   real, dimension(:, :, :),                 pointer :: gradtw_x
   real, dimension(:, :, :),                 pointer :: gradtw_y
   real, dimension(:, :, :),                 pointer :: gradtw_z
+  real, dimension(:, :, :),                 pointer :: gradtkl_x
+  real, dimension(:, :, :),                 pointer :: gradtkl_y
+  real, dimension(:, :, :),                 pointer :: gradtkl_z
+  real, dimension(:, :, :),                 pointer :: gradte_x
+  real, dimension(:, :, :),                 pointer :: gradte_y
+  real, dimension(:, :, :),                 pointer :: gradte_z
+  real, dimension(:, :, :),                 pointer :: gradtv_x
+  real, dimension(:, :, :),                 pointer :: gradtv_y
+  real, dimension(:, :, :),                 pointer :: gradtv_z
 
   ! higher order boundary condtioion
   integer  :: accur=1

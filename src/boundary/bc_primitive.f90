@@ -159,6 +159,7 @@ module bc_primitive
         call fix(y_speed , fixed_y_speed , face)
         call fix(z_speed , fixed_z_speed , face)
         call copy3(pressure, "flat", face)
+        if(face=='imin') density(0,:,:)=pressure(1,:,:)/(R_gas*300.)
         select case (turbulence)
           case('none')
             !do nothing

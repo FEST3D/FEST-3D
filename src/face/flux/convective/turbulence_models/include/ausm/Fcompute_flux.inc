@@ -10,6 +10,21 @@
           case ("sst")
               include "turbulence_models/sst/ausm/Fcompute_flux.inc"
 
+          case ("kkl")
+              include "turbulence_models/kkl/ausm/Fcompute_flux.inc"
+
+          case ("sa")
+              include "turbulence_models/sa/ausm/Fcompute_flux.inc"
+
+          case ("kw")
+              include "turbulence_models/kw/ausm/Fcompute_flux.inc"
+
+          case ("ke")
+              include "turbulence_models/ke/ausm/Fcompute_flux.inc"
+
+          case ("des-sst")
+              include "turbulence_models/des-sst/ausm/Fcompute_flux.inc"
+
           case DEFAULT
               call dmsg(5, "turbulence_models/include/ausm", "Fcompute_flux", &
                         "ERROR: Turbulence model not recognised")

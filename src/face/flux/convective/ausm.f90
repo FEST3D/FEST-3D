@@ -117,7 +117,7 @@ module ausm
             !include compute_flux_variable and select.inc before select
             !as it contains variables deceleration
             include "turbulence_models/include/ausm/compute_flux_var.inc"
-!            include "turbulence_models/include/ausm/compute_flux_select.inc"
+            include "turbulence_models/include/ausm/compute_flux_select.inc"
 
             call dmsg(1, 'ausm', 'compute_flux')
             

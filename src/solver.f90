@@ -9,6 +9,10 @@ module solver
   use global, only: stop_file
   use global_vars, only : want_to_stop
 
+  use global_kkl , only : cmu
+  use global_kkl , only : cd1
+  use global_kkl , only : eta
+  use global_kkl , only : fphi
   use global_sst , only : beta1
   use global_sst , only : beta2
   use global_sst , only : bstar
@@ -34,14 +38,17 @@ module solver
   use global_vars, only : pressure
   use global_vars, only : tk
   use global_vars, only : tw
+  use global_vars, only : tkl
   use global_vars, only : tk_inf
   use global_vars, only : tw_inf
+  use global_vars, only : tkl_inf
   use global_vars, only : gm
   use global_vars, only : R_gas
   use global_vars, only : mu_ref
   use global_vars, only : T_ref
   use global_vars, only : Sutherland_temp
   use global_vars, only : Pr
+  use global_vars, only : mu
 
   use global_vars, only : qp_n
   use global_vars, only : dEdx_1
@@ -79,6 +86,9 @@ module solver
   use global_vars, only: energy_residue
   use global_vars, only: TKE_residue
   use global_vars, only: omega_residue
+  use global_vars, only: KL_residue
+  use global_vars, only: dissipation_residue
+  use global_vars, only: tv_residue
   use global_vars, only: res_write_interval
   use global_vars, only: r_list
   use global_vars, only: w_list
@@ -108,7 +118,7 @@ module solver
   use source, only: add_source_term_residue
   use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
   use viscous, only: compute_viscous_fluxes
-  use turbulent_flux, only: compute_turbulent_fluxes
+  use turbulent_fluxes, only: compute_turbulent_fluxes
   use boundary_state_reconstruction, only: reconstruct_boundary_state
   use layout, only: process_id, grid_file_buf, bc_file, &
   get_process_data, read_layout_file, total_process
@@ -127,6 +137,10 @@ module solver
   use bc, only: setup_bc
   use bc_primitive, only: populate_ghost_primitive
   use summon_grad_evaluation, only : evaluate_all_gradients
+  use time , only : setup_time
+  use time , only : destroy_time
+  use global_vars, only: dist
+!  use time , only : compute_time_step
 
 #ifdef __GFORTRAN__
     use mpi
@@ -174,6 +188,7 @@ module solver
             call setup_state()
             call setup_gradients()
             call setup_bc()
+            call setuP_time()
             call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
@@ -201,6 +216,7 @@ module solver
             
             call dmsg(1, 'solver', 'destroy_solver')
 
+            call destroy_time()
             call destroy_transport()
 !            if(mu_ref /= 0. .or. turbulence /= 'none')  then 
 !              call destroy_source()
@@ -290,8 +306,8 @@ module solver
             
             call dmsg(1, 'solver', 'allocate_memory')
 
-            call alloc(delta_t, 1, imx-1, 1, jmx-1, 1, kmx-1, &
-                    errmsg='Error: Unable to allocate memory for delta_t.')
+!            call alloc(delta_t, 1, imx-1, 1, jmx-1, 1, kmx-1, &
+!                    errmsg='Error: Unable to allocate memory for delta_t.')
             call alloc(qp_temp, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for qp_temp.')
 
@@ -784,8 +800,8 @@ module solver
               print*, current_iter
             end if
             call sub_step()
-            !call compute_time_step()
-            include "compute_time_step.inc"
+            call compute_time_step()
+            !include "compute_time_step.inc"
 
             call get_next_solution()
             call update_simulation_clock()

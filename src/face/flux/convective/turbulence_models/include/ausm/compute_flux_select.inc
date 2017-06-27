@@ -1,7 +1,7 @@
-!should be included in ausm file in compte flux subroutine
-            
+!should be include in ausm.f90 in compute_flux after F_minus ahs been computed
 
-      select case (turbulence)
+
+      select case (trim(turbulence))
           
           case ("none")
               !include nothing
@@ -9,6 +9,22 @@
 
           case ("sst")
               include "turbulence_models/sst/ausm/compute_flux_select.inc"
+
+          case ("kkl")
+
+              include "turbulence_models/kkl/ausm/compute_flux_select.inc"
+
+          case ("sa")
+              include "turbulence_models/sa/ausm/compute_flux_select.inc"
+
+          case ("kw")
+              include "turbulence_models/kw/ausm/compute_flux_select.inc"
+
+          case ("ke")
+              include "turbulence_models/ke/ausm/compute_flux_select.inc"
+
+          case ("des-sst")
+              include "turbulence_models/des-sst/ausm/compute_flux_select.inc"
 
           case DEFAULT
               call dmsg(5, "turbulence_models/include/ausm", "compute_flux_select", &

@@ -10,6 +10,21 @@
           case ("sst")
               include "turbulence_models/sst/scheme/ldfss0_setup.inc"
 
+          case ("kkl")
+              include "turbulence_models/kkl/scheme/ldfss0_setup.inc"
+
+          case ("sa")
+              include "turbulence_models/sa/scheme/ldfss0_setup.inc"
+
+          case ("ke")
+              include "turbulence_models/ke/scheme/ldfss0_setup.inc"
+
+          case ("kw")
+              include "turbulence_models/kw/scheme/ldfss0_setup.inc"
+
+          case ("des-sst")
+              include "turbulence_models/des-sst/scheme/ldfss0_setup.inc"
+
           case DEFAULT
               call dmsg(5, "turbulence_models/include/scheme", "ldfss0_setup", &
                         "ERROR: Turbulence model not recognised")

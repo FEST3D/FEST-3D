@@ -27,6 +27,8 @@ module gradients
 
   use sst_gradients,      only : setup_sst_grad
   use sst_gradients,      only : destroy_sst_grad
+  use kkl_gradients,      only : setup_kkl_grad
+  use kkl_gradients,      only : destroy_kkl_grad
 
   implicit none
   private
@@ -48,7 +50,7 @@ module gradients
         call setup_laminar_grad()
 
         ! linking pointer to turbulent gradients
-        select case (turbulence)
+        select case (trim(turbulence))
           
           case('none')
             !do nothing
@@ -56,6 +58,9 @@ module gradients
 
           case('sst')
             call setup_sst_grad()
+
+          case('kkl')
+            call setup_kkl_grad()
 
           case DEFAULT
             call turbulence_read_error()
@@ -76,7 +81,7 @@ module gradients
         call destroy_laminar_grad()
 
         !unlink turublent grad pointer
-        select case (turbulence)
+        select case (trim(turbulence))
           
           case('none')
             !do nothing
@@ -84,6 +89,9 @@ module gradients
 
           case('sst')
             call destroy_sst_grad()
+
+          case('kkl')
+            call destroy_kkl_grad()
 
           case DEFAULT
             call turbulence_read_error()
@@ -98,7 +106,7 @@ module gradients
     subroutine get_n_grad()
       implicit none
 
-      select case (turbulence)
+      select case (trim(turbulence))
         
         case('none')
           !do nothing
@@ -106,6 +114,9 @@ module gradients
 
         case('sst')
           n_grad = n_grad + sst_n_grad
+
+        case('kkl')
+          n_grad = n_grad + 2
 
         case DEFAULT
           call turbulence_read_error()

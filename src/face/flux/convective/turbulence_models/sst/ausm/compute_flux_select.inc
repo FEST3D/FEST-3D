@@ -1,7 +1,4 @@
-!should be included in ausm file in compte flux subroutine
-            
-!            call dmsg(1, 'turbulence_models/sst/ausm', 'compute_flux.inc')
-            
+
             select case (f_dir)
                 case ('x')
                     f_tk_left => x_tk_left
@@ -23,3 +20,4 @@
                             'Direction not recognised')
                     stop
             end select
+

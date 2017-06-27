@@ -9,6 +9,9 @@
           case ("sst")
               include "turbulence_models/sst/solver/update_solution.inc"
 
+          case ("kkl")
+              include "turbulence_models/kkl/solver/update_solution.inc"
+
           case DEFAULT
               call dmsg(5, "turbulence_models/include/solver", "update_solution", &
                         "ERROR: Turbulence model not recognised")

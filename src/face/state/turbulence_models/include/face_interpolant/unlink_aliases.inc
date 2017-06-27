@@ -11,6 +11,21 @@
           case ("sst")
               include "turbulence_models/sst/face_interpolant/unlink_aliases.inc"
 
+          case ("kkl")
+              include "turbulence_models/kkl/face_interpolant/unlink_aliases.inc"
+
+          case ("sa")
+              include "turbulence_models/sa/face_interpolant/unlink_aliases.inc"
+
+          case ("ke")
+              include "turbulence_models/ke/face_interpolant/unlink_aliases.inc"
+
+          case ("kw")
+              include "turbulence_models/kw/face_interpolant/unlink_aliases.inc"
+
+          case ("des-sst")
+              include "turbulence_models/des-sst/face_interpolant/unlink_aliases.inc"
+
           case DEFAULT
               call dmsg(5, "turbulence_models/include/face_interpolant", "unlink_aliases", &
                         "ERROR: Turbulence model not recognised")
