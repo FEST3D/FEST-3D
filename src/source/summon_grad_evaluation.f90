@@ -4,7 +4,7 @@ module summon_grad_evaluation
   ! Aim : call is made to all the required gradients
   !                         based on input conditions
   !----------------------------------------------------------
-
+#include "../error.inc"
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
@@ -148,7 +148,8 @@ module summon_grad_evaluation
           end if
 
         case DEFAULT
-          call turbulence_read_error()
+          !call turbulence_read_error()
+          Error
 
       end select
 

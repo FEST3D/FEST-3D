@@ -4,6 +4,7 @@ module source
   ! AIM: to add source term residue to already calculate residuals
   !      if requires
   !-----------------------------------------------------------------
+#include "../error.inc"
   use global_vars, only : turbulence
   use utils      , only : dmsg
   use utils      , only : turbulence_read_error
@@ -36,7 +37,8 @@ module source
           call add_kkl_source()
 
         case DEFAULT
-          call turbulence_read_error()
+          !call turbulence_read_error()
+          Error
 
       end select
 

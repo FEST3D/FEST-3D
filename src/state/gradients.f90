@@ -5,6 +5,7 @@ module gradients
   !aim : 1) allocate memory to laminar gradients if flow is viscous
   !      2) allocate memory to tubulence gradients base on model used
   !-------------------------------------------------------------------
+#include "../error.inc"
 
   use global_vars,  only : imx
   use global_vars,  only : jmx
@@ -63,7 +64,8 @@ module gradients
             call setup_kkl_grad()
 
           case DEFAULT
-            call turbulence_read_error()
+            !call turbulence_read_error()
+            Error
 
         end select
 
@@ -94,7 +96,8 @@ module gradients
             call destroy_kkl_grad()
 
           case DEFAULT
-            call turbulence_read_error()
+           ! call turbulence_read_error()
+           Error
 
         end select
 
@@ -119,7 +122,8 @@ module gradients
           n_grad = n_grad + 2
 
         case DEFAULT
-          call turbulence_read_error()
+          !call turbulence_read_error()
+          Error
 
       end select
 

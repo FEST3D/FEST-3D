@@ -21,6 +21,9 @@ module write_output_vtk
   use global_vars, only : pressure 
   use global_vars, only : tk 
   use global_vars, only : tw 
+  use global_vars, only : tkl 
+  use global_vars, only : tv 
+  use global_vars, only : te
   use global_vars, only : mu 
   use global_vars, only : mu_t 
   use global_vars, only : density_inf
@@ -118,6 +121,15 @@ module write_output_vtk
 
           case('Omega')
             call write_scalar(tw, "Omega", -2)
+
+          case('Kl')
+            call write_scalar(tkl, "Omega", -2)
+
+          case('tv')
+            call write_scalar(tv, "Omega", -2)
+
+          case('Dissipation')
+            call write_scalar(te, "Omega", -2)
 
           case('Wall_distance')
             call write_scalar(dist, "dist", 1)

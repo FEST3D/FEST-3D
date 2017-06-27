@@ -16,11 +16,11 @@
                      -(2*mu(i,j,k)/dist(i,j,k))*delta_t(i,j,k)))&
                        * (TKE_residue(i,j,k))/density(i,j,k))
 
-              tkl_temp = tw(i,j,k) - &
+              tkl_temp = tkl(i,j,k) - &
                         (1.*delta_t(i,j,k)/volume(i,j,k))&
-                       *(-1.*tw(i,j,k)*mass_residue(i,j,k)/density(i,j,k)&
+                       *(-1.*tkl(i,j,k)*mass_residue(i,j,k)/density(i,j,k)&
                        + 1./(1. -(6*mu(i,j,k)*fphi)*delta_t(i,j,k))&
                        *(kl_residue(i,j,k))/density(i,j,k))
 
                if (tk_temp>0.) tk(i, j, k) = tk_temp
-               if (tkl_temp>0.) tw(i, j, k) = tkl_temp
+               if (tkl_temp>0.) tkl(i, j, k) = tkl_temp

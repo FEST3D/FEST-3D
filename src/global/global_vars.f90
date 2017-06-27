@@ -295,6 +295,9 @@ module global_vars
   real, dimension(6) :: fixed_z_speed  = 0.
   real, dimension(6) :: fixed_tk       = 0.
   real, dimension(6) :: fixed_tw       = 0.
+  real, dimension(6) :: fixed_te       = 0.
+  real, dimension(6) :: fixed_tv       = 0.
+  real, dimension(6) :: fixed_tkl       = 0.
 
   ! variable for post_processing
   integer :: N_blocks

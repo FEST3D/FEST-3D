@@ -760,6 +760,7 @@ module solver
         subroutine sub_step()
 
             implicit none
+            integer :: ierr
 
             !TODO: Better name for this??
 
@@ -807,9 +808,9 @@ module solver
             call update_simulation_clock()
             current_iter = current_iter + 1
 
-            if ( mod(current_iter,res_write_interval) == 0 .or. current_iter == 1) then
-              call write_resnorm()
-            end if
+           ! if ( mod(current_iter,res_write_interval) == 0 .or. current_iter == 1) then
+           !   call write_resnorm()
+           ! end if
 
             call checkpoint()
             if(process_id==0)then

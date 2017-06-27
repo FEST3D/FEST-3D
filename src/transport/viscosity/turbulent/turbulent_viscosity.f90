@@ -7,7 +7,7 @@ module turbulent_viscosity
   !             calcualte (call only)
   ! turbulent viscosity.
   !------------------------------------------------------------------
-
+#include "../../../error.inc"
   use global_vars    , only : imx
   use global_vars    , only : jmx
   use global_vars    , only : kmx
@@ -48,7 +48,8 @@ module turbulent_viscosity
           kkl_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
 
         case DEFAULT 
-          call turbulence_read_error()
+          !call turbulence_read_error()
+          Error
 
       end select
 
@@ -71,7 +72,8 @@ module turbulent_viscosity
           nullify(kkl_mu)
 
         case DEFAULT 
-          call turbulence_read_error()
+          !call turbulence_read_error()
+          Error
 
       end select
       call dealloc(mu_t)
@@ -95,7 +97,8 @@ module turbulent_viscosity
           call calculate_kkl_mu()
 
         case DEFAULT 
-          call turbulence_read_error()
+          !call turbulence_read_error()
+          Error
 
       end select
 

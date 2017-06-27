@@ -3,6 +3,8 @@ module bc_primitive
   ! 170515  Jatinder Pal Singh Sandhu
   ! Aim : applying boundary condition to domain
   !-------------------------------------------
+#include "../error.inc"
+
   use global_vars, only: imin_id
   use global_vars, only: imax_id
   use global_vars, only: jmin_id
@@ -16,6 +18,7 @@ module bc_primitive
   use global_vars, only: fixed_pressure
   use global_vars, only: fixed_tk
   use global_vars, only: fixed_tw
+  use global_vars, only: fixed_tkl
   use global_vars, only: mu_ref
   use global_vars, only: R_gas
   use global_vars, only: sutherland_temp
@@ -26,6 +29,7 @@ module bc_primitive
   use global_vars, only: z_speed
   use global_vars, only: tk
   use global_vars, only: tw
+  use global_vars, only: tkl
   use global_vars, only: accur
   use global_vars, only: imx
   use global_vars, only: jmx
@@ -46,6 +50,9 @@ module bc_primitive
   use global_vars, only: process_id
   use global_vars, only: tk_inf
   use global_vars, only: tw_inf
+  use global_vars, only: te_inf
+  use global_vars, only: tv_inf
+  use global_vars, only: tkl_inf
   use global_vars, only: face_names
   use global_vars, only: id
 
@@ -128,8 +135,13 @@ module bc_primitive
             call check_if_value_fixed("sst")
             call fix(tk, fixed_tk, face)
             call fix(tw, fixed_tw, face)
+          case('kkl')
+            call check_if_value_fixed("kkl")
+            call fix(tk, fixed_tk, face)
+            call fix(tkl, fixed_tkl, face)
           case DEFAULT
-            call turbulence_read_error()
+            !call turbulence_read_error()
+            Error
         end select
       end subroutine supersonic_inlet
 
@@ -149,8 +161,12 @@ module bc_primitive
           case('sst')
             call copy3(tk, "flat", face)
             call copy3(tw, "flat", face)
+          case('kkl')
+            call copy3(tk, "flat", face)
+            call copy3(tkl, "flat", face)
           case DEFAULT
-            call turbulence_read_error()
+            !call turbulence_read_error()
+            Error
         end select
       end subroutine supersonic_outlet
 
@@ -172,8 +188,13 @@ module bc_primitive
             call check_if_value_fixed("sst")
             call fix(tk, fixed_tk, face)
             call fix(tw, fixed_tw, face)
+          case('kkl')
+            call check_if_value_fixed("kkl")
+            call fix(tk, fixed_tk, face)
+            call fix(tkl, fixed_tw, face)
           case DEFAULT
-            call turbulence_read_error()
+           ! call turbulence_read_error()
+           Error
         end select
       end subroutine pressure_inlet
 
@@ -193,8 +214,12 @@ module bc_primitive
           case('sst')
             call copy3(tk, "flat", face)
             call copy3(tw, "flat", face)
+          case('kkl')
+            call copy3(tk, "flat", face)
+            call copy3(tkl, "flat", face)
           case DEFAULT
-            call turbulence_read_error()
+           ! call turbulence_read_error()
+           Error
         end select
       end subroutine pressure_outlet
 
@@ -219,8 +244,12 @@ module bc_primitive
           case('sst')
             call copy3(tk, "symm", face)
             call copy3(tw, "symm", face)
+          case('kkl')
+            call copy3(tk, "symm", face)
+            call copy3(tkl, "symm", face)
           case DEFAULT
-            call turbulence_read_error()
+            !call turbulence_read_error()
+            Error
         end select
         call flow_tangency(face)
       end subroutine slip_wall
@@ -280,7 +309,8 @@ module bc_primitive
               var(1:imx-1, 1:jmx-1,   kmx+1) = fix_val(6)
               var(1:imx-1, 1:jmx-1,   kmx+2) = fix_val(6)
           case DEFAULT
-            print*, "ERROR: wrong face for boundary condition"
+            !print*, "ERROR: wrong face for boundary condition"
+            Error
         end select
             
       end subroutine fix
@@ -299,8 +329,12 @@ module bc_primitive
           case("sst")
             call copy3(tk  , "anti", face)
             call set_omega_at_wall(face)
+          case("kkl")
+            call copy3(tk  , "anti", face)
+            call copy3(tkl , "anti", face)
           case DEFAULT
-            call turbulence_read_error()
+            !call turbulence_read_error()
+            Error
         end select
       end subroutine no_slip
 
@@ -384,8 +418,12 @@ module bc_primitive
         case("sst")
           if(fixed_tk(face_num)==0.) fixed_tk(face_num)=tk_inf
           if(fixed_tw(face_num)==0.) fixed_tw(face_num)=tw_inf
+        case("kkl")
+          if(fixed_tk(face_num)==0.) fixed_tk(face_num)=tk_inf
+          if(fixed_tkl(face_num)==0.) fixed_tkl(face_num)=tkl_inf
         case DEFAULT
-          call turbulence_read_error()
+         ! call turbulence_read_error()
+         Error
       end select
     end subroutine check_if_value_fixed
 
