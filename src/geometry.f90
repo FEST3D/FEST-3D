@@ -28,6 +28,12 @@ module geometry
     use global_vars, only :   back_ghost_centroid
     use global_vars, only :    top_ghost_centroid
     use global_vars, only : bottom_ghost_centroid
+    use global_vars, only : imin_id
+    use global_vars, only : imax_id
+    use global_vars, only : jmin_id
+    use global_vars, only : jmax_id
+    use global_vars, only : kmin_id
+    use global_vars, only : kmax_id
     
     use utils, only: alloc, dealloc, dmsg
 
@@ -163,18 +169,55 @@ module geometry
             !-----------------------------------------------------------
             
             implicit none
+            integer :: i,j,k
 
-            xnx(:, :, :) = xnx(:, :, :) / xA(:, :, :)
-            xny(:, :, :) = xny(:, :, :) / xA(:, :, :) 
-            xnz(:, :, :) = xnz(:, :, :) / xA(:, :, :)
+            do k = 1,kmx-1
+              do j = 1,jmx-1
+                do i = 1,imx
+                  if(xA(i,j,k)/=0.) then
+                    xnx(i,j,k) = xnx(i,j,k) / xA(i,j,k)
+                    xny(i,j,k) = xny(i,j,k) / xA(i,j,k)
+                    xnz(i,j,k) = xnz(i,j,k) / xA(i,j,k)
+                  else
+                    xnx(i,j,k)=0.
+                    xny(i,j,k)=0.
+                    xnz(i,j,k)=0.
+                  end if
+                end do
+              end do
+            end do
 
-            ynx(:, :, :) = ynx(:, :, :) / yA(:, :, :)
-            yny(:, :, :) = yny(:, :, :) / yA(:, :, :)
-            ynz(:, :, :) = ynz(:, :, :) / yA(:, :, :)
+            do k = 1,kmx-1
+              do j = 1,jmx
+                do i = 1,imx-1
+                  if(yA(i,j,k)/=0.) then
+                    ynx(i,j,k) = ynx(i,j,k) / yA(i,j,k)
+                    yny(i,j,k) = yny(i,j,k) / yA(i,j,k)
+                    ynz(i,j,k) = ynz(i,j,k) / yA(i,j,k)
+                  else
+                    ynx(i,j,k)=0.
+                    yny(i,j,k)=0.
+                    ynz(i,j,k)=0.
+                  end if
+                end do
+              end do
+            end do
 
-            znx(:, :, :) = znx(:, :, :) / zA(:, :, :)
-            zny(:, :, :) = zny(:, :, :) / zA(:, :, :)
-            znz(:, :, :) = znz(:, :, :) / zA(:, :, :)
+            do k = 1,kmx
+              do j = 1,jmx-1
+                do i = 1,imx-1
+                  if(zA(i,j,k)/=0.) then
+                    znx(i,j,k) = znx(i,j,k) / zA(i,j,k)
+                    zny(i,j,k) = zny(i,j,k) / zA(i,j,k)
+                    znz(i,j,k) = znz(i,j,k) / zA(i,j,k)
+                  else
+                    znx(i,j,k)=0.
+                    zny(i,j,k)=0.
+                    znz(i,j,k)=0.
+                  end if
+                end do
+              end do
+            end do
             
         end subroutine normalize_face_normals
 
@@ -201,6 +244,15 @@ module geometry
             
             zA(:, :, :) = sqrt((znx(:, :, :)) ** 2. + (zny(:, :, :)) ** 2. + &
                           (znz(:, :, :)) ** 2.)
+
+            ! Pole boundary conditions
+            ! making sure face area is exactly equal zero
+            if(imin_id==-7) xA(1  ,  :,  :)=0.
+            if(imax_id==-7) xA(imx,  :,  :)=0.
+            if(jmin_id==-7) yA(  :,  1,  :)=0.
+            if(jmax_id==-7) yA(  :,jmx,  :)=0.
+            if(kmin_id==-7) zA(  :,  :,  1)=0.
+            if(kmax_id==-7) zA(  :,  :,kmx)=0.
 
         end subroutine compute_face_areas
 
