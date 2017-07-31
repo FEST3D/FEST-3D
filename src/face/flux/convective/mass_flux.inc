@@ -11,7 +11,7 @@
   if(k_f==1 .and. k==kmx) id=kmax_id
 
     select case(id)
-      case(-5,-6)
+      case(-5,-6,-7)
         F_plus(1)=0.
         F_minus(1)=0
       case(-1,-3)

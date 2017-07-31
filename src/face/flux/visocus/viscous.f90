@@ -65,36 +65,6 @@ module viscous
   use global_sst , only : sigma_k2
   use utils      , only : alloc, dealloc, dmsg
   use string
-  use face_interpolant, only: x_density_left 
-  use face_interpolant, only: y_density_left
-  use face_interpolant, only: z_density_left
-  use face_interpolant, only: x_density_right
-  use face_interpolant, only: y_density_right
-  use face_interpolant, only: z_density_right
-  use face_interpolant, only: x_x_speed_left
-  use face_interpolant, only: x_y_speed_left
-  use face_interpolant, only: x_z_speed_left
-  use face_interpolant, only: x_x_speed_right
-  use face_interpolant, only: x_y_speed_right
-  use face_interpolant, only: x_z_speed_right
-  use face_interpolant, only: y_x_speed_left
-  use face_interpolant, only: y_y_speed_left
-  use face_interpolant, only: y_z_speed_left
-  use face_interpolant, only: y_x_speed_right
-  use face_interpolant, only: y_y_speed_right
-  use face_interpolant, only: y_z_speed_right
-  use face_interpolant, only: z_x_speed_left
-  use face_interpolant, only: z_y_speed_left
-  use face_interpolant, only: z_z_speed_left
-  use face_interpolant, only: z_x_speed_right
-  use face_interpolant, only: z_y_speed_right
-  use face_interpolant, only: z_z_speed_right
-  use face_interpolant, only: x_pressure_left
-  use face_interpolant, only: y_pressure_left
-  use face_interpolant, only: z_pressure_left
-  use face_interpolant, only: x_pressure_right
-  use face_interpolant, only: y_pressure_right
-  use face_interpolant, only: z_pressure_right
   implicit none
   private
 
@@ -249,19 +219,6 @@ module viscous
             dTdy = dTdy + (normal_comp * (yc_R - yc_L) / d_LR)
             dTdz = dTdz + (normal_comp * (zc_R - zc_L) / d_LR)
             
-            ! mu requires T at the face. Hence:
-            ! T_L and T_R are the left and right states of the face i,j,k
-            ! The values at face used instead of element values
-!            T_L = x_pressure_left(i, j, k) / (x_density_left(i, j, k) * R_gas)
-!            T_R = x_pressure_right(i, j, k) / (x_density_right(i, j, k) * R_gas)
-!            T_face = 0.5 * (T_L + T_R)
-!            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
-!                          Sutherland_temp) / (T_face + Sutherland_temp))
-        !   mu = 0.5 * ( (mu_ref * (T_L / T_ref)**1.5 * (T_ref + &
-        !                 Sutherland_temp) / (T_L + Sutherland_temp)) + & 
-        !                (mu_ref * (T_R / T_ref)**1.5 * (T_ref + &
-        !                 Sutherland_temp) / (T_R + Sutherland_temp)) ) 
-        !   mu = 2.0
 
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
@@ -304,9 +261,9 @@ module viscous
                             xA(i, j, k))
            
             ! Energy flux
-            uface = 0.5 * (x_x_speed_left(i, j, k) + x_x_speed_right(i, j, k))
-            vface = 0.5 * (x_y_speed_left(i, j, k) + x_y_speed_right(i, j, k))
-            wface = 0.5 * (x_z_speed_left(i, j, k) + x_z_speed_right(i, j, k))
+            uface = 0.5 * (x_speed(i-1, j, k) + x_speed(i, j, k))
+            vface = 0.5 * (y_speed(i-1, j, k) + y_speed(i, j, k))
+            wface = 0.5 * (z_speed(i-1, j, k) + z_speed(i, j, k))
             ! (TijVj + Qi)ni
             F(i, j, k, 5) = F(i, j, k, 5) - (xA(i, j, k) * ( &
                             ((Tau_xx*uface + Tau_xy*vface + Tau_xz*wface + &
@@ -469,19 +426,6 @@ module viscous
             dTdy = dTdy + (normal_comp * (yc_R - yc_L) / d_LR)
             dTdz = dTdz + (normal_comp * (zc_R - zc_L) / d_LR)
 
-            ! mu requires T at the face. Hence:
-            ! T_L and T_R are the left and right states of the face i,j,k
-            ! The values at face used instead of element values
-!            T_L = y_pressure_left(i, j, k) / (y_density_left(i, j, k) * R_gas)
-!            T_R = y_pressure_right(i, j, k) / (y_density_right(i, j, k) * R_gas)
-!            T_face = 0.5 * (T_L + T_R)
-!            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
-!                          Sutherland_temp) / (T_face + Sutherland_temp))
-        !   mu = 0.5 * ( (mu_ref * (T_L / T_ref)**1.5 * (T_ref + &
-        !                 Sutherland_temp) / (T_L + Sutherland_temp)) + & 
-        !                (mu_ref * (T_R / T_ref)**1.5 * (T_ref + &
-        !                 Sutherland_temp) / (T_R + Sutherland_temp)) ) 
-        !   mu = 2.00
 
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
@@ -525,18 +469,9 @@ module viscous
                             (Tau_yz * yny(i, j, k)) + (Tau_zz * ynz(i, j, k))) * &
                             yA(i, j, k))
           
-            ! Wall boundary condition
-            !TODO MAKE BOUNDARY CONSTION GENERAL NOT ONY AT Y AND Z FACE
-!            if ((j .eq. 1) .or. (j .eq. jmx)) then
-!            if ((j .eq. 1)) then
-!                uface = 0.0
-!                vface = 0.0
-!                wface = 0.0
-!            else
-                uface = 0.5 * (y_x_speed_left(i, j, k) + y_x_speed_right(i, j, k))
-                vface = 0.5 * (y_y_speed_left(i, j, k) + y_y_speed_right(i, j, k))
-                wface = 0.5 * (y_z_speed_left(i, j, k) + y_z_speed_right(i, j, k))
-!            end if
+            uface = 0.5 * (x_speed(i, j-1, k) + x_speed(i, j, k))
+            vface = 0.5 * (y_speed(i, j-1, k) + y_speed(i, j, k))
+            wface = 0.5 * (z_speed(i, j-1, k) + z_speed(i, j, k))
 
             ! Energy flux
             ! (TijVj - Qi)ni
@@ -699,20 +634,6 @@ module viscous
             dTdy = dTdy + (normal_comp * (yc_R - yc_L) / d_LR)
             dTdz = dTdz + (normal_comp * (zc_R - zc_L) / d_LR)
 
-            ! mu is required at the face. Hence:
-            ! T_L and T_R are the left and right states of the face i,j,k
-            ! The values at face used instead of element values
-!            T_L = z_pressure_left(i, j, k) / (z_density_left(i, j, k) * R_gas)
-!            T_R = z_pressure_right(i, j, k) / (z_density_right(i, j, k) * R_gas)
-!            T_face = 0.5 * (T_L + T_R)
-!            mu = mu_ref * (T_face / T_ref)**1.5 * ((T_ref + &
-!                          Sutherland_temp) / (T_face + Sutherland_temp))
-        !   mu = 0.5 * ( (mu_ref * (T_L / T_ref)**1.5 * (T_ref + &
-        !                 Sutherland_temp) / (T_L + Sutherland_temp)) + & 
-        !                (mu_ref * (T_R / T_ref)**1.5 * (T_ref + &
-        !                 Sutherland_temp) / (T_R + Sutherland_temp)) ) 
-        !   mu = 2.000
-
             ! Using lambda = -2 * mu / 3
             ! For the xi direction fluxes, only Tau_xx, Tau_yx, 
             ! Tau_zx is needed. Tau_yx = Tau_xy and T_zx = Tau_xz
@@ -754,16 +675,9 @@ module viscous
                             (Tau_yz * zny(i, j, k)) + (Tau_zz * znz(i, j, k))) * &
                             zA(i, j, k))
             
-            ! Wall boundary condition
-!            if ((k .eq. 1) .or. (k .eq. kmx)) then
-!                uface = 0.0
-!                vface = 0.0
-!                wface = 0.0
-!            else
-                uface = 0.5 * (z_x_speed_left(i, j, k) + z_x_speed_right(i, j, k))
-                vface = 0.5 * (z_y_speed_left(i, j, k) + z_y_speed_right(i, j, k))
-                wface = 0.5 * (z_z_speed_left(i, j, k) + z_z_speed_right(i, j, k))
-!            end if
+            uface = 0.5 * (x_speed(i, j, k-1) + x_speed(i, j, k))
+            vface = 0.5 * (y_speed(i, j, k-1) + y_speed(i, j, k))
+            wface = 0.5 * (z_speed(i, j, k-1) + z_speed(i, j, k))
 
             ! Energy flux
             ! (TijVj - Qi)ni

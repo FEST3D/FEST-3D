@@ -96,6 +96,10 @@ module bc_primitive
           case(-6)
             call slip_wall(face)
 
+          case(-7)
+            call pole(face)
+            !continue
+
           case Default
             if(id(i)>=0) then
               continue !interface boundary 
@@ -220,6 +224,28 @@ module bc_primitive
         end select
         call flow_tangency(face)
       end subroutine slip_wall
+
+
+      subroutine pole(face)
+        implicit none
+        character(len=*), intent(in) :: face
+        call copy3(density , "flat", face)
+        call copy3(x_speed , "flat", face)
+        call copy3(y_speed , "flat", face)
+        call copy3(z_speed , "flat", face)
+        call copy3(pressure, "flat", face)
+        select case (turbulence)
+          case('none')
+            !do nothing
+            continue
+          case('sst')
+            call copy3(tk, "flat", face)
+            call copy3(tw, "flat", face)
+          case DEFAULT
+            call turbulence_read_error()
+        end select
+      end subroutine pole
+
 
 
       subroutine fix(var, fix_val, face)

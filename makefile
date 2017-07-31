@@ -22,6 +22,7 @@ GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 					-cpp
 
 IFFLAGS := -O3 -free -r8 -traceback \
+					 -L/sware/intel/mkl/lib/intel64 \
            -cpp \
 					 -zero \
 					 -u \
@@ -32,8 +33,6 @@ IFFLAGS := -O3 -free -r8 -traceback \
 					 -warn uncalled \
 					 -warn unused
            
-#           -I /sware/intel/impi/4.1.0.024/include64/ \
-#           -L /sware/intel/impi/4.1.0.024/lib64 -lmpich -lmpi \
 
 subpath:= resnorm \
 				 resnorm/viscous \

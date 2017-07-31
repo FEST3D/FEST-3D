@@ -178,10 +178,6 @@ module geometry
                     xnx(i,j,k) = xnx(i,j,k) / xA(i,j,k)
                     xny(i,j,k) = xny(i,j,k) / xA(i,j,k)
                     xnz(i,j,k) = xnz(i,j,k) / xA(i,j,k)
-                  else
-                    xnx(i,j,k)=0.
-                    xny(i,j,k)=0.
-                    xnz(i,j,k)=0.
                   end if
                 end do
               end do
@@ -194,10 +190,6 @@ module geometry
                     ynx(i,j,k) = ynx(i,j,k) / yA(i,j,k)
                     yny(i,j,k) = yny(i,j,k) / yA(i,j,k)
                     ynz(i,j,k) = ynz(i,j,k) / yA(i,j,k)
-                  else
-                    ynx(i,j,k)=0.
-                    yny(i,j,k)=0.
-                    ynz(i,j,k)=0.
                   end if
                 end do
               end do
@@ -210,14 +202,48 @@ module geometry
                     znx(i,j,k) = znx(i,j,k) / zA(i,j,k)
                     zny(i,j,k) = zny(i,j,k) / zA(i,j,k)
                     znz(i,j,k) = znz(i,j,k) / zA(i,j,k)
-                  else
-                    znx(i,j,k)=0.
-                    zny(i,j,k)=0.
-                    znz(i,j,k)=0.
                   end if
                 end do
               end do
             end do
+
+            ! pole boundary condition
+            if(imin_id==-7) then
+              xnx(1,:,:)=xnx(2,:,:)
+              xny(1,:,:)=xny(2,:,:)
+              xnz(1,:,:)=xnz(2,:,:)
+            end if
+
+            if(imax_id==-7) then
+              xnx(imx,:,:)=xnx(imx-1,:,:)
+              xny(imx,:,:)=xny(imx-1,:,:)
+              xnz(imx,:,:)=xnz(imx-1,:,:)
+            end if
+
+            if(jmin_id==-7) then
+              ynx(:,1,:)=ynx(:,2,:)
+              yny(:,1,:)=yny(:,2,:)
+              ynz(:,1,:)=ynz(:,2,:)
+            end if
+
+            if(jmax_id==-7) then
+              ynx(:,jmx,:)=ynx(:,jmx-1,:)
+              yny(:,jmx,:)=yny(:,jmx-1,:)
+              ynz(:,jmx,:)=ynz(:,jmx-1,:)
+            end if
+
+            if(kmin_id==-7) then
+              znx(:,:,1)=znx(:,:,2)
+              zny(:,:,1)=zny(:,:,2)
+              znz(:,:,1)=znz(:,:,2)
+            end if
+
+            if(kmax_id==-7) then
+              znx(:,:,kmx)=znx(:,:,kmx-1)
+              zny(:,:,kmx)=zny(:,:,kmx-1)
+              znz(:,:,kmx)=znz(:,:,kmx-1)
+            end if
+
             
         end subroutine normalize_face_normals
 
@@ -270,12 +296,6 @@ module geometry
             
             implicit none
 
-!           real, dimension(1:imx, 1:jmx-1, 1:kmx-1) :: xd1x, xd1y, xd1z, &
-!                                                       xd2x, xd2y, xd2z 
-!           real, dimension(1:imx-1, 1:jmx, 1:kmx-1) :: yd1x, yd1y, yd1z, &
-!                                                       yd2x, yd2y, yd2z 
-!           real, dimension(1:imx-1, 1:jmx-1, 1:kmx) :: zd1x, zd1y, zd1z, &
-!                                                       zd2x, zd2y, zd2z 
     
             real :: d1x, d2x, d1y, d2y, d1z, d2z
             integer :: i, j, k
@@ -296,16 +316,6 @@ module geometry
               end do
              end do
 
-          ! xd1x(:, :, :) = grid_x(1:imx, 2:jmx, 2:kmx) - grid_x(1:imx, 1:jmx-1, 1:kmx-1)
-          ! xd1y(:, :, :) = grid_y(1:imx, 2:jmx, 2:kmx) - grid_y(1:imx, 1:jmx-1, 1:kmx-1)
-          ! xd1z(:, :, :) = grid_z(1:imx, 2:jmx, 2:kmx) - grid_z(1:imx, 1:jmx-1, 1:kmx-1)
-          ! xd2x(:, :, :) = grid_x(1:imx, 1:jmx-1, 2:kmx) - grid_x(1:imx, 2:jmx, 1:kmx-1)
-          ! xd2y(:, :, :) = grid_y(1:imx, 1:jmx-1, 2:kmx) - grid_y(1:imx, 2:jmx, 1:kmx-1)
-          ! xd2z(:, :, :) = grid_z(1:imx, 1:jmx-1, 2:kmx) - grid_z(1:imx, 2:jmx, 1:kmx-1)
-          ! 
-          ! xnx(:, :, :) = xd1y(:,:,:)*xd2z(:,:,:) - xd1z(:,:,:)*xd2y(:,:,:)
-          ! xny(:, :, :) = xd1z(:,:,:)*xd2x(:,:,:) - xd1x(:,:,:)*xd2z(:,:,:)
-          ! xnz(:, :, :) = xd1x(:,:,:)*xd2y(:,:,:) - xd1y(:,:,:)*xd2x(:,:,:)
 
             do k = 1, kmx - 1
              do j = 1, jmx
@@ -324,16 +334,6 @@ module geometry
              end do
             end do
 
-          ! yd1x(:, :, :) = grid_x(2:imx, 1:jmx, 2:kmx) - grid_x(1:imx-1, 1:jmx, 1:kmx-1)
-          ! yd1y(:, :, :) = grid_y(2:imx, 1:jmx, 2:kmx) - grid_y(1:imx-1, 1:jmx, 1:kmx-1)
-          ! yd1z(:, :, :) = grid_z(2:imx, 1:jmx, 2:kmx) - grid_z(1:imx-1, 1:jmx, 1:kmx-1)
-          ! yd2x(:, :, :) = grid_x(2:imx, 1:jmx, 1:kmx-1) - grid_x(1:imx-1, 1:jmx, 2:kmx)
-          ! yd2y(:, :, :) = grid_y(2:imx, 1:jmx, 1:kmx-1) - grid_y(1:imx-1, 1:jmx, 2:kmx)
-          ! yd2z(:, :, :) = grid_z(2:imx, 1:jmx, 1:kmx-1) - grid_z(1:imx-1, 1:jmx, 2:kmx)
-          ! 
-          ! ynx(:, :, :) = yd1y(:,:,:)*yd2z(:,:,:) - yd1z(:,:,:)*yd2y(:,:,:)
-          ! yny(:, :, :) = yd1z(:,:,:)*yd2x(:,:,:) - yd1x(:,:,:)*yd2z(:,:,:)
-          ! ynz(:, :, :) = yd1x(:,:,:)*yd2y(:,:,:) - yd1y(:,:,:)*yd2x(:,:,:)
             
             do k = 1, kmx
              do j = 1, jmx - 1
@@ -352,16 +352,6 @@ module geometry
              end do
             end do
 
-          ! zd1x(:, :, :) = grid_x(2:imx, 2:jmx, 1:kmx) - grid_x(1:imx-1, 1:jmx-1, 1:kmx)
-          ! zd1y(:, :, :) = grid_y(2:imx, 2:jmx, 1:kmx) - grid_y(1:imx-1, 1:jmx-1, 1:kmx)
-          ! zd1z(:, :, :) = grid_z(2:imx, 2:jmx, 1:kmx) - grid_z(1:imx-1, 1:jmx-1, 1:kmx)
-          ! zd2x(:, :, :) = grid_x(1:imx-1, 2:jmx, 1:kmx) - grid_x(2:imx, 1:jmx-1, 1:kmx)
-          ! zd2y(:, :, :) = grid_y(1:imx-1, 2:jmx, 1:kmx) - grid_y(2:imx, 1:jmx-1, 1:kmx)
-          ! zd2z(:, :, :) = grid_z(1:imx-1, 2:jmx, 1:kmx) - grid_z(2:imx, 1:jmx-1, 1:kmx)
-          ! 
-          ! znx(:, :, :) = zd1y(:,:,:)*zd2z(:,:,:) - zd1z(:,:,:)*zd2y(:,:,:)
-          ! zny(:, :, :) = zd1z(:,:,:)*zd2x(:,:,:) - zd1x(:,:,:)*zd2z(:,:,:)
-          ! znz(:, :, :) = zd1x(:,:,:)*zd2y(:,:,:) - zd1y(:,:,:)*zd2x(:,:,:)
 
         end subroutine compute_face_area_vectors
 
