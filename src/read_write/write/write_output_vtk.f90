@@ -14,23 +14,23 @@ module write_output_vtk
   use global_vars, only : grid_x
   use global_vars, only : grid_y
   use global_vars, only : grid_z
-  use global_vars, only : density 
-  use global_vars, only : x_speed 
-  use global_vars, only : y_speed 
-  use global_vars, only : z_speed 
-  use global_vars, only : pressure 
-  use global_vars, only : tk 
-  use global_vars, only : tw 
-  use global_vars, only : tkl 
-  use global_vars, only : tv 
+  use global_vars, only : density
+  use global_vars, only : x_speed
+  use global_vars, only : y_speed
+  use global_vars, only : z_speed
+  use global_vars, only : pressure
+  use global_vars, only : tk
+  use global_vars, only : tw
+  use global_vars, only : tkl
+  use global_vars, only : tv
   use global_vars, only : te
-  use global_vars, only : mu 
-  use global_vars, only : mu_t 
+  use global_vars, only : mu
+  use global_vars, only : mu_t
   use global_vars, only : density_inf
   use global_vars, only : x_speed_inf
   use global_vars, only : y_speed_inf
   use global_vars, only : z_speed_inf
-  use global_vars, only : pressure_inf 
+  use global_vars, only : pressure_inf
   use global_vars, only : gm
   use global_vars, only : dist
   use global_vars, only : vis_resnorm
@@ -100,22 +100,22 @@ module write_output_vtk
       do n = 1,w_count
 
         select case (trim(w_list(n)))
-        
+
           case('Velocity')
             call write_velocity()
 
           case('Density')
             call write_scalar(density ,"Density", -2)
-          
+
           case('Pressure')
             call write_scalar(pressure ,"Pressure", -2)
-            
+
           case('Mu')
             call write_scalar(mu ,"Mu", -2)
-            
+
           case('Mu_t')
             call write_scalar(mu_t, "Mu_t", -2)
-            
+
           case('TKE')
             call write_scalar(tk, "TKE", -2)
 
@@ -123,13 +123,13 @@ module write_output_vtk
             call write_scalar(tw, "Omega", -2)
 
           case('Kl')
-            call write_scalar(tkl, "Omega", -2)
+            call write_scalar(tkl, "Kl", -2)
 
           case('tv')
-            call write_scalar(tv, "Omega", -2)
+            call write_scalar(tv, "tv", -2)
 
           case('Dissipation')
-            call write_scalar(te, "Omega", -2)
+            call write_scalar(te, "Dissipation", -2)
 
           case('Wall_distance')
             call write_scalar(dist, "dist", 1)
@@ -247,7 +247,7 @@ module write_output_vtk
           end do
          end do
         end do
-        write(OUT_FILE_UNIT, *) 
+        write(OUT_FILE_UNIT, *)
       elseif (write_data_format == 'BINARY') then
         write(OUT_FILE_UNIT) &
             'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
@@ -261,7 +261,7 @@ module write_output_vtk
           end do
          end do
         end do
-        write(OUT_FILE_UNIT) 
+        write(OUT_FILE_UNIT)
       end if
 
     end subroutine write_grid
@@ -283,7 +283,7 @@ module write_output_vtk
           end do
          end do
         end do
-        write(OUT_FILE_UNIT, *) 
+        write(OUT_FILE_UNIT, *)
       elseif (write_data_format == 'BINARY') then
         write(OUT_FILE_UNIT) 'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
         write(OUT_FILE_UNIT) 'VECTORS Velocity DOUBLE'
@@ -295,7 +295,7 @@ module write_output_vtk
           end do
          end do
         end do
-        write(OUT_FILE_UNIT) 
+        write(OUT_FILE_UNIT)
       end if
 
     end subroutine write_velocity
@@ -321,26 +321,26 @@ module write_output_vtk
                               ((0.5 * speed_inf * speed_inf) +      &
                               (gm/(gm-1)*pressure_inf/density_inf)))&
                               ) ** 2                                &
-                            )                                       
+                            )
 
             x_mom_resnorm = (                                      &
                               (x_mom_residue(i, j, k) /            &
                               (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-              
+                             )
+
             y_mom_resnorm = (                                      &
                               (y_mom_residue(i, j, k) /            &
                               (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-              
+                             )
+
             z_mom_resnorm = (                                      &
                               (z_mom_residue(i, j, k) /            &
                               (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
+                             )
             cont_resnorm =(                                       &
                              (mass_residue(i, j, k) /             &
                              (density_inf * speed_inf)) ** 2      &
-                            )                                     
+                            )
             vis_resnorm =    sqrt(                    &
                                     cont_resnorm    + &
                                     x_mom_resnorm   + &
@@ -348,12 +348,12 @@ module write_output_vtk
                                     z_mom_resnorm   + &
                                     energy_resnorm    &
                                  )
-                
+
             write(OUT_FILE_UNIT, fmt='(f0.16)') vis_resnorm
           end do
          end do
         end do
-        write(OUT_FILE_UNIT, *) 
+        write(OUT_FILE_UNIT, *)
       elseif (write_data_format == 'BINARY') then
         write(OUT_FILE_UNIT) 'SCALARS Resnorm DOUBLE'
         write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
@@ -370,26 +370,26 @@ module write_output_vtk
                               ((0.5 * speed_inf * speed_inf) +      &
                               (gm/(gm-1)*pressure_inf/density_inf)))&
                               ) ** 2                                &
-                            )                                       
+                            )
 
             x_mom_resnorm = (                                      &
                               (x_mom_residue(i, j, k) /            &
                               (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-              
+                             )
+
             y_mom_resnorm = (                                      &
                               (y_mom_residue(i, j, k) /            &
                               (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
-              
+                             )
+
             z_mom_resnorm = (                                      &
                               (z_mom_residue(i, j, k) /            &
                               (density_inf * speed_inf ** 2)) ** 2 &
-                             )                                     
+                             )
             cont_resnorm =(                                       &
                              (mass_residue(i, j, k) /             &
                              (density_inf * speed_inf)) ** 2      &
-                            )                                     
+                            )
             vis_resnorm =    sqrt(                    &
                                     cont_resnorm    + &
                                     x_mom_resnorm   + &
@@ -397,7 +397,7 @@ module write_output_vtk
                                     z_mom_resnorm   + &
                                     energy_resnorm    &
                                  )
-                
+
             write(OUT_FILE_UNIT) vis_resnorm
           end do
          end do
