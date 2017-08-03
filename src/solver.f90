@@ -808,9 +808,9 @@ module solver
             call update_simulation_clock()
             current_iter = current_iter + 1
 
-           ! if ( mod(current_iter,res_write_interval) == 0 .or. current_iter == 1) then
-           !   call write_resnorm()
-           ! end if
+            if ( mod(current_iter,res_write_interval) == 0 .or. current_iter == 1) then
+              call write_resnorm()
+            end if
 
             call checkpoint()
             if(process_id==0)then
@@ -819,6 +819,7 @@ module solver
               close(STOP_FILE_UNIT)
             end if
             call MPI_BCAST(want_to_stop,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+            if (want_to_stop==1) max_iters=current_iter
 
         end subroutine step
 
@@ -834,8 +835,8 @@ module solver
             logical :: c
             
             call dmsg(1, 'solver', 'converged')
-
-            if (resnorm / resnorm_0 < tolerance) then
+            print*, resnorm , tolerance
+            if (resnorm < tolerance) then
                 c = .TRUE.
             end if
             c = .FALSE.

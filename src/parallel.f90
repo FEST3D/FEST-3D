@@ -1079,7 +1079,7 @@ contains
       case Default
         comm_var=n_var
         !call turbulence_read_error()
-        Error
+        Fatal_error
     end select
 
     buf = (jmx+1)*(kmx+1)*comm_var*layers ! size of buffer cells left - right

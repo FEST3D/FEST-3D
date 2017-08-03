@@ -15,6 +15,7 @@ module turbulent_viscosity
   use global_vars    , only : sst_mu
   use global_vars    , only : kkl_mu
   use global_vars    , only : turbulence
+  use global_vars    , only : process_id
   use sst_viscosity  , only : calculate_sst_mu
   use kkl_viscosity  , only : calculate_kkl_mu
 
@@ -49,7 +50,7 @@ module turbulent_viscosity
 
         case DEFAULT 
           !call turbulence_read_error()
-          Error
+          Fatal_error
 
       end select
 
@@ -73,7 +74,7 @@ module turbulent_viscosity
 
         case DEFAULT 
           !call turbulence_read_error()
-          Error
+          Fatal_error
 
       end select
       call dealloc(mu_t)
@@ -98,7 +99,7 @@ module turbulent_viscosity
 
         case DEFAULT 
           !call turbulence_read_error()
-          Error
+          Fatal_error
 
       end select
 

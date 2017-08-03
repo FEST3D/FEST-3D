@@ -17,6 +17,7 @@ module gradients
   use global_vars,  only : gradqp_x
   use global_vars,  only : gradqp_y
   use global_vars,  only : gradqp_z
+  use global_vars,  only : process_id
 
   use utils,        only : dmsg
   use utils,        only : dealloc
@@ -65,7 +66,7 @@ module gradients
 
           case DEFAULT
             !call turbulence_read_error()
-            Error
+            Fatal_error
 
         end select
 
@@ -97,7 +98,7 @@ module gradients
 
           case DEFAULT
            ! call turbulence_read_error()
-           Error
+           Fatal_error
 
         end select
 
@@ -123,7 +124,7 @@ module gradients
 
         case DEFAULT
           !call turbulence_read_error()
-          Error
+          Fatal_error
 
       end select
 

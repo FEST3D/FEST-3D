@@ -37,6 +37,7 @@ module blending_function
   use global_vars, only : turbulence
   use global_vars, only : id
   use global_vars, only : face_names
+  use global_vars, only : process_id
   use copy_bc    , only : copy1
 
   use utils
@@ -118,7 +119,7 @@ module blending_function
 
         case Default
          ! call turbulence_read_error()
-         Error
+         Fatal_error
 
       end select
 

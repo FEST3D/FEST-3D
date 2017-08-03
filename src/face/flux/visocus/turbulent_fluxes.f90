@@ -6,6 +6,7 @@ module turbulent_fluxes
   !-----------------------------------------------------------------
 #include "../../../error.inc"
   use global_vars, only : turbulence
+  use global_vars, only : process_id
   use utils      , only : dmsg
   use utils      , only : turbulence_read_error
   use sst_turbulent_flux , only : compute_sst_fluxes
@@ -39,7 +40,7 @@ module turbulent_fluxes
 
         case DEFAULT
           !call turbulence_read_error()
-          Error
+          Fatal_error
 
       end select
 

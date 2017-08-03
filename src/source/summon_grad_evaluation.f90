@@ -149,7 +149,7 @@ module summon_grad_evaluation
 
         case DEFAULT
           !call turbulence_read_error()
-          Error
+          Fatal_error
 
       end select
 

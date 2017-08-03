@@ -6,6 +6,7 @@ module source
   !-----------------------------------------------------------------
 #include "../error.inc"
   use global_vars, only : turbulence
+  use global_vars, only : process_id
   use utils      , only : dmsg
   use utils      , only : turbulence_read_error
   use sst_source , only : add_sst_source
@@ -38,7 +39,7 @@ module source
 
         case DEFAULT
           !call turbulence_read_error()
-          Error
+          Fatal_error
 
       end select
 

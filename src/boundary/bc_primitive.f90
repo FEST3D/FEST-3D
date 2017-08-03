@@ -141,7 +141,7 @@ module bc_primitive
             call fix(tkl, fixed_tkl, face)
           case DEFAULT
             !call turbulence_read_error()
-            Error
+            Fatal_error
         end select
       end subroutine supersonic_inlet
 
@@ -166,7 +166,7 @@ module bc_primitive
             call copy3(tkl, "flat", face)
           case DEFAULT
             !call turbulence_read_error()
-            Error
+            Fatal_error
         end select
       end subroutine supersonic_outlet
 
@@ -194,7 +194,7 @@ module bc_primitive
             call fix(tkl, fixed_tw, face)
           case DEFAULT
            ! call turbulence_read_error()
-           Error
+           Fatal_error
         end select
       end subroutine pressure_inlet
 
@@ -219,7 +219,7 @@ module bc_primitive
             call copy3(tkl, "flat", face)
           case DEFAULT
            ! call turbulence_read_error()
-           Error
+           Fatal_error
         end select
       end subroutine pressure_outlet
 
@@ -249,7 +249,7 @@ module bc_primitive
             call copy3(tkl, "symm", face)
           case DEFAULT
             !call turbulence_read_error()
-            Error
+            Fatal_error
         end select
         call flow_tangency(face)
       end subroutine slip_wall
@@ -310,7 +310,7 @@ module bc_primitive
               var(1:imx-1, 1:jmx-1,   kmx+2) = fix_val(6)
           case DEFAULT
             !print*, "ERROR: wrong face for boundary condition"
-            Error
+            Fatal_error
         end select
             
       end subroutine fix
@@ -334,7 +334,7 @@ module bc_primitive
             call copy3(tkl , "anti", face)
           case DEFAULT
             !call turbulence_read_error()
-            Error
+            Fatal_error
         end select
       end subroutine no_slip
 
@@ -423,7 +423,7 @@ module bc_primitive
           if(fixed_tkl(face_num)==0.) fixed_tkl(face_num)=tkl_inf
         case DEFAULT
          ! call turbulence_read_error()
-         Error
+         Fatal_error
       end select
     end subroutine check_if_value_fixed
 
