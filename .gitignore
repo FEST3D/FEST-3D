@@ -16,7 +16,6 @@ bc.config.md
 bin/
 mod/
 obj/
-archive/old_files
 
 # module  dependency file
 makefile.dep

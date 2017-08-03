@@ -2,13 +2,7 @@ module start_finish
   use fclose, only: close_all_files
   use solver, only: destroy_solver
   use solver, only: setup_solver
-#ifdef __GFORTRAN__
-  use mpi
-#endif    
-  implicit none
-#ifdef __INTEL_COMPILER
-  include "mpif.h"
-#endif
+#include "../mpi.inc"
   private
 
   public :: abort_run

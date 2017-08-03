@@ -10,6 +10,7 @@ module global_vars
   use global, only : FILE_NAME_LENGTH
   use global, only : STATE_NAME_LENGTH
   use global, only : FLOW_TYPE_LENGTH
+  use global, only : TOLERANCE_LENGTH
 
   implicit none
   public
@@ -38,7 +39,7 @@ module global_vars
   integer :: w_count=0
   integer :: res_write_interval                      ! resnorm write interval
   integer :: purge_write                             ! number of output files per process to keep
-  integer :: write_percision                         ! number of place after decimal 
+  integer :: write_percision=6                        ! number of place after decimal 
   character(len=FORMAT_LENGTH):: write_data_format   ! either ascii or binary
   character(len=FORMAT_LENGTH):: write_file_format   ! either vtk or tecplot
   character(len=FORMAT_LENGTH)::  read_data_format='ASCII'   ! either ascii or binary
@@ -53,6 +54,7 @@ module global_vars
   ! solver specific
   real :: CFL                  ! courrent number
   real :: tolerance            ! minimum value of resnorm after which simulation stop
+  character(len=TOLERANCE_LENGTH) :: tolerance_type="abs" ! type of tolerance:absolute or relative
   integer :: want_to_stop=0
 
   !solver time secific
@@ -142,6 +144,7 @@ module global_vars
   real, dimension(:, :, :, :)             , pointer :: F_p
   real, dimension(:, :, :, :)             , pointer :: G_p
   real, dimension(:, :, :, :)             , pointer :: H_p
+  real, dimension(:, :, :, :)             , pointer :: residue
   real, dimension(:, :, :)                , pointer :: mass_residue
   real, dimension(:, :, :)                , pointer :: x_mom_residue
   real, dimension(:, :, :)                , pointer :: y_mom_residue
@@ -180,12 +183,13 @@ module global_vars
   real, dimension(:, :, :)              , pointer   :: kkl_mu
 
   !residual specific
-  character(len=STATE_NAME_LENGTH), dimension(:) :: Res_list
-  integer            :: Res_itr       ! iteration to save
-  real, dimension(:) :: Res_abs       ! absolute value
-  real, dimension(:) :: Res_rel       ! relative value
-  real, dimension(:) :: Res_save      ! saved iteration for relative
-  real, dimension(:) :: Res_scale     ! scaling factor
+  character(len=STATE_NAME_LENGTH), dimension(:), allocatable :: Res_list
+  integer            :: Res_count       ! no of variable to save
+  integer            :: Res_itr=3       ! iteration to save
+  real, dimension(:), allocatable :: Res_abs       ! absolute value
+  real, dimension(:), allocatable :: Res_rel       ! relative value
+  real, dimension(:), allocatable :: Res_save      ! saved iteration for relative
+  real, dimension(:), allocatable :: Res_scale     ! scaling factor
   real, pointer ::        resnorm     !            residue normalized
   real, pointer ::    vis_resnorm     ! {rho+V+P}  residue normalized
   real, pointer ::   turb_resnorm     !  turbulent residue normalized

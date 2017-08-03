@@ -126,13 +126,7 @@ module update
   use bc_primitive, only: populate_ghost_primitive
   use summon_grad_evaluation, only : evaluate_all_gradients
 
-#ifdef __GFORTRAN__
-    use mpi
-#endif    
-    implicit none
-#ifdef __INTEL_COMPILER
-    include "mpif.h"
-#endif
+#include "mpi.inc"
     private
 
     real, dimension(:), allocatable, target :: qp_temp

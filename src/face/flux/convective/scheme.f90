@@ -8,6 +8,7 @@ module scheme
 
     use global_vars, only : mu_ref
     use global_vars, only : n_var
+    use global_vars, only : n_var
     use global_vars, only : F_p
     use global_vars, only : G_p
     use global_vars, only : H_p
@@ -21,6 +22,7 @@ module scheme
     use global_vars, only : KL_residue
     use global_vars, only : dissipation_residue
     use global_vars, only : tv_residue
+    use global_vars, only : residue
     use global_vars, only : turbulence
 
     use global_vars, only : scheme_name
@@ -72,6 +74,7 @@ module scheme
     public :: destroy_scheme
     public :: compute_fluxes
     public :: compute_residue
+    public :: residue
 
     contains
 
@@ -92,6 +95,7 @@ module scheme
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 5)
                     include "turbulence_models/include/scheme/van_leer_setup.inc" 
+                    residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_van_leer(:,:,:,:)
                 case ("ausm")
                     call setup_scheme_ausm()
                     F_p => F_ausm
@@ -103,6 +107,7 @@ module scheme
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 5)
                     include "turbulence_models/include/scheme/ausm_setup.inc" 
+                    residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausm(:,:,:,:)
                 case ("ldfss0")
                     call setup_scheme_ldfss0()
                     F_p => F_ldfss0
@@ -114,6 +119,7 @@ module scheme
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 5)
                     include "turbulence_models/include/scheme/ldfss0_setup.inc" 
+                    residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ldfss0(:,:,:,:)
 !               case ("hlle")
 !                   call setup_scheme_hlle()
                 case default
@@ -136,6 +142,7 @@ module scheme
             nullify(y_mom_residue)
             nullify(z_mom_residue)
             nullify(energy_residue)
+            nullify(residue)
             include "turbulence_models/include/scheme/deallocate_memory.inc" 
 
         end subroutine deallocate_memory

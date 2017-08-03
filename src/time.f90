@@ -11,7 +11,6 @@ module time
   use global_vars, only : volume
     
   use global_vars, only : n_var
-  use global_vars, only : sst_n_var
   use global_vars, only : qp
   use global_vars, only : qp_inf
   use global_vars, only : density
@@ -19,31 +18,18 @@ module time
   use global_vars, only : y_speed
   use global_vars, only : z_speed
   use global_vars, only : pressure
-  use global_vars, only : tk
-  use global_vars, only : tw
-  use global_vars, only : tk_inf
-  use global_vars, only : tw_inf
   use global_vars, only : gm
   use global_vars, only : R_gas
-  use global_vars, only : mu_ref
-  use global_vars, only : T_ref
-  use global_vars, only : Sutherland_temp
-  use global_vars, only : Pr
 
   use global_vars, only : CFL
-  use global_vars, only : tolerance
-  use global_vars, only : min_iter
-  use global_vars, only : max_iters
-  use global_vars, only : current_iter
-  use global_vars, only : checkpoint_iter
-  use global_vars, only : checkpoint_iter_count
+  use global_vars, only : total_process
+  use global_vars, only : process_id
   use global_vars, only : time_stepping_method
   use global_vars, only : time_step_accuracy
   use global_vars, only : global_time_step
   use global_vars, only : delta_t
   use global_vars, only : sim_clock
   use global_vars, only : turbulence
-  use global_vars, only : supersonic_flag
 
   use utils, only: alloc
   use utils, only:  dealloc 
@@ -57,6 +43,8 @@ module time
 
   use string
   use read, only : read_input_and_controls
+
+#include "mpi.inc"
 
     private
     INTEGER :: &
@@ -74,6 +62,7 @@ module time
     public :: setup_time
     public :: destroy_time
     public :: compute_time_step
+    public :: update_simulation_clock
 
     contains
 
@@ -91,8 +80,15 @@ module time
 
         subroutine destroy_time()
             implicit none
+            real, dimension(:), allocatable :: total_time 
+            integer :: ierr
             
             call dmsg(1, 'solver', 'deallocate_misc')
+
+            !simlulation clock data
+            if(process_id==0) write(*, '(A)') '>> TIME <<'
+            if(process_id==0) write(*, '(A)'), "Simulation Clock : "//trim(write_time(sim_clock))
+            call alloc(total_time, 1, total_process)
             CALL CPU_TIME(t2)
             CALL SYSTEM_CLOCK(COUNT=nb_ticks_final)
             call dealloc(delta_t)
@@ -102,10 +98,37 @@ module time
             nb_ticks = nb_ticks + nb_ticks_max
             elapsed_time   = REAL(nb_ticks) / nb_ticks_sec
             cpu_time_elapsed = t2-t1 
-            print*, "SYSTEM clock: ", elapsed_time
-            print*, "CPU time    : ", cpu_time_elapsed
+            write(*,'(A,I0,A)') 'process: ',process_id,&
+                                " > SYSTEM clock <: "//trim(write_time(elapsed_time))//&
+                                " /-\ CPU time <: "//trim(write_time(cpu_time_elapsed))
+            
+            !total time including all blocks
+            call MPI_GATHER(elapsed_time, 1, MPI_DOUBLE_PRECISION, &
+            total_time, 1, MPI_DOUBLE_PRECISION, 0,MPI_COMM_WORLD, ierr)
+            if(process_id==0) print*, "Total SYSTEM clock: ", trim(write_time(sum(total_time)))
+            call MPI_GATHER(cpu_time_elapsed, 1, MPI_DOUBLE_PRECISION, &
+            total_time, 1, MPI_DOUBLE_PRECISION, 0,MPI_COMM_WORLD, ierr)
+            if(process_id==0) print*, "Total CPU time    : ", trim(write_time(sum(total_time)))
+            call dealloc(total_time)
 
         end subroutine destroy_time
+
+        function write_time(time_in_seconds) result(string)
+          implicit none
+          real, intent(in) :: time_in_seconds
+          character(len=64):: string
+          if(time_in_seconds>86400) then
+            write(string,'(f0.16,2x,A)') time_in_seconds/86400.,"days"
+          elseif(time_in_seconds>3600) then
+            write(string,'(f0.16,2x,A)') time_in_seconds/3600.,"Hr."
+          elseif(time_in_seconds>60) then
+            write(string,'(f0.16,2x,A)') time_in_seconds/60.,"Min."
+          elseif(time_in_seconds>0) then
+            write(string,'(f0.16,2x,A)') time_in_seconds,"Sec."
+          else
+            write(string,'(A)') "Not Valid"
+          end if
+        end function write_time
 
         subroutine compute_local_time_step()
             !-----------------------------------------------------------
@@ -254,7 +277,34 @@ module time
                             time_stepping_method // ') not recognized.')
                 stop
             end if
+            !update_simulation clock
+            call update_simulation_clock()
 
         end subroutine compute_time_step
+
+
+      subroutine update_simulation_clock
+          !-----------------------------------------------------------
+          ! Update the simulation clock
+          !
+          ! It is sometimes useful to know what the simulation time is
+          ! at every iteration so that a comparison with an analytical
+          ! solution is possible. Since, the global timesteps used may
+          ! not be uniform, we need to track this explicitly.
+          !
+          ! Of course, it makes sense to track this only if the time 
+          ! stepping is global and not local. If the time stepping is
+          ! local, the simulation clock is set to -1. If it is global
+          ! it is incremented according to the time step found.
+          !-----------------------------------------------------------
+
+          implicit none
+          if (time_stepping_method .eq. 'g' .and. sim_clock >= 0.) then
+              sim_clock = sim_clock + minval(delta_t)
+          else if (time_stepping_method .eq. 'l') then
+              sim_clock = -1
+          end if
+
+      end subroutine update_simulation_clock
 
 end module time

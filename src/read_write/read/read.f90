@@ -33,6 +33,7 @@ module read
   use global_vars, only: write_percision
   use global_vars, only: purge_write
   use global_vars, only: tolerance
+  use global_vars, only: tolerance_type
 
   use global_vars, only: time_stepping_method
   use global_vars, only: time_step_accuracy
@@ -216,9 +217,9 @@ module read
 
         ! READ tolerance
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) tolerance
+        read(buf, *) tolerance, tolerance_type
         call dmsg(5, 'read', 'read_controls', &
-                msg='Tolerance  = ' + tolerance)
+                msg=trim(tolerance_type)//'Tolerance  = ' + tolerance)
 
         ! READ DEBUG_LEVEL
         call get_next_token(CONTROL_FILE_UNIT, buf)
@@ -529,14 +530,14 @@ module read
 
       function get_number_of_line(till, infile) result(number)
         implicit none
-        integer          ,intent(in) :: handler
+        integer          ,intent(in) :: infile
         character(len= 1),intent(in) :: till
         character(len=64)   :: buf
         integer             :: ios
         integer             :: number
         number=0
         do while(.true.)
-          read(handler, *, iostat=ios) buf
+          read(infile, *, iostat=ios) buf
           if(trim(buf)==till) EXIT
           if(is_iostat_end(ios)) EXIT
           number = number + 1
@@ -558,16 +559,18 @@ module read
         skip  = get_number_of_line('{', RES_CONTROL_FILE_UNIT)
 
         !reading vaules
-        allocate(Res_list(1:Res_count))
+        if(Res_count==0)then
+          allocate(Res_list(1:2))
+          Res_count=2
+          Res_list(1)="Mass_abs"
+          Res_list(2)="Resnorm_abs"
+        else
+          allocate(Res_list(1:Res_count))
+        end if
         do i = 1,Res_count
           read(RES_CONTROL_FILE_UNIT, *) Res_list(i)
         end do
 
-        if(Res_count=0)then
-          Res_count=2
-          Res_list(1)="Mass_abs"
-          Res_list(2)="Resnorm_abs"
-        end if
 
         call close_file(RES_CONTROL_FILE_UNIT)
 

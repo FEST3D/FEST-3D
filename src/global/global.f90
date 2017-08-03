@@ -18,6 +18,7 @@ module global
     integer, parameter :: FORMAT_LENGTH = 16
     integer, parameter :: STATE_NAME_LENGTH = 64
     integer, parameter :: FLOW_TYPE_LENGTH = 64
+    integer, parameter :: TOLERANCE_LENGTH = 32
     ! File unit numbers
     integer, parameter :: CONFIG_FILE_UNIT = 1
     integer, parameter :: GRID_FILE_UNIT = 2
@@ -58,10 +59,10 @@ module global
     ! Fixed variable
     integer, parameter :: resnorm_number=10 
 
-    character(len=FILE_NAME_LENGTH), dimension(101:113),  :: &
+    character(len=FILE_NAME_LENGTH), dimension(101:114)   :: &
       files=(/                                               &!no. unit
-              'system/mesh/gridfiles/'                       &!1    101
-              'system/mesh/bc/'                              &!2    102
+              'system/mesh/gridfiles/',                      &!1    101
+              'system/mesh/bc/',                             &!2    102
               'system/mesh/layout/layout.md',                &!3    103
               'system/contorl.md',                           &!4    104
               'system/fvscheme.md',                          &!5    105
@@ -73,7 +74,7 @@ module global
               'time_directories/aux/resnorm',                &!11   111
               'time_directories/',                           &!12   112
               'time_directories/',                           &!13   113
-              'time_directories/',                           &!14   114
+              'time_directories/'                            &!14   114
             /)
     integer, parameter :: gridfile        = 101
     integer, parameter :: bcfile          = 102

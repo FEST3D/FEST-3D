@@ -25,7 +25,6 @@ module wall_dist
   public :: setup_wall_dist
   public :: destroy_wall_dist
   public :: find_wall_dist
-  public :: write_wall_dist
 
   contains
 
