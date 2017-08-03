@@ -16,8 +16,10 @@ module read
   use global, only:  scheme_file
   use global, only:    flow_file
   use global, only: STRING_BUFFER_LENGTH
-  use global, only : OUTIN_FILE_UNIT
-  use global, only : outin_file
+  use global, only: OUTIN_FILE_UNIT
+  use global, only: outin_file
+  use global, only: RES_CONTROL_FILE_UNIT
+  use global, only: res_control_file
 
   use global_vars, only: CFL
   use global_vars, only: max_iters
@@ -62,6 +64,8 @@ module read
   use global_vars, only: w_list
   use global_vars, only: r_count
   use global_vars, only: w_count
+  use global_vars, only: Res_list
+  use global_vars, only: Res_count
   use utils      , only: DEBUG_LEVEL
   use utils      , only: dmsg
   use string
@@ -80,6 +84,7 @@ module read
         call read_scheme()
         call read_flow()
         call read_output_control()
+        call read_Res_list()
       end subroutine read_input_and_controls
 
 
@@ -506,5 +511,66 @@ module read
         close(OUTIN_FILE_UNIT)
 
       end subroutine get_rw_count
+
+
+      subroutine get_count_within_braces(handler, count)
+        implicit none
+        integer, intent(in) :: handler
+        integer, intent(out) :: count
+        integer :: skip
+
+        ! skipping lines outside braces
+        skip  = get_number_of_line('{', handler)
+        ! finding actual count if any
+        count = get_number_of_line('}', handler)
+
+      end subroutine get_count_within_braces
+
+
+      function get_number_of_line(till, infile) result(number)
+        implicit none
+        integer          ,intent(in) :: handler
+        character(len= 1),intent(in) :: till
+        character(len=64)   :: buf
+        integer             :: ios
+        integer             :: number
+        number=0
+        do while(.true.)
+          read(handler, *, iostat=ios) buf
+          if(trim(buf)==till) EXIT
+          if(is_iostat_end(ios)) EXIT
+          number = number + 1
+        end do
+      end function get_number_of_line
+
+
+      subroutine read_Res_list()
+        implicit none
+        integer           :: i
+        integer           :: skip
+
+        open(RES_CONTROL_FILE_UNIT, file=res_control_file, status='old', action='read')
+        call get_count_within_braces(RES_CONTROL_FILE_UNIT, Res_count)
+        call close_file(RES_CONTROL_FILE_UNIT)
+
+        open(RES_CONTROL_FILE_UNIT, file=res_control_file, status='old', action='read')
+        ! skipping line
+        skip  = get_number_of_line('{', RES_CONTROL_FILE_UNIT)
+
+        !reading vaules
+        allocate(Res_list(1:Res_count))
+        do i = 1,Res_count
+          read(RES_CONTROL_FILE_UNIT, *) Res_list(i)
+        end do
+
+        if(Res_count=0)then
+          Res_count=2
+          Res_list(1)="Mass_abs"
+          Res_list(2)="Resnorm_abs"
+        end if
+
+        call close_file(RES_CONTROL_FILE_UNIT)
+
+      end subroutine read_Res_list
 
 end module read

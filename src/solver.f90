@@ -236,6 +236,7 @@ module solver
 
             if(allocated(r_list)) deallocate(r_list)
             if(allocated(w_list)) deallocate(w_list)
+            if(allocated(Res_list)) deallocate(Res_list)
 
         end subroutine destroy_solver
 

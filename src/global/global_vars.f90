@@ -180,6 +180,12 @@ module global_vars
   real, dimension(:, :, :)              , pointer   :: kkl_mu
 
   !residual specific
+  character(len=STATE_NAME_LENGTH), dimension(:) :: Res_list
+  integer            :: Res_itr       ! iteration to save
+  real, dimension(:) :: Res_abs       ! absolute value
+  real, dimension(:) :: Res_rel       ! relative value
+  real, dimension(:) :: Res_save      ! saved iteration for relative
+  real, dimension(:) :: Res_scale     ! scaling factor
   real, pointer ::        resnorm     !            residue normalized
   real, pointer ::    vis_resnorm     ! {rho+V+P}  residue normalized
   real, pointer ::   turb_resnorm     !  turbulent residue normalized
