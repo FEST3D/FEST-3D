@@ -149,47 +149,5 @@ module wall_dist
 
     end subroutine find_wall_dist
 
-    subroutine write_wall_dist()
-        implicit none
-      integer :: i,j,k
-      call dmsg(1, 'wall_dist', 'write_wall_dist')
-
-      open(WALL_DIST_FILE_UNIT, file=wall_dist_file)
-
-      write(WALL_DIST_FILE_UNIT,'(a)') '# vtk DataFile Version 3.1'
-      write(WALL_DIST_FILE_UNIT,'(a)')  'wall dist'
-      write(WALL_DIST_FILE_UNIT,'(a)')  'ASCII'
-      write(WALL_DIST_FILE_UNIT,'(a)')  'DATASET STRUCTURED_GRID'
-      write(WALL_DIST_FILE_UNIT,*)
-      write(WALL_DIST_FILE_UNIT,'(a, i0, a, i0, a, i0)')  'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
-      write(WALL_DIST_FILE_UNIT, '(a, i0, a)')  'POINTS ', imx*jmx*kmx, ' DOUBLE'
-
-
-      do k = 1,kmx
-        do j = 1,jmx
-          do i = 1,imx
-            write(WALL_DIST_FILE_UNIT, '(f0.16, a, f0.16, a, f0.16)') grid_x(i,j,k), ' ', &
-                      grid_y(i,j,k), ' ', grid_z(i,j,k)
-            end do
-          end do
-        end do
-
-        write(WALL_DIST_FILE_UNIT,*) 
-
-
-        write(WALL_DIST_FILE_UNIT, '(a, i0)') 'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
-
-        write(WALL_DIST_FILE_UNIT, '(a)') 'SCALARS WALL_DIST FLOAT'
-        write(WALL_DIST_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
-
-      do k = 1,kmx-1
-        do j = 1,jmx-1
-          do i = 1,imx-1
-            write(WALL_DIST_FILE_UNIT, '(f0.16)') dist(i,j,k)
-          end do
-        end do
-      end do
-    end subroutine write_wall_dist
-
 
 end module wall_dist

@@ -58,4 +58,35 @@ module global
     ! Fixed variable
     integer, parameter :: resnorm_number=10 
 
+    character(len=FILE_NAME_LENGTH), dimension(101:113),  :: &
+      files=(/                                               &!no. unit
+              'system/mesh/gridfiles/'                       &!1    101
+              'system/mesh/bc/'                              &!2    102
+              'system/mesh/layout/layout.md',                &!3    103
+              'system/contorl.md',                           &!4    104
+              'system/fvscheme.md',                          &!5    105
+              'system/flow.md',                              &!6    106
+              'system/output_control.md',                    &!7    107
+              'system/res_control.md',                       &!8    108
+              'system/stopfile',                             &!9    109
+              'time_directories/aux/surfnode.dat',           &!10   110
+              'time_directories/aux/resnorm',                &!11   111
+              'time_directories/',                           &!12   112
+              'time_directories/',                           &!13   113
+              'time_directories/',                           &!14   114
+            /)
+    integer, parameter :: gridfile        = 101
+    integer, parameter :: bcfile          = 102
+    integer, parameter :: layoutfile      = 103
+    integer, parameter :: controlfile     = 104
+    integer, parameter :: fvschemefile    = 105
+    integer, parameter :: flowfile        = 106
+    integer, parameter :: outcontrolfile  = 107
+    integer, parameter :: rescontrolfile  = 108
+    integer, parameter :: stopfile        = 109
+    integer, parameter :: surfnodefile    = 110
+    integer, parameter :: resnorm         = 111
+    integer, parameter :: soldumpfile     = 112
+    integer, parameter :: solreadfile     = 113
+    integer, parameter :: restartfile     = 114
 end module global
