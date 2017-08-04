@@ -86,4 +86,4 @@
   case DEFAULT
     ! making absolute resnorm default
     write(RESNORM_FILE_UNIT, frm, advance='no') sqrt(sum(Res_abs(1:)**2))
-    Issue_warning
+    Issure_warning

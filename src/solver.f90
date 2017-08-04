@@ -125,6 +125,9 @@ module solver
   use time , only : destroy_time
   use time , only : compute_time_step
   use global_vars, only: dist
+  use update, only : get_next_solution
+  use update, only : setup_update
+  use update, only : destroy_update
 #include "error.inc"
 #include "mpi.inc"
     private
@@ -165,8 +168,9 @@ module solver
             call setup_state()
             call setup_gradients()
             call setup_bc()
-            call setuP_time()
-            call allocate_memory()
+            call setup_time()
+            call setup_update()
+            !call allocate_memory()
             call allocate_buffer_cells(3) !parallel buffers
             call setup_scheme()
             if(turbulence /= 'none') then
@@ -178,7 +182,7 @@ module solver
 !              call setup_source()
 !            end if
             call setup_sst_F1()
-            call link_aliases_solver()
+            !call link_aliases_solver()
             call setup_resnorm()
             call initmisc()
             checkpoint_iter_count = 0
@@ -193,7 +197,7 @@ module solver
             
             call dmsg(1, 'solver', 'destroy_solver')
 
-            call destroy_time()
+            call destroy_update()
             call destroy_transport()
 !            if(mu_ref /= 0. .or. turbulence /= 'none')  then 
 !              call destroy_source()
@@ -203,13 +207,16 @@ module solver
               call destroy_wall_dist()
             end if
             call destroy_scheme()
-            call deallocate_misc()
-            call unlink_aliases_solver()
+            !call deallocate_misc()
+           ! call unlink_aliases_solver()
             call destroy_state()
             call destroy_geometry()
             call destroy_grid()
             call destroy_resnorm()
-            call destroy_sst_F1()
+            if(turbulence=='sst')then
+              call destroy_sst_F1()
+            end if
+            call destroy_time()
 
             if(allocated(r_list)) deallocate(r_list)
             if(allocated(w_list)) deallocate(w_list)
@@ -229,337 +236,337 @@ module solver
 
         end subroutine initmisc
 
-        subroutine deallocate_misc()
-
-            implicit none
-            
-            call dmsg(1, 'solver', 'deallocate_misc')
-
-            call dealloc(delta_t)
-
-            select case (time_step_accuracy)
-                case ("none")
-                    ! Do nothing
-                    continue
-                case ("RK4")
-                    call destroy_RK4_time_step()
-                case default
-                    call dmsg(5, 'solver', 'time_setup_deallocate_memory', &
-                                'time step accuracy not recognized.')
-                    stop
-            end select
-
-        end subroutine deallocate_misc
-
-        subroutine destroy_RK4_time_step()
-    
-            implicit none
-
-            call dealloc(qp_n)
-            call dealloc(dEdx_1)
-            call dealloc(dEdx_2)
-            call dealloc(dEdx_3)
-
-        end subroutine destroy_RK4_time_step
-
-        subroutine setup_RK4_time_step()
-    
-            implicit none
-
-            call alloc(qp_n, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for qp_n.')
-            call alloc(dEdx_1, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for dEdx_1.')
-            call alloc(dEdx_2, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for dEdx_2.')
-            call alloc(dEdx_3, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for dEdx_3.')
-
-        end subroutine setup_RK4_time_step
-
-        subroutine allocate_memory()
-
-            implicit none
-            
-            call dmsg(1, 'solver', 'allocate_memory')
-
-!            call alloc(delta_t, 1, imx-1, 1, jmx-1, 1, kmx-1, &
-!                    errmsg='Error: Unable to allocate memory for delta_t.')
-            call alloc(qp_temp, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for qp_temp.')
-
-            select case (time_step_accuracy)
-                case ("none")
-                    ! Do nothing
-                    continue
-                case ("RK4")
-                    call setup_RK4_time_step()
-                case default
-                    call dmsg(5, 'solver', 'time_setup_allocate_memory', &
-                                'time step accuracy not recognized.')
-                    stop
-            end select
-
-        end subroutine allocate_memory
-
-        subroutine unlink_aliases_solver()
-
-            implicit none
-
-            nullify(density_temp)
-            nullify(x_speed_temp)
-            nullify(y_speed_temp)
-            nullify(z_speed_temp)
-            nullify(pressure_temp)
-            include "turbulence_models/include/solver/unlink_aliases_solver.inc"
-
-        end subroutine unlink_aliases_solver
-
-        subroutine link_aliases_solver()
-
-            implicit none
-
-            call dmsg(1, 'solver', 'link_aliases_solver')
-
-            density_temp => qp_temp(1)
-            x_speed_temp => qp_temp(2)
-            y_speed_temp => qp_temp(3)
-            z_speed_temp => qp_temp(4)
-            pressure_temp => qp_temp(5)
-            include "turbulence_models/include/solver/link_aliases_solver.inc"
-        end subroutine link_aliases_solver
-
-
-        subroutine get_next_solution()
-
-            implicit none
-
-            select case (time_step_accuracy)
-                case ("none")
-                    call update_solution()
-                case ("RK4")
-                    call RK4_update_solution()
-                case default
-                    call dmsg(5, 'solver', 'get_next solution', &
-                                'time step accuracy not recognized.')
-                    stop
-            end select
-
-        end subroutine get_next_solution
-
-        subroutine RK4_update_solution()
-
-            implicit none
-            integer :: i, j, k
-            real, dimension(1:imx-1,1:jmx-1,1:kmx-1) :: delta_t_0
-
-            delta_t_0 = delta_t
-            ! qp at various stages is not stored but over written
-            ! The residue multiplied by the inverse of the jacobian
-            ! is stored for the final update equation
-
-            ! Stage 1 is identical to stage (n)
-            ! Store qp(n)
-            qp_n = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1:n_var)
-            dEdx_1 = get_residue_primitive()
-            
-            ! Stage 2
-            ! Not computing delta_t since qp(1) = qp(n)
-            ! Update solution will over write qp
-            delta_t = 0.5 * delta_t_0  ! delta_t(1)
-            call update_solution()
-
-            ! Stage 3
-            call get_total_conservative_Residue()
-            dEdx_2 = get_residue_primitive()
-            delta_t = 0.5 * delta_t_0
-            call update_solution()
-
-            ! Stage 4
-            call get_total_conservative_Residue()
-            dEdx_3 = get_residue_primitive()
-            delta_t = delta_t_0
-            call update_solution()
-
-            ! qp now is qp_4
-            ! Use qp(4)
-            call get_total_conservative_Residue()
-
-            ! Calculating dEdx_4 in-situ and updating the solution
-            do k = 1, kmx - 1
-             do j = 1, jmx - 1
-              do i = 1, imx - 1
-                density_temp  = qp_n(i, j, k, 1) - &
-                               (((dEdx_1(i, j, k, 1) / 6.0) + &
-                                 (dEdx_2(i, j, k, 1) / 3.0) + &
-                                 (dEdx_3(i, j, k, 1) / 3.0) + &
-                                 (mass_residue(i, j, k) / 6.0)) * &
-                                delta_t(i, j, k) / volume(i, j, k))
-                x_speed_temp = qp_n(i, j, k, 2) - &
-                               (((dEdx_1(i, j, k, 2) / 6.0) + &
-                                 (dEdx_2(i, j, k, 2) / 3.0) + &
-                                 (dEdx_3(i, j, k, 2) / 3.0) + &
-                                 (( (-1 * x_speed(i, j, k) / density(i, j, k) * &
-                                     mass_residue(i, j, k)) + &
-                             ( x_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
-                                ) * delta_t(i, j, k) / volume(i, j, k))
-                y_speed_temp = qp_n(i, j, k, 3) - &
-                               (((dEdx_1(i, j, k, 3) / 6.0) + &
-                                 (dEdx_2(i, j, k, 3) / 3.0) + &
-                                 (dEdx_3(i, j, k, 3) / 3.0) + &
-                                 (( (-1 * y_speed(i, j, k) / density(i, j, k) * &
-                                     mass_residue(i, j, k)) + &
-                             ( y_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
-                                ) * delta_t(i, j, k) / volume(i, j, k))
-                z_speed_temp = qp_n(i, j, k, 4) - &
-                               (((dEdx_1(i, j, k, 4) / 6.0) + &
-                                 (dEdx_2(i, j, k, 4) / 3.0) + &
-                                 (dEdx_3(i, j, k, 4) / 3.0) + &
-                                 (( (-1 * z_speed(i, j, k) / density(i, j, k) * &
-                                     mass_residue(i, j, k)) + &
-                             ( z_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
-                                ) * delta_t(i, j, k) / volume(i, j, k))
-                pressure_temp = qp_n(i, j, k, 5) - &
-                               (((dEdx_1(i, j, k, 5) / 6.0) + &
-                                 (dEdx_2(i, j, k, 5) / 3.0) + &
-                                 (dEdx_3(i, j, k, 5) / 3.0) + &
-                                 (( (0.5 * (gm - 1.) * ( x_speed(i, j, k) ** 2. + &
-                                                         y_speed(i, j, k) ** 2. + &
-                                                         z_speed(i, j, k) ** 2.) * &
-                                                        mass_residue(i, j, k)) + &
-                       (- (gm - 1.) * x_speed(i, j, k) * x_mom_residue(i, j, k)) + &
-                       (- (gm - 1.) * y_speed(i, j, k) * y_mom_residue(i, j, k)) + &
-                       (- (gm - 1.) * z_speed(i, j, k) * z_mom_residue(i, j, k)) + &
-                       ((gm - 1.) * energy_residue(i, j, k)) ) / 6.0) &
-                                ) * delta_t(i, j, k) / volume(i, j, k))
-            
-                density(i, j, k) = density_temp
-                x_speed(i, j, k) = x_speed_temp
-                y_speed(i, j, k) = y_speed_temp
-                z_speed(i, j, k) = z_speed_temp
-                pressure(i, j, k) = pressure_temp
-                include "turbulence_models/include/solver/RK4_update_solution.inc"
-              end do
-             end do
-            end do
-
-            if (any(density < 0) .or. any(pressure < 0)) then
-                call dmsg(5, 'solver', 'update_solution', &
-                        'ERROR: Some density or pressure is negative.')
-            end if
-
-        end subroutine RK4_update_solution
-
-        function get_residue_primitive() result(dEdx)
-
-            implicit none
-
-            real, dimension(1:imx-1, 1:jmx-1, 1:kmx-1, n_var) :: dEdx
-            real, dimension(1:imx-1, 1:jmx-1, 1:kmx-1) :: beta
-            dEdx(:, :, :, 1) = mass_residue
-            dEdx(:, :, :, 2) = ( (-1 * x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
-                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
-                                     mass_residue) + &
-                             ( x_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
-            dEdx(:, :, :, 3) = ( (-1 * y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
-                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
-                                     mass_residue) + &
-                             ( y_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
-            dEdx(:, :, :, 4) = ( (-1 * z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
-                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
-                                     mass_residue) + &
-                             ( z_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
-            dEdx(:, :, :, 5) = ( (0.5 * (gm - 1.) * ( x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2. + &
-                                                      y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2. + &
-                                                      z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2.) * &
-                                                    mass_residue) + &
-                       (- (gm - 1.) * x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * x_mom_residue) + &
-                       (- (gm - 1.) * y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * y_mom_residue) + &
-                       (- (gm - 1.) * z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * z_mom_residue) + &
-                       ((gm - 1.) * energy_residue) )
-
-            include "turbulence_models/include/solver/get_residue_primitive.inc"
-
-        end function get_residue_primitive
-
-        subroutine update_solution()
-            !-----------------------------------------------------------
-            ! Update the solution using the residue and time step
-            !-----------------------------------------------------------
-
-            implicit none
-            integer :: i, j, k
-            real :: beta
-            
-            call dmsg(1, 'solver', 'update_solution')
-
-            do k = 1, kmx - 1
-             do j = 1, jmx - 1
-              do i = 1, imx - 1
-               density_temp = density(i, j, k) - &
-                            (mass_residue(i, j, k) * &
-                            delta_t(i, j, k) / volume(i, j, k))
-
-               x_speed_temp = x_speed(i, j, k) - &
-                            (( (-1 * x_speed(i, j, k) / density(i, j, k) * &
-                                     mass_residue(i, j, k)) + &
-                             ( x_mom_residue(i, j, k) / density(i, j, k)) ) * &
-                            delta_t(i, j, k) / volume(i, j, k))
-
-               y_speed_temp = y_speed(i, j, k) - &
-                            (( (-1 * y_speed(i, j, k) / density(i, j, k) * &
-                                     mass_residue(i, j, k)) + &
-                             ( y_mom_residue(i, j, k) / density(i, j, k)) ) * &
-                            delta_t(i, j, k) / volume(i, j, k))
-
-               z_speed_temp = z_speed(i, j, k) - &
-                            (( (-1 * z_speed(i, j, k) / density(i, j, k) * &
-                                     mass_residue(i, j, k)) + &
-                             ( z_mom_residue(i, j, k) / density(i, j, k)) ) * &
-                            delta_t(i, j, k) / volume(i, j, k))
-
-               pressure_temp = pressure(i, j, k) - &
-                   ( ( (0.5 * (gm - 1.) * ( x_speed(i, j, k) ** 2. + &
-                                            y_speed(i, j, k) ** 2. + &
-                                            z_speed(i, j, k) ** 2.) * &
-                                          mass_residue(i, j, k)) + &
-                       (- (gm - 1.) * x_speed(i, j, k) * x_mom_residue(i, j, k)) + &
-                       (- (gm - 1.) * y_speed(i, j, k) * y_mom_residue(i, j, k)) + &
-                       (- (gm - 1.) * z_speed(i, j, k) * z_mom_residue(i, j, k)) + &
-                       ((gm - 1.) * energy_residue(i, j, k)) ) * &
-                       delta_t(i, j, k) / volume(i, j, k) ) 
-
-               include "turbulence_models/include/solver/update_solution.inc"
-               density(i, j, k) = density_temp
-               x_speed(i, j, k) = x_speed_temp
-               y_speed(i, j, k) = y_speed_temp
-               z_speed(i, j, k) = z_speed_temp
-               pressure(i, j, k) = pressure_temp
-              end do
-             end do
-            end do
-
-            if (any(density < 0.) .or. any(pressure < 0.)) then
-                call dmsg(5, 'solver', 'update_solution', &
-                        'ERROR: Some density or pressure is negative.')
-                !stop
-            end if
-
-            do k = -2,kmx+2
-              do j = -2,jmx+2
-                do i = -2,imx+2
-                  if (density(i,j,k)<0.) then
-                    print*, process_id, i,j,k, "density: ", density(i,j,k)
-                  end if
-                  if (pressure(i,j,k)<0.) then
-                    print*, process_id, i,j,k, "pressure: ", pressure(i,j,k)
-                  end if
-                end do
-              end do
-            end do
-
-        end subroutine update_solution
-
+!        subroutine deallocate_misc()
+!
+!            implicit none
+!            
+!            call dmsg(1, 'solver', 'deallocate_misc')
+!
+!            call dealloc(delta_t)
+!
+!            select case (time_step_accuracy)
+!                case ("none")
+!                    ! Do nothing
+!                    continue
+!                case ("RK4")
+!                    call destroy_RK4_time_step()
+!                case default
+!                    call dmsg(5, 'solver', 'time_setup_deallocate_memory', &
+!                                'time step accuracy not recognized.')
+!                    stop
+!            end select
+!
+!        end subroutine deallocate_misc
+!
+!        subroutine destroy_RK4_time_step()
+!    
+!            implicit none
+!
+!            call dealloc(qp_n)
+!            call dealloc(dEdx_1)
+!            call dealloc(dEdx_2)
+!            call dealloc(dEdx_3)
+!
+!        end subroutine destroy_RK4_time_step
+!
+!        subroutine setup_RK4_time_step()
+!    
+!            implicit none
+!
+!            call alloc(qp_n, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
+!                    errmsg='Error: Unable to allocate memory for qp_n.')
+!            call alloc(dEdx_1, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
+!                    errmsg='Error: Unable to allocate memory for dEdx_1.')
+!            call alloc(dEdx_2, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
+!                    errmsg='Error: Unable to allocate memory for dEdx_2.')
+!            call alloc(dEdx_3, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
+!                    errmsg='Error: Unable to allocate memory for dEdx_3.')
+!
+!        end subroutine setup_RK4_time_step
+!
+!        subroutine allocate_memory()
+!
+!            implicit none
+!            
+!            call dmsg(1, 'solver', 'allocate_memory')
+!
+!!            call alloc(delta_t, 1, imx-1, 1, jmx-1, 1, kmx-1, &
+!!                    errmsg='Error: Unable to allocate memory for delta_t.')
+!            call alloc(qp_temp, 1, n_var, &
+!                    errmsg='Error: Unable to allocate memory for qp_temp.')
+!
+!            select case (time_step_accuracy)
+!                case ("none")
+!                    ! Do nothing
+!                    continue
+!                case ("RK4")
+!                    call setup_RK4_time_step()
+!                case default
+!                    call dmsg(5, 'solver', 'time_setup_allocate_memory', &
+!                                'time step accuracy not recognized.')
+!                    stop
+!            end select
+!
+!        end subroutine allocate_memory
+!
+!        subroutine unlink_aliases_solver()
+!
+!            implicit none
+!
+!            nullify(density_temp)
+!            nullify(x_speed_temp)
+!            nullify(y_speed_temp)
+!            nullify(z_speed_temp)
+!            nullify(pressure_temp)
+!            include "turbulence_models/include/solver/unlink_aliases_solver.inc"
+!
+!        end subroutine unlink_aliases_solver
+!
+!        subroutine link_aliases_solver()
+!
+!            implicit none
+!
+!            call dmsg(1, 'solver', 'link_aliases_solver')
+!
+!            density_temp => qp_temp(1)
+!            x_speed_temp => qp_temp(2)
+!            y_speed_temp => qp_temp(3)
+!            z_speed_temp => qp_temp(4)
+!            pressure_temp => qp_temp(5)
+!            include "turbulence_models/include/solver/link_aliases_solver.inc"
+!        end subroutine link_aliases_solver
+!
+!
+!        subroutine get_next_solution()
+!
+!            implicit none
+!
+!            select case (time_step_accuracy)
+!                case ("none")
+!                    call update_solution()
+!                case ("RK4")
+!                    call RK4_update_solution()
+!                case default
+!                    call dmsg(5, 'solver', 'get_next solution', &
+!                                'time step accuracy not recognized.')
+!                    stop
+!            end select
+!
+!        end subroutine get_next_solution
+!
+!        subroutine RK4_update_solution()
+!
+!            implicit none
+!            integer :: i, j, k
+!            real, dimension(1:imx-1,1:jmx-1,1:kmx-1) :: delta_t_0
+!
+!            delta_t_0 = delta_t
+!            ! qp at various stages is not stored but over written
+!            ! The residue multiplied by the inverse of the jacobian
+!            ! is stored for the final update equation
+!
+!            ! Stage 1 is identical to stage (n)
+!            ! Store qp(n)
+!            qp_n = qp(1:imx-1, 1:jmx-1, 1:kmx-1, 1:n_var)
+!            dEdx_1 = get_residue_primitive()
+!            
+!            ! Stage 2
+!            ! Not computing delta_t since qp(1) = qp(n)
+!            ! Update solution will over write qp
+!            delta_t = 0.5 * delta_t_0  ! delta_t(1)
+!            call update_solution()
+!
+!            ! Stage 3
+!            call get_total_conservative_Residue()
+!            dEdx_2 = get_residue_primitive()
+!            delta_t = 0.5 * delta_t_0
+!            call update_solution()
+!
+!            ! Stage 4
+!            call get_total_conservative_Residue()
+!            dEdx_3 = get_residue_primitive()
+!            delta_t = delta_t_0
+!            call update_solution()
+!
+!            ! qp now is qp_4
+!            ! Use qp(4)
+!            call get_total_conservative_Residue()
+!
+!            ! Calculating dEdx_4 in-situ and updating the solution
+!            do k = 1, kmx - 1
+!             do j = 1, jmx - 1
+!              do i = 1, imx - 1
+!                density_temp  = qp_n(i, j, k, 1) - &
+!                               (((dEdx_1(i, j, k, 1) / 6.0) + &
+!                                 (dEdx_2(i, j, k, 1) / 3.0) + &
+!                                 (dEdx_3(i, j, k, 1) / 3.0) + &
+!                                 (mass_residue(i, j, k) / 6.0)) * &
+!                                delta_t(i, j, k) / volume(i, j, k))
+!                x_speed_temp = qp_n(i, j, k, 2) - &
+!                               (((dEdx_1(i, j, k, 2) / 6.0) + &
+!                                 (dEdx_2(i, j, k, 2) / 3.0) + &
+!                                 (dEdx_3(i, j, k, 2) / 3.0) + &
+!                                 (( (-1 * x_speed(i, j, k) / density(i, j, k) * &
+!                                     mass_residue(i, j, k)) + &
+!                             ( x_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
+!                                ) * delta_t(i, j, k) / volume(i, j, k))
+!                y_speed_temp = qp_n(i, j, k, 3) - &
+!                               (((dEdx_1(i, j, k, 3) / 6.0) + &
+!                                 (dEdx_2(i, j, k, 3) / 3.0) + &
+!                                 (dEdx_3(i, j, k, 3) / 3.0) + &
+!                                 (( (-1 * y_speed(i, j, k) / density(i, j, k) * &
+!                                     mass_residue(i, j, k)) + &
+!                             ( y_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
+!                                ) * delta_t(i, j, k) / volume(i, j, k))
+!                z_speed_temp = qp_n(i, j, k, 4) - &
+!                               (((dEdx_1(i, j, k, 4) / 6.0) + &
+!                                 (dEdx_2(i, j, k, 4) / 3.0) + &
+!                                 (dEdx_3(i, j, k, 4) / 3.0) + &
+!                                 (( (-1 * z_speed(i, j, k) / density(i, j, k) * &
+!                                     mass_residue(i, j, k)) + &
+!                             ( z_mom_residue(i, j, k) / density(i, j, k)) ) / 6.0) &
+!                                ) * delta_t(i, j, k) / volume(i, j, k))
+!                pressure_temp = qp_n(i, j, k, 5) - &
+!                               (((dEdx_1(i, j, k, 5) / 6.0) + &
+!                                 (dEdx_2(i, j, k, 5) / 3.0) + &
+!                                 (dEdx_3(i, j, k, 5) / 3.0) + &
+!                                 (( (0.5 * (gm - 1.) * ( x_speed(i, j, k) ** 2. + &
+!                                                         y_speed(i, j, k) ** 2. + &
+!                                                         z_speed(i, j, k) ** 2.) * &
+!                                                        mass_residue(i, j, k)) + &
+!                       (- (gm - 1.) * x_speed(i, j, k) * x_mom_residue(i, j, k)) + &
+!                       (- (gm - 1.) * y_speed(i, j, k) * y_mom_residue(i, j, k)) + &
+!                       (- (gm - 1.) * z_speed(i, j, k) * z_mom_residue(i, j, k)) + &
+!                       ((gm - 1.) * energy_residue(i, j, k)) ) / 6.0) &
+!                                ) * delta_t(i, j, k) / volume(i, j, k))
+!            
+!                density(i, j, k) = density_temp
+!                x_speed(i, j, k) = x_speed_temp
+!                y_speed(i, j, k) = y_speed_temp
+!                z_speed(i, j, k) = z_speed_temp
+!                pressure(i, j, k) = pressure_temp
+!                include "turbulence_models/include/solver/RK4_update_solution.inc"
+!              end do
+!             end do
+!            end do
+!
+!            if (any(density < 0) .or. any(pressure < 0)) then
+!                call dmsg(5, 'solver', 'update_solution', &
+!                        'ERROR: Some density or pressure is negative.')
+!            end if
+!
+!        end subroutine RK4_update_solution
+!
+!        function get_residue_primitive() result(dEdx)
+!
+!            implicit none
+!
+!            real, dimension(1:imx-1, 1:jmx-1, 1:kmx-1, n_var) :: dEdx
+!            real, dimension(1:imx-1, 1:jmx-1, 1:kmx-1) :: beta
+!            dEdx(:, :, :, 1) = mass_residue
+!            dEdx(:, :, :, 2) = ( (-1 * x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
+!                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
+!                                     mass_residue) + &
+!                             ( x_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
+!            dEdx(:, :, :, 3) = ( (-1 * y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
+!                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
+!                                     mass_residue) + &
+!                             ( y_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
+!            dEdx(:, :, :, 4) = ( (-1 * z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) / &
+!                                       density(1:imx-1, 1:jmx-1, 1:kmx-1) * &
+!                                     mass_residue) + &
+!                             ( z_mom_residue / density(1:imx-1, 1:jmx-1, 1:kmx-1)) )
+!            dEdx(:, :, :, 5) = ( (0.5 * (gm - 1.) * ( x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2. + &
+!                                                      y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2. + &
+!                                                      z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) ** 2.) * &
+!                                                    mass_residue) + &
+!                       (- (gm - 1.) * x_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * x_mom_residue) + &
+!                       (- (gm - 1.) * y_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * y_mom_residue) + &
+!                       (- (gm - 1.) * z_speed(1:imx-1, 1:jmx-1, 1:kmx-1) * z_mom_residue) + &
+!                       ((gm - 1.) * energy_residue) )
+!
+!            include "turbulence_models/include/solver/get_residue_primitive.inc"
+!
+!        end function get_residue_primitive
+!
+!        subroutine update_solution()
+!            !-----------------------------------------------------------
+!            ! Update the solution using the residue and time step
+!            !-----------------------------------------------------------
+!
+!            implicit none
+!            integer :: i, j, k
+!            real :: beta
+!            
+!            call dmsg(1, 'solver', 'update_solution')
+!
+!            do k = 1, kmx - 1
+!             do j = 1, jmx - 1
+!              do i = 1, imx - 1
+!               density_temp = density(i, j, k) - &
+!                            (mass_residue(i, j, k) * &
+!                            delta_t(i, j, k) / volume(i, j, k))
+!
+!               x_speed_temp = x_speed(i, j, k) - &
+!                            (( (-1 * x_speed(i, j, k) / density(i, j, k) * &
+!                                     mass_residue(i, j, k)) + &
+!                             ( x_mom_residue(i, j, k) / density(i, j, k)) ) * &
+!                            delta_t(i, j, k) / volume(i, j, k))
+!
+!               y_speed_temp = y_speed(i, j, k) - &
+!                            (( (-1 * y_speed(i, j, k) / density(i, j, k) * &
+!                                     mass_residue(i, j, k)) + &
+!                             ( y_mom_residue(i, j, k) / density(i, j, k)) ) * &
+!                            delta_t(i, j, k) / volume(i, j, k))
+!
+!               z_speed_temp = z_speed(i, j, k) - &
+!                            (( (-1 * z_speed(i, j, k) / density(i, j, k) * &
+!                                     mass_residue(i, j, k)) + &
+!                             ( z_mom_residue(i, j, k) / density(i, j, k)) ) * &
+!                            delta_t(i, j, k) / volume(i, j, k))
+!
+!               pressure_temp = pressure(i, j, k) - &
+!                   ( ( (0.5 * (gm - 1.) * ( x_speed(i, j, k) ** 2. + &
+!                                            y_speed(i, j, k) ** 2. + &
+!                                            z_speed(i, j, k) ** 2.) * &
+!                                          mass_residue(i, j, k)) + &
+!                       (- (gm - 1.) * x_speed(i, j, k) * x_mom_residue(i, j, k)) + &
+!                       (- (gm - 1.) * y_speed(i, j, k) * y_mom_residue(i, j, k)) + &
+!                       (- (gm - 1.) * z_speed(i, j, k) * z_mom_residue(i, j, k)) + &
+!                       ((gm - 1.) * energy_residue(i, j, k)) ) * &
+!                       delta_t(i, j, k) / volume(i, j, k) ) 
+!
+!               include "turbulence_models/include/solver/update_solution.inc"
+!               density(i, j, k) = density_temp
+!               x_speed(i, j, k) = x_speed_temp
+!               y_speed(i, j, k) = y_speed_temp
+!               z_speed(i, j, k) = z_speed_temp
+!               pressure(i, j, k) = pressure_temp
+!              end do
+!             end do
+!            end do
+!
+!            if (any(density < 0.) .or. any(pressure < 0.)) then
+!                call dmsg(5, 'solver', 'update_solution', &
+!                        'ERROR: Some density or pressure is negative.')
+!                !stop
+!            end if
+!
+!            do k = -2,kmx+2
+!              do j = -2,jmx+2
+!                do i = -2,imx+2
+!                  if (density(i,j,k)<0.) then
+!                    print*, process_id, i,j,k, "density: ", density(i,j,k)
+!                  end if
+!                  if (pressure(i,j,k)<0.) then
+!                    print*, process_id, i,j,k, "pressure: ", pressure(i,j,k)
+!                  end if
+!                end do
+!              end do
+!            end do
+!
+!        end subroutine update_solution
+!
 
         subroutine get_total_conservative_Residue()
 
