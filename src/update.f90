@@ -120,10 +120,10 @@ module update
             case ("RK4")
               R_store=0.
               U_store = qp
-              call update_with("primitive", 0.5  , 1., .FALSE., R_store, U_store) 
-              call update_with("primitive", 0.5  , 2., .FALSE., R_store, U_store) 
-              call update_with("primitive", 1.0  , 2., .FALSE., R_store, U_store) 
-              call update_with("primitive", 1./6., 1., .TRUE. , R_store, U_store) 
+              call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call update_with("conservative", 0.5  , 2., .FALSE., R_store, U_store) 
+              call update_with("conservative", 1.0  , 2., .FALSE., R_store, U_store) 
+              call update_with("conservative", 1./6., 1., .TRUE. , R_store, U_store) 
             case("RK2")
               R_store=0.
               U_store(1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var) = qp(1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var)
@@ -151,7 +151,7 @@ module update
         real, intent(in), optional :: store_factor ! time factor
         logical, intent(in), optional :: use
         real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in), optional :: un
-        real, dimension(:,:,:,:),  optional :: Rn
+        real, dimension(1:imx-1,1:jmx-1,1:kmx-1,1:n_var), intent(inout), optional :: Rn
         real               :: TF = 1.0 !time factor
         real               :: SF = 1.0!store factor
         Logical               :: TU = .FALSE. !to use or nor
@@ -270,7 +270,25 @@ module update
                   end if
 
                  ! get R
-                  R(:) = residue(i,j,k,:) 
+                  R(1:n_var) = residue(i,j,k,1:n_var) 
+                  select case(trim(turbulence))
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
+                      R(6) = R(6)/(1+(beta*qp(i,j,k,7)*delta_t(i,j,k)))
+                      R(7) = R(7)/(1+(2*beta*qp(i,j,k,7)*delta_t(i,j,k)))
+                    case('kkl')
+                      eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
+                      fphi = (1+cd1*eta)/(1+eta**4)
+                      R(6) = R(6)/(1.+(2.5*((cmu**0.75)*sqrt(u1(1))*(u1(6)**1.5)/u1(7))&
+                             -(2*mu(i,j,k)/(dist(i,j,k)**2))*delta_t(i,j,k)))
+                      R(7) = R(7)/(1.-(6*mu(i,j,k)*fphi/(dist(i,j,k)**2))*delta_t(i,j,k))
+                    case DEFAULT
+                      Fatal_error
+                  end select
+
                  !check if user want to store residue
                  if(present(Rn)) then
                    Rn(i,j,k,1:n_var) = Rn(i,j,k,1:n_var) + SF*R(1:n_var)
@@ -278,7 +296,7 @@ module update
                  end if
 
                  !update
-                 u2(:) = u1(:) - R(:)*TF*delta_t(i,j,k)/volume(i,j,k)
+                 u2(1:n_var) = u1(1:n_var) - R(1:n_var)*(TF*delta_t(i,j,k)/volume(i,j,k))
 
                 ! getting primitve variable back variable
                   u2(1)  = u2(1)
@@ -289,7 +307,7 @@ module update
                     case DEFAULT
                       KE = 0.
                   end select
-                  u2(5) = (gm-1.)*(u2(5) - (0.5*u2(1)*sum(u2(2:4)**2)) - u2(1)*KE)
+                  u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) - KE)
 
                  !check solution for non pyhysical results
                  if((u2(1) < 0.) .or. (u2(5)) < 0.)then
