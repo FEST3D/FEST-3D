@@ -567,29 +567,29 @@ module solver
 !
 !        end subroutine update_solution
 !
-
-        subroutine get_total_conservative_Residue()
-
-            implicit none
-
-            call dmsg(1, 'solver', 'get_total_conservative_Residue')
-            call send_recv(3) ! parallel call-argument:no of layers 
-            call populate_ghost_primitive()
-            call compute_face_interpolant()
-            call reconstruct_boundary_state(interpolant)
-            call compute_fluxes()
-            if (mu_ref /= 0.0) then
-              call evaluate_all_gradients()
-              call calculate_transport()
-              call calculate_sst_F1()
-              call compute_viscous_fluxes(F_p, G_p, H_p)
-              call compute_turbulent_fluxes(F_p, G_p, H_p)
-            end if
-            call compute_residue()
-            call add_source_term_residue()
-            call dmsg(1, 'solver', 'step', 'Residue computed.')
-
-        end subroutine get_total_conservative_Residue
+!
+!        subroutine get_total_conservative_Residue()
+!
+!            implicit none
+!
+!            call dmsg(1, 'solver', 'get_total_conservative_Residue')
+!            call send_recv(3) ! parallel call-argument:no of layers 
+!            call populate_ghost_primitive()
+!            call compute_face_interpolant()
+!            call reconstruct_boundary_state(interpolant)
+!            call compute_fluxes()
+!            if (mu_ref /= 0.0) then
+!              call evaluate_all_gradients()
+!              call calculate_transport()
+!              call calculate_sst_F1()
+!              call compute_viscous_fluxes(F_p, G_p, H_p)
+!              call compute_turbulent_fluxes(F_p, G_p, H_p)
+!            end if
+!            call compute_residue()
+!            call add_source_term_residue()
+!            call dmsg(1, 'solver', 'step', 'Residue computed.')
+!
+!        end subroutine get_total_conservative_Residue
         
         subroutine iterate_one_more_time_step()
             !-----------------------------------------------------------
@@ -606,8 +606,8 @@ module solver
             if (process_id==0) then
               print*, current_iter
             end if
-            call get_total_conservative_Residue()
-            call compute_time_step()
+!            call get_total_conservative_Residue()
+!            call compute_time_step()
             call get_next_solution()
             current_iter = current_iter + 1
             call find_resnorm()

@@ -53,6 +53,23 @@ module update
 
   use string
 
+  !subroutine for residual calculation
+  use face_interpolant,               only: interpolant
+  use global_vars,                    only : mu_ref
+  use parallel,                       only: send_recv
+  use bc_primitive,                   only: populate_ghost_primitive
+  use face_interpolant,               only: compute_face_interpolant
+  use boundary_state_reconstruction,  only: reconstruct_boundary_state
+  use scheme,                         only: compute_fluxes
+  use summon_grad_evaluation,         only: evaluate_all_gradients
+  use transport    ,                  only: calculate_transport
+  use blending_function ,             only: calculate_sst_F1
+  use viscous,                        only: compute_viscous_fluxes
+  use turbulent_fluxes,               only: compute_turbulent_fluxes
+  use scheme,                         only: compute_residue
+  use source,                         only: add_source_term_residue
+
+  use time,                           only : compute_time_step
 #include "error.inc"
 #include "mpi.inc"
     private
@@ -79,12 +96,14 @@ module update
         call alloc(R ,1,n_var)
 
         select case (time_step_accuracy)
-          case ("none", "TVDRK3")
+          case ("none")
             ! Do nothing
             continue
           case ("RK2", "RK4")
             call alloc(U_store,-2,imx+2,-2,jmx+2,-2,kmx+2,1,n_var)
             call alloc(R_store, 1,imx-1, 1,jmx-1, 1,kmx-1,1,n_var)
+          case ("TVDRK3")
+            call alloc(U_store,-2,imx+2,-2,jmx+2,-2,kmx+2,1,n_var)
           case default
             Fatal_error
         end select
@@ -96,12 +115,14 @@ module update
         implicit none
 
         select case (time_step_accuracy)
-          case ("none", "TVDRK3")
+          case ("none")
             ! Do nothing
             continue
           case ("RK2", "RK4")
             call dealloc(U_store)
             call dealloc(R_store)
+          case ("TVDRK3")
+            call dealloc(U_store)
           case default
             Fatal_error
         end select
@@ -116,29 +137,40 @@ module update
         implicit none
         select case (time_step_accuracy)
             case ("none")
+              call get_total_conservative_Residue()
+              call compute_time_step() ! has to be after get_..._Residue()
               call update_with("conservative", 1. ,1., .FALSE.) 
             case ("RK4")
               R_store=0.
               U_store = qp
+              call get_total_conservative_Residue()
+              call compute_time_step()
               call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue()
               call update_with("conservative", 0.5  , 2., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue()
               call update_with("conservative", 1.0  , 2., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue()
               call update_with("conservative", 1./6., 1., .TRUE. , R_store, U_store) 
             case("RK2")
               R_store=0.
-              U_store(1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var) = qp(1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var)
+              U_store = qp
+              call get_total_conservative_Residue()
+              call compute_time_step()
               call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue()
               call update_with("conservative", 0.5  , 1., .TRUE., R_store, U_store) 
             case ("TVDRK3")
-              R_store=0.
-              U_store(1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var) = qp(1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var)
+              U_store = qp
+              call get_total_conservative_Residue()
+              call compute_time_step()
               call update_with("conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue()
               call update_with("conservative", 1.0  , 1.) 
-              qp(1:imx-1,1:jmx-1,1:kmx-1,1:n_var) = 0.75*U_store(1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var) +&
-              0.25*qp(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)
+              qp = 0.75*U_store + 0.25*qp
+              call get_total_conservative_Residue()
               call update_with("conservative", 0.5  , 1.) 
-              qp(1:imx-1,1:jmx-1,1:kmx-1,1:n_var) = 0.33*U_store(1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var) +&
-              0.66*qp(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)
+              qp = (1./3.)*U_store + (2./3.)*qp
             case default
               Fatal_error
         end select
@@ -327,5 +359,25 @@ module update
 
       end subroutine update_with
 
+
+      subroutine get_total_conservative_Residue()
+        implicit none
+
+        call send_recv(3) ! parallel call-argument:no of layers 
+        call populate_ghost_primitive()
+        call compute_face_interpolant()
+        call reconstruct_boundary_state(interpolant)
+        call compute_fluxes()
+        if (mu_ref /= 0.0) then
+          call evaluate_all_gradients()
+          call calculate_transport()
+          call calculate_sst_F1()
+          call compute_viscous_fluxes(F_p, G_p, H_p)
+          call compute_turbulent_fluxes(F_p, G_p, H_p)
+        end if
+        call compute_residue()
+        call add_source_term_residue()
+
+      end subroutine get_total_conservative_Residue
 
 end module update
