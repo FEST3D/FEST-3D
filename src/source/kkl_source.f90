@@ -157,20 +157,20 @@ module kkl_source
                      +(gradu_x(i  ,j  ,k+1)+gradu_x(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
-            d2udy2 =(-(gradu_y(i-1,j  ,k  )+gradu_y(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradu_y(i  ,j-1,k  )+gradu_y(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradu_y(i  ,j  ,k-1)+gradu_y(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradu_y(i+1,j  ,k  )+gradu_y(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradu_y(i  ,j+1,k  )+gradu_y(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradu_y(i  ,j  ,k+1)+gradu_y(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
+            d2udy2 =(-(gradu_y(i-1,j  ,k  )+gradu_y(i,j,k))*xny(i,j,k)*xA(i,j,k) &
+                     -(gradu_y(i  ,j-1,k  )+gradu_y(i,j,k))*yny(i,j,k)*yA(i,j,k) &
+                     -(gradu_y(i  ,j  ,k-1)+gradu_y(i,j,k))*zny(i,j,k)*zA(i,j,k) &
+                     +(gradu_y(i+1,j  ,k  )+gradu_y(i,j,k))*xny(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
+                     +(gradu_y(i  ,j+1,k  )+gradu_y(i,j,k))*yny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
+                     +(gradu_y(i  ,j  ,k+1)+gradu_y(i,j,k))*zny(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
-            d2udz2 =(-(gradu_z(i-1,j  ,k  )+gradu_z(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradu_z(i  ,j-1,k  )+gradu_z(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradu_z(i  ,j  ,k-1)+gradu_z(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradu_z(i+1,j  ,k  )+gradu_z(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradu_z(i  ,j+1,k  )+gradu_z(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradu_z(i  ,j  ,k+1)+gradu_z(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
+            d2udz2 =(-(gradu_z(i-1,j  ,k  )+gradu_z(i,j,k))*xnz(i,j,k)*xA(i,j,k) &
+                     -(gradu_z(i  ,j-1,k  )+gradu_z(i,j,k))*ynz(i,j,k)*yA(i,j,k) &
+                     -(gradu_z(i  ,j  ,k-1)+gradu_z(i,j,k))*znz(i,j,k)*zA(i,j,k) &
+                     +(gradu_z(i+1,j  ,k  )+gradu_z(i,j,k))*xnz(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
+                     +(gradu_z(i  ,j+1,k  )+gradu_z(i,j,k))*ynz(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
+                     +(gradu_z(i  ,j  ,k+1)+gradu_z(i,j,k))*znz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
             ! gradient of v component
@@ -182,20 +182,20 @@ module kkl_source
                      +(gradv_x(i  ,j  ,k+1)+gradv_x(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
-            d2vdy2 =(-(gradv_y(i-1,j  ,k  )+gradv_y(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradv_y(i  ,j-1,k  )+gradv_y(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradv_y(i  ,j  ,k-1)+gradv_y(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradv_y(i+1,j  ,k  )+gradv_y(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradv_y(i  ,j+1,k  )+gradv_y(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradv_y(i  ,j  ,k+1)+gradv_y(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
+            d2vdy2 =(-(gradv_y(i-1,j  ,k  )+gradv_y(i,j,k))*xny(i,j,k)*xA(i,j,k) &
+                     -(gradv_y(i  ,j-1,k  )+gradv_y(i,j,k))*yny(i,j,k)*yA(i,j,k) &
+                     -(gradv_y(i  ,j  ,k-1)+gradv_y(i,j,k))*zny(i,j,k)*zA(i,j,k) &
+                     +(gradv_y(i+1,j  ,k  )+gradv_y(i,j,k))*xny(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
+                     +(gradv_y(i  ,j+1,k  )+gradv_y(i,j,k))*yny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
+                     +(gradv_y(i  ,j  ,k+1)+gradv_y(i,j,k))*zny(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
-            d2vdz2 =(-(gradv_z(i-1,j  ,k  )+gradv_z(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradv_z(i  ,j-1,k  )+gradv_z(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradv_z(i  ,j  ,k-1)+gradv_z(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradv_z(i+1,j  ,k  )+gradv_z(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradv_z(i  ,j+1,k  )+gradv_z(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradv_z(i  ,j  ,k+1)+gradv_z(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
+            d2vdz2 =(-(gradv_z(i-1,j  ,k  )+gradv_z(i,j,k))*xnz(i,j,k)*xA(i,j,k) &
+                     -(gradv_z(i  ,j-1,k  )+gradv_z(i,j,k))*ynz(i,j,k)*yA(i,j,k) &
+                     -(gradv_z(i  ,j  ,k-1)+gradv_z(i,j,k))*znz(i,j,k)*zA(i,j,k) &
+                     +(gradv_z(i+1,j  ,k  )+gradv_z(i,j,k))*xnz(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
+                     +(gradv_z(i  ,j+1,k  )+gradv_z(i,j,k))*ynz(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
+                     +(gradv_z(i  ,j  ,k+1)+gradv_z(i,j,k))*znz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
 
@@ -208,25 +208,25 @@ module kkl_source
                      +(gradw_x(i  ,j  ,k+1)+gradw_x(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
-            d2wdy2 =(-(gradw_y(i-1,j  ,k  )+gradw_y(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradw_y(i  ,j-1,k  )+gradw_y(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradw_y(i  ,j  ,k-1)+gradw_y(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradw_y(i+1,j  ,k  )+gradw_y(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradw_y(i  ,j+1,k  )+gradw_y(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradw_y(i  ,j  ,k+1)+gradw_y(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
+            d2wdy2 =(-(gradw_y(i-1,j  ,k  )+gradw_y(i,j,k))*xny(i,j,k)*xA(i,j,k) &
+                     -(gradw_y(i  ,j-1,k  )+gradw_y(i,j,k))*yny(i,j,k)*yA(i,j,k) &
+                     -(gradw_y(i  ,j  ,k-1)+gradw_y(i,j,k))*zny(i,j,k)*zA(i,j,k) &
+                     +(gradw_y(i+1,j  ,k  )+gradw_y(i,j,k))*xny(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
+                     +(gradw_y(i  ,j+1,k  )+gradw_y(i,j,k))*yny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
+                     +(gradw_y(i  ,j  ,k+1)+gradw_y(i,j,k))*zny(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
-            d2wdz2 =(-(gradw_z(i-1,j  ,k  )+gradw_z(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradw_z(i  ,j-1,k  )+gradw_z(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradw_z(i  ,j  ,k-1)+gradw_z(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradw_z(i+1,j  ,k  )+gradw_z(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradw_z(i  ,j+1,k  )+gradw_z(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradw_z(i  ,j  ,k+1)+gradw_z(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
+            d2wdz2 =(-(gradw_z(i-1,j  ,k  )+gradw_z(i,j,k))*xnz(i,j,k)*xA(i,j,k) &
+                     -(gradw_z(i  ,j-1,k  )+gradw_z(i,j,k))*ynz(i,j,k)*yA(i,j,k) &
+                     -(gradw_z(i  ,j  ,k-1)+gradw_z(i,j,k))*znz(i,j,k)*zA(i,j,k) &
+                     +(gradw_z(i+1,j  ,k  )+gradw_z(i,j,k))*xnz(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
+                     +(gradw_z(i  ,j+1,k  )+gradw_z(i,j,k))*ynz(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
+                     +(gradw_z(i  ,j  ,k+1)+gradw_z(i,j,k))*znz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
                     )/(2*volume(i,j,k))
 
             udd = sqrt( (d2udx2+d2udy2+d2udz2)**2 &
-                      + (d2udx2+d2udy2+d2udz2)**2 &
-                      + (d2udx2+d2udy2+d2udz2)**2 )
+                      + (d2vdx2+d2vdy2+d2vdz2)**2 &
+                      + (d2wdx2+d2wdy2+d2wdz2)**2 )
 
             ud  = sqrt(2*(s11**2 + s12**2 + s13**2 &
                          +s21**2 + s22**2 + s23**2 &
