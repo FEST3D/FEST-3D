@@ -15,13 +15,8 @@ module wall
   use bitwise
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
 
-#ifdef __GFORTRAN__
-  use mpi
-#endif
-  implicit none
-#ifdef __INTEL_COMPILER
-  include "mpif.h"
-#endif
+#include "../error.inc"
+#include "../mpi.inc"
 
   private
   integer :: ierr

@@ -238,10 +238,10 @@ module update
                       fphi = (1+cd1*eta)/(1+eta**4)
                       R(5) = R(5) - (gm-1.)*TKE_residue(i,j,k)
                       R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
-                             + 1./(1.+(2.5*((cmu**0.75)*u1(1)*(u1(6)**1.5)/u1(7))&
-                             -(2*mu(i,j,k)/dist(i,j,k))*delta_t(i,j,k)))*TKE_residue(i,j,k)/u1(1)
+                             + (1./(1.+((2.5*((cmu**0.75)*u1(1)*(u1(6)**1.5)/u1(7))&
+                             +(2*mu(i,j,k)/dist(i,j,k)**2))*delta_t(i,j,k))))*TKE_residue(i,j,k)/u1(1)
                       R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
-                             + 1./(1.-(6*mu(i,j,k)*fphi)*delta_t(i,j,k))*kl_residue(i,j,k)/u1(1)
+                             +(1./(1.+(6*mu(i,j,k)*fphi/dist(i,j,k)**2)*delta_t(i,j,k)))*kl_residue(i,j,k)/u1(1)
                     case DEFAULT
                       Fatal_error
                   end select
@@ -257,6 +257,20 @@ module update
                  !update
                  u2(:) = u1(:) - R(:)*(TF*delta_t(i,j,k)/volume(i,j,k))
             
+                  !check solution for non pyhysical results
+                  if((u2(1) < 0.) .or. (u2(5)) < 0.)then
+                    Fatal_error
+                  else !update
+                    qp(i,j,k,1:5) = u2(1:5)
+                    select case(trim(turbulence))
+                     case('sst', 'kkl')
+                       if(u2(6)>0.) qp(i,j,k,6) = u2(6)
+                       if(u2(7)>0.) qp(i,j,k,7) = u2(7)
+                     case DEFAULT
+                       ! do nothing
+                       continue
+                    end select
+                  end if
                 end do
               end do
             end do
@@ -300,9 +314,9 @@ module update
                     case('kkl')
                       eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
                       fphi = (1+cd1*eta)/(1+eta**4)
-                      R(6) = R(6)/(1.+(2.5*((cmu**0.75)*sqrt(u1(1))*(u1(6)**1.5)/u1(7))&
-                             -(2*mu(i,j,k)/(dist(i,j,k)**2))*delta_t(i,j,k)))
-                      R(7) = R(7)/(1.-(6*mu(i,j,k)*fphi/(dist(i,j,k)**2))*delta_t(i,j,k))
+                      R(6) = R(6)/(1.+((2.5*((cmu**0.75)*sqrt(u1(1))*(u1(6)**1.5)/u1(7))&
+                             +(2*mu(i,j,k)/(dist(i,j,k)**2)))*delta_t(i,j,k)))
+                      R(7) = R(7)/(1.+(6*mu(i,j,k)*fphi/(dist(i,j,k)**2))*delta_t(i,j,k))
                     case DEFAULT
                       Fatal_error
                   end select
@@ -327,6 +341,21 @@ module update
                   end select
                   u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) - KE)
 
+                  !check solution for non pyhysical results
+                  if((u2(1) < 0.) .or. (u2(5)) < 0.)then
+                    Fatal_error
+                  else !update
+                    qp(i,j,k,1:5) = u2(1:5)
+                    select case(trim(turbulence))
+                     case('sst', 'kkl')
+                       if(u2(6)>0.) qp(i,j,k,6) = u2(6)
+                       if(u2(7)>0.) qp(i,j,k,7) = u2(7)
+                     case DEFAULT
+                       ! do nothing
+                       continue
+                    end select
+                  end if
+
                 end do
               end do
             end do
@@ -334,21 +363,6 @@ module update
           case DEFAULT
             Fatal_error
         end select
-
-        !check solution for non pyhysical results
-        if((u2(1) < 0.) .or. (u2(5)) < 0.)then
-          Fatal_error
-        else !update
-          qp(i,j,k,1:5) = u2(1:5)
-          select case(trim(turbulence))
-           case('sst', 'kkl')
-             if(u2(6)>0.) qp(i,j,k,6) = u2(6)
-             if(u2(7)>0.) qp(i,j,k,7) = u2(7)
-           case DEFAULT
-             ! do nothing
-             continue
-          end select
-        end if
 
       end subroutine update_with
 

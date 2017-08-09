@@ -1,9 +1,5 @@
 module parallel
   ! contains routines to execute parallelly
-#include "error.inc"
-#ifdef __GFORTRAN__
-  use mpi
-#endif
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -34,11 +30,8 @@ module parallel
   use state 
 
 
-
-  implicit none
-#ifdef __INTEL_COMPILER
-  include "mpif.h"
-#endif
+#include "error.inc"
+#include "mpi.inc"
 
   real, public, dimension(:),allocatable :: imin_send_buf,imin_recv_buf,&
        imax_send_buf,imax_recv_buf,jmin_send_buf,jmin_recv_buf, &
