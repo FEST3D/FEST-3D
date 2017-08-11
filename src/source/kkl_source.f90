@@ -144,7 +144,7 @@ module kkl_source
             P_k = P_k + Tau11*gradu_x(i,j,k) + Tau12*gradu_y(i,j,k) + Tau13*gradu_z(i,j,k)
             P_k = P_k + Tau21*gradv_x(i,j,k) + Tau22*gradv_y(i,j,k) + Tau23*gradv_z(i,j,k)
             P_k = P_k + Tau31*gradw_x(i,j,k) + Tau32*gradw_y(i,j,k) + Tau33*gradw_z(i,j,k)
-            D_k = (cmu**0.75)*density(i,j,k)*(tk(i,j,k)**2.5)/tkl(i,j,k)
+            D_k = (cmu**0.75)*density(i,j,k)*(tk(i,j,k)**2.5)/max(tkl(i,j,k),1.e-20)
             P_k = min(P_k, 20*D_k)
 
             ! calculation of Lvk
@@ -232,11 +232,11 @@ module kkl_source
                          +s21**2 + s22**2 + s23**2 &
                          +s31**2 + s32**2 + s33**2 ))
 
-            Lvk = kappa*abs(ud/udd)
+            Lvk = kappa*abs(ud/max(udd,1.e-20))
 
             fp = min(max(P_k/D_k, 0.5),1.0)
             ! Lvk limiter
-            Lvk = max(Lvk, tkl(i,j,k)/(tk(i,j,k)*c11))
+            Lvk = max(Lvk, tkl(i,j,k)/max((tk(i,j,k)*c11),1.e-20))
             Lvk = min(Lvk, c12*kappa*dist(i,j,k)*fp)
 
             eta = density(i,j,k)*dist(i,j,k)*sqrt(0.3*tk(i,j,k))/(20*mu(i,j,k))

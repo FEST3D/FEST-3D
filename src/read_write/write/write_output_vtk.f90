@@ -197,6 +197,10 @@ module write_output_vtk
           case('Dtwdz')
             call write_scalar(gradtw_z,"dtwdz", 0)
 
+          case('do not write')
+            ! do nothing
+            continue
+
           case Default
             print*, err//trim(w_list(n))//" to file"
 

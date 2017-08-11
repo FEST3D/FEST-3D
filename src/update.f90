@@ -342,7 +342,7 @@ module update
                   u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) - KE)
 
                   !check solution for non pyhysical results
-                  if((u2(1) < 0.) .or. (u2(5)) < 0.)then
+                  if((u2(1) < 0.) .or. (u2(5)) < 0. .or. any(isnan(u2)))then
                     Fatal_error
                   else !update
                     qp(i,j,k,1:5) = u2(1:5)
@@ -378,7 +378,9 @@ module update
         if (mu_ref /= 0.0) then
           call evaluate_all_gradients()
           call calculate_transport()
-          call calculate_sst_F1()
+          if(trim(turbulence)=='sst') then
+            call calculate_sst_F1()
+          end if
           call compute_viscous_fluxes(F_p, G_p, H_p)
           call compute_turbulent_fluxes(F_p, G_p, H_p)
         end if

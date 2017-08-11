@@ -155,16 +155,9 @@ module solver
             call read_layout_file(process_id) ! reads layout file calls
             
             call read_input_and_controls()
-                  !todo make it general for all turbulence model
-                  if(turbulence=="sst")then
-                    n_var=n_var+sst_n_var
-                  end if
             call setup_grid(grid_file_buf)
             call setup_geometry()
             call setup_transport()
-            if(turbulence /= 'none') then
-!              call setup_wall_dist() ! only if there is wall_distance in restart file
-            end if
             call setup_state()
             call setup_gradients()
             call setup_bc()

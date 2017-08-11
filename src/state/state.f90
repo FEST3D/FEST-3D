@@ -315,7 +315,7 @@ module state
           select case (trim(turbulence))
             case('none')
               n_var=5
-            case('ss')
+            case('sa')
               n_var=6
             case('sst','bsl', 'kw', 'ke', 'kkl', 'Des-kw')
               n_var=7

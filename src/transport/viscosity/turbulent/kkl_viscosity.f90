@@ -37,7 +37,7 @@ module kkl_viscosity
       do k = 1,kmx-1
         do j = 1,jmx-1
           do i = 1,imx-1
-            kkl_mu(i,j,k) = c*density(i,j,k)*tkl(i,j,k)/sqrt(tk(i,j,k))
+            kkl_mu(i,j,k) = c*density(i,j,k)*tkl(i,j,k)/(max(sqrt(tk(i,j,k)),1.e-20))
           end do
         end do
       end do

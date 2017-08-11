@@ -21,6 +21,7 @@ module write_output_tec
   use global_vars, only : pressure 
   use global_vars, only : tk 
   use global_vars, only : tw 
+  use global_vars, only : tkl
   use global_vars, only : mu 
   use global_vars, only : mu_t 
   use global_vars, only : density_inf
@@ -122,6 +123,9 @@ module write_output_tec
           case('Omega')
             call write_scalar(tw, "Omega", -2)
 
+          case('Kl')
+            call write_scalar(tkl, "Kl", -2)
+
           case('Wall_distance')
             call write_scalar(dist, "Wall_dist", 1)
 
@@ -181,6 +185,10 @@ module write_output_tec
                                                
           case('Dtwdz')                        
             call write_scalar(gradtw_z,"dtwdz", 0)
+
+          case('do not write')
+            ! do not write
+            continue
 
           case Default
             print*, err//trim(w_list(n))//" to file"
