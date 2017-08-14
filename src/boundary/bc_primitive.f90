@@ -56,6 +56,14 @@ module bc_primitive
   use global_vars, only: face_names
   use global_vars, only: id
 
+  use global_vars, only: gm
+  use global_vars, only: x_speed_inf
+  use global_vars, only: y_speed_inf
+  use global_vars, only: z_speed_inf
+  use global_vars, only: density_inf
+  use global_vars, only: pressure_inf
+  use global_vars, only: vel_mag
+
   use global_sst , only: beta1
   use utils,       only: turbulence_read_error
 
@@ -426,5 +434,263 @@ module bc_primitive
          Fatal_error
       end select
     end subroutine check_if_value_fixed
+
+    subroutine far-field(face)
+      implicit none
+      character(len=*) :: face
+      real :: cinf, cexp   ! speed of sound
+      real :: Rinf, Rexp   ! Riemann invarient
+      real :: Uninf, Unexp ! face normal speed
+      real :: Minf, Mexp   ! mach 
+      real :: Unb ! normal velocity boundary
+      real :: Cb  ! speed of sound boundary
+      real :: Mb  ! mach boundary
+      real :: vel_diff
+      real :: ratio
+      real :: u,v,w
+      real :: uf, vf, wf
+      integer :: i,j,k
+      real :: Ratio
+
+      uf    = x_speed_inf
+      vf    = y_speed_inf
+      wf    = z_speed_inf
+      cinf  = sqrt(gm*pressure_inf/density_inf)
+      Minf  = (vel_mag/cinf)
+      select case(face)
+        case("imin")
+          do k = 1,kmx
+            do j = 1,jmx
+              do i = 1,1
+                u = x_speed(i,j,k)
+                v = y_speed(i,j,k)
+                w = z_speed(i,j,k)
+                cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
+                ! negative normal because of the way they are stored
+                Uninf = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
+                Unexp = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   =         0.5*(Rexp + Rinf)
+                Cb    = 0.25(gm-1.)*(Rexp + Rinf)
+                if(Unb > 0.)then
+                  vel_dif = Unb - Unexp
+                  x_speed(i-1,j,k) = x_speed(i,j,k) + vel_diff*(-xnx(i,j,k))
+                  y_speed(i-1,j,k) = y_speed(i,j,k) + vel_diff*(-xny(i,j,k))
+                  z_speed(i-1,j,k) = z_speed(i,j,k) + vel_diff*(-xnz(i,j,k))
+                  Mb = sqrt(x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i-1,j,k) = pressure(i,j,k)*Ratio**gm
+                   density(i-1,j,k) =  density(i,j,k)*Ratio
+                else
+                  vel_dif = Unb - Uninf
+                  x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-xnx(i,j,k))
+                  y_speed(i-1,j,k) = y_speed_inf + vel_diff*(-xny(i,j,k))
+                  z_speed(i-1,j,k) = z_speed_inf + vel_diff*(-xnz(i,j,k))
+                  Mb = sqrt(x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i-1,j,k) = pressure_inf*Ratio**gm
+                   density(i-1,j,k) =  density_inf*Ratio
+                end if
+              end do
+            end do
+          end do
+         case("imax")
+          do k = 1,kmx
+            do j = 1,jmx
+              do i = imx,imx
+                u = x_speed(i-1,j,k)
+                v = y_speed(i-1,j,k)
+                w = z_speed(i-1,j,k)
+                cexp = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
+                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
+                ! negative normal because of the way they are stored
+                Uninf = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
+                Unexp = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   =         0.5*(Rexp + Rinf)
+                Cb    = 0.25(gm-1.)*(Rexp + Rinf)
+                if(Unb > 0.)then
+                  vel_dif = Unb - Unexp
+                  x_speed(i,j,k) = x_speed(i-1,j,k) + vel_diff*(xnx(i,j,k))
+                  y_speed(i,j,k) = y_speed(i-1,j,k) + vel_diff*(xny(i,j,k))
+                  z_speed(i,j,k) = z_speed(i-1,j,k) + vel_diff*(xnz(i,j,k))
+                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j,k) = pressure(i-1,j,k)*Ratio**gm
+                   density(i,j,k) =  density(i-1,j,k)*Ratio
+                else
+                  vel_dif = Unb - Uninf
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(xnx(i,j,k))
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(xny(i,j,k))
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(xnz(i,j,k))
+                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j,k) = pressure_inf*Ratio**gm
+                   density(i,j,k) =  density_inf*Ratio
+                end if
+              end do
+            end do
+          end do
+        case("jmin")
+          do k = 1,kmx
+            do j = 1,1
+              do i = 1,imx
+                u = x_speed(i,j,k)
+                v = y_speed(i,j,k)
+                w = z_speed(i,j,k)
+                cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
+                ! negative normal because of the way they are stored
+                Uninf = u *(-ynx(i,j,k)) + v *(-yny(i,j,k)) + w *(-ynz(i,j,k))
+                Unexp = uf*(-ynx(i,j,k)) + vf*(-yny(i,j,k)) + wf*(-ynz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   =         0.5*(Rexp + Rinf)
+                Cb    = 0.25(gm-1.)*(Rexp + Rinf)
+                if(Unb > 0.)then
+                  vel_dif = Unb - Unexp
+                  x_speed(i,j-1,k) = x_speed(i,j,k) + vel_diff*(-ynx(i,j,k))
+                  y_speed(i,j-1,k) = y_speed(i,j,k) + vel_diff*(-yny(i,j,k))
+                  z_speed(i,j-1,k) = z_speed(i,j,k) + vel_diff*(-ynz(i,j,k))
+                  Mb = sqrt(x_speed(i,j-1,k)**2+y_speed(i,j-1,k)**2+z_speed(i,j-1,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j-1,k) = pressure(i,j,k)*Ratio**gm
+                   density(i,j-1,k) =  density(i,j,k)*Ratio
+                else
+                  vel_dif = Unb - Uninf
+                  x_speed(i,j-1,k) = x_speed_inf + vel_diff*(-ynx(i,j,k))
+                  y_speed(i,j-1,k) = y_speed_inf + vel_diff*(-yny(i,j,k))
+                  z_speed(i,j-1,k) = z_speed_inf + vel_diff*(-ynz(i,j,k))
+                  Mb = sqrt(x_speed(i,j-1,k)**2+y_speed(i,j-1,k)**2+z_speed(i,j-1,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j-1,k) = pressure_inf*Ratio**gm
+                   density(i,j-1,k) =  density_inf*Ratio
+                end if
+              end do
+            end do
+          end do
+        case("jmax")
+          do k = 1,kmx
+            do j = jmx,jmx
+              do i = 1,imx
+                u = x_speed(i,j-1,k)
+                v = y_speed(i,j-1,k)
+                w = z_speed(i,j-1,k)
+                cexp = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
+                ! negative normal because of the way they are stored
+                Uninf = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
+                Unexp = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   =         0.5*(Rexp + Rinf)
+                Cb    = 0.25(gm-1.)*(Rexp + Rinf)
+                if(Unb > 0.)then
+                  vel_dif = Unb - Unexp
+                  x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(ynx(i,j,k))
+                  y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(yny(i,j,k))
+                  z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(ynz(i,j,k))
+                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j,k) = pressure(i,j-1,k)*Ratio**gm
+                   density(i,j,k) =  density(i,j-1,k)*Ratio
+                else
+                  vel_dif = Unb - Uninf
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(ynx(i,j,k))
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(yny(i,j,k))
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(ynz(i,j,k))
+                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j,k) = pressure_inf*Ratio**gm
+                   density(i,j,k) =  density_inf*Ratio
+                end if
+              end do
+            end do
+          end do
+        case("kmin")
+          do k = 1,1
+            do j = 1,jmx
+              do i = 1,imx
+                u = x_speed(i,j,k)
+                v = y_speed(i,j,k)
+                w = z_speed(i,j,k)
+                cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
+                ! negative normal because of the way they are stored
+                Uninf = u *(-znx(i,j,k)) + v *(-zny(i,j,k)) + w *(-znz(i,j,k))
+                Unexp = uf*(-znx(i,j,k)) + vf*(-zny(i,j,k)) + wf*(-znz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   =         0.5*(Rexp + Rinf)
+                Cb    = 0.25(gm-1.)*(Rexp + Rinf)
+                if(Unb > 0.)then
+                  vel_dif = Unb - Unexp
+                  x_speed(i,j,k-1) = x_speed(i,j,k) + vel_diff*(-znx(i,j,k))
+                  y_speed(i,j,k-1) = y_speed(i,j,k) + vel_diff*(-zny(i,j,k))
+                  z_speed(i,j,k-1) = z_speed(i,j,k) + vel_diff*(-znz(i,j,k))
+                  Mb = sqrt(x_speed(i,j,k-1)**2+y_speed(i,j,k-1)**2+z_speed(i,j,k-1)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j,k-1) = pressure(i,j,k)*Ratio**gm
+                   density(i,j,k-1) =  density(i,j,k)*Ratio
+                else
+                  vel_dif = Unb - Uninf
+                  x_speed(i,j,k-1) = x_speed_inf + vel_diff*(-znx(i,j,k))
+                  y_speed(i,j,k-1) = y_speed_inf + vel_diff*(-zny(i,j,k))
+                  z_speed(i,j,k-1) = z_speed_inf + vel_diff*(-znz(i,j,k))
+                  Mb = sqrt(x_speed(i,j,k-1)**2+y_speed(i,j,k-1)**2+z_speed(i,j,k-1)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j,k-1) = pressure_inf*Ratio**gm
+                   density(i,j,k-1) =  density_inf*Ratio
+                end if
+              end do
+            end do
+          end do
+        case("kmax")
+          do k = kmx,kmx
+            do j = 1,jmx
+              do i = 1,imx
+                u = x_speed(i,j,k-1)
+                v = y_speed(i,j,k-1)
+                w = z_speed(i,j,k-1)
+                cexp = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
+                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
+                ! negative normal because of the way they are stored
+                Uninf = u *(znx(i,j,k)) + v *(zny(i,j,k)) + w *(znz(i,j,k))
+                Unexp = uf*(znx(i,j,k)) + vf*(zny(i,j,k)) + wf*(znz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   =         0.5*(Rexp + Rinf)
+                Cb    = 0.25(gm-1.)*(Rexp + Rinf)
+                if(Unb > 0.)then
+                  vel_dif = Unb - Unexp
+                  x_speed(i,j,k) = x_speed(i,j,k-1) + vel_diff*(znx(i,j,k))
+                  y_speed(i,j,k) = y_speed(i,j,k-1) + vel_diff*(zny(i,j,k))
+                  z_speed(i,j,k) = z_speed(i,j,k-1) + vel_diff*(znz(i,j,k))
+                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j,k) = pressure(i,j,k-1)*Ratio**gm
+                   density(i,j,k) =  density(i,j,k-1)*Ratio
+                else
+                  vel_dif = Unb - Uninf
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(znx(i,j,k))
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(zny(i,j,k))
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(znz(i,j,k))
+                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
+                  Pressure(i,j,k) = pressure_inf*Ratio**gm
+                   density(i,j,k) =  density_inf*Ratio
+                end if
+              end do
+            end do
+          end do
+        case DEFAULT
+          !print*, "ERROR: wrong face for boundary condition"
+          Fatal_error
+      end select
+
+    end subroutine far-field
 
 end module bc_primitive
