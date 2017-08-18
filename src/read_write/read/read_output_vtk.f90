@@ -179,10 +179,6 @@ module read_output_vtk
        end do
       end do
       read(IN_FILE_UNIT, *)
-      if(process_id==1) then
-      print*, name
-      print*, var
-      end if
 
     end subroutine read_scalar
 

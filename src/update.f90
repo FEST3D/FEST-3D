@@ -102,7 +102,7 @@ module update
           case ("RK2", "RK4")
             call alloc(U_store,-2,imx+2,-2,jmx+2,-2,kmx+2,1,n_var)
             call alloc(R_store, 1,imx-1, 1,jmx-1, 1,kmx-1,1,n_var)
-          case ("TVDRK3")
+          case ("TVDRK2", "TVDRK3")
             call alloc(U_store,-2,imx+2,-2,jmx+2,-2,kmx+2,1,n_var)
           case default
             Fatal_error
@@ -121,7 +121,7 @@ module update
           case ("RK2", "RK4")
             call dealloc(U_store)
             call dealloc(R_store)
-          case ("TVDRK3")
+          case ("TVDRK2","TVDRK3")
             call dealloc(U_store)
           case default
             Fatal_error
@@ -169,8 +169,16 @@ module update
               call update_with("conservative", 1.0  , 1.) 
               qp = 0.75*U_store + 0.25*qp
               call get_total_conservative_Residue()
-              call update_with("conservative", 0.5  , 1.) 
+              call update_with("conservative", 1.0  , 1.) 
               qp = (1./3.)*U_store + (2./3.)*qp
+            case ("TVDRK2")
+              U_store = qp
+              call get_total_conservative_Residue()
+              call compute_time_step()
+              call update_with("conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue()
+              call update_with("conservative", 1.0  , 1.) 
+              qp = 0.5*U_store + 0.5*qp
             case default
               Fatal_error
         end select

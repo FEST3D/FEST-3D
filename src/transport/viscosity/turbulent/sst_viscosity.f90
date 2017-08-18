@@ -86,7 +86,7 @@ module sst_viscosity
       ! populating ghost cell
       do i = 1,6
         select case(id(i))
-          case(-4:-1,-6)
+          case(-4:-1,-6,-8)
             call copy1(sst_mu, "symm", face_names(i))
           case(-5)
             call copy1(sst_mu, "anti", face_names(i))

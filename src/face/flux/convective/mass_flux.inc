@@ -16,7 +16,7 @@
         F_minus(1)=0
       case(-1,-3)
         merror = merror + (F_plus(1)+F_minus(1))*fA(i,j,k)
-      case(-2,-4)
+      case(-2,-4,-8)
         merror = merror - (F_plus(1)+F_minus(1))*fA(i,j,k)
       case(0:)
         continue
