@@ -242,9 +242,9 @@ module kkl_source
             eta = density(i,j,k)*dist(i,j,k)*sqrt(0.3*tk(i,j,k))/(20*mu(i,j,k))
             fphi = (1 + cd1*eta)/(1 + eta**4)
             cphi2 = zeta3
-            cphi1 = (zeta1 - zeta2*((tkl(i,j,k)/(tk(i,j,k)*Lvk))**2))
+            cphi1 = (zeta1 - zeta2*((tkl(i,j,k)/max(tk(i,j,k)*Lvk,1.e-20))**2))
 
-            P_kl = cphi1*tkl(i,j,k)*P_k/tk(i,j,k)
+            P_kl = cphi1*tkl(i,j,k)*P_k/max(tk(i,j,k),1.e-20)
             D_kl = cphi2*density(i,j,k)*(tk(i,j,k)**1.5)
 
 

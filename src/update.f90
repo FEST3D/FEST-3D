@@ -246,7 +246,7 @@ module update
                       fphi = (1+cd1*eta)/(1+eta**4)
                       R(5) = R(5) - (gm-1.)*TKE_residue(i,j,k)
                       R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
-                             + (1./(1.+((2.5*((cmu**0.75)*u1(1)*(u1(6)**1.5)/u1(7))&
+                             + (1./(1.+((2.5*((cmu**0.75)*u1(1)*(u1(6)**1.5)/max(u1(7),1.e-20))&
                              +(2*mu(i,j,k)/dist(i,j,k)**2))*delta_t(i,j,k))))*TKE_residue(i,j,k)/u1(1)
                       R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
                              +(1./(1.+(6*mu(i,j,k)*fphi/dist(i,j,k)**2)*delta_t(i,j,k)))*kl_residue(i,j,k)/u1(1)
@@ -322,7 +322,7 @@ module update
                     case('kkl')
                       eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
                       fphi = (1+cd1*eta)/(1+eta**4)
-                      R(6) = R(6)/(1.+((2.5*((cmu**0.75)*sqrt(u1(1))*(u1(6)**1.5)/u1(7))&
+                      R(6) = R(6)/(1.+((2.5*((cmu**0.75)*sqrt(u1(1))*(u1(6)**1.5)/max(u1(7),1.e-20))&
                              +(2*mu(i,j,k)/(dist(i,j,k)**2)))*delta_t(i,j,k)))
                       R(7) = R(7)/(1.+(6*mu(i,j,k)*fphi/(dist(i,j,k)**2))*delta_t(i,j,k))
                     case DEFAULT

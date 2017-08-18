@@ -38,6 +38,7 @@ module kkl_viscosity
         do j = 1,jmx-1
           do i = 1,imx-1
             kkl_mu(i,j,k) = c*density(i,j,k)*tkl(i,j,k)/(max(sqrt(tk(i,j,k)),1.e-20))
+            if(tkl(i,j,k)<1.e-14 .or. tk(i,j,k)<1.e-14) kkl_mu(i,j,k) =0.0 
           end do
         end do
       end do

@@ -77,7 +77,7 @@ module sst_viscosity
             vort = sqrt(wijwij)
 
             NUM = density(i,j,k)*a1*tk(i,j,k)
-            DENOM = max((a1*tw(i,j,k)), vort*F)
+            DENOM = max(max((a1*tw(i,j,k)), vort*F),1.e-20)
             sst_mu(i,j,k) = NUM/DENOM
           end do
         end do
