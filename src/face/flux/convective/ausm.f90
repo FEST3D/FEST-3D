@@ -112,6 +112,7 @@ module ausm
             real :: scrD_plus, scrD_minus
             real :: sound_speed_avg, face_normal_speeds
             real :: temp_c
+            integer :: normal_tag=1
             integer :: id
 
             !include compute_flux_variable and select.inc before select

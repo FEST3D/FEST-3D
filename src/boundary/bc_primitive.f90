@@ -19,6 +19,9 @@ module bc_primitive
   use global_vars, only: fixed_tk
   use global_vars, only: fixed_tw
   use global_vars, only: fixed_tkl
+  use global_vars, only: fixed_wall_temperature
+  use global_vars, only: fixed_Ttemperature
+  use global_vars, only: fixed_Tpressure
   use global_vars, only: mu_ref
   use global_vars, only: R_gas
   use global_vars, only: sutherland_temp
@@ -101,13 +104,13 @@ module bc_primitive
             call supersonic_outlet(face)
 
           case(-3)
-            call pressure_inlet(face)
+            call subsonic_inlet(face)
 
           case(-4)
-            call pressure_outlet(face)
+            call subsonic_outlet(face)
 
           case(-5)
-            call adiabatic_wall(face)
+            call wall(face)
 
           case(-6)
             call slip_wall(face)
@@ -182,7 +185,7 @@ module bc_primitive
       end subroutine supersonic_outlet
 
 
-      subroutine pressure_inlet(face)
+      subroutine subsonic_inlet(face)
         implicit none
         character(len=*), intent(in) :: face
         call fix(density , fixed_density , face)
@@ -190,7 +193,6 @@ module bc_primitive
         call fix(y_speed , fixed_y_speed , face)
         call fix(z_speed , fixed_z_speed , face)
         call copy3(pressure, "flat", face)
-        if(face=='imin') density(0,:,:)=pressure(1,:,:)/(R_gas*300.)
         select case (turbulence)
           case('none')
             !do nothing
@@ -207,10 +209,10 @@ module bc_primitive
            ! call turbulence_read_error()
            Fatal_error
         end select
-      end subroutine pressure_inlet
+      end subroutine subsonic_inlet
 
 
-      subroutine pressure_outlet(face)
+      subroutine subsonic_outlet(face)
         implicit none
         character(len=*), intent(in) :: face
         call copy3(density, "flat", face)
@@ -232,15 +234,15 @@ module bc_primitive
            ! call turbulence_read_error()
            Fatal_error
         end select
-      end subroutine pressure_outlet
+      end subroutine subsonic_outlet
 
-      subroutine adiabatic_wall(face)
+      subroutine wall(face)
         implicit none
         character(len=*), intent(in) :: face
-        call copy3(density , "symm",  face)
         call copy3(pressure, "symm",  face)
+        call temp_based_density(fixed_wall_temperature, face)
         call no_slip(face)
-      end subroutine adiabatic_wall
+      end subroutine wall
 
 
       subroutine slip_wall(face)
@@ -467,24 +469,36 @@ module bc_primitive
                 u = x_speed(i,j,k)
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
+                !uf = x_speed(i-1,j,k)
+                !vf = y_speed(i-1,j,k)
+                !wf = z_speed(i-1,j,k)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                !cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
                 Mexp = sqrt(u**2 + v**2 + w**2)/cexp
                 ! negative normal because of the way they are stored
-                Uninf = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
-                Unexp = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
+                Unexp = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
+                Uninf = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
-                Unb   =         0.5*(Rexp + Rinf)
-                Cb    = 0.25*(gm-1.)*(Rexp + Rinf)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
                   x_speed(i-1,j,k) = x_speed(i,j,k) + vel_diff*(-xnx(i,j,k))
                   y_speed(i-1,j,k) = y_speed(i,j,k) + vel_diff*(-xny(i,j,k))
                   z_speed(i-1,j,k) = z_speed(i,j,k) + vel_diff*(-xnz(i,j,k))
-                  Mb = sqrt(x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/Cb
-                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
-                  Pressure(i-1,j,k) = pressure(i,j,k)*Ratio**gm
-                   density(i-1,j,k) =  density(i,j,k)*Ratio
+                  Mb = (x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/(Cb*Cb)
+                 ! Ratio = ((1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
+                 ! Pressure(i,j,k) = pressure(i,j-1,k)*Ratio**gm
+                 !  density(i,j,k) =  density(i,j-1,k)*Ratio
+                 !Ratio = ((cb/cexp)**(2./(gm-1.)))
+                 ! Pressure(i,j,k) = pressure(i,j-1,k)*(Ratio**gm)
+                 ! density(i,j,k)  = density(i,j-1,k)*Ratio
+                 !Ratio = pressure(i,j,k)/(density(i,j,k)**(gm))
+                 !density(i-1,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
+                 !pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
+                 pressure(i-1,j,k) = 1.02828*pressure_inf/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                 density(i-1,j,k) = gm*pressure(i-1,j,k)/(Cb*Cb)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -504,10 +518,19 @@ module bc_primitive
                   x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-xnx(i,j,k))
                   y_speed(i-1,j,k) = y_speed_inf + vel_diff*(-xny(i,j,k))
                   z_speed(i-1,j,k) = z_speed_inf + vel_diff*(-xnz(i,j,k))
-                  Mb = sqrt(x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/Cb
-                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
-                  Pressure(i-1,j,k) = pressure_inf*Ratio**gm
-                   density(i-1,j,k) =  density_inf*Ratio
+                  Mb = (x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/(Cb*Cb)
+                 ! Ratio = ((1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
+                 ! Pressure(i,j,k) = pressure_inf*Ratio**gm
+                 !  density(i,j,k) =  density_inf*Ratio
+                 !Ratio = ((cb/cinf)**(2./(gm-1.)))
+                 !Pressure(i,j,k) = pressure_inf*(Ratio**gm)
+                 !density(i,j,k)  = density_inf*Ratio
+                 !Ratio = pressure(i-1,j,k)/(density(i-1,j,k)**(gm))
+                 !density(i-1,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
+                 !pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
+                 pressure(i-1,j,k) = 1.02828*Pressure_inf/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                 density(i-1,j,k) = gm*pressure(i-1,j,k)/(Cb*Cb)
+
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -528,6 +551,8 @@ module bc_primitive
               end do
             end do
           end do
+          qp(imx+1,:,:,:) = qp(imx,:,:,:)
+          qp(imx+2,:,:,:) = qp(imx,:,:,:)
          case("imax")
           do k = 1,kmx-1
             do j = 1,jmx-1
@@ -535,25 +560,34 @@ module bc_primitive
                 u = x_speed(i-1,j,k)
                 v = y_speed(i-1,j,k)
                 w = z_speed(i-1,j,k)
+                uf = x_speed(i,j,k)
+                vf = y_speed(i,j,k)
+                wf = z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
+                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 Mexp = sqrt(u**2 + v**2 + w**2)/cexp
                 ! negative normal because of the way they are stored
-                Uninf = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
-                Unexp = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
+                Unexp = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
+                Uninf = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
-                Unb   =         0.5*(Rexp + Rinf)
+                Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
-                print*, Unb, Cb
-            !    if(Unb > 0.)then
+                if(Unb > 0.)then
                   vel_diff = Unb - Unexp
                   x_speed(i,j,k) = x_speed(i-1,j,k) + vel_diff*(xnx(i,j,k))
                   y_speed(i,j,k) = y_speed(i-1,j,k) + vel_diff*(xny(i,j,k))
                   z_speed(i,j,k) = z_speed(i-1,j,k) + vel_diff*(xnz(i,j,k))
-                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                  Ratio = ((1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-                  Pressure(i,j,k) = pressure(i-1,j,k)*Ratio**gm
-                   density(i,j,k) =  density(i-1,j,k)*Ratio
+                 ! Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                 ! Ratio = ((1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
+                 ! Pressure(i,j,k) = pressure(i,j-1,k)*Ratio**gm
+                 !  density(i,j,k) =  density(i,j-1,k)*Ratio
+                 !Ratio = ((cb/cexp)**(2./(gm-1.)))
+                 ! Pressure(i,j,k) = pressure(i,j-1,k)*(Ratio**gm)
+                 ! density(i,j,k)  = density(i,j-1,k)*Ratio
+                 Ratio = pressure(i-1,j,k)/(density(i-1,j,k)**(gm))
+                 density(i,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
+                 pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -568,32 +602,39 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
-             !   else
-              !    vel_diff = Unb - Uninf
-              !    x_speed(i,j,k) = x_speed_inf + vel_diff*(xnx(i,j,k))
-              !    y_speed(i,j,k) = y_speed_inf + vel_diff*(xny(i,j,k))
-              !    z_speed(i,j,k) = z_speed_inf + vel_diff*(xnz(i,j,k))
-              !    Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-              !    Ratio = ((1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-              !    Pressure(i,j,k) = pressure_inf*Ratio**gm
-              !     density(i,j,k) =  density_inf*Ratio
-              !    select case (turbulence)
-              !      case('none')
-              !        !do nothing
-              !        continue
-              !      case('sst')
-              !        call check_if_value_fixed("sst")
-              !        call fix(tk, fixed_tk, face)
-              !        call fix(tw, fixed_tw, face)
-              !      case('kkl')
-              !        call check_if_value_fixed("kkl")
-              !        call fix(tk, fixed_tk, face)
-              !        call fix(tkl, fixed_tkl, face)
-              !      case DEFAULT
-              !        !call turbulence_read_error()
-              !        Fatal_error
-              !    end select
-          !      end if
+                else
+                  vel_diff = Unb - Uninf
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(xnx(i,j,k))
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(xny(i,j,k))
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(xnz(i,j,k))
+                 ! Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                 ! Ratio = ((1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
+                 ! Pressure(i,j,k) = pressure_inf*Ratio**gm
+                 !  density(i,j,k) =  density_inf*Ratio
+                 !Ratio = ((cb/cinf)**(2./(gm-1.)))
+                 !Pressure(i,j,k) = pressure_inf*(Ratio**gm)
+                 !density(i,j,k)  = density_inf*Ratio
+                 Ratio = pressure(i,j,k)/(density(i,j,k)**(gm))
+                 density(i,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
+                 pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
+
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call check_if_value_fixed("sst")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tw, fixed_tw, face)
+                    case('kkl')
+                      call check_if_value_fixed("kkl")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tkl, fixed_tkl, face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                end if
               end do
             end do
           end do
@@ -674,47 +715,64 @@ module bc_primitive
                 u = x_speed(i,j-1,k)
                 v = y_speed(i,j-1,k)
                 w = z_speed(i,j-1,k)
+                uf = x_speed(i,j,k)
+                vf = y_speed(i,j,k)
+                wf = z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 Mexp = sqrt(u**2 + v**2 + w**2)/cexp
                 ! negative normal because of the way they are stored
-                Uninf = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
-                Unexp = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
+                Unexp = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
+                Uninf = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
-                Unb   =         0.5*(Rexp + Rinf)
+                Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
-               ! if(Unb > 0.)then
-               !   vel_diff = Unb - Unexp
-               !   x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(ynx(i,j,k))
-               !   y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(yny(i,j,k))
-               !   z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(ynz(i,j,k))
-               !   Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-               !   Ratio = ((1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-               !  ! Pressure(i,j,k) = pressure(i,j-1,k)*Ratio**gm
-               !  !  density(i,j,k) =  density(i,j-1,k)*Ratio
-               !   select case (turbulence)
-               !     case('none')
-               !       !do nothing
-               !       continue
-               !     case('sst')
-               !       call copy3(tk, "flat", face)
-               !       call copy3(tw, "flat", face)
-               !     case('kkl')
-               !       call copy3(tk, "flat", face)
-               !       call copy3(tkl, "flat", face)
-               !     case DEFAULT
-               !       !call turbulence_read_error()
-               !       Fatal_error
-               !   end select
-               ! else
+                if(Unb > 0.)then
+                  vel_diff = Unb - Unexp
+                  x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(ynx(i,j,k))
+                  y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(yny(i,j,k))
+                  z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(ynz(i,j,k))
+                 ! Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                 ! Ratio = ((1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
+                 ! Pressure(i,j,k) = pressure(i,j-1,k)*Ratio**gm
+                 !  density(i,j,k) =  density(i,j-1,k)*Ratio
+                 !Ratio = ((cb/cexp)**(2./(gm-1.)))
+                 ! Pressure(i,j,k) = pressure(i,j-1,k)*(Ratio**gm)
+                 ! density(i,j,k)  = density(i,j-1,k)*Ratio
+                 Ratio = pressure(i,j-1,k)/(density(i,j-1,k)**(gm))
+                 density(i,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
+                 pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call copy3(tk, "flat", face)
+                      call copy3(tw, "flat", face)
+                    case('kkl')
+                      call copy3(tk, "flat", face)
+                      call copy3(tkl, "flat", face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                else
                   vel_diff = Unb - Uninf
                   x_speed(i,j,k) = x_speed_inf + vel_diff*(ynx(i,j,k))
                   y_speed(i,j,k) = y_speed_inf + vel_diff*(yny(i,j,k))
                   z_speed(i,j,k) = z_speed_inf + vel_diff*(ynz(i,j,k))
-                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                  Ratio = ((1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-                  Pressure(i,j,k) = pressure_inf*Ratio**gm
-                   density(i,j,k) =  density_inf*Ratio
+                 ! Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                 ! Ratio = ((1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
+                 ! Pressure(i,j,k) = pressure_inf*Ratio**gm
+                 !  density(i,j,k) =  density_inf*Ratio
+                 !Ratio = ((cb/cinf)**(2./(gm-1.)))
+                 !Pressure(i,j,k) = pressure_inf*(Ratio**gm)
+                 !density(i,j,k)  = density_inf*Ratio
+                 Ratio = pressure_inf/(density_inf**(gm))
+                 density(i,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
+                 pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
+
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -731,7 +789,7 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
-               ! end if
+                end if
               end do
             end do
           end do
@@ -879,5 +937,170 @@ module bc_primitive
       end select
 
     end subroutine far_field
+
+    subroutine temp_based_density(temperature, face)
+      implicit none
+      real, dimension(1:6)     , intent(in)  :: temperature
+      character(len=*)         , intent(in)  :: face
+      real :: stag_temp
+      integer :: i,j,k
+
+      select case(face)
+        case("imin")
+          if(temperature(1)<0.0)then
+            do k = 1,kmx-1
+              do j = 1,jmx-1
+                do i = 1,1
+                  stag_temp = (pressure(i,j,k)/(R_gas*density(i,j,k)))*(1 + (0.5*(gm-1.)*gm*pressure(i,j,k)/density(i,j,k)))
+                  density(i-1,j,k) = pressure(i-1,j,k)/(R_gas*stag_temp)
+                  density(i-2,j,k) = pressure(i-2,j,k)/(R_gas*stag_temp)
+                  density(i-3,j,k) = pressure(i-3,j,k)/(R_gas*stag_temp)
+                end do
+              end do
+            end do
+          elseif(temperature(1)>0.0)then
+            do k = 1,kmx-1
+              do j = 1,jmx-1
+                do i = 1,1
+                  density(i-1,j,k) = pressure(i-1,j,k)/(R_gas*(2*temperature(1)-(pressure(i+0,j,k)/(R_gas*density(i+0,j,k)))))
+                  density(i-2,j,k) = pressure(i-2,j,k)/(R_gas*(2*temperature(1)-(pressure(i+1,j,k)/(R_gas*density(i+1,j,k)))))
+                  density(i-3,j,k) = pressure(i-3,j,k)/(R_gas*(2*temperature(1)-(pressure(i+2,j,k)/(R_gas*density(i+2,j,k)))))
+                end do
+              end do
+            end do
+          else
+            call copy3(density , "symm",  face)
+          end if
+         case("imax")
+          if(temperature(1)<0.0)then
+            do k = 1,kmx-1
+              do j = 1,jmx-1
+                do i = imx-1,imx-1
+                  stag_temp = (pressure(i,j,k)/(R_gas*density(i,j,k)))*(1 + (0.5*(gm-1.)*gm*pressure(i,j,k)/density(i,j,k)))
+                  density(i+1,j,k) = pressure(i+1,j,k)/(R_gas*stag_temp)
+                  density(i+2,j,k) = pressure(i+2,j,k)/(R_gas*stag_temp)
+                  density(i+3,j,k) = pressure(i+3,j,k)/(R_gas*stag_temp)
+                end do
+              end do
+            end do
+          elseif(temperature(1)>0.0)then
+            do k = 1,kmx-1
+              do j = 1,jmx-1
+                do i = imx-1,imx-1
+                  density(i+1,j,k) = pressure(i+1,j,k)/(R_gas*(2*temperature(1)-(pressure(i-0,j,k)/(R_gas*density(i-0,j,k)))))
+                  density(i+2,j,k) = pressure(i+2,j,k)/(R_gas*(2*temperature(1)-(pressure(i-1,j,k)/(R_gas*density(i-1,j,k)))))
+                  density(i+3,j,k) = pressure(i+3,j,k)/(R_gas*(2*temperature(1)-(pressure(i-2,j,k)/(R_gas*density(i-2,j,k)))))
+                end do
+              end do
+            end do
+          else
+            call copy3(density , "symm",  face)
+          end if
+        case("jmin")
+          if(temperature(1)<0.0)then
+            do k = 1,kmx-1
+              do j = 1,1
+                do i = 1,imx-1
+                  stag_temp = (pressure(i,j,k)/(R_gas*density(i,j,k)))*(1 + (0.5*(gm-1.)*gm*pressure(i,j,k)/density(i,j,k)))
+                  density(i,j-1,k) = pressure(i,j-1,k)/(R_gas*stag_temp)
+                  density(i,j-2,k) = pressure(i,j-2,k)/(R_gas*stag_temp)
+                  density(i,j-3,k) = pressure(i,j-3,k)/(R_gas*stag_temp)
+                end do
+              end do
+            end do
+          elseif(temperature(1)>0.0)then
+            do k = 1,kmx-1
+              do j = 1,1
+                do i = 1,imx-1
+                  density(i,j-1,k) = pressure(i,j-1,k)/(R_gas*(2*temperature(1)-(pressure(i,j+0,k)/(R_gas*density(i,j+0,k)))))
+                  density(i,j-2,k) = pressure(i,j-2,k)/(R_gas*(2*temperature(1)-(pressure(i,j+1,k)/(R_gas*density(i,j+1,k)))))
+                  density(i,j-3,k) = pressure(i,j-3,k)/(R_gas*(2*temperature(1)-(pressure(i,j+2,k)/(R_gas*density(i,j+2,k)))))
+                end do
+              end do
+            end do
+          else
+            call copy3(density , "symm",  face)
+          end if
+        case("jmax")
+          if(temperature(1)<0.0)then
+            do k = 1,kmx-1
+              do j = jmx-1,jmx-1
+                do i = 1,imx-1
+                  stag_temp = (pressure(i,j,k)/(R_gas*density(i,j,k)))*(1 + (0.5*(gm-1.)*gm*pressure(i,j,k)/density(i,j,k)))
+                  density(i,j+1,k) = pressure(i,j+1,k)/(R_gas*stag_temp)
+                  density(i,j+2,k) = pressure(i,j+2,k)/(R_gas*stag_temp)
+                  density(i,j+3,k) = pressure(i,j+3,k)/(R_gas*stag_temp)
+                end do
+              end do
+            end do
+          elseif(temperature(1)>0.0)then
+            do k = 1,kmx-1
+              do j = jmx-1,jmx-1
+                do i = 1,imx-1
+                  density(i,j+1,k) = pressure(i,j+1,k)/(R_gas*(2*temperature(1)-(pressure(i,j-0,k)/(R_gas*density(i,j-0,k)))))
+                  density(i,j+2,k) = pressure(i,j+2,k)/(R_gas*(2*temperature(1)-(pressure(i,j-1,k)/(R_gas*density(i,j-1,k)))))
+                  density(i,j+3,k) = pressure(i,j+3,k)/(R_gas*(2*temperature(1)-(pressure(i,j-2,k)/(R_gas*density(i,j-2,k)))))
+                end do
+              end do
+            end do
+          else
+            call copy3(density , "symm",  face)
+          end if
+        case("kmin")
+          if(temperature(1)<0.0)then
+            do k = 1,1
+              do j = 1,jmx-1
+                do i = 1,imx-1
+                  stag_temp = (pressure(i,j,k)/(R_gas*density(i,j,k)))*(1 + (0.5*(gm-1.)*gm*pressure(i,j,k)/density(i,j,k)))
+                  density(i,j,k-1) = pressure(i,j,k-1)/(R_gas*stag_temp)
+                  density(i,j,k-2) = pressure(i,j,k-2)/(R_gas*stag_temp)
+                  density(i,j,k-3) = pressure(i,j,k-3)/(R_gas*stag_temp)
+                end do
+              end do
+            end do
+          elseif(temperature(1)>0.0)then
+            do k = 1,1
+              do j = 1,jmx-1
+                do i = 1,imx-1
+                  density(i,j,k-1) = pressure(i,j,k-1)/(R_gas*(2*temperature(1)-(pressure(i,j,k+0)/(R_gas*density(i,j,k+0)))))
+                  density(i,j,k-2) = pressure(i,j,k-2)/(R_gas*(2*temperature(1)-(pressure(i,j,k+1)/(R_gas*density(i,j,k+1)))))
+                  density(i,j,k-3) = pressure(i,j,k-3)/(R_gas*(2*temperature(1)-(pressure(i,j,k+2)/(R_gas*density(i,j,k+2)))))
+                end do
+              end do
+            end do
+          else
+            call copy3(density , "symm",  face)
+          end if
+        case("kmax")
+          if(temperature(1)<0.0)then
+            do k = kmx-1,kmx-1
+              do j = 1,jmx-1
+                do i = 1,imx-1
+                  stag_temp = (pressure(i,j,k)/(R_gas*density(i,j,k)))*(1 + (0.5*(gm-1.)*gm*pressure(i,j,k)/density(i,j,k)))
+                  density(i,j,k+1) = pressure(i,j,k+1)/(R_gas*stag_temp)
+                  density(i,j,k+2) = pressure(i,j,k+2)/(R_gas*stag_temp)
+                  density(i,j,k+3) = pressure(i,j,k+3)/(R_gas*stag_temp)
+                end do
+              end do
+            end do
+          elseif(temperature(1)>0.0)then
+            do k = kmx-1,kmx-1
+              do j = 1,jmx-1
+                do i = 1,imx-1
+                  density(i,j,k+1) = pressure(i,j,k+1)/(R_gas*(2*temperature(1)-(pressure(i,j,k-0)/(R_gas*density(i,j,k-0)))))
+                  density(i,j,k+2) = pressure(i,j,k+2)/(R_gas*(2*temperature(1)-(pressure(i,j,k-1)/(R_gas*density(i,j,k-1)))))
+                  density(i,j,k+3) = pressure(i,j,k+3)/(R_gas*(2*temperature(1)-(pressure(i,j,k-2)/(R_gas*density(i,j,k-2)))))
+                end do
+              end do
+            end do
+          else
+            call copy3(density , "symm",  face)
+          end if
+        case DEFAULT
+          !print*, "ERROR: wrong face for boundary condition"
+          Fatal_error
+      end select
+
+    end subroutine temp_based_density
 
 end module bc_primitive

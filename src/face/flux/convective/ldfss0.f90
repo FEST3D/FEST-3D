@@ -110,6 +110,7 @@ module ldfss0
             real :: scrD_plus, scrD_minus
             real :: sound_speed_avg, face_normal_speeds
             real :: M_ldfss, M_plus_ldfss, M_minus_ldfss
+            integer:: normal_tag
             integer:: id
             !include compute_flux_variable_and_select.inc before select         
             !as it contains variables deceleration                              

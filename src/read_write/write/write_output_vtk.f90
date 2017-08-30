@@ -282,7 +282,7 @@ module write_output_vtk
         do k = 1, kmx - 1
          do j = 1, jmx - 1
           do i = 1, imx - 1
-            write(OUT_FILE_UNIT, fmt='(f0.16, a, f0.16, a, f0.16)') &
+            write(OUT_FILE_UNIT, fmt='(ES27.16E4, a, ES27.16E4, a, ES27.16E4)') &
                 x_speed(i, j, k), ' ', y_speed(i, j, k), ' ', z_speed(i, j, k)
           end do
          end do
@@ -427,7 +427,7 @@ module write_output_vtk
         do k = 1, kmx - 1
          do j = 1, jmx - 1
           do i = 1, imx - 1
-            write(OUT_FILE_UNIT, fmt='(f0.16)') var(i, j, k)
+            write(OUT_FILE_UNIT, fmt='(ES25.16E4)') var(i, j, k)
           end do
          end do
         end do
@@ -438,7 +438,7 @@ module write_output_vtk
         do k = 1, kmx - 1
          do j = 1, jmx - 1
           do i = 1, imx - 1
-            write(line, "(f0.16)") var(i,j,k)
+            write(line, "(ES28.16E4)") var(i,j,k)
             write(OUT_FILE_UNIT) trim(line)//newline
           end do
          end do

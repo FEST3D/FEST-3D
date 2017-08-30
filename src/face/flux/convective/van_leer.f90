@@ -111,6 +111,7 @@ module van_leer
             real :: c_plus, c_minus
             real :: scrD_plus, scrD_minus
             real :: sound_speed_avg, face_normal_speeds
+            integer :: normal_tag
             integer :: id
             !include compute_flux_variable and select.inc before select
             !as it contains variables deceleration

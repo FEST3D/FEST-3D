@@ -79,6 +79,7 @@ module update
     real, dimension(:)      , allocatable :: u1
     real, dimension(:)      , allocatable :: u2
     real, dimension(:)      , allocatable :: R
+    real :: eps=0.05
 
     ! Public methods
     public :: setup_update
@@ -306,7 +307,7 @@ module update
                     case DEFAULT
                       KE = 0.
                   end select
-                  u1(5) = (u1(5)/(gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1) + KE
+                  u1(5) = (u1(5)/(gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1) !+ KE
 
                  ! get R
                   R(1:n_var) = residue(i,j,k,1:n_var) 
@@ -347,17 +348,34 @@ module update
                     case DEFAULT
                       KE = 0.
                   end select
-                  u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) - KE)
+                  u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) )!- KE)
 
                   !check solution for non pyhysical results
                   if((u2(1) < 0.) .or. (u2(5)) < 0. .or. any(isnan(u2)))then
+                    print*, u2(:)
+                    print*, "R: ", R
+                    print*, "old ", U1
                     Fatal_error
                   else !update
                     qp(i,j,k,1:5) = u2(1:5)
                     select case(trim(turbulence))
                      case('sst', 'kkl')
-                       if(u2(6)>0.) qp(i,j,k,6) = u2(6)
-                       if(u2(7)>0.) qp(i,j,k,7) = u2(7)
+                       if(u2(6)>=0.) then
+                         qp(i,j,k,6) = u2(6)
+                       else
+                       !  qp(i,j,k,6) = 1e-14
+                       !  qp(i,j,k,6) = (qp(i-1,j,k,6) + qp(i+1,j,k,6) &
+                       !                +qp(i,j-1,k,6) + qp(i,j+1,k,6) &
+                       !                )/4
+                       end if
+                       if(u2(7)>=0.) then
+                        qp(i,j,k,7) = u2(7)
+                       else
+                      !   qp(i,j,k,7) = 1e-14
+                      !   qp(i,j,k,7) = (qp(i-1,j,k,7) + qp(i+1,j,k,7) &
+                      !                 +qp(i,j-1,k,7) + qp(i,j+1,k,7) &
+                      !                 )/4
+                       end if
                      case DEFAULT
                        ! do nothing
                        continue

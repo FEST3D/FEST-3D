@@ -26,6 +26,9 @@ module read_bc
   use global_vars, only: fixed_te
   use global_vars, only: fixed_tv
   use global_vars, only: fixed_tkl
+  use global_vars, only: fixed_Tpressure
+  use global_vars, only: fixed_Ttemperature
+  use global_vars, only: fixed_wall_temperature
   use global_vars, only: process_id
   use global_vars, only: turbulence
   use layout     , only: bc_file
@@ -83,6 +86,15 @@ module read_bc
             case ("FIX_PRESSURE")
               call set_value(fixed_pressure, fix_val, pressure_inf, count, ios)
 
+            case ("WALL_TEMPERATURE")
+              call set_value(fixed_wall_temperature, fix_val, 0.0, count, ios)
+
+            case ("TOTAL_TEMPERATURE")
+              call set_value(fixed_Ttemperature, fix_val, 0.0, count, ios)
+
+            case ("TOTAL_PRESSURE")
+              call set_value(fixed_Tpressure, fix_val, 0.0, count, ios)
+
           end select
 
           select case (turbulence)
@@ -119,6 +131,8 @@ module read_bc
           exit
         end if
       end do
+
+      print*, "SET Wall Temperature: ", fixed_wall_temperature
     end subroutine get_fixed_values
 
     subroutine set_value(fixed_var, fix_val, inf_val, count, ios)

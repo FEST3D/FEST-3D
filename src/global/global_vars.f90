@@ -308,6 +308,9 @@ module global_vars
   real, dimension(6) :: fixed_te       = 0.
   real, dimension(6) :: fixed_tv       = 0.
   real, dimension(6) :: fixed_tkl       = 0.
+  real, dimension(6) :: fixed_wall_temperature  = 0.
+  real, dimension(6) :: fixed_Tpressure         = 0.
+  real, dimension(6) :: fixed_Ttemperature      = 0.
 
   ! variable for post_processing
   integer :: N_blocks
