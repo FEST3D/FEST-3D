@@ -25,6 +25,8 @@ module read_output
   use global_vars, only : previous_flow_type
 
   use global_vars, only : mu_ref
+  use global_vars, only : read_level
+  use read_multi_level_vtk, only: read_file_multi_vtk => read_file
 
   use read_output_vtk, only : read_file_vtk => read_file
   use read_output_tec, only : read_file_tec => read_file
@@ -52,6 +54,7 @@ module read_output
       call read_restart_file()
       call verify_read_control()
         
+      if(read_level ==1) then
         select case (read_file_format)
           
           case ('vtk')
@@ -64,9 +67,13 @@ module read_output
           call dmsg(5, 'read_output', 'read_file',&
             'ERROR: read file format not recognised. READ format -> '//read_file_format)
         end select
+      else 
+        call read_file_multi_vtk()
+      end if
 
       call close_file()
     end subroutine read_file
+
 
     subroutine setup_file()
       implicit none

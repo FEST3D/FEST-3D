@@ -35,6 +35,7 @@ module global_vars
   integer :: current_iter       ! current iteration number
 
   !write controls
+  integer :: read_level=1
   integer :: r_count=0
   integer :: w_count=0
   integer :: res_write_interval                      ! resnorm write interval

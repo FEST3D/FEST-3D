@@ -25,6 +25,8 @@ module update
   use global_vars, only : qp_inf
   use global_vars, only : dist
   use global_vars, only : mu
+  use global_vars, only : tk_inf
+  use global_vars, only : tkl_inf
 
   use global_vars, only : time_stepping_method
   use global_vars, only : time_step_accuracy
@@ -363,18 +365,19 @@ module update
                        if(u2(6)>=0.) then
                          qp(i,j,k,6) = u2(6)
                        else
-                       !  qp(i,j,k,6) = 1e-14
-                       !  qp(i,j,k,6) = (qp(i-1,j,k,6) + qp(i+1,j,k,6) &
-                       !                +qp(i,j-1,k,6) + qp(i,j+1,k,6) &
+                       !  qp(i,j,k,6) = tk_inf
+                       !  qp(i,j,k,6) = (max(qp(i-1,j,k,6),0.) + max(qp(i+1,j,k,6),0.) &
+                       !                +max(qp(i,j-1,k,6),0.) + max(qp(i,j+1,k,6),0.) &
                        !                )/4
+                       !  qp(i,j,k,6) = 1.e-3*maxval(qp(i-1:i+1,j-1:j+1,k-1:k+1,6))
                        end if
                        if(u2(7)>=0.) then
                         qp(i,j,k,7) = u2(7)
                        else
-                      !   qp(i,j,k,7) = 1e-14
-                      !   qp(i,j,k,7) = (qp(i-1,j,k,7) + qp(i+1,j,k,7) &
-                      !                 +qp(i,j-1,k,7) + qp(i,j+1,k,7) &
-                      !                 )/4
+                       !  qp(i,j,k,7) = tkl_inf
+                       !  qp(i,j,k,7) = (max(qp(i-1,j,k,7),0.) + max(qp(i+1,j,k,7),0.) &
+                       !                +max(qp(i,j-1,k,7),0.) + max(qp(i,j+1,k,7),0.) &
+                       !                )/4
                        end if
                      case DEFAULT
                        ! do nothing

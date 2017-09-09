@@ -62,7 +62,7 @@ module muscl
 
         phi = 1.0
 
-        kappa = -1.0
+        kappa = 1./3.
 
         call alloc(x_qp_left, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
@@ -138,7 +138,7 @@ module muscl
             real :: psi1, psi2, fd, bd, r
 
             phi = 1.0
-            kappa = -1.0
+            kappa = 1./3.
 
             do l = 1, n_var
              do k = 1, kmx - 1
@@ -156,17 +156,22 @@ module muscl
 !                psi1 = min(1., (3 - kappa) * r / (1 - kappa)) !minmod
                 psi1 = max(0., min(2*r, (2 + r)/3., 2.))  !koren limiter
 !                psi1 = max(0., min(2*r,1.), min(r,2.))    ! superbee
-                psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
 !                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
 !                psi2 = max(0., min(2*r,1.), min(r,2.))
-                psi2 = (1 - (1 - psi2)*ilimiter_switch )
+                if(l==6  .or. l==7 )then
+                  continue
+                else
+                  psi1 = (1 - (1 - psi1)*ilimiter_switch )
+                  psi2 = (1 - (1 - psi2)*ilimiter_switch )
+                end if
 
                 x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
                 x_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
                     (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
+                !check for turbulent variables
                end do
               end do
              end do
@@ -206,12 +211,19 @@ module muscl
                 psi1 = max(0., min(2*r, (2 + r)/3., 2.))
 !                psi1 = max(0., min(2*r,1.), min(r,2.))
 !                psi1 = min(1., (3 - kappa) * r / (1 - kappa))
-                psi1 = (1 - (1 - psi1)*ilimiter_switch )
+                !psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
 !                psi2 = max(0., min(2*r,1.), min(r,2.))
 !                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
-                psi2 = (1 - (1 - psi2)*ilimiter_switch )
+                !psi2 = (1 - (1 - psi2)*ilimiter_switch )
+                !check for turbulent variables
+                if(l==6 .or. l==7)then
+                  continue
+                else
+                  psi1 = (1 - (1 - psi1)*ilimiter_switch )
+                  psi2 = (1 - (1 - psi2)*ilimiter_switch )
+                end if
 
                 y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
@@ -257,12 +269,19 @@ module muscl
                 psi1 = max(0., min(2*r, (2 + r)/3., 2.))
 !                psi1 = max(0., min(2*r,1.), min(r,2.))
 !                psi1 = min(1., (3 - kappa) * r / (1 - kappa))
-                psi1 = (1 - (1 - psi1)*ilimiter_switch )
+                !psi1 = (1 - (1 - psi1)*ilimiter_switch )
                 r = bd / fd
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
 !                psi2 = max(0., min(2*r,1.), min(r,2.))
 !                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
-                psi2 = (1 - (1 - psi2)*ilimiter_switch )
+                !psi2 = (1 - (1 - psi2)*ilimiter_switch )
+                !check for turbulent variables
+                if(l==6 .or. l==7 )then
+                  continue
+                else
+                  psi1 = (1 - (1 - psi1)*ilimiter_switch )
+                  psi2 = (1 - (1 - psi2)*ilimiter_switch )
+                end if
 
                 z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))

@@ -132,7 +132,6 @@ module read_bc
         end if
       end do
 
-      print*, "SET Wall Temperature: ", fixed_wall_temperature
     end subroutine get_fixed_values
 
     subroutine set_value(fixed_var, fix_val, inf_val, count, ios)

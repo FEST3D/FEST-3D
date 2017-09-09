@@ -446,36 +446,29 @@ module bc_primitive
       real :: cinf, cexp   ! speed of sound
       real :: Rinf, Rexp   ! Riemann invarient
       real :: Uninf, Unexp ! face normal speed
-      real :: Minf, Mexp   ! mach 
       real :: Unb ! normal velocity boundary
       real :: Cb  ! speed of sound boundary
-      real :: Mb  ! mach boundary
       real :: vel_diff
       real :: u,v,w
       real :: uf, vf, wf
       integer :: i,j,k
-      real :: Ratio
+      real :: s
 
-      uf    = x_speed_inf
-      vf    = y_speed_inf
-      wf    = z_speed_inf
-      cinf  = sqrt(gm*pressure_inf/density_inf)
-      Minf  = (vel_mag/cinf)
       select case(face)
         case("imin")
-          do k = 1,kmx
-            do j = 1,jmx
+          do k = 1,kmx-1
+            do j = 1,jmx-1
               do i = 1,1
+                ! interior cell
                 u = x_speed(i,j,k)
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
-                !uf = x_speed(i-1,j,k)
-                !vf = y_speed(i-1,j,k)
-                !wf = z_speed(i-1,j,k)
+                ! ghost cell
+                uf = x_speed(i-1,j,k)
+                vf = y_speed(i-1,j,k)
+                wf = z_speed(i-1,j,k)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                !cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
-                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
-                ! negative normal because of the way they are stored
+                cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
                 Unexp = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
                 Uninf = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -487,18 +480,9 @@ module bc_primitive
                   x_speed(i-1,j,k) = x_speed(i,j,k) + vel_diff*(-xnx(i,j,k))
                   y_speed(i-1,j,k) = y_speed(i,j,k) + vel_diff*(-xny(i,j,k))
                   z_speed(i-1,j,k) = z_speed(i,j,k) + vel_diff*(-xnz(i,j,k))
-                  Mb = (x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/(Cb*Cb)
-                 ! Ratio = ((1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-                 ! Pressure(i,j,k) = pressure(i,j-1,k)*Ratio**gm
-                 !  density(i,j,k) =  density(i,j-1,k)*Ratio
-                 !Ratio = ((cb/cexp)**(2./(gm-1.)))
-                 ! Pressure(i,j,k) = pressure(i,j-1,k)*(Ratio**gm)
-                 ! density(i,j,k)  = density(i,j-1,k)*Ratio
-                 !Ratio = pressure(i,j,k)/(density(i,j,k)**(gm))
-                 !density(i-1,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
-                 !pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
-                 pressure(i-1,j,k) = 1.02828*pressure_inf/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
-                 density(i-1,j,k) = gm*pressure(i-1,j,k)/(Cb*Cb)
+                  s = pressure(i,j,k)/(density(i,j,k)**(gm))
+                  density(i-1,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -518,18 +502,9 @@ module bc_primitive
                   x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-xnx(i,j,k))
                   y_speed(i-1,j,k) = y_speed_inf + vel_diff*(-xny(i,j,k))
                   z_speed(i-1,j,k) = z_speed_inf + vel_diff*(-xnz(i,j,k))
-                  Mb = (x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/(Cb*Cb)
-                 ! Ratio = ((1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-                 ! Pressure(i,j,k) = pressure_inf*Ratio**gm
-                 !  density(i,j,k) =  density_inf*Ratio
-                 !Ratio = ((cb/cinf)**(2./(gm-1.)))
-                 !Pressure(i,j,k) = pressure_inf*(Ratio**gm)
-                 !density(i,j,k)  = density_inf*Ratio
-                 !Ratio = pressure(i-1,j,k)/(density(i-1,j,k)**(gm))
-                 !density(i-1,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
-                 !pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
-                 pressure(i-1,j,k) = 1.02828*Pressure_inf/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
-                 density(i-1,j,k) = gm*pressure(i-1,j,k)/(Cb*Cb)
+                  s = pressure_inf/(density_inf**(gm))
+                  density(i-1,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
 
                   select case (turbulence)
                     case('none')
@@ -551,22 +526,22 @@ module bc_primitive
               end do
             end do
           end do
-          qp(imx+1,:,:,:) = qp(imx,:,:,:)
-          qp(imx+2,:,:,:) = qp(imx,:,:,:)
+          qp(-1,:,:,:) = qp(0,:,:,:)
+          qp(-2,:,:,:) = qp(0,:,:,:)
          case("imax")
           do k = 1,kmx-1
             do j = 1,jmx-1
               do i = imx,imx
+                ! interior cell
                 u = x_speed(i-1,j,k)
                 v = y_speed(i-1,j,k)
                 w = z_speed(i-1,j,k)
+                ! ghost cell
                 uf = x_speed(i,j,k)
                 vf = y_speed(i,j,k)
                 wf = z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
                 cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
-                ! negative normal because of the way they are stored
                 Unexp = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
                 Uninf = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -578,16 +553,9 @@ module bc_primitive
                   x_speed(i,j,k) = x_speed(i-1,j,k) + vel_diff*(xnx(i,j,k))
                   y_speed(i,j,k) = y_speed(i-1,j,k) + vel_diff*(xny(i,j,k))
                   z_speed(i,j,k) = z_speed(i-1,j,k) + vel_diff*(xnz(i,j,k))
-                 ! Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                 ! Ratio = ((1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-                 ! Pressure(i,j,k) = pressure(i,j-1,k)*Ratio**gm
-                 !  density(i,j,k) =  density(i,j-1,k)*Ratio
-                 !Ratio = ((cb/cexp)**(2./(gm-1.)))
-                 ! Pressure(i,j,k) = pressure(i,j-1,k)*(Ratio**gm)
-                 ! density(i,j,k)  = density(i,j-1,k)*Ratio
-                 Ratio = pressure(i-1,j,k)/(density(i-1,j,k)**(gm))
-                 density(i,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
-                 pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
+                  s = pressure(i-1,j,k)/(density(i-1,j,k)**(gm))
+                  density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -607,16 +575,9 @@ module bc_primitive
                   x_speed(i,j,k) = x_speed_inf + vel_diff*(xnx(i,j,k))
                   y_speed(i,j,k) = y_speed_inf + vel_diff*(xny(i,j,k))
                   z_speed(i,j,k) = z_speed_inf + vel_diff*(xnz(i,j,k))
-                 ! Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                 ! Ratio = ((1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-                 ! Pressure(i,j,k) = pressure_inf*Ratio**gm
-                 !  density(i,j,k) =  density_inf*Ratio
-                 !Ratio = ((cb/cinf)**(2./(gm-1.)))
-                 !Pressure(i,j,k) = pressure_inf*(Ratio**gm)
-                 !density(i,j,k)  = density_inf*Ratio
-                 Ratio = pressure(i,j,k)/(density(i,j,k)**(gm))
-                 density(i,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
-                 pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
+                  s = pressure_inf/(density_inf**(gm))
+                  density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
 
                   select case (turbulence)
                     case('none')
@@ -641,30 +602,33 @@ module bc_primitive
           qp(imx+1,:,:,:) = qp(imx,:,:,:)
           qp(imx+2,:,:,:) = qp(imx,:,:,:)
         case("jmin")
-          do k = 1,kmx
+          do k = 1,kmx-1
             do j = 1,1
-              do i = 1,imx
+              do i = 1,imx-1
+                ! interior cell
                 u = x_speed(i,j,k)
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
+                ! ghost cell
+                uf = x_speed(i,j-1,k)
+                vf = y_speed(i,j-1,k)
+                wf = z_speed(i,j-1,k)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
-                ! negative normal because of the way they are stored
-                Uninf = u *(-ynx(i,j,k)) + v *(-yny(i,j,k)) + w *(-ynz(i,j,k))
-                Unexp = uf*(-ynx(i,j,k)) + vf*(-yny(i,j,k)) + wf*(-ynz(i,j,k))
+                cinf = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                Unexp = u *(-ynx(i,j,k)) + v *(-yny(i,j,k)) + w *(-ynz(i,j,k))
+                Uninf = uf*(-ynx(i,j,k)) + vf*(-yny(i,j,k)) + wf*(-ynz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
-                Unb   =         0.5*(Rexp + Rinf)
-                Cb    = 0.25*(gm-1.)*(Rexp + Rinf)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
                   x_speed(i,j-1,k) = x_speed(i,j,k) + vel_diff*(-ynx(i,j,k))
                   y_speed(i,j-1,k) = y_speed(i,j,k) + vel_diff*(-yny(i,j,k))
                   z_speed(i,j-1,k) = z_speed(i,j,k) + vel_diff*(-ynz(i,j,k))
-                  Mb = sqrt(x_speed(i,j-1,k)**2+y_speed(i,j-1,k)**2+z_speed(i,j-1,k)**2)/Cb
-                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
-                  Pressure(i,j-1,k) = pressure(i,j,k)*Ratio**gm
-                   density(i,j-1,k) =  density(i,j,k)*Ratio
+                  s = pressure(i,j,k)/(density(i,j,k)**(gm))
+                  density(i,j-1,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j-1,k) = (density(i,j-1,k)*Cb*Cb/gm)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -684,10 +648,10 @@ module bc_primitive
                   x_speed(i,j-1,k) = x_speed_inf + vel_diff*(-ynx(i,j,k))
                   y_speed(i,j-1,k) = y_speed_inf + vel_diff*(-yny(i,j,k))
                   z_speed(i,j-1,k) = z_speed_inf + vel_diff*(-ynz(i,j,k))
-                  Mb = sqrt(x_speed(i,j-1,k)**2+y_speed(i,j-1,k)**2+z_speed(i,j-1,k)**2)/Cb
-                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
-                  Pressure(i,j-1,k) = pressure_inf*Ratio**gm
-                   density(i,j-1,k) =  density_inf*Ratio
+                  s = pressure_inf/(density_inf**(gm))
+                  density(i,j-1,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j-1,k) = (density(i,j-1,k)*Cb*Cb/gm)
+
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -708,20 +672,22 @@ module bc_primitive
               end do
             end do
           end do
+          qp(:,-1,:,:) = qp(:,0,:,:)
+          qp(:,-2,:,:) = qp(:,0,:,:)
         case("jmax")
           do k = 1,kmx-1
             do j = jmx,jmx
               do i = 1,imx-1
+                ! interior cell
                 u = x_speed(i,j-1,k)
                 v = y_speed(i,j-1,k)
                 w = z_speed(i,j-1,k)
+                ! ghost cell
                 uf = x_speed(i,j,k)
                 vf = y_speed(i,j,k)
                 wf = z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
                 cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
-                ! negative normal because of the way they are stored
                 Unexp = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
                 Uninf = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -733,16 +699,9 @@ module bc_primitive
                   x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(ynx(i,j,k))
                   y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(yny(i,j,k))
                   z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(ynz(i,j,k))
-                 ! Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                 ! Ratio = ((1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-                 ! Pressure(i,j,k) = pressure(i,j-1,k)*Ratio**gm
-                 !  density(i,j,k) =  density(i,j-1,k)*Ratio
-                 !Ratio = ((cb/cexp)**(2./(gm-1.)))
-                 ! Pressure(i,j,k) = pressure(i,j-1,k)*(Ratio**gm)
-                 ! density(i,j,k)  = density(i,j-1,k)*Ratio
-                 Ratio = pressure(i,j-1,k)/(density(i,j-1,k)**(gm))
-                 density(i,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
-                 pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
+                  s = pressure(i,j-1,k)/(density(i,j-1,k)**(gm))
+                  density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -762,16 +721,9 @@ module bc_primitive
                   x_speed(i,j,k) = x_speed_inf + vel_diff*(ynx(i,j,k))
                   y_speed(i,j,k) = y_speed_inf + vel_diff*(yny(i,j,k))
                   z_speed(i,j,k) = z_speed_inf + vel_diff*(ynz(i,j,k))
-                 ! Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                 ! Ratio = ((1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2))**(1./(gm-1.))
-                 ! Pressure(i,j,k) = pressure_inf*Ratio**gm
-                 !  density(i,j,k) =  density_inf*Ratio
-                 !Ratio = ((cb/cinf)**(2./(gm-1.)))
-                 !Pressure(i,j,k) = pressure_inf*(Ratio**gm)
-                 !density(i,j,k)  = density_inf*Ratio
-                 Ratio = pressure_inf/(density_inf**(gm))
-                 density(i,j,k) = (Cb*Cb/(gm*Ratio))**(1./(gm-1.))
-                 pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
+                  s = pressure_inf/(density_inf**(gm))
+                  density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
 
                   select case (turbulence)
                     case('none')
@@ -797,29 +749,32 @@ module bc_primitive
           qp(:,jmx+2,:,:) = qp(:,jmx,:,:)
         case("kmin")
           do k = 1,1
-            do j = 1,jmx
-              do i = 1,imx
+            do j = 1,jmx-1
+              do i = 1,imx-1
+                ! interior cell
                 u = x_speed(i,j,k)
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
+                ! ghost cell
+                uf = x_speed(i,j,k-1)
+                vf = y_speed(i,j,k-1)
+                wf = z_speed(i,j,k-1)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
-                ! negative normal because of the way they are stored
-                Uninf = u *(-znx(i,j,k)) + v *(-zny(i,j,k)) + w *(-znz(i,j,k))
-                Unexp = uf*(-znx(i,j,k)) + vf*(-zny(i,j,k)) + wf*(-znz(i,j,k))
+                cinf = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
+                Unexp = u *(-znx(i,j,k)) + v *(-zny(i,j,k)) + w *(-znz(i,j,k))
+                Uninf = uf*(-znx(i,j,k)) + vf*(-zny(i,j,k)) + wf*(-znz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
-                Unb   =         0.5*(Rexp + Rinf)
-                Cb    = 0.25*(gm-1.)*(Rexp + Rinf)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
                   x_speed(i,j,k-1) = x_speed(i,j,k) + vel_diff*(-znx(i,j,k))
                   y_speed(i,j,k-1) = y_speed(i,j,k) + vel_diff*(-zny(i,j,k))
                   z_speed(i,j,k-1) = z_speed(i,j,k) + vel_diff*(-znz(i,j,k))
-                  Mb = sqrt(x_speed(i,j,k-1)**2+y_speed(i,j,k-1)**2+z_speed(i,j,k-1)**2)/Cb
-                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
-                  Pressure(i,j,k-1) = pressure(i,j,k)*Ratio**gm
-                   density(i,j,k-1) =  density(i,j,k)*Ratio
+                  s = pressure(i,j,k)/(density(i,j,k)**(gm))
+                  density(i,j,k-1) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j,k-1) = (density(i,j,k-1)*Cb*Cb/gm)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -839,10 +794,10 @@ module bc_primitive
                   x_speed(i,j,k-1) = x_speed_inf + vel_diff*(-znx(i,j,k))
                   y_speed(i,j,k-1) = y_speed_inf + vel_diff*(-zny(i,j,k))
                   z_speed(i,j,k-1) = z_speed_inf + vel_diff*(-znz(i,j,k))
-                  Mb = sqrt(x_speed(i,j,k-1)**2+y_speed(i,j,k-1)**2+z_speed(i,j,k-1)**2)/Cb
-                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
-                  Pressure(i,j,k-1) = pressure_inf*Ratio**gm
-                   density(i,j,k-1) =  density_inf*Ratio
+                  s = pressure_inf/(density_inf**(gm))
+                  density(i,j,k-1) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j,k-1) = (density(i,j,k-1)*Cb*Cb/gm)
+
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -863,31 +818,36 @@ module bc_primitive
               end do
             end do
           end do
+          qp(:,:,-1,:) = qp(:,:,0,:)
+          qp(:,:,-2,:) = qp(:,:,0,:)
         case("kmax")
           do k = kmx,kmx
-            do j = 1,jmx
-              do i = 1,imx
+            do j = 1,jmx-1
+              do i = 1,imx-1
+                ! interior cell
                 u = x_speed(i,j,k-1)
                 v = y_speed(i,j,k-1)
                 w = z_speed(i,j,k-1)
+                ! ghost cell
+                uf = x_speed(i,j,k)
+                vf = y_speed(i,j,k)
+                wf = z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
-                Mexp = sqrt(u**2 + v**2 + w**2)/cexp
-                ! negative normal because of the way they are stored
-                Uninf = u *(znx(i,j,k)) + v *(zny(i,j,k)) + w *(znz(i,j,k))
-                Unexp = uf*(znx(i,j,k)) + vf*(zny(i,j,k)) + wf*(znz(i,j,k))
+                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                Unexp = u *(znx(i,j,k)) + v *(zny(i,j,k)) + w *(znz(i,j,k))
+                Uninf = uf*(znx(i,j,k)) + vf*(zny(i,j,k)) + wf*(znz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
-                Unb   =         0.5*(Rexp + Rinf)
-                Cb    = 0.25*(gm-1.)*(Rexp + Rinf)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
                   x_speed(i,j,k) = x_speed(i,j,k-1) + vel_diff*(znx(i,j,k))
                   y_speed(i,j,k) = y_speed(i,j,k-1) + vel_diff*(zny(i,j,k))
                   z_speed(i,j,k) = z_speed(i,j,k-1) + vel_diff*(znz(i,j,k))
-                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                  Ratio = (1+0.5*(gm-1.)*Mexp**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
-                  Pressure(i,j,k) = pressure(i,j,k-1)*Ratio**gm
-                   density(i,j,k) =  density(i,j,k-1)*Ratio
+                  s = pressure(i,j,k-1)/(density(i,j,k-1)**(gm))
+                  density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -907,10 +867,10 @@ module bc_primitive
                   x_speed(i,j,k) = x_speed_inf + vel_diff*(znx(i,j,k))
                   y_speed(i,j,k) = y_speed_inf + vel_diff*(zny(i,j,k))
                   z_speed(i,j,k) = z_speed_inf + vel_diff*(znz(i,j,k))
-                  Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                  Ratio = (1+0.5*(gm-1.)*Minf**2)/(1+0.5*(gm-1.)*Mb**2)**(1./(gm-1.))
-                  Pressure(i,j,k) = pressure_inf*Ratio**gm
-                   density(i,j,k) =  density_inf*Ratio
+                  s = pressure_inf/(density_inf**(gm))
+                  density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
+                  pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
+
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -931,12 +891,451 @@ module bc_primitive
               end do
             end do
           end do
+          qp(:,:,kmx+1,:) = qp(:,:,kmx,:)
+          qp(:,:,kmx+2,:) = qp(:,:,kmx,:)
         case DEFAULT
           !print*, "ERROR: wrong face for boundary condition"
           Fatal_error
       end select
 
     end subroutine far_field
+
+
+    subroutine total_pressure(face)
+      implicit none
+      character(len=*) :: face
+      real :: cinf, cexp   ! speed of sound
+      real :: Rinf, Rexp   ! Riemann invarient
+      real :: Uninf, Unexp ! face normal speed
+      real :: Unb ! normal velocity boundary
+      real :: Cb  ! speed of sound boundary
+      real :: vel_diff
+      real :: u,v,w
+      real :: uf, vf, wf
+      real :: Mb
+      integer :: i,j,k
+
+      select case(face)
+        case("imin")
+          do k = 1,kmx-1
+            do j = 1,jmx-1
+              do i = 1,1
+                ! interior cell
+                u = x_speed(i,j,k)
+                v = y_speed(i,j,k)
+                w = z_speed(i,j,k)
+                ! ghost cell
+                uf = x_speed(i-1,j,k)
+                vf = y_speed(i-1,j,k)
+                wf = z_speed(i-1,j,k)
+                cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
+                Unexp = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
+                Uninf = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
+                if(Unb > 0.)then
+                  vel_diff = Unb - Unexp
+                  x_speed(i-1,j,k) = x_speed(i,j,k) + vel_diff*(-xnx(i,j,k))
+                  y_speed(i-1,j,k) = y_speed(i,j,k) + vel_diff*(-xny(i,j,k))
+                  z_speed(i-1,j,k) = z_speed(i,j,k) + vel_diff*(-xnz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call copy3(tk, "flat", face)
+                      call copy3(tw, "flat", face)
+                    case('kkl')
+                      call copy3(tk, "flat", face)
+                      call copy3(tkl, "flat", face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                else
+                  vel_diff = Unb - Uninf
+                  x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-xnx(i,j,k))
+                  y_speed(i-1,j,k) = y_speed_inf + vel_diff*(-xny(i,j,k))
+                  z_speed(i-1,j,k) = z_speed_inf + vel_diff*(-xnz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call check_if_value_fixed("sst")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tw, fixed_tw, face)
+                    case('kkl')
+                      call check_if_value_fixed("kkl")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tkl, fixed_tkl, face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                end if
+                Mb = sqrt(x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/Cb
+                pressure(i-1,j,k) = fixed_Tpressure(1)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                density(i-1,j,k) = gm*pressure(i-1,j,k)/(Cb*Cb)
+              end do
+            end do
+          end do
+          qp(-1,:,:,:) = qp(0,:,:,:)
+          qp(-2,:,:,:) = qp(0,:,:,:)
+         case("imax")
+          do k = 1,kmx-1
+            do j = 1,jmx-1
+              do i = imx,imx
+                ! interior cell
+                u = x_speed(i-1,j,k)
+                v = y_speed(i-1,j,k)
+                w = z_speed(i-1,j,k)
+                ! ghost cell
+                uf = x_speed(i,j,k)
+                vf = y_speed(i,j,k)
+                wf = z_speed(i,j,k)
+                cexp = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
+                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                Unexp = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
+                Uninf = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
+                if(Unb > 0.)then
+                  vel_diff = Unb - Unexp
+                  x_speed(i,j,k) = x_speed(i-1,j,k) + vel_diff*(xnx(i,j,k))
+                  y_speed(i,j,k) = y_speed(i-1,j,k) + vel_diff*(xny(i,j,k))
+                  z_speed(i,j,k) = z_speed(i-1,j,k) + vel_diff*(xnz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call copy3(tk, "flat", face)
+                      call copy3(tw, "flat", face)
+                    case('kkl')
+                      call copy3(tk, "flat", face)
+                      call copy3(tkl, "flat", face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                else
+                  vel_diff = Unb - Uninf
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(xnx(i,j,k))
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(xny(i,j,k))
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(xnz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call check_if_value_fixed("sst")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tw, fixed_tw, face)
+                    case('kkl')
+                      call check_if_value_fixed("kkl")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tkl, fixed_tkl, face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                end if
+                Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                pressure(i,j,k) = fixed_Tpressure(2)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
+              end do
+            end do
+          end do
+          qp(imx+1,:,:,:) = qp(imx,:,:,:)
+          qp(imx+2,:,:,:) = qp(imx,:,:,:)
+        case("jmin")
+          do k = 1,kmx-1
+            do j = 1,1
+              do i = 1,imx-1
+                ! interior cell
+                u = x_speed(i,j,k)
+                v = y_speed(i,j,k)
+                w = z_speed(i,j,k)
+                ! ghost cell
+                uf = x_speed(i,j-1,k)
+                vf = y_speed(i,j-1,k)
+                wf = z_speed(i,j-1,k)
+                cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                Unexp = u *(-ynx(i,j,k)) + v *(-yny(i,j,k)) + w *(-ynz(i,j,k))
+                Uninf = uf*(-ynx(i,j,k)) + vf*(-yny(i,j,k)) + wf*(-ynz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
+                if(Unb > 0.)then
+                  vel_diff = Unb - Unexp
+                  x_speed(i,j-1,k) = x_speed(i,j,k) + vel_diff*(-ynx(i,j,k))
+                  y_speed(i,j-1,k) = y_speed(i,j,k) + vel_diff*(-yny(i,j,k))
+                  z_speed(i,j-1,k) = z_speed(i,j,k) + vel_diff*(-ynz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call copy3(tk, "flat", face)
+                      call copy3(tw, "flat", face)
+                    case('kkl')
+                      call copy3(tk, "flat", face)
+                      call copy3(tkl, "flat", face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                else
+                  vel_diff = Unb - Uninf
+                  x_speed(i,j-1,k) = x_speed_inf + vel_diff*(-ynx(i,j,k))
+                  y_speed(i,j-1,k) = y_speed_inf + vel_diff*(-yny(i,j,k))
+                  z_speed(i,j-1,k) = z_speed_inf + vel_diff*(-ynz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call check_if_value_fixed("sst")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tw, fixed_tw, face)
+                    case('kkl')
+                      call check_if_value_fixed("kkl")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tkl, fixed_tkl, face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                end if
+                Mb = sqrt(x_speed(i,j-1,k)**2+y_speed(i,j-1,k)**2+z_speed(i,j-1,k)**2)/Cb
+                pressure(i,j-1,k) = fixed_Tpressure(3)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                density(i,j-1,k) = gm*pressure(i,j-1,k)/(Cb*Cb)
+              end do
+            end do
+          end do
+          qp(:,-1,:,:) = qp(:,0,:,:)
+          qp(:,-2,:,:) = qp(:,0,:,:)
+        case("jmax")
+          do k = 1,kmx-1
+            do j = jmx,jmx
+              do i = 1,imx-1
+                ! interior cell
+                u = x_speed(i,j-1,k)
+                v = y_speed(i,j-1,k)
+                w = z_speed(i,j-1,k)
+                ! ghost cell
+                uf = x_speed(i,j,k)
+                vf = y_speed(i,j,k)
+                wf = z_speed(i,j,k)
+                cexp = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                Unexp = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
+                Uninf = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
+                if(Unb > 0.)then
+                  vel_diff = Unb - Unexp
+                  x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(ynx(i,j,k))
+                  y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(yny(i,j,k))
+                  z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(ynz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call copy3(tk, "flat", face)
+                      call copy3(tw, "flat", face)
+                    case('kkl')
+                      call copy3(tk, "flat", face)
+                      call copy3(tkl, "flat", face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                else
+                  vel_diff = Unb - Uninf
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(ynx(i,j,k))
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(yny(i,j,k))
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(ynz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call check_if_value_fixed("sst")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tw, fixed_tw, face)
+                    case('kkl')
+                      call check_if_value_fixed("kkl")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tkl, fixed_tkl, face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                end if
+                Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                pressure(i,j,k) = fixed_Tpressure(4)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
+              end do
+            end do
+          end do
+          qp(:,jmx+1,:,:) = qp(:,jmx,:,:)
+          qp(:,jmx+2,:,:) = qp(:,jmx,:,:)
+        case("kmin")
+          do k = 1,1
+            do j = 1,jmx-1
+              do i = 1,imx-1
+                ! interior cell
+                u = x_speed(i,j,k)
+                v = y_speed(i,j,k)
+                w = z_speed(i,j,k)
+                ! ghost cell
+                uf = x_speed(i,j,k-1)
+                vf = y_speed(i,j,k-1)
+                wf = z_speed(i,j,k-1)
+                cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
+                Unexp = u *(-znx(i,j,k)) + v *(-zny(i,j,k)) + w *(-znz(i,j,k))
+                Uninf = uf*(-znx(i,j,k)) + vf*(-zny(i,j,k)) + wf*(-znz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
+                if(Unb > 0.)then
+                  vel_diff = Unb - Unexp
+                  x_speed(i,j,k-1) = x_speed(i,j,k) + vel_diff*(-znx(i,j,k))
+                  y_speed(i,j,k-1) = y_speed(i,j,k) + vel_diff*(-zny(i,j,k))
+                  z_speed(i,j,k-1) = z_speed(i,j,k) + vel_diff*(-znz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call copy3(tk, "flat", face)
+                      call copy3(tw, "flat", face)
+                    case('kkl')
+                      call copy3(tk, "flat", face)
+                      call copy3(tkl, "flat", face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                else
+                  vel_diff = Unb - Uninf
+                  x_speed(i,j,k-1) = x_speed_inf + vel_diff*(-znx(i,j,k))
+                  y_speed(i,j,k-1) = y_speed_inf + vel_diff*(-zny(i,j,k))
+                  z_speed(i,j,k-1) = z_speed_inf + vel_diff*(-znz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call check_if_value_fixed("sst")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tw, fixed_tw, face)
+                    case('kkl')
+                      call check_if_value_fixed("kkl")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tkl, fixed_tkl, face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                end if
+                Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                pressure(i,j,k-1) = fixed_Tpressure(5)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                density(i,j,k-1) = gm*pressure(i,j,k-1)/(Cb*Cb)
+              end do
+            end do
+          end do
+          qp(:,:,-1,:) = qp(:,:,0,:)
+          qp(:,:,-2,:) = qp(:,:,0,:)
+        case("kmax")
+          do k = kmx,kmx
+            do j = 1,jmx-1
+              do i = 1,imx-1
+                ! interior cell
+                u = x_speed(i,j,k-1)
+                v = y_speed(i,j,k-1)
+                w = z_speed(i,j,k-1)
+                ! ghost cell
+                uf = x_speed(i,j,k)
+                vf = y_speed(i,j,k)
+                wf = z_speed(i,j,k)
+                cexp = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
+                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                Unexp = u *(znx(i,j,k)) + v *(zny(i,j,k)) + w *(znz(i,j,k))
+                Uninf = uf*(znx(i,j,k)) + vf*(zny(i,j,k)) + wf*(znz(i,j,k))
+                Rinf  = Uninf - 2*cinf/(gm-1.)
+                Rexp  = Unexp + 2*cexp/(gm-1.)
+                Unb   = 0.5*(Rexp + Rinf)
+                Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
+                if(Unb > 0.)then
+                  vel_diff = Unb - Unexp
+                  x_speed(i,j,k) = x_speed(i,j,k-1) + vel_diff*(znx(i,j,k))
+                  y_speed(i,j,k) = y_speed(i,j,k-1) + vel_diff*(zny(i,j,k))
+                  z_speed(i,j,k) = z_speed(i,j,k-1) + vel_diff*(znz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call copy3(tk, "flat", face)
+                      call copy3(tw, "flat", face)
+                    case('kkl')
+                      call copy3(tk, "flat", face)
+                      call copy3(tkl, "flat", face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                else
+                  vel_diff = Unb - Uninf
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(znx(i,j,k))
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(zny(i,j,k))
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(znz(i,j,k))
+                  select case (turbulence)
+                    case('none')
+                      !do nothing
+                      continue
+                    case('sst')
+                      call check_if_value_fixed("sst")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tw, fixed_tw, face)
+                    case('kkl')
+                      call check_if_value_fixed("kkl")
+                      call fix(tk, fixed_tk, face)
+                      call fix(tkl, fixed_tkl, face)
+                    case DEFAULT
+                      !call turbulence_read_error()
+                      Fatal_error
+                  end select
+                end if
+                Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
+                pressure(i,j,k) = fixed_Tpressure(6)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
+              end do
+            end do
+          end do
+          qp(:,:,kmx+1,:) = qp(:,:,kmx,:)
+          qp(:,:,kmx+2,:) = qp(:,:,kmx,:)
+        case DEFAULT
+          !print*, "ERROR: wrong face for boundary condition"
+          Fatal_error
+      end select
+
+    end subroutine total_pressure
 
     subroutine temp_based_density(temperature, face)
       implicit none
@@ -958,7 +1357,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>0.0)then
+          elseif(temperature(1)>1.0)then
             do k = 1,kmx-1
               do j = 1,jmx-1
                 do i = 1,1
@@ -983,7 +1382,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>0.0)then
+          elseif(temperature(1)>1.0)then
             do k = 1,kmx-1
               do j = 1,jmx-1
                 do i = imx-1,imx-1
@@ -1008,7 +1407,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>0.0)then
+          elseif(temperature(1)>1.0)then
             do k = 1,kmx-1
               do j = 1,1
                 do i = 1,imx-1
@@ -1033,7 +1432,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>0.0)then
+          elseif(temperature(1)>1.0)then
             do k = 1,kmx-1
               do j = jmx-1,jmx-1
                 do i = 1,imx-1
@@ -1058,7 +1457,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>0.0)then
+          elseif(temperature(1)>1.0)then
             do k = 1,1
               do j = 1,jmx-1
                 do i = 1,imx-1
@@ -1083,7 +1482,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>0.0)then
+          elseif(temperature(1)>1.0)then
             do k = kmx-1,kmx-1
               do j = 1,jmx-1
                 do i = 1,imx-1
