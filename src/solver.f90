@@ -16,7 +16,7 @@ module solver
   use global_sst , only : beta1
   use global_sst , only : beta2
   use global_sst , only : bstar
-  use global_sst , only : sst_F1
+!  use global_sst , only : sst_F1
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
@@ -110,12 +110,15 @@ module solver
 !  use state, only: turbulence
   use resnorm, only : find_resnorm, setup_resnorm, destroy_resnorm
   use dump_solution, only : checkpoint
-  use transport    , only : setup_transport
-  use transport    , only : destroy_transport
-  use transport    , only : calculate_transport
-  use blending_function , only : setup_sst_F1
-  use blending_function , only : destroy_sst_F1
-  use blending_function , only : calculate_sst_F1
+  !use transport    , only : setup_transport
+  !use transport    , only : destroy_transport
+  !use transport    , only : calculate_transport
+  use viscosity    , only : setup_viscosity
+  use viscosity    , only : destroy_viscosity
+  use viscosity    , only : calculate_viscosity
+!  use blending_function , only : setup_sst_F1
+!  use blending_function , only : destroy_sst_F1
+!  use blending_function , only : calculate_sst_F1
   use wall        , only : write_surfnode
   include "turbulence_models/include/solver/import_module.inc"
   use bc, only: setup_bc
@@ -157,7 +160,7 @@ module solver
             call read_input_and_controls()
             call setup_grid(grid_file_buf)
             call setup_geometry()
-            call setup_transport()
+            call setup_viscosity()
             call setup_state()
             call setup_gradients()
             call setup_bc()
@@ -174,7 +177,7 @@ module solver
 !            if(mu_ref /= 0. .or. turbulence /= 'none') then
 !              call setup_source()
 !            end if
-            call setup_sst_F1()
+!            call setup_sst_F1()
             !call link_aliases_solver()
             call setup_resnorm()
             call initmisc()
@@ -191,7 +194,7 @@ module solver
             call dmsg(1, 'solver', 'destroy_solver')
 
             call destroy_update()
-            call destroy_transport()
+            call destroy_viscosity()
 !            if(mu_ref /= 0. .or. turbulence /= 'none')  then 
 !              call destroy_source()
 !            end if
@@ -206,9 +209,9 @@ module solver
             call destroy_geometry()
             call destroy_grid()
             call destroy_resnorm()
-            if(turbulence=='sst')then
-              call destroy_sst_F1()
-            end if
+!            if(turbulence=='sst')then
+!              call destroy_sst_F1()
+!            end if
             call destroy_time()
 
             if(allocated(r_list)) deallocate(r_list)

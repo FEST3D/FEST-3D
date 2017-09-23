@@ -211,7 +211,9 @@ module resnorm
             write(RESNORM_FILE_UNIT, frm, advance='no') sqrt(sum(Res_abs(1:5)**2))
 
           case('Turbulent_abs')
+            if(trim(turbulence)/='none')then
             write(RESNORM_FILE_UNIT, frm, advance='no') sqrt(sum(Res_abs(6:)**2))
+            end if
 
           case('Continuity_abs')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(1)
@@ -238,7 +240,9 @@ module resnorm
             write(RESNORM_FILE_UNIT, frm, advance='no') sqrt(sum(Res_rel(1:5)**2))
 
           case('Turbulent_rel')
+            if(trim(turbulence)/='none')then
             write(RESNORM_FILE_UNIT, frm, advance='no') sqrt(sum(Res_rel(6:)**2))
+            end if
 
           case('Continuity_rel')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(1)
@@ -256,34 +260,54 @@ module resnorm
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(5)
 
           case('TKE_abs')
+            if(trim(turbulence)=='sst' .or. trim(turbulence)=='kkl')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(6)
+            end if
 
           case('tv_abs')
+            if(trim(turbulence)=='sa')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(6)
+            end if
 
           case('Dissipation_abs')
+            if(trim(turbulence)=='ke')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(7)
+            end if
 
           case('Omega_abs')
+            if(trim(turbulence)=='sst')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(7)
+            end if
 
           case('Kl_abs')
+            if(trim(turbulence)=='kkl')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(7)
+            end if
 
           case('TKE_rel')
+            if(trim(turbulence)=='sst' .or. trim(turbulence)=='kkl')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(6)
+            end if
 
           case('tv_rel')
+            if(trim(turbulence)=='sa')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(6)
+            end if
 
           case('Dissipation_rel')
+            if(trim(turbulence)=='ke')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(7)
+            end if
 
           case('Omega_rel')
+            if(trim(turbulence)=='sst')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(7)
+            end if
 
           case('Kl_rel')
+            if(trim(turbulence)=='kkl')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(7)
+            end if
 
           case DEFAULT
             ! making absolute resnorm default

@@ -44,24 +44,24 @@ module ghost_gradients
       implicit none
 
       call dmsg(1,'ghost_gradients', 'apply_gradient_bc')
-      if(imin_id<0)then
+  !    if(imin_id<0)then
         call apply('imin')
-      end if
-      if(imax_id<0)then
+  !    end if
+  !    if(imax_id<0)then
         call apply('imax')
-      end if
-      if(jmin_id<0)then
+  !    end if
+  !    if(jmin_id<0)then
         call apply('jmin')
-      end if
-      if(jmax_id<0)then
+  !    end if
+  !    if(jmax_id<0)then
         call apply('jmax')
-      end if
-      if(kmin_id<0)then
+  !    end if
+  !    if(kmin_id<0)then
         call apply('kmin')
-      end if
-      if(kmax_id<0)then
+  !    end if
+  !    if(kmax_id<0)then
         call apply('kmax')
-      end if
+  !    end if
       
     end subroutine apply_gradient_bc
     

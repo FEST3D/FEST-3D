@@ -117,10 +117,10 @@ module gradients
           continue
 
         case('sst')
-          n_grad = 7
+          n_grad = 6
 
         case('kkl')
-          n_grad = 7
+          n_grad = 6
 
         case DEFAULT
           !call turbulence_read_error()

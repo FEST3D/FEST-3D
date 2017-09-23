@@ -64,8 +64,9 @@ module update
   use boundary_state_reconstruction,  only: reconstruct_boundary_state
   use scheme,                         only: compute_fluxes
   use summon_grad_evaluation,         only: evaluate_all_gradients
-  use transport    ,                  only: calculate_transport
-  use blending_function ,             only: calculate_sst_F1
+  !use transport    ,                  only: calculate_transport
+  use viscosity                      ,only: calculate_viscosity
+!  use blending_function ,             only: calculate_sst_F1
   use viscous,                        only: compute_viscous_fluxes
   use turbulent_fluxes,               only: compute_turbulent_fluxes
   use scheme,                         only: compute_residue
@@ -406,10 +407,11 @@ module update
         call compute_fluxes()
         if (mu_ref /= 0.0) then
           call evaluate_all_gradients()
-          call calculate_transport()
-          if(trim(turbulence)=='sst') then
-            call calculate_sst_F1()
-          end if
+          !call calculate_transport()
+          call calculate_viscosity()
+!          if(trim(turbulence)=='sst') then
+!            call calculate_sst_F1()
+!          end if
           call compute_viscous_fluxes(F_p, G_p, H_p)
           call compute_turbulent_fluxes(F_p, G_p, H_p)
         end if
