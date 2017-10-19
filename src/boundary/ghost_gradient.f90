@@ -31,6 +31,7 @@ module ghost_gradients
   use global_vars, only : jmax_id
   use global_vars, only : kmin_id
   use global_vars, only : kmax_id
+  use global_vars, only : fixed_wall_temperature
 
   use utils,       only : dmsg
   
@@ -44,24 +45,24 @@ module ghost_gradients
       implicit none
 
       call dmsg(1,'ghost_gradients', 'apply_gradient_bc')
-  !    if(imin_id<0)then
+      if(imin_id<0)then
         call apply('imin')
-  !    end if
-  !    if(imax_id<0)then
+      end if
+      if(imax_id<0)then
         call apply('imax')
-  !    end if
-  !    if(jmin_id<0)then
+      end if
+      if(jmin_id<0)then
         call apply('jmin')
-  !    end if
-  !    if(jmax_id<0)then
+      end if
+      if(jmax_id<0)then
         call apply('jmax')
-  !    end if
-  !    if(kmin_id<0)then
+      end if
+      if(kmin_id<0)then
         call apply('kmin')
-  !    end if
-  !    if(kmax_id<0)then
+      end if
+      if(kmax_id<0)then
         call apply('kmax')
-  !    end if
+      end if
       
     end subroutine apply_gradient_bc
     
@@ -108,6 +109,11 @@ module ghost_gradients
                 gradqp_x(i-1,j,k,4) = ( T_I -  T_G)*c_x
                 gradqp_y(i-1,j,k,4) = ( T_I -  T_G)*c_y
                 gradqp_z(i-1,j,k,4) = ( T_I -  T_G)*c_z
+                if(imin_id==-5 .and. (fixed_wall_temperature(1)<1. .and. fixed_wall_temperature(1)>=0.))then
+                  gradqp_x(i-1,j,k,4) = -gradqp_x(i,j,k,4)
+                  gradqp_y(i-1,j,k,4) = -gradqp_x(i,j,k,4)
+                  gradqp_z(i-1,j,k,4) = -gradqp_x(i,j,k,4)
+                end if
               end do
             end do
           end do
@@ -130,6 +136,11 @@ module ghost_gradients
                 gradqp_x(i,j,k,4) = -( T_I -  T_G)*c_x
                 gradqp_y(i,j,k,4) = -( T_I -  T_G)*c_y
                 gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_z
+                if(imax_id==-5 .and. (fixed_wall_temperature(2)<1. .and. fixed_wall_temperature(2)>=0.))then
+                gradqp_x(i,j,k,4) = -gradqp_x(i-1,j,k,4)
+                gradqp_y(i,j,k,4) = -gradqp_y(i-1,j,k,4)
+                gradqp_z(i,j,k,4) = -gradqp_z(i-1,j,k,4)
+                end if
               end do
             end do
           end do
@@ -153,6 +164,11 @@ module ghost_gradients
                 gradqp_x(i,j-1,k,4) = ( T_I -  T_G)*c_x
                 gradqp_y(i,j-1,k,4) = ( T_I -  T_G)*c_y
                 gradqp_z(i,j-1,k,4) = ( T_I -  T_G)*c_z
+                if(jmin_id==-5 .and. (fixed_wall_temperature(3)<1. .and. fixed_wall_temperature(3)>=0.))then
+                gradqp_x(i,j-1,k,4) = -gradqp_x(i,j,k,4)
+                gradqp_y(i,j-1,k,4) = -gradqp_y(i,j,k,4)
+                gradqp_z(i,j-1,k,4) = -gradqp_z(i,j,k,4)
+                end if
               end do
             end do
           end do
@@ -175,6 +191,11 @@ module ghost_gradients
                 gradqp_x(i,j,k,4) = -( T_I -  T_G)*c_x
                 gradqp_y(i,j,k,4) = -( T_I -  T_G)*c_y
                 gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_z
+                if(jmax_id==-5 .and. (fixed_wall_temperature(4)<1. .and. fixed_wall_temperature(4)>=0.))then
+                gradqp_x(i,j,k,4) = -gradqp_x(i,j-1,k,4)
+                gradqp_y(i,j,k,4) = -gradqp_y(i,j-1,k,4)
+                gradqp_z(i,j,k,4) = -gradqp_z(i,j-1,k,4)
+                end if
               end do
             end do
           end do
@@ -198,6 +219,11 @@ module ghost_gradients
                 gradqp_x(i,j,k-1,4) = ( T_I -  T_G)*c_x
                 gradqp_y(i,j,k-1,4) = ( T_I -  T_G)*c_y
                 gradqp_z(i,j,k-1,4) = ( T_I -  T_G)*c_z
+                if(kmin_id==-5 .and. (fixed_wall_temperature(5)<1. .and. fixed_wall_temperature(5)>=0.))then
+                gradqp_x(i,j,k-1,4) = -gradqp_x(i,j,k,4)
+                gradqp_y(i,j,k-1,4) = -gradqp_y(i,j,k,4)
+                gradqp_z(i,j,k-1,4) = -gradqp_z(i,j,k,4)
+                end if
               end do
             end do
           end do
@@ -220,6 +246,11 @@ module ghost_gradients
                 gradqp_x(i,j,k,4) = -( T_I -  T_G)*c_x
                 gradqp_y(i,j,k,4) = -( T_I -  T_G)*c_y
                 gradqp_z(i,j,k,4) = -( T_I -  T_G)*c_z
+                if(kmax_id==-5 .and. (fixed_wall_temperature(6)<1. .and. fixed_wall_temperature(6)>=0.))then
+                gradqp_x(i,j,k,4) = -gradqp_x(i,j,k-1,4)
+                gradqp_y(i,j,k,4) = -gradqp_y(i,j,k-1,4)
+                gradqp_z(i,j,k,4) = -gradqp_z(i,j,k-1,4)
+                end if
               end do
             end do
           end do

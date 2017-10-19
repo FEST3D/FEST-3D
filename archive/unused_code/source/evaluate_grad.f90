@@ -3,7 +3,7 @@ module evaluate_grad
   !170698 - jatinder Pal Singh Sandhu
   ! Aim : general subroutine to computer cell center gradient
   !----------------------------------------------------------------------------
-
+#include "../error.inc"
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
@@ -14,6 +14,7 @@ module evaluate_grad
   use global_vars, only : xA, yA, zA    !face area
   use global_vars, only : volume
 
+  use global_vars, only : process_id
   use global_vars, only : gm
   use global_vars, only : R_gas
   use global_vars, only : density
@@ -48,28 +49,28 @@ module evaluate_grad
 
     select case(dir)
       case('x')
-        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,1)
-        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,1)
-        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,1)
+        nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
+        ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
+        nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
       case('y')
-        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,2)
-        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,2)
-        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,2)
+        nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
+        ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
+        nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
       case('z')
-        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,3)
-        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,3)
-        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,3)
+        nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
+        ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
+        nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
       case DEFAULT
-        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,1)
-        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,1)
-        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,1)
+        nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
+        ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
+        nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
         print*, "ERROR: gradient direction error"
     end select
     grad = 0.0
 
-    do k=1,kmx-1
-      do j=1,jmx-1
-        do i=1,imx-1
+    do k=0,kmx
+      do j=0,jmx
+        do i=0,imx
           grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*nx(i,j,k)*xA(i,j,k) &
                         -(var(i  ,j-1,k  )+var(i,j,k))*ny(i,j,k)*yA(i,j,k) &
                         -(var(i  ,j  ,k-1)+var(i,j,k))*nz(i,j,k)*zA(i,j,k) &
@@ -80,6 +81,9 @@ module evaluate_grad
         end do
       end do
     end do
+    if(any(isnan(grad)))then
+      Fatal_error
+    end if
 
   end subroutine compute_gradient_G
 
@@ -101,28 +105,28 @@ module evaluate_grad
 
     select case(dir)
       case('x')
-        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,1)
-        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,1)
-        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,1)
+        nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
+        ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
+        nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
       case('y')
-        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,2)
-        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,2)
-        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,2)
+        nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
+        ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
+        nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
       case('z')
-        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,3)
-        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,3)
-        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,3)
+        nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
+        ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
+        nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
       case DEFAULT
-        nx(1:imx  ,1:jmx-1,1:kmx-1) => xn(:,:,:,1)
-        ny(1:imx-1,1:jmx  ,1:kmx-1) => yn(:,:,:,1)
-        nz(1:imx-1,1:jmx-1,1:kmx  ) => zn(:,:,:,1)
+        nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
+        ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
+        nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
         print*, "ERROR: gradient direction error"
     end select
     grad = 0.0
 
-    do k=1,kmx-1
-      do j=1,jmx-1
-        do i=1,imx-1
+    do k=0,kmx
+      do j=0,jmx
+        do i=0,imx
 
           cell_T = (pressure(i,j,k)/density(i,j,k))/R_gas
 
@@ -143,6 +147,9 @@ module evaluate_grad
         end do
       end do
     end do
+    if(any(isnan(grad)))then
+      Fatal_error
+    end if
 
   end subroutine compute_gradient_T
 

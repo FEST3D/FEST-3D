@@ -20,13 +20,9 @@ module van_leer
     use global_vars, only : process_id
     use global_vars, only : current_iter
     use global_vars, only : max_iters
-    use global_vars, only : imin_id
-    use global_vars, only : imax_id
-    use global_vars, only : jmin_id
-    use global_vars, only : jmax_id
-    use global_vars, only : kmin_id
-    use global_vars, only : kmax_id
-    use global_vars, only : merror
+    use global_vars, only : make_F_flux_zero
+    use global_vars, only : make_G_flux_zero
+    use global_vars, only : make_H_flux_zero
     use utils, only: alloc, dealloc, dmsg
     use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
                 z_qp_left, z_qp_right, &
@@ -111,8 +107,6 @@ module van_leer
             real :: c_plus, c_minus
             real :: scrD_plus, scrD_minus
             real :: sound_speed_avg, face_normal_speeds
-            integer :: normal_tag
-            integer :: id
             !include compute_flux_variable and select.inc before select
             !as it contains variables deceleration
             include "turbulence_models/include/ausm/compute_flux_var.inc"
@@ -224,7 +218,13 @@ module van_leer
                 F_plus(1) = f_density_left(i, j, k) * sound_speed_avg * c_plus
                 ! First construct the F minus mass flux
                 F_minus(1) = f_density_right(i, j, k) * sound_speed_avg * c_minus
-                include "mass_flux.inc"
+                F_plus(1)  = F_plus(1) *(i_f*make_F_flux_zero(i) &
+                                       + j_f*make_G_flux_zero(j) &
+                                       + k_f*make_H_flux_zero(k))
+                F_minus(1) = F_minus(1)*(i_f*make_F_flux_zero(i) &
+                                       + j_f*make_G_flux_zero(j) &
+                                       + k_f*make_H_flux_zero(k))
+
 
                 ! Construct other fluxes in terms of the F mass flux
                 F_plus(2) = (F_plus(1) * f_x_speed_left(i, j, k)) + &

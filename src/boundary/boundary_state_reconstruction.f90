@@ -74,41 +74,46 @@ module boundary_state_reconstruction
       real :: kappa, phi
 
       phi = 1.0
-      kappa = -1.0
+      kappa = 1./3.
 
-      do l = 1, n_var
-       do k = 1, kmx - 1
-        do j = 1, jmx - 1
-         do i = 1, 1 
-          ! right face of first ghost cell
-          x_qp_left(i, j, k, l) = qp(i-1, j, k, l)!0.5 * (qp(i-1, j, k, l) + qp(i, j, k, l))
+      if (ppm_flag==1) then
+        do l = 1, n_var
+         do k = 1, kmx - 1
+          do j = 1, jmx - 1
+           do i = 1, 1 
 
-          ! reconstruct first cell faces for ppm scheme
-          if (ppm_flag==1) then
+            ! reconstruct first cell faces for ppm scheme
+              fd = qp(i+1, j, k, l) - qp(i  , j, k, l)
+              bd = qp(i  , j, k, l) - qp(i-1, j, k, l)
 
-            fd = qp(i+1, j, k, l) - qp(i  , j, k, l)
-            bd = qp(i  , j, k, l) - qp(i-1, j, k, l)
+              r = fd / bd
+              psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+              psi1 = (1 - (1 - psi1)*ilimiter_switch )
+              r = bd / fd
+              psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+              psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
-            r = fd / bd
-            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi1 = (1 - (1 - psi1)*ilimiter_switch )
-            r = bd / fd
-            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi2 = (1 - (1 - psi2)*ilimiter_switch )
+              ! right state of firsrt interior cell
+              x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
+                  (((1.-kappa) * psi1 * bd) + ((1.+kappa) * psi2 * fd))
 
-            ! right state of firsrt interior cell
-            x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
-                (((1.-kappa) * psi1 * bd) + ((1.+kappa) * psi2 * fd))
-
-            ! left face of first interior cell
-            x_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
-                (((1.+kappa) * psi1 * bd) + ((1.-kappa) * psi2 * fd))
-            
-         end if
+              ! left face of first interior cell
+              x_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
+                  (((1.+kappa) * psi1 * bd) + ((1.-kappa) * psi2 * fd))
+              
+           end do
+          end do
          end do
         end do
-       end do
-      end do
+      end if
+      if(imin_id==-8 .or. imin_id==-9)then
+         x_qp_left(1,1:jmx-1,1:kmx-1,1:n_var) = qp(0,1:jmx-1,1:kmx-1,1:n_var) 
+        x_qp_right(1,1:jmx-1,1:kmx-1,1:n_var) = qp(0,1:jmx-1,1:kmx-1,1:n_var) 
+      else
+        ! right face of first ghost cell
+        x_qp_left(1,1:jmx-1,1:kmx-1,1:n_var) = 0.5*(qp(0,1:jmx-1,1:kmx-1,1:n_var)&
+                                                   +qp(1,1:jmx-1,1:kmx-1,1:n_var))
+      end if
 
     end subroutine reconstruct_imin
 
@@ -121,39 +126,43 @@ module boundary_state_reconstruction
       real :: kappa, phi
 
       phi = 1.0
-      kappa = -1.0
+      kappa = 1./3.
 
-      do l = 1, n_var
-       do k = 1, kmx - 1
-        do j = 1, jmx - 1
-         do i = imx-1, imx-1 
-          ! first ghost cell imx left face.
-          x_qp_right(i+1, j, k, l) = qp(i+1, j, k, l) 
-                                    !0.5 * (qp(i+1, j, k, l) + qp(i, j, k, l))
+      if (ppm_flag==1) then
+        do l = 1, n_var
+         do k = 1, kmx - 1
+          do j = 1, jmx - 1
+           do i = imx-1, imx-1 
 
-          if (ppm_flag==1) then
-            fd = qp(i+1, j, k, l) - qp(i  , j, k, l)
-            bd = qp(i  , j, k, l) - qp(i-1, j, k, l)
+             fd = qp(i+1, j, k, l) - qp(i  , j, k, l)
+             bd = qp(i  , j, k, l) - qp(i-1, j, k, l)
 
-            r = fd / bd
-            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi1 = (1 - (1 - psi1)*ilimiter_switch )
-            r = bd / fd
-            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi2 = (1 - (1 - psi2)*ilimiter_switch )
+             r = fd / bd
+             psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+             psi1 = (1 - (1 - psi1)*ilimiter_switch )
+             r = bd / fd
+             psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+             psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
-            ! right face of last interior cell
-            x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
-                (((1.-kappa) * psi1 * bd) + ((1.+kappa) * psi2 * fd))
+             ! right face of last interior cell
+             x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
+                 (((1.-kappa) * psi1 * bd) + ((1.+kappa) * psi2 * fd))
 
-            ! left face of last interior cell
-            x_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
-                (((1.+kappa) * psi1 * bd) + ((1.-kappa) * psi2 * fd))
-         end if
+             ! left face of last interior cell
+             x_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
+                 (((1.+kappa) * psi1 * bd) + ((1.-kappa) * psi2 * fd))
+           end do
+          end do
          end do
         end do
-       end do
-      end do
+      end if
+      if(imax_id==-8 .or. imax_id==-9)then
+         x_qp_left(imx,1:jmx-1,1:kmx-1,1:n_var) = qp(imx,1:jmx-1,1:kmx-1,1:n_var) 
+        x_qp_right(imx,1:jmx-1,1:kmx-1,1:n_var) = qp(imx,1:jmx-1,1:kmx-1,1:n_var) 
+      else
+        x_qp_right(imx,1:jmx-1,1:kmx-1,1:n_var)  = 0.5*(qp(imx-1,1:jmx-1,1:kmx-1,1:n_var)&
+                                                       +qp(imx  ,1:jmx-1,1:kmx-1,1:n_var))
+      end if
 
     end subroutine reconstruct_imax
 
@@ -166,39 +175,43 @@ module boundary_state_reconstruction
       real :: kappa, phi
 
       phi = 1.0
-      kappa = -1.0
+      kappa = 1./3.
 
-      do l = 1, n_var
-       do k = 1, kmx - 1
-        do j = 1, 1
-         do i = 1, imx - 1
+      if (ppm_flag==1) then
+        do l = 1, n_var
+         do k = 1, kmx - 1
+          do j = 1, 1
+           do i = 1, imx - 1
 
-          ! first ghost cell 0 right face
-          y_qp_left(i, j, k, l) = 0.5 * (qp(i, j, k, l) + qp(i, j-1, k, l))
+              fd = qp(i, j+1, k, l) - qp(i, j, k, l)
+              bd = qp(i, j, k, l) - qp(i, j-1, k, l)
 
-          if (ppm_flag==1) then
-            fd = qp(i, j+1, k, l) - qp(i, j, k, l)
-            bd = qp(i, j, k, l) - qp(i, j-1, k, l)
+              r = fd / bd
+              psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+              psi1 = (1 - (1 - psi1)*ilimiter_switch )
+              r = bd / fd
+              psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+              psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
-            r = fd / bd
-            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi1 = (1 - (1 - psi1)*ilimiter_switch )
-            r = bd / fd
-            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi2 = (1 - (1 - psi2)*ilimiter_switch )
+              ! right face of first j cell
+              y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
+                  (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
 
-            ! right face of first j cell
-            y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
-                (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
-
-            ! left face of first j cell
-            y_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
-                (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
-         end if
+              ! left face of first j cell
+              y_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
+                  (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
+           end do
+          end do
          end do
         end do
-       end do
-      end do
+      end if
+      if(jmin_id==-8 .or. jmin_id==-9)then
+         y_qp_left(1:imx-1,1,1:kmx-1,1:n_var) = qp(1:imx-1,0,1:kmx-1,1:n_var) 
+        y_qp_right(1:imx-1,1,1:kmx-1,1:n_var) = qp(1:imx-1,0,1:kmx-1,1:n_var) 
+      else
+         y_qp_left(1:imx-1,1,1:kmx-1,1:n_var) = 0.5*(qp(1:imx-1,0,1:kmx-1,1:n_var)&
+                                                    +qp(1:imx-1,1,1:kmx-1,1:n_var))
+      end if
 
     end subroutine reconstruct_jmin
 
@@ -211,38 +224,42 @@ module boundary_state_reconstruction
       real :: kappa, phi
 
       phi = 1.0
-      kappa = -1.0
+      kappa = 1./3.
 
-      do l = 1, n_var
-       do k = 1, kmx - 1
-        do j = jmx-1, jmx-1
-         do i = 1, imx - 1
+      if (ppm_flag==1) then
+        do l = 1, n_var
+         do k = 1, kmx - 1
+          do j = jmx-1, jmx-1
+           do i = 1, imx - 1
 
-          ! ghost cell jmx left face.
-          y_qp_right(i, j+1, k, l) = 0.5 * (qp(i, j, k, l) + qp(i, j+1, k, l))
+              fd = qp(i, j+1, k, l) - qp(i, j, k, l)
+              bd = qp(i, j, k, l) - qp(i, j-1, k, l)
+              r = fd / bd
+              psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+              psi1 = (1 - (1 - psi1)*ilimiter_switch )
+              r = bd / fd
+              psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+              psi2 = (1 - (1 - psi2)*ilimiter_switch )
 
-          if (ppm_flag==1) then
-            fd = qp(i, j+1, k, l) - qp(i, j, k, l)
-            bd = qp(i, j, k, l) - qp(i, j-1, k, l)
-            r = fd / bd
-            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi1 = (1 - (1 - psi1)*ilimiter_switch )
-            r = bd / fd
-            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi2 = (1 - (1 - psi2)*ilimiter_switch )
-
-            ! right face of last j cell
-            y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
-                (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
-          
-            ! left face of last j cell
-            y_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
-                (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
-         end if
+              ! right face of last j cell
+              y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
+                  (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
+            
+              ! left face of last j cell
+              y_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
+                  (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
+           end do
+          end do
          end do
         end do
-       end do
-      end do
+      end if
+      if(jmax_id==-8 .or. jmax_id==-9)then
+         y_qp_left(1:imx-1,jmx,1:kmx-1,1:n_var) = qp(1:imx-1,jmx,1:kmx-1,1:n_var) 
+        y_qp_right(1:imx-1,jmx,1:kmx-1,1:n_var) = qp(1:imx-1,jmx,1:kmx-1,1:n_var) 
+      else
+        y_qp_right(1:imx-1,jmx,1:kmx-1,1:n_var)  = 0.5*(qp(1:imx-1,jmx-1,1:kmx-1,1:n_var)& 
+                                                       +qp(1:imx-1,jmx  ,1:kmx-1,1:n_var))
+      end if
 
     end subroutine reconstruct_jmax
 
@@ -255,40 +272,43 @@ module boundary_state_reconstruction
       real :: kappa, phi
       
       phi = 1.0
-      kappa = -1.0
+      kappa = 1./3.
 
-      do k = 1, 1
-       do l = 1, n_var
-        do j = 1, jmx - 1
-         do i = 1, imx - 1
+      if (ppm_flag==1) then
+        do k = 1, 1
+         do l = 1, n_var
+          do j = 1, jmx - 1
+           do i = 1, imx - 1
 
-          ! ghost cell 0 k right face.
-          z_qp_left(i, j, k, l) = 0.5 * (qp(i, j, k, l) + qp(i, j, k-1, l))
+              fd = qp(i, j, k+1, l) - qp(i, j, k, l)
+              bd = qp(i, j, k, l) - qp(i, j, k-1, l)
 
-          if (ppm_flag==1) then
+              r = fd / bd
+              psi1 = max(0., min(2*r, (2 + r)/3., 2.))
+              psi1 = (1 - (1 - psi1)*ilimiter_switch )
+              r = bd / fd
+              psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+              psi2 = (1 - (1 - psi2)*ilimiter_switch )
+              
+              ! right face of first k cell
+              z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
+                  (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
 
-            fd = qp(i, j, k+1, l) - qp(i, j, k, l)
-            bd = qp(i, j, k, l) - qp(i, j, k-1, l)
-
-            r = fd / bd
-            psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi1 = (1 - (1 - psi1)*ilimiter_switch )
-            r = bd / fd
-            psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi2 = (1 - (1 - psi2)*ilimiter_switch )
-            
-            ! right face of first k cell
-            z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
-                (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
-
-            ! left face of first k cell
-            z_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
-                (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
-         end if
+              ! left face of first k cell
+              z_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
+                  (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
+           end do
+          end do
          end do
         end do
-       end do
-      end do
+      end if
+      if(kmin_id==-8 .or. kmin_id==-9)then
+         z_qp_left(1:imx-1,1:jmx-1,1,1:n_var) = qp(1:imx-1,1:jmx-1,0,1:n_var) 
+        z_qp_right(1:imx-1,1:jmx-1,1,1:n_var) = qp(1:imx-1,1:jmx-1,0,1:n_var) 
+      else
+         z_qp_left(1:imx-1,1:jmx-1,1,1:n_var) = 0.5*(qp(1:imx-1,1:jmx-1,0,1:n_var)&
+                                                    +qp(1:imx-1,1:jmx-1,1,1:n_var))
+      end if
 
     end subroutine reconstruct_kmin
 
@@ -301,7 +321,7 @@ module boundary_state_reconstruction
       real :: kappa, phi
     
       phi = 1.0
-      kappa = -1.0
+      kappa = 1./3.
 
       do k = kmx-1, kmx-1
        do l = 1, n_var
@@ -334,6 +354,13 @@ module boundary_state_reconstruction
         end do
        end do
       end do
+      if(kmax_id==-8 .or. kmax_id==-9)then
+         z_qp_left(1:imx-1,1:jmx-1,kmx,1:n_var) = qp(1:imx-1,1:jmx-1,kmx,1:n_var) 
+        z_qp_right(1:imx-1,1:jmx-1,kmx,1:n_var) = qp(1:imx-1,1:jmx-1,kmx,1:n_var) 
+      else
+        z_qp_right(1:imx-1,1:jmx-1,kmx,1:n_var) = 0.5*(qp(1:imx-1,1:jmx-1,kmx-1,1:n_var)&
+                                                      +qp(1:imx-1,1:jmx-1,kmx  ,1:n_var))
+      end if
 
     end subroutine reconstruct_kmax
 

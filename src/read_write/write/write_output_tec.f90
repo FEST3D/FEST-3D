@@ -203,11 +203,12 @@ module write_output_tec
     subroutine write_header()
       implicit none
       integer :: n
-      integer :: total=3
+      integer :: total
 
       call dmsg(1, 'write_output_vtk', 'write_header')
       write(OUT_FILE_UNIT,'(a)') "variables = x y z "
 
+      total=3
       do n = 1,w_count
 
         select case (trim(w_list(n)))

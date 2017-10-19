@@ -23,6 +23,7 @@ module read_output
   use global_vars, only :    TKE_resnorm_0
   use global_vars, only :  omega_resnorm_0
   use global_vars, only : previous_flow_type
+  use global_vars, only : last_iter
 
   use global_vars, only : mu_ref
   use global_vars, only : read_level
@@ -125,6 +126,7 @@ module read_output
       implicit none
       read(RESTART_FILE_UNIT, *) previous_flow_type
 
+      read(RESTART_FILE_UNIT, *)        last_iter
       read(RESTART_FILE_UNIT, *)        resnorm_0
       read(RESTART_FILE_UNIT, *)    vis_resnorm_0
       read(RESTART_FILE_UNIT, *)   turb_resnorm_0

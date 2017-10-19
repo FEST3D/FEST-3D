@@ -6,7 +6,7 @@ module geometry
     ! This version of the geometry module assumes the grid is atmost
     ! 2-dimensional. 
     !-------------------------------------------------------------------
-
+#include "error.inc"
     use global_vars, only : imx
     use global_vars, only : jmx
     use global_vars, only : kmx
@@ -34,6 +34,7 @@ module geometry
     use global_vars, only : jmax_id
     use global_vars, only : kmin_id
     use global_vars, only : kmax_id
+    use global_vars, only : process_id
     
     use utils, only: alloc, dealloc, dmsg
 
@@ -53,7 +54,7 @@ module geometry
             
             implicit none
 
-            call alloc(volume, 1, imx-1, 1, jmx-1, 1, kmx -1, &
+            call alloc(volume, -2, imx+2, -2, jmx+2, -2, kmx+2, &
                     errmsg='Error: Unable to allocate memory for volume.')
 
         end subroutine allocate_memory_volumes
@@ -65,11 +66,11 @@ module geometry
             
             implicit none
 
-            call alloc(xA, 1, imx, 1, jmx-1, 1, kmx-1, &
+            call alloc(xA, -2, imx+3, -2, jmx+2, -2, kmx+2, &
                     errmsg='Error: Unable to allocate memory for xA.')
-            call alloc(yA, 1, imx-1, 1, jmx, 1, kmx-1, &
+            call alloc(yA, -2, imx+2, -2, jmx+3, -2, kmx+2, &
                     errmsg='Error: Unable to allocate memory for yA.')
-            call alloc(zA, 1, imx-1, 1, jmx-1, 1, kmx, &
+            call alloc(zA, -2, imx+2, -2, jmx+2, -2, kmx+3, &
                     errmsg='Error: Unable to allocate memory for yA.')
 
         end subroutine allocate_memory_areas
@@ -81,24 +82,24 @@ module geometry
                         
             implicit none
 
-            call alloc(xn, 1, imx, 1, jmx-1, 1, kmx-1, 1,3, &
+            call alloc(xn, -2, imx+3, -2, jmx+2, -2, kmx+2, 1,3, &
                     errmsg='Error: Unable to allocate memory for xnx.')
-            call alloc(yn, 1, imx-1, 1, jmx, 1, kmx-1, 1,3, &
+            call alloc(yn, -2, imx+2, -2, jmx+3, -2, kmx+2, 1,3, &
                     errmsg='Error: Unable to allocate memory for ynx.')
-            call alloc(zn, 1, imx-1, 1, jmx-1, 1, kmx, 1,3, &
+            call alloc(zn, -2, imx+2, -2, jmx+2, -2, kmx+3, 1,3, &
                     errmsg='Error: Unable to allocate memory for ynx.')
 
-            xnx(1:imx,1:jmx-1,1:kmx-1) => xn(:,:,:,1)
-            xny(1:imx,1:jmx-1,1:kmx-1) => xn(:,:,:,2)
-            xnz(1:imx,1:jmx-1,1:kmx-1) => xn(:,:,:,3)
+            xnx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
+            xny(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
+            xnz(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
 
-            ynx(1:imx-1,1:jmx,1:kmx-1) => yn(:,:,:,1)
-            yny(1:imx-1,1:jmx,1:kmx-1) => yn(:,:,:,2)
-            ynz(1:imx-1,1:jmx,1:kmx-1) => yn(:,:,:,3)
+            ynx(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
+            yny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
+            ynz(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
 
-            znx(1:imx-1,1:jmx-1,1:kmx) => zn(:,:,:,1)
-            zny(1:imx-1,1:jmx-1,1:kmx) => zn(:,:,:,2)
-            znz(1:imx-1,1:jmx-1,1:kmx) => zn(:,:,:,3)
+            znx(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
+            zny(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
+            znz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
 
         end subroutine allocate_memory_normals
 
@@ -171,9 +172,9 @@ module geometry
             implicit none
             integer :: i,j,k
 
-            do k = 1,kmx-1
-              do j = 1,jmx-1
-                do i = 1,imx
+            do k = -2,kmx+2
+              do j = -2,jmx+2
+                do i = -2,imx+3
                   if(xA(i,j,k)/=0.) then
                     xnx(i,j,k) = xnx(i,j,k) / xA(i,j,k)
                     xny(i,j,k) = xny(i,j,k) / xA(i,j,k)
@@ -183,9 +184,9 @@ module geometry
               end do
             end do
 
-            do k = 1,kmx-1
-              do j = 1,jmx
-                do i = 1,imx-1
+            do k = -2,kmx+2
+              do j = -2,jmx+3
+                do i = -2,imx+2
                   if(yA(i,j,k)/=0.) then
                     ynx(i,j,k) = ynx(i,j,k) / yA(i,j,k)
                     yny(i,j,k) = yny(i,j,k) / yA(i,j,k)
@@ -195,9 +196,9 @@ module geometry
               end do
             end do
 
-            do k = 1,kmx
-              do j = 1,jmx-1
-                do i = 1,imx-1
+            do k = -2,kmx+3
+              do j = -2,jmx+2
+                do i = -2,imx+2
                   if(zA(i,j,k)/=0.) then
                     znx(i,j,k) = znx(i,j,k) / zA(i,j,k)
                     zny(i,j,k) = zny(i,j,k) / zA(i,j,k)
@@ -209,39 +210,45 @@ module geometry
 
             ! pole boundary condition
             if(imin_id==-7) then
-              xnx(1,:,:)=xnx(2,:,:)
-              xny(1,:,:)=xny(2,:,:)
-              xnz(1,:,:)=xnz(2,:,:)
+              xn( 1,:,:,:)=xn(2,:,:,:)
+              xn( 0,:,:,:)=xn(2,:,:,:)
+              xn(-1,:,:,:)=xn(2,:,:,:)
+              xn(-2,:,:,:)=xn(2,:,:,:)
             end if
 
             if(imax_id==-7) then
-              xnx(imx,:,:)=xnx(imx-1,:,:)
-              xny(imx,:,:)=xny(imx-1,:,:)
-              xnz(imx,:,:)=xnz(imx-1,:,:)
+              xn(imx+0,:,:,:)=xn(imx-1,:,:,:)
+              xn(imx+1,:,:,:)=xn(imx-1,:,:,:)
+              xn(imx+2,:,:,:)=xn(imx-1,:,:,:)
+              xn(imx+3,:,:,:)=xn(imx-1,:,:,:)
             end if
 
             if(jmin_id==-7) then
-              ynx(:,1,:)=ynx(:,2,:)
-              yny(:,1,:)=yny(:,2,:)
-              ynz(:,1,:)=ynz(:,2,:)
+              yn(:, 1,:,:)=yn(:,2,:,:)
+              yn(:, 0,:,:)=yn(:,2,:,:)
+              yn(:,-1,:,:)=yn(:,2,:,:)
+              yn(:,-2,:,:)=yn(:,2,:,:)
             end if
 
             if(jmax_id==-7) then
-              ynx(:,jmx,:)=ynx(:,jmx-1,:)
-              yny(:,jmx,:)=yny(:,jmx-1,:)
-              ynz(:,jmx,:)=ynz(:,jmx-1,:)
+              yn(:,jmx+0,:,:)=yn(:,jmx-1,:,:)
+              yn(:,jmx+1,:,:)=yn(:,jmx-1,:,:)
+              yn(:,jmx+2,:,:)=yn(:,jmx-1,:,:)
+              yn(:,jmx+3,:,:)=yn(:,jmx-1,:,:)
             end if
 
             if(kmin_id==-7) then
-              znx(:,:,1)=znx(:,:,2)
-              zny(:,:,1)=zny(:,:,2)
-              znz(:,:,1)=znz(:,:,2)
+              zn(:,:, 1,:)=zn(:,:,2,:)
+              zn(:,:, 0,:)=zn(:,:,2,:)
+              zn(:,:,-1,:)=zn(:,:,2,:)
+              zn(:,:,-2,:)=zn(:,:,2,:)
             end if
 
             if(kmax_id==-7) then
-              znx(:,:,kmx)=znx(:,:,kmx-1)
-              zny(:,:,kmx)=zny(:,:,kmx-1)
-              znz(:,:,kmx)=znz(:,:,kmx-1)
+              zn(:,:,kmx+0,:)=zn(:,:,kmx-1,:)
+              zn(:,:,kmx+1,:)=zn(:,:,kmx-1,:)
+              zn(:,:,kmx+2,:)=zn(:,:,kmx-1,:)
+              zn(:,:,kmx+3,:)=zn(:,:,kmx-1,:)
             end if
 
             
@@ -273,12 +280,12 @@ module geometry
 
             ! Pole boundary conditions
             ! making sure face area is exactly equal zero
-            if(imin_id==-7) xA(1  ,  :,  :)=0.
-            if(imax_id==-7) xA(imx,  :,  :)=0.
-            if(jmin_id==-7) yA(  :,  1,  :)=0.
-            if(jmax_id==-7) yA(  :,jmx,  :)=0.
-            if(kmin_id==-7) zA(  :,  :,  1)=0.
-            if(kmax_id==-7) zA(  :,  :,kmx)=0.
+            if(imin_id==-7) xA(-2:1     ,  :,  :)=0.
+            if(imax_id==-7) xA(imx:imx+3,  :,  :)=0.
+            if(jmin_id==-7) yA(  :,     -2:1,  :)=0.
+            if(jmax_id==-7) yA(  :,jmx:jmx+3,  :)=0.
+            if(kmin_id==-7) zA(  :,  :,     -2:1)=0.
+            if(kmax_id==-7) zA(  :,  :,kmx:kmx+3)=0.
 
         end subroutine compute_face_areas
 
@@ -300,9 +307,9 @@ module geometry
             real :: d1x, d2x, d1y, d2y, d1z, d2z
             integer :: i, j, k
 
-            do k = 1, kmx - 1
-             do j = 1, jmx - 1
-              do i = 1, imx
+            do k = -2, kmx+2
+             do j = -2, jmx+2
+              do i = -2, imx+3
                 d1x = grid_x(i, j+1, k+1) - grid_x(i, j, k)
                 d1y = grid_y(i, j+1, k+1) - grid_y(i, j, k)
                 d1z = grid_z(i, j+1, k+1) - grid_z(i, j, k)
@@ -317,9 +324,9 @@ module geometry
              end do
 
 
-            do k = 1, kmx - 1
-             do j = 1, jmx
-              do i = 1, imx - 1
+            do k = -2, kmx+2
+             do j = -2, jmx+3
+              do i = -2, imx+2
                d1x = grid_x(i+1, j, k+1) - grid_x(i, j, k)
                d1y = grid_y(i+1, j, k+1) - grid_y(i, j, k)
                d1z = grid_z(i+1, j, k+1) - grid_z(i, j, k)
@@ -335,9 +342,9 @@ module geometry
             end do
 
             
-            do k = 1, kmx
-             do j = 1, jmx - 1
-              do i = 1, imx - 1
+            do k = -2, kmx+3
+             do j = -2, jmx+2
+              do i = -2, imx+2
                d1x = grid_x(i+1, j+1, k) - grid_x(i, j, k)
                d1y = grid_y(i+1, j+1, k) - grid_y(i, j, k)
                d1z = grid_z(i+1, j+1, k) - grid_z(i, j, k)
@@ -469,9 +476,10 @@ module geometry
             integer :: i,j,k
             real, dimension(1:3, 1:8) :: p_list
 
-            do k = 1, kmx - 1
-                do j = 1, jmx - 1
-                    do i = 1, imx -1
+            volume=1.
+            do k = 0, kmx+0
+                do j = 0, jmx+0
+                    do i = 0, imx+0
                         p_list(:, :) = 0.
                         p_list(:, 1) = (/ grid_x(i,j,k), grid_y(i,j,k), grid_z(i,j,k) /)
                         p_list(:, 2) = (/ grid_x(i+1,j,k), grid_y(i+1,j,k), grid_z(i+1,j,k) /)
@@ -485,6 +493,12 @@ module geometry
                     end do
                 end do
             end do
+            if(any(volume==0.0))then
+              Fatal_error
+            end if
+            if(any(volume<0.0))then
+              Fatal_error
+            end if
             
         end subroutine compute_volumes
 

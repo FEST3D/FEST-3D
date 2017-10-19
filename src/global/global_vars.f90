@@ -25,14 +25,15 @@ module global_vars
   integer :: jmax_id            ! bc_list at jmax for particulat processor
   integer :: kmin_id            ! bc_list at kmin for particulat processor
   integer :: kmax_id            ! bc_list at kmax for particulat processor
+  integer :: layers=3           ! no of layer of cells to transfer with mpi
 
   ! Time controls
   integer :: min_iter=1         !Minimum iteration value, starting iteration value
-  integer :: max_iters          !Maximum iteration value, stop at
+  integer :: max_iters=1          !Maximum iteration value, stop at
   integer :: start_from=0       ! folder load level from time_directories eg 1 for folder 0001
-  integer :: checkpoint_iter    ! Write interval for output file
-  integer :: checkpoint_iter_count ! write file counter
-  integer :: current_iter       ! current iteration number
+  integer :: checkpoint_iter=0    ! Write interval for output file
+  integer :: checkpoint_iter_count=0 ! write file counter
+  integer :: current_iter=0       ! current iteration number
 
   !write controls
   integer :: read_level=1
@@ -40,6 +41,7 @@ module global_vars
   integer :: w_count=0
   integer :: res_write_interval                      ! resnorm write interval
   integer :: purge_write                             ! number of output files per process to keep
+  integer :: last_iter=0
   integer :: write_percision=6                        ! number of place after decimal 
   character(len=FORMAT_LENGTH):: write_data_format   ! either ascii or binary
   character(len=FORMAT_LENGTH):: write_file_format   ! either vtk or tecplot
@@ -232,7 +234,6 @@ module global_vars
   real          :: energy_resnorm_0s  !     energy residue normalized at iter 1 
   real          ::    TKE_resnorm_0s  !        TKE residue normalized at iter 1 
   real          ::  omega_resnorm_0s  !      omega residue normalized at iter 1 
-  real          :: merror=0.
 
   ! grid variables
   integer                                 :: imx, jmx, kmx        ! no. of points
@@ -324,6 +325,19 @@ module global_vars
   integer, dimension(:), allocatable:: jmax
   integer, dimension(:), allocatable:: kmin
   integer, dimension(:), allocatable:: kmax
+
+  !interface mapping
+  integer, dimension(6) :: ilo, ihi
+  integer, dimension(6) :: jlo, jhi
+  integer, dimension(6) :: klo, khi
+  integer, dimension(6) :: dir_switch=0
+  integer, dimension(6) :: otherface
+
+  !zero flux faces
+  integer,dimension(:),allocatable::make_F_flux_zero
+  integer,dimension(:),allocatable::make_G_flux_zero
+  integer,dimension(:),allocatable::make_H_flux_zero
+
 
 end module global_vars
 

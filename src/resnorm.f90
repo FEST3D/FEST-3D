@@ -12,6 +12,9 @@ module resnorm
   use global,      only: RESNORM_FILE_UNIT
   use global,      only: resnorm_file
 
+  use global_vars, only: imx
+  use global_vars, only: jmx
+  use global_vars, only: kmx
   use global_vars, only: gm
   use global_vars, only: n_var
   use global_vars, only: density_inf
@@ -25,7 +28,6 @@ module resnorm
   use global_vars, only: current_iter
   use global_vars, only: res_write_interval
   use global_vars, only: write_percision
-  use global_vars, only: merror
   use global_vars, only: Res_abs
   use global_vars, only: Res_rel
   use global_vars, only: Res_save
@@ -35,6 +37,11 @@ module resnorm
   use global_vars, only: Res_itr
   use global_vars, only: turbulence
   use global_vars, only: residue
+  use global_vars, only: start_from
+  use global_vars, only: last_iter
+  use global_vars, only: F_p
+  use global_vars, only: G_p
+  use global_vars, only: H_p
 
 
   use utils,      only: dmsg
@@ -48,6 +55,7 @@ module resnorm
 #include "error.inc"
 #include "mpi.inc"
   private
+  real :: merror
   real, dimension(:), allocatable :: buffer
 
   public :: setup_resnorm
@@ -87,7 +95,11 @@ module resnorm
       implicit none
       integer :: i
       if(process_id==0)then
-        open(RESNORM_FILE_UNIT,file=resnorm_file)
+        if(start_from==0)then
+          open(RESNORM_FILE_UNIT,file=resnorm_file)
+        else
+          open(RESNORM_FILE_UNIT,file=resnorm_file, status='old', position='append', action='write')
+        end if
         write(RESNORM_FILE_UNIT, '(A,2x)', advance='no') "Iteration"
         do i=1,Res_count
           write(RESNORM_FILE_UNIT, '(A,2x)', advance='no') trim(Res_list(i))
@@ -158,8 +170,15 @@ module resnorm
       do i=1,n_var
         Res_abs(i) =(sum(Residue(:,:,:,i)**2)/Res_scale(i)**2)
       end do
+      merror = (                                     &
+               sum(F_p(  1,1:jmx-1,1:kmx-1,1)) &
+              -sum(F_p(imx,1:jmx-1,1:kmx-1,1)) &
+              +sum(G_p(1:imx-1,  1,1:kmx-1,1)) &
+              -sum(G_p(1:imx-1,jmx,1:kmx-1,1)) &
+              +sum(H_p(1:imx-1,1:jmx-1,  1,1)) &
+              -sum(H_p(1:imx-1,1:jmx-1,kmx,1)) &
+              )
       Res_abs(0) = (merror/Res_scale(0))
-      merror=0.
     end subroutine get_absolute_resnorm
 
     subroutine collect_resnorm_from_all_blocks()
@@ -197,7 +216,7 @@ module resnorm
       n=write_percision
       write(frm, '(A,I0,A,I0,A)') "(e",n+8,".",n,"E2, 4x)"
 
-      write(RESNORM_FILE_UNIT, '(I0,4x)', advance='no') current_iter
+      write(RESNORM_FILE_UNIT, '(I0,4x)', advance='no') current_iter+last_iter
       do i=1,Res_count
         select case(trim(Res_list(i)))
           !include "resnorm_write_cases.inc"

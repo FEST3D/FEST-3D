@@ -141,9 +141,9 @@ module viscosity
 
           case ('sst')
             !call calculate_sst_mu()
-            do k = 1,kmx-1
-              do j = 1,jmx-1
-                do i = 1,imx-1
+            do k = 0,kmx
+              do j = 0,jmx
+                do i = 0,imx
 
                   ! calculate_arg2()
                   var1 = sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))
@@ -186,7 +186,11 @@ module viscosity
             ! populating ghost cell
             do i = 1,6
               select case(id(i))
-                case(-4:-1,-6,8)
+                case(0:)
+                  !interface
+                  continue
+
+                case(-1,-2,-3,-4,-6,-7,-8,-9)
                   !call copy1(sst_mu, "symm", face_names(i))
                   select case(face_names(i))
                     case("imin")
@@ -244,9 +248,9 @@ module viscosity
             !--- calculate_kkl_mu()
             c = cmu**0.25
 
-            do k = 1,kmx-1
-              do j = 1,jmx-1
-                do i = 1,imx-1
+            do k = 0,kmx
+              do j = 0,jmx
+                do i = 0,imx
                   kkl_mu(i,j,k) = c*density(i,j,k)*tkl(i,j,k)&
                     /(max(sqrt(tk(i,j,k)),1.e-20))
                   if(tkl(i,j,k)<1.e-14 .or. tk(i,j,k)<1.e-14) &
@@ -258,7 +262,11 @@ module viscosity
             ! populating ghost cell
             do i = 1,6
               select case(id(i))
-                case(-4:-1,-6,-8)
+                case(0:)
+                  !interface
+                  continue
+
+                case(-4:-1,-6,-8,-9)
                   !call copy1(kkl_mu, "symm", face_names(i))
                   select case(face_names(i))
                     case("imin")
@@ -307,6 +315,10 @@ module viscosity
         end select
       end if
       !--- end turbulent viscosity calculation---!
+      !--- check on viscosity ---!
+      if(any(isnan(mu))) then
+        Fatal_error
+      end if
 
     end subroutine calculate_viscosity
 

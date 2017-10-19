@@ -281,7 +281,7 @@ module wall
               wall_x(ind) = grid_x(i, j, k )        
               wall_y(ind) = grid_y(i, j, k )        
               wall_z(ind) = grid_z(i, j, k )        
-              write(str(ind),'(3(f0.16, 4x))') wallc(i,:)
+              write(str(ind),'(3(f0.16, 4x))') wall_x(ind), wall_y(ind), wall_z(ind)
             end do
           end do
         end do

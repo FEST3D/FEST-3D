@@ -112,7 +112,11 @@ module check_output_control
             w_list(n) = "TKE_residue"
 
           case('f1')
-            w_list(n) = "F1"
+            if(trim(turbulence)=='sst')then
+              w_list(n) = "F1"
+            else
+              w_list(n) = 'do not write'
+            end if
 
           case('dudx')
             w_list(n) = "Dudx"

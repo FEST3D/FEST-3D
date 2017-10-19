@@ -11,6 +11,7 @@ module dump_solution
   use global,      only : RESTART_FILE_UNIT
   use global_vars, only : current_iter
   use global_vars, only : max_iters
+  use global_vars, only : last_iter
   use global_vars, only : checkpoint_iter
   use global_vars, only : checkpoint_iter_count
   use global_vars, only : purge_write
@@ -55,6 +56,7 @@ module dump_solution
              .or. current_iter == max_iters) then
               call make_dump_dir()
               call dump_data()
+              print*, "writing data at: ", current_iter, checkpoint_iter_count
               call purge_dump_dir()
               checkpoint_iter_count = checkpoint_iter_count + 1
               call dmsg(3, 'dump_solution', 'checkpoint', &
@@ -110,6 +112,7 @@ module dump_solution
       implicit none
 !      character(len=FILE_NAME_LENGTH) :: filename
 
+      call dmsg(1, 'dump_solution', 'dump_data')
       write(restartfile, '(A,I2.2)') trim(dump_dirname)//'/restart/process_',process_id
       write(    outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
       call write_restart_log()
@@ -137,6 +140,7 @@ module dump_solution
 
     subroutine write_initial_resnorm()
       implicit none
+      write(RESTART_FILE_UNIT, '(I0)')    current_iter+last_iter
       write(RESTART_FILE_UNIT, '(f0.16)')        resnorm_0
       write(RESTART_FILE_UNIT, '(f0.16)')    vis_resnorm_0
       write(RESTART_FILE_UNIT, '(f0.16)')   turb_resnorm_0

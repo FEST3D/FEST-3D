@@ -102,11 +102,13 @@ module solver
   use source, only: add_source_term_residue
   use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
   use viscous, only: compute_viscous_fluxes
-  use turbulent_fluxes, only: compute_turbulent_fluxes
+!  use turbulent_fluxes, only: compute_turbulent_fluxes
   use boundary_state_reconstruction, only: reconstruct_boundary_state
   use layout, only: process_id, grid_file_buf, bc_file, &
   get_process_data, read_layout_file, total_process
-  use parallel, only: allocate_buffer_cells,send_recv
+!  use parallel, only: allocate_buffer_cells,send_recv
+  use interface, only: setup_interface
+  use interface, only: destroy_interface
 !  use state, only: turbulence
   use resnorm, only : find_resnorm, setup_resnorm, destroy_resnorm
   use dump_solution, only : checkpoint
@@ -122,6 +124,7 @@ module solver
   use wall        , only : write_surfnode
   include "turbulence_models/include/solver/import_module.inc"
   use bc, only: setup_bc
+  use bc, only: destroy_bc
   use bc_primitive, only: populate_ghost_primitive
   use summon_grad_evaluation, only : evaluate_all_gradients
   use time , only : setup_time
@@ -131,6 +134,7 @@ module solver
   use update, only : get_next_solution
   use update, only : setup_update
   use update, only : destroy_update
+  use mapping, only : read_interface_map
 #include "error.inc"
 #include "mpi.inc"
     private
@@ -152,6 +156,7 @@ module solver
         subroutine setup_solver()
             
             implicit none
+            integer :: ierr
 
             call dmsg(1, 'solver', 'setup_solver')
             call get_process_data() ! parallel calls
@@ -167,11 +172,13 @@ module solver
             call setup_time()
             call setup_update()
             !call allocate_memory()
-            call allocate_buffer_cells(3) !parallel buffers
+            !call allocate_buffer_cells(3) !parallel buffers
+            call setup_interface()
             call setup_scheme()
             if(turbulence /= 'none') then
               call write_surfnode()
               call setup_wall_dist()
+              call mpi_barrier(MPI_COMM_WORLD,ierr)
               call find_wall_dist()
             end if
 !            if(mu_ref /= 0. .or. turbulence /= 'none') then
@@ -183,6 +190,11 @@ module solver
             call initmisc()
             checkpoint_iter_count = 0
             call checkpoint()  ! Create an initial dump file
+            current_iter=1
+            call dmsg(1, 'solver', 'setup_solver', 'checkpoint')
+            if(process_id==0)then
+              open(STOP_FILE_UNIT, file=stop_file)
+            end if
             call dmsg(1, 'solver', 'setup_solver', 'Setup solver complete')
 
         end subroutine setup_solver
@@ -193,6 +205,9 @@ module solver
             
             call dmsg(1, 'solver', 'destroy_solver')
 
+            if(process_id==0)then
+              close(STOP_FILE_UNIT)
+            end if
             call destroy_update()
             call destroy_viscosity()
 !            if(mu_ref /= 0. .or. turbulence /= 'none')  then 
@@ -209,10 +224,12 @@ module solver
             call destroy_geometry()
             call destroy_grid()
             call destroy_resnorm()
+            call destroy_interface()
 !            if(turbulence=='sst')then
 !              call destroy_sst_F1()
 !            end if
             call destroy_time()
+            call destroy_bc()
 
             if(allocated(r_list)) deallocate(r_list)
             if(allocated(w_list)) deallocate(w_list)
@@ -605,16 +622,15 @@ module solver
 !            call get_total_conservative_Residue()
 !            call compute_time_step()
             call get_next_solution()
-            current_iter = current_iter + 1
             call find_resnorm()
             call checkpoint()
+            current_iter = current_iter + 1
             if(process_id==0)then
-              open(STOP_FILE_UNIT, file=stop_file)
+              REWIND(STOP_FILE_UNIT)
               read(STOP_FILE_UNIT,*) want_to_stop
-              close(STOP_FILE_UNIT)
             end if
             call MPI_BCAST(want_to_stop,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
-            if (want_to_stop==1) max_iters=current_iter
+            if (want_to_stop==1) max_iters=current_iter-1
 
         end subroutine iterate_one_more_time_step
 

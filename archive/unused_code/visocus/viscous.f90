@@ -4,7 +4,7 @@ module viscous
   ! the boundary conditions to be imposed
   !-----------------------------------------------------------------
   !TODO: Viscous: Change to single subroutine for all directions  
-
+#include "../../../error.inc"
   use global     , only: FILE_NAME_LENGTH
   use global_vars, only : imx
   use global_vars, only : jmx
@@ -25,6 +25,7 @@ module viscous
   use global_vars, only :    top_ghost_centroid
   use global_vars, only : bottom_ghost_centroid
   
+  use global_vars, only : process_id
   use global_vars, only : gm
   use global_vars, only : n_var
   use global_vars, only : R_gas
@@ -702,8 +703,17 @@ module viscous
         real, dimension(:, :, :, :), pointer :: F, G, H
         
         call compute_xi_viscous_fluxes(F)
+        if (any(isnan(F))) then
+          Fatal_error
+        end if
         call compute_eta_viscous_fluxes(G)
+        if (any(isnan(G))) then
+          Fatal_error
+        end if
         call compute_zeta_viscous_fluxes(H)
+        if (any(isnan(H))) then
+          Fatal_error
+        end if
 
     end subroutine compute_viscous_fluxes
 

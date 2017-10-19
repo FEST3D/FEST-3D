@@ -39,6 +39,7 @@ module global
     integer, parameter ::        FLOW_FILE_UNIT = 38
     integer, parameter ::     RESTART_FILE_UNIT = 39
     integer, parameter ::       OUTIN_FILE_UNIT = 40
+    integer, parameter ::         MAP_FILE_UNIT = 41
 
     ! stop file
     integer, parameter ::       STOP_FILE_UNIT = 41
@@ -55,6 +56,7 @@ module global
     character(len=*), parameter :: res_control_file='system/res_control.md'
     character(len=*), parameter :: resnorm_file='time_directories/aux/resnorm'
     character(len=*), parameter :: stop_file='system/stopfile'
+    character(len=*), parameter :: mapfile='system/mesh/layout/mapping.txt'
 
     ! Fixed variable
     integer, parameter :: resnorm_number=10 

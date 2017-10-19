@@ -40,7 +40,7 @@ module wall_dist
                 "ERROR: unale to allocate memory to 'Dist' variable " )
       call alloc(wall_z, 1, n_surfnodes,&
                 "ERROR: unale to allocate memory to 'Dist' variable " )
-      call alloc(dist, 1, imx-1, 1, jmx-1, 1, kmx-1, &
+      call alloc(dist, -2, imx+2, -2, jmx+2, -2, kmx+2, &
                 "ERROR: unale to allocate memory to 'Dist' variable " )
       call read_destroy_nodefile
 
@@ -87,64 +87,45 @@ module wall_dist
 
       implicit none
 
-      integer :: i,j,k
-      integer :: id,jd,kd
+      integer :: i,j,k,n
+      real :: current_dist
+      real, dimension(:,:,:), allocatable :: node_dist
       call dmsg(1, 'wall_dist', 'find_wall_dist')
+      call alloc(node_dist,-2,imx+3,-2,jmx+3,-2,kmx+3)
 
-      do k = 1,kmx-1
-        do j = 1,jmx-1
-          do i = 1,imx-1
+      do k = -2,kmx+3
+        do j = -2,jmx+3
+          do i = -2,imx+3
+            node_dist(i,j,k) = 1.e+20
+            do n = 1,n_surfnodes
 
-            id = 1
-            jd = 1
-            kd = 1
+            current_dist = sqrt((wall_x(n)-grid_x(i,j,k))**2&
+                               +(wall_y(n)-grid_y(i,j,k))**2&
+                               +(wall_z(n)-grid_z(i,j,k))**2&
+                               ) 
+            node_dist(i,j,k) = min(node_dist(i,j,k),current_dist)
 
-            dist(i,j,k) = 0.125*(                                                        &
-                                  minval(sqrt(                                           &
-                                               (wall_x(:)-grid_x(i   , j   , k   ))**2   &
-                                              +(wall_y(:)-grid_y(i   , j   , k   ))**2   &
-                                              +(wall_z(:)-grid_z(i   , j   , k   ))**2   &
-                                        )    )                                           &
-                                 +minval(sqrt(                                           &
-                                               (wall_x(:)-grid_x(i+id, j   , k   ))**2   &
-                                              +(wall_y(:)-grid_y(i+id, j   , k   ))**2   &
-                                              +(wall_z(:)-grid_z(i+id, j   , k   ))**2   &
-                                        )    )                                           &
-                                 +minval(sqrt(                                           &
-                                               (wall_x(:)-grid_x(i   , j+jd, k   ))**2   &
-                                              +(wall_y(:)-grid_y(i   , j+jd, k   ))**2   &
-                                              +(wall_z(:)-grid_z(i   , j+jd, k   ))**2   &
-                                        )    )                                           &
-                                 +minval(sqrt(                                           &
-                                               (wall_x(:)-grid_x(i   , j   , k+kd))**2   &
-                                              +(wall_y(:)-grid_y(i   , j   , k+kd))**2   &
-                                              +(wall_z(:)-grid_z(i   , j   , k+kd))**2   &
-                                        )    )                                           &
-                                 +minval(sqrt(                                           &
-                                               (wall_x(:)-grid_x(i   , j+jd, k+kd))**2   &
-                                              +(wall_y(:)-grid_y(i   , j+jd, k+kd))**2   &
-                                              +(wall_z(:)-grid_z(i   , j+jd, k+kd))**2   &
-                                        )    )                                           &
-                                 +minval(sqrt(                                           &
-                                               (wall_x(:)-grid_x(i+id, j   , k+kd))**2   &
-                                              +(wall_y(:)-grid_y(i+id, j   , k+kd))**2   &
-                                              +(wall_z(:)-grid_z(i+id, j   , k+kd))**2   &
-                                        )    )                                           &
-                                 +minval(sqrt(                                           &
-                                               (wall_x(:)-grid_x(i+id, j+jd, k   ))**2   &
-                                              +(wall_y(:)-grid_y(i+id, j+jd, k   ))**2   &
-                                              +(wall_z(:)-grid_z(i+id, j+jd, k   ))**2   &
-                                        )    )                                           &
-                                 +minval(sqrt(                                           &
-                                               (wall_x(:)-grid_x(i+id, j+jd, k+kd))**2   &
-                                              +(wall_y(:)-grid_y(i+id, j+jd, k+kd))**2   &
-                                              +(wall_z(:)-grid_z(i+id, j+jd, k+kd))**2   &
-                                        )    )                                           &
-                                )
-
+            end do
           end do
         end do
       end do
+      do k=-2,kmx+2
+        do j=-2,jmx+2
+          do i=-2,imx+2
+            dist(i,j,k) = 0.125*(node_dist(i  ,j  ,k  )&
+                                +node_dist(i  ,j+1,k  )&
+                                +node_dist(i  ,j+1,k+1)&
+                                +node_dist(i  ,j  ,k+1)&
+                                +node_dist(i+1,j  ,k+1)&
+                                +node_dist(i+1,j  ,k  )&
+                                +node_dist(i+1,j+1,k  )&
+                                +node_dist(i+1,j+1,k+1)&
+                                )
+          end do
+        end do
+      end do
+      call dealloc(node_dist)
+      call dmsg(1, 'wall_dist', 'find_wall_dist-> complete')
 
     end subroutine find_wall_dist
 

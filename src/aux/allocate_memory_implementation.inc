@@ -105,6 +105,25 @@ subroutine alloc_rank5_real(var, start1, stop1, start2, stop2, &
     end if
 end subroutine alloc_rank5_real
 
+subroutine alloc_rank1_integer(var, start1, stop1, errmsg)
+    implicit none
+    integer, dimension(:), intent(inout), allocatable :: var
+    integer, intent(in) :: start1
+    integer, intent(in) :: stop1
+    integer :: mem_stat
+    character(len=*), intent(in), optional :: errmsg
+    allocate(var(start1:stop1), stat=mem_stat)
+    if (mem_stat /= 0) then
+        if (present(errmsg)) then
+            print *, errmsg
+        else
+            print *, 'Error: Could not allocate memory.'
+        end if
+        print *, 'Required extent: ', stop1 - start1 + 1
+        stop
+    end if
+end subroutine alloc_rank1_integer
+
 subroutine alloc_rank2_integer(var, start1, stop1, start2, stop2, errmsg)
     implicit none
     integer, dimension(:, :), intent(inout), allocatable :: var
@@ -124,3 +143,27 @@ subroutine alloc_rank2_integer(var, start1, stop1, start2, stop2, errmsg)
         stop
     end if
 end subroutine alloc_rank2_integer
+
+
+subroutine alloc_rank3_integer(var, start1, stop1, start2, stop2, &
+        start3, stop3, errmsg)
+    implicit none
+    integer, dimension(:, :, :), intent(inout), allocatable :: var
+    integer, intent(in) :: start1, start2, start3
+    integer, intent(in) :: stop1, stop2, stop3
+    integer :: mem_stat
+    character(len=*), intent(in), optional :: errmsg
+    allocate(var(start1:stop1, start2:stop2, start3:stop3), &
+            stat=mem_stat)
+    if (mem_stat /= 0) then
+        if (present(errmsg)) then
+            print *, errmsg
+        else
+            print *, 'Error: Could not allocate memory.'
+        end if
+        print *, 'Required extent: ', stop1 - start1 + 1, &
+                stop2 - start2 + 1, stop3 - start3 + 1
+        stop
+    end if
+end subroutine alloc_rank3_integer
+

@@ -58,6 +58,18 @@ subroutine dealloc_rank5_real(var)
     end if
 end subroutine dealloc_rank5_real
 
+subroutine dealloc_rank1_integer(var)
+    implicit none
+    integer, dimension(:), intent(inout), allocatable :: var
+    integer :: mem_stat
+    if(allocated(var)) then
+      deallocate(var, stat=mem_stat)
+      if (mem_stat /= 0) then
+          print *, 'Error: Could not deallocate memory.'
+      end if
+    end if
+end subroutine dealloc_rank1_integer
+
 subroutine dealloc_rank2_integer(var)
     implicit none
     integer, dimension(:, :), intent(inout), allocatable :: var
@@ -69,3 +81,16 @@ subroutine dealloc_rank2_integer(var)
       end if
     end if
 end subroutine dealloc_rank2_integer
+
+subroutine dealloc_rank3_integer(var)
+    implicit none
+    integer, dimension(:, :, :), intent(inout), allocatable :: var
+    integer :: mem_stat
+    if(allocated(var)) then
+      deallocate(var, stat=mem_stat)
+      if (mem_stat /= 0) then
+          print *, 'Error: Could not deallocate memory.'
+      end if
+    end if
+end subroutine dealloc_rank3_integer
+

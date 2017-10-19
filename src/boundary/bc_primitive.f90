@@ -121,6 +121,9 @@ module bc_primitive
           case(-8)
             call far_field(face)
 
+          case(-9)
+            call total_pressure(face)
+
           case Default
             if(id(i)>=0) then
               continue !interface boundary 
@@ -130,6 +133,16 @@ module bc_primitive
 
           end select
         end do
+!        qp(0,0,:,:) = 0.5*(qp(0,1,:,:)+qp(1,0,:,:))
+!        qp(0,jmx,:,:) = 0.5*(qp(0,jmx-1,:,:)+qp(1,jmx,:,:))
+!        qp(imx,0,:,:) = 0.5*(qp(imx,1,:,:)+qp(imx-1,0,:,:))
+!        qp(imx,jmx,:,:) = 0.5*(qp(imx,jmx-1,:,:)+qp(imx-1,jmx,:,:))
+!        qp(0,:,0,:) = 0.5*(qp(0,:,1,:)+qp(1,:,0,:))
+!        qp(0,:,kmx,:) = 0.5*(qp(0,:,kmx-1,:)+qp(1,:,kmx,:))
+!        qp(imx,:,0,:) = 0.5*(qp(imx,:,1,:)+qp(imx-1,:,0,:))
+!        qp(imx,:,kmx,:) = 0.5*(qp(imx,:,jmx-1,:)+qp(imx-1,:,jmx,:))
+!         qp(:,0,0,:) = 0.33*(qp(:,1,1,:)+qp(:,0,1,:)+qp(:,1,0,:))
+!         qp(:,0,kmx,:) = 0.33*(qp(:,1,kmx-1,:)+qp(:,0,kmx-1,:)+qp(:,1,kmx,:))
       end subroutine populate_ghost_primitive
 
 
@@ -464,11 +477,12 @@ module bc_primitive
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
                 ! ghost cell
-                uf = x_speed(i-1,j,k)
-                vf = y_speed(i-1,j,k)
-                wf = z_speed(i-1,j,k)
+                uf = x_speed_inf!x_speed(i-1,j,k)
+                vf = y_speed_inf!y_speed(i-1,j,k)
+                wf = z_speed_inf!z_speed(i-1,j,k)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
+                !cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
                 Uninf = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -537,11 +551,12 @@ module bc_primitive
                 v = y_speed(i-1,j,k)
                 w = z_speed(i-1,j,k)
                 ! ghost cell
-                uf = x_speed(i,j,k)
-                vf = y_speed(i,j,k)
-                wf = z_speed(i,j,k)
+                uf = x_speed_inf!x_speed(i,j,k)
+                vf = y_speed_inf!y_speed(i,j,k)
+                wf = z_speed_inf!z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
-                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
                 Uninf = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -610,11 +625,12 @@ module bc_primitive
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
                 ! ghost cell
-                uf = x_speed(i,j-1,k)
-                vf = y_speed(i,j-1,k)
-                wf = z_speed(i,j-1,k)
+                uf = x_speed_inf!x_speed(i,j-1,k)
+                vf = y_speed_inf!y_speed(i,j-1,k)
+                wf = z_speed_inf!z_speed(i,j-1,k)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                cinf = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                !cinf = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(-ynx(i,j,k)) + v *(-yny(i,j,k)) + w *(-ynz(i,j,k))
                 Uninf = uf*(-ynx(i,j,k)) + vf*(-yny(i,j,k)) + wf*(-ynz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -683,11 +699,12 @@ module bc_primitive
                 v = y_speed(i,j-1,k)
                 w = z_speed(i,j-1,k)
                 ! ghost cell
-                uf = x_speed(i,j,k)
-                vf = y_speed(i,j,k)
-                wf = z_speed(i,j,k)
+                uf = x_speed_inf!x_speed(i,j,k)
+                vf = y_speed_inf!y_speed(i,j,k)
+                wf = z_speed_inf!z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
-                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
                 Uninf = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -756,11 +773,12 @@ module bc_primitive
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
                 ! ghost cell
-                uf = x_speed(i,j,k-1)
-                vf = y_speed(i,j,k-1)
-                wf = z_speed(i,j,k-1)
+                uf = x_speed_inf!x_speed(i,j,k-1)
+                vf = y_speed_inf!y_speed(i,j,k-1)
+                wf = z_speed_inf!z_speed(i,j,k-1)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                cinf = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
+                !cinf = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(-znx(i,j,k)) + v *(-zny(i,j,k)) + w *(-znz(i,j,k))
                 Uninf = uf*(-znx(i,j,k)) + vf*(-zny(i,j,k)) + wf*(-znz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -829,11 +847,12 @@ module bc_primitive
                 v = y_speed(i,j,k-1)
                 w = z_speed(i,j,k-1)
                 ! ghost cell
-                uf = x_speed(i,j,k)
-                vf = y_speed(i,j,k)
-                wf = z_speed(i,j,k)
+                uf = x_speed_inf!x_speed(i,j,k)
+                vf = y_speed_inf!y_speed(i,j,k)
+                wf = z_speed_inf!z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
-                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(znx(i,j,k)) + v *(zny(i,j,k)) + w *(znz(i,j,k))
                 Uninf = uf*(znx(i,j,k)) + vf*(zny(i,j,k)) + wf*(znz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -925,11 +944,12 @@ module bc_primitive
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
                 ! ghost cell
-                uf = x_speed(i-1,j,k)
-                vf = y_speed(i-1,j,k)
-                wf = z_speed(i-1,j,k)
+                uf = x_speed_inf!x_speed(i-1,j,k)
+                vf = y_speed_inf!y_speed(i-1,j,k)
+                wf = z_speed_inf!z_speed(i-1,j,k)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
+                !cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
                 Uninf = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -978,7 +998,7 @@ module bc_primitive
                   end select
                 end if
                 Mb = sqrt(x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/Cb
-                pressure(i-1,j,k) = fixed_Tpressure(1)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                pressure(i-1,j,k) = fixed_Tpressure(1)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i-1,j,k) = gm*pressure(i-1,j,k)/(Cb*Cb)
               end do
             end do
@@ -994,11 +1014,12 @@ module bc_primitive
                 v = y_speed(i-1,j,k)
                 w = z_speed(i-1,j,k)
                 ! ghost cell
-                uf = x_speed(i,j,k)
-                vf = y_speed(i,j,k)
-                wf = z_speed(i,j,k)
+                uf = x_speed_inf!x_speed(i,j,k)
+                vf = y_speed_inf!y_speed(i,j,k)
+                wf = z_speed_inf!z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
-                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
                 Uninf = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -1063,11 +1084,12 @@ module bc_primitive
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
                 ! ghost cell
-                uf = x_speed(i,j-1,k)
-                vf = y_speed(i,j-1,k)
-                wf = z_speed(i,j-1,k)
+                uf = x_speed_inf!x_speed(i,j-1,k)
+                vf = y_speed_inf!y_speed(i,j-1,k)
+                wf = z_speed_inf!z_speed(i,j-1,k)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                cinf = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                !cinf = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(-ynx(i,j,k)) + v *(-yny(i,j,k)) + w *(-ynz(i,j,k))
                 Uninf = uf*(-ynx(i,j,k)) + vf*(-yny(i,j,k)) + wf*(-ynz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -1132,11 +1154,12 @@ module bc_primitive
                 v = y_speed(i,j-1,k)
                 w = z_speed(i,j-1,k)
                 ! ghost cell
-                uf = x_speed(i,j,k)
-                vf = y_speed(i,j,k)
-                wf = z_speed(i,j,k)
+                uf = x_speed_inf!x_speed(i,j,k)
+                vf = y_speed_inf!y_speed(i,j,k)
+                wf = z_speed_inf!z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
-                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
                 Uninf = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -1201,11 +1224,12 @@ module bc_primitive
                 v = y_speed(i,j,k)
                 w = z_speed(i,j,k)
                 ! ghost cell
-                uf = x_speed(i,j,k-1)
-                vf = y_speed(i,j,k-1)
-                wf = z_speed(i,j,k-1)
+                uf = x_speed_inf!x_speed(i,j,k-1)
+                vf = y_speed_inf!y_speed(i,j,k-1)
+                wf = z_speed_inf!z_speed(i,j,k-1)
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
-                cinf = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
+                !cinf = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(-znx(i,j,k)) + v *(-zny(i,j,k)) + w *(-znz(i,j,k))
                 Uninf = uf*(-znx(i,j,k)) + vf*(-zny(i,j,k)) + wf*(-znz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -1270,11 +1294,12 @@ module bc_primitive
                 v = y_speed(i,j,k-1)
                 w = z_speed(i,j,k-1)
                 ! ghost cell
-                uf = x_speed(i,j,k)
-                vf = y_speed(i,j,k)
-                wf = z_speed(i,j,k)
+                uf = x_speed_inf!x_speed(i,j,k)
+                vf = y_speed_inf!y_speed(i,j,k)
+                wf = z_speed_inf!z_speed(i,j,k)
                 cexp = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
-                cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
+                cinf = sqrt(gm*pressure_inf/density_inf)
                 Unexp = u *(znx(i,j,k)) + v *(zny(i,j,k)) + w *(znz(i,j,k))
                 Uninf = uf*(znx(i,j,k)) + vf*(zny(i,j,k)) + wf*(znz(i,j,k))
                 Rinf  = Uninf - 2*cinf/(gm-1.)
@@ -1371,7 +1396,7 @@ module bc_primitive
             call copy3(density , "symm",  face)
           end if
          case("imax")
-          if(temperature(1)<0.0)then
+          if(temperature(2)<0.0)then
             do k = 1,kmx-1
               do j = 1,jmx-1
                 do i = imx-1,imx-1
@@ -1382,7 +1407,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>1.0)then
+          elseif(temperature(2)>1.0)then
             do k = 1,kmx-1
               do j = 1,jmx-1
                 do i = imx-1,imx-1
@@ -1396,7 +1421,7 @@ module bc_primitive
             call copy3(density , "symm",  face)
           end if
         case("jmin")
-          if(temperature(1)<0.0)then
+          if(temperature(3)<0.0)then
             do k = 1,kmx-1
               do j = 1,1
                 do i = 1,imx-1
@@ -1407,7 +1432,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>1.0)then
+          elseif(temperature(3)>1.0)then
             do k = 1,kmx-1
               do j = 1,1
                 do i = 1,imx-1
@@ -1421,7 +1446,7 @@ module bc_primitive
             call copy3(density , "symm",  face)
           end if
         case("jmax")
-          if(temperature(1)<0.0)then
+          if(temperature(4)<0.0)then
             do k = 1,kmx-1
               do j = jmx-1,jmx-1
                 do i = 1,imx-1
@@ -1432,7 +1457,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>1.0)then
+          elseif(temperature(4)>1.0)then
             do k = 1,kmx-1
               do j = jmx-1,jmx-1
                 do i = 1,imx-1
@@ -1446,7 +1471,7 @@ module bc_primitive
             call copy3(density , "symm",  face)
           end if
         case("kmin")
-          if(temperature(1)<0.0)then
+          if(temperature(5)<0.0)then
             do k = 1,1
               do j = 1,jmx-1
                 do i = 1,imx-1
@@ -1457,7 +1482,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>1.0)then
+          elseif(temperature(5)>1.0)then
             do k = 1,1
               do j = 1,jmx-1
                 do i = 1,imx-1
@@ -1471,7 +1496,7 @@ module bc_primitive
             call copy3(density , "symm",  face)
           end if
         case("kmax")
-          if(temperature(1)<0.0)then
+          if(temperature(6)<0.0)then
             do k = kmx-1,kmx-1
               do j = 1,jmx-1
                 do i = 1,imx-1
@@ -1482,7 +1507,7 @@ module bc_primitive
                 end do
               end do
             end do
-          elseif(temperature(1)>1.0)then
+          elseif(temperature(6)>1.0)then
             do k = kmx-1,kmx-1
               do j = 1,jmx-1
                 do i = 1,imx-1

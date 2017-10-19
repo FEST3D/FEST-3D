@@ -38,6 +38,8 @@ module muscl
     real :: phi, kappa
     real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
     real, dimension(:, :, :), allocatable :: pdif
+    integer :: switch_L=1
+    integer :: switch_P=1
     !TODO: Convert to system of flags to write all 3 directions in a single subroutine
 
 !   character(len=30) :: TVD_scheme
@@ -139,8 +141,12 @@ module muscl
 
             phi = 1.0
             kappa = 1./3.
+            switch_L=ilimiter_switch
 
             do l = 1, n_var
+              if(l==6  .or. l==7 )then
+                switch_L=1
+              end if
              do k = 1, kmx - 1
               do j = 1, jmx - 1
                do i = 0, imx 
@@ -160,12 +166,8 @@ module muscl
 !                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
                 psi2 = max(0., min(2*r, (2 + r)/3., 2.))
 !                psi2 = max(0., min(2*r,1.), min(r,2.))
-                if(l==6  .or. l==7 )then
-                  continue
-                else
-                  psi1 = (1 - (1 - psi1)*ilimiter_switch )
-                  psi2 = (1 - (1 - psi2)*ilimiter_switch )
-                end if
+                psi1 = (1 - (1 - psi1)*switch_L )
+                psi2 = (1 - (1 - psi2)*switch_L )
 
                 x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
@@ -194,8 +196,12 @@ module muscl
 
             integer :: i, j, k, l
             real :: psi1, psi2, fd, bd, r
+            switch_L=ilimiter_switch
 
             do l = 1, n_var
+              if(l==6  .or. l==7 )then
+                switch_L=1
+              end if
              do k = 1, kmx - 1
               do j = 0, jmx 
                do i = 1, imx - 1
@@ -218,12 +224,8 @@ module muscl
 !                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
                 !psi2 = (1 - (1 - psi2)*ilimiter_switch )
                 !check for turbulent variables
-                if(l==6 .or. l==7)then
-                  continue
-                else
-                  psi1 = (1 - (1 - psi1)*ilimiter_switch )
-                  psi2 = (1 - (1 - psi2)*ilimiter_switch )
-                end if
+                psi1 = (1 - (1 - psi1)*switch_L )
+                psi2 = (1 - (1 - psi2)*switch_L )
 
                 y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
@@ -251,10 +253,14 @@ module muscl
 
             real :: psi1, psi2, fd, bd, r
             integer :: i, j, k, l
+            switch_L=ilimiter_switch
             !TODO: Figure out why in muscl, compute_zeta_face_states(), the order of looping matters
 
             do k = 0, kmx
              do l = 1, n_var
+              if(l==6  .or. l==7 )then
+                switch_L=1
+              end if
               do j = 1, jmx - 1
                do i = 1, imx - 1
                 ! Cell based
@@ -276,12 +282,8 @@ module muscl
 !                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
                 !psi2 = (1 - (1 - psi2)*ilimiter_switch )
                 !check for turbulent variables
-                if(l==6 .or. l==7 )then
-                  continue
-                else
-                  psi1 = (1 - (1 - psi1)*ilimiter_switch )
-                  psi2 = (1 - (1 - psi2)*ilimiter_switch )
-                end if
+                psi1 = (1 - (1 - psi1)*switch_L )
+                psi2 = (1 - (1 - psi2)*switch_L )
 
                 z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
                     (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))

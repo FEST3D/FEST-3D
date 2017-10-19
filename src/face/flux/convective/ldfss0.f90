@@ -15,13 +15,9 @@ module ldfss0
     use global_vars, only : gm
     use global_vars, only : n_var
     use global_vars, only : turbulence
-    use global_vars, only : imin_id
-    use global_vars, only : imax_id
-    use global_vars, only : jmin_id
-    use global_vars, only : jmax_id
-    use global_vars, only : kmin_id
-    use global_vars, only : kmax_id
-    use global_vars, only : merror
+    use global_vars, only : make_F_flux_zero
+    use global_vars, only : make_G_flux_zero
+    use global_vars, only : make_H_flux_zero
 
     use utils, only: alloc, dealloc, dmsg
     use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
@@ -110,8 +106,6 @@ module ldfss0
             real :: scrD_plus, scrD_minus
             real :: sound_speed_avg, face_normal_speeds
             real :: M_ldfss, M_plus_ldfss, M_minus_ldfss
-            integer:: normal_tag
-            integer:: id
             !include compute_flux_variable_and_select.inc before select         
             !as it contains variables deceleration                              
             include "turbulence_models/include/ldfss0/compute_flux_var.inc"
@@ -237,7 +231,13 @@ module ldfss0
                 F_plus(1) = f_density_left(i, j, k) * sound_speed_avg * c_plus
                 ! F minus mass flux
                 F_minus(1) = f_density_right(i, j, k) * sound_speed_avg * c_minus
-                include "mass_flux.inc"
+                F_plus(1)  = F_plus(1) *(i_f*make_F_flux_zero(i) &
+                                       + j_f*make_G_flux_zero(j) &
+                                       + k_f*make_H_flux_zero(k))
+                F_minus(1) = F_minus(1)*(i_f*make_F_flux_zero(i) &
+                                       + j_f*make_G_flux_zero(j) &
+                                       + k_f*make_H_flux_zero(k))
+
 
                 ! Construct other fluxes in terms of the F mass flux
                 F_plus(2) = (F_plus(1) * f_x_speed_left(i, j, k)) + &

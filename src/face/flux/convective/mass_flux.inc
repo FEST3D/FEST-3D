@@ -26,7 +26,26 @@
       case(-5,-6,-7)
         F_plus(1)=0.0
         F_minus(1)=0.0
-      case(-4,-3,-2,-1,-8)
+!        if(i==1)then
+!          x_qp_left(1,:,:,2:4)=0.0
+!          x_qp_right(1,:,:,2:4)=0.0
+!        elseif(j==1)then
+!          y_qp_left(:,1,:,2:4)=0.0
+!          y_qp_right(:,1,:,2:4)=0.0
+!        elseif(k==1)then
+!          z_qp_left(:,:,1,2:4)=0.0
+!          z_qp_right(:,:,1,2:4)=0.0
+!        elseif(i==imx)then
+!          x_qp_left(imx,:,:,2:4)=0.0
+!          x_qp_right(imx,:,:,2:4)=0.0
+!        elseif(j==jmx)then
+!          y_qp_left(:,jmx,:,2:4)=0.0
+!          y_qp_right(:,jmx,:,2:4)=0.0
+!        elseif(k==kmx)then
+!          z_qp_left(:,:,kmx,2:4)=0.0
+!          z_qp_right(:,:,kmx,2:4)=0.0
+!        end if
+      case(-4,-3,-2,-1,-8,-9)
         merror = merror - normal_tag*(F_plus(1)+F_minus(1))*fA(i,j,k)
        ! print*, merror, normal_tag, (F_plus(1)+F_minus(1))*fA(i,j,k)
       case(0:)

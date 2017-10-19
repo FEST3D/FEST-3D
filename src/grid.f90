@@ -14,9 +14,27 @@ module grid
     use global_vars, only : grid_x
     use global_vars, only : grid_y
     use global_vars, only : grid_z
+    use global_vars, only : imin_id
+    use global_vars, only : jmin_id
+    use global_vars, only : kmin_id
+    use global_vars, only : imax_id
+    use global_vars, only : jmax_id
+    use global_vars, only : kmax_id
+    use mapping, only : Gilo
+    use mapping, only : Gjlo
+    use mapping, only : Gklo
+    use mapping, only : Gihi
+    use mapping, only : Gjhi
+    use mapping, only : Gkhi
+    use mapping, only : mpi_class
+    use mapping, only : read_interface_map
+    use global_vars, only : dir_switch
+    use global_vars, only : layers
+    use global_vars, only : process_id
     use utils, only: alloc, dealloc, dmsg
     
-    implicit none
+#include "error.inc"
+#include "mpi.inc"
     private
     
     ! Public methods
@@ -34,11 +52,11 @@ module grid
 
             call dmsg(1, 'grid', 'allocate_memory')
 
-            call alloc(grid_x, 1, imx, 1, jmx, 1, kmx, &
+            call alloc(grid_x, -2, imx+3, -2, jmx+3, -2, kmx+3, &
                     errmsg='Error: Unable to allocate memory for grid_x.')
-            call alloc(grid_y, 1, imx, 1, jmx, 1, kmx, &
+            call alloc(grid_y, -2, imx+3, -2, jmx+3, -2, kmx+3, &
                     errmsg='Error: Unable to allocate memory for grid_y.')
-            call alloc(grid_z, 1, imx, 1, jmx, 1, kmx, &
+            call alloc(grid_z, -2, imx+3, -2, jmx+3, -2, kmx+3, &
                     errmsg='Error: Unable to allocate memory for grid_z.')
             
             ! The alloc function earlier allocates only real arrays.
@@ -88,11 +106,18 @@ module grid
 
             call allocate_memory()
 
+            !read interface mapping
+            call read_interface_map()
+
+            ! ghost grid exchange
             call populate_grid_points()
 !           call populate_sphere_indices()
 
             close(GRID_FILE_UNIT)
 !           close(SPHERE_INDICES_FILE_UNIT)
+
+            ! populate ghost grid points
+            call ghost_grid()
         
         end subroutine setup_grid
         
@@ -225,6 +250,733 @@ module grid
 
         end subroutine populate_grid_points
 
+        subroutine ghost_grid()
+          implicit none
+          integer :: count=0
+          integer :: i,j,k,l
+          integer :: ierr
+          integer :: status(MPI_STATUS_SIZE)
+          real, dimension(:),allocatable :: imin_send_buffer
+          real, dimension(:),allocatable :: jmin_send_buffer
+          real, dimension(:),allocatable :: kmin_send_buffer
+          real, dimension(:),allocatable :: imin_recv_buffer
+          real, dimension(:),allocatable :: jmin_recv_buffer
+          real, dimension(:),allocatable :: kmin_recv_buffer
+          real, dimension(:),allocatable :: imax_send_buffer
+          real, dimension(:),allocatable :: jmax_send_buffer
+          real, dimension(:),allocatable :: kmax_send_buffer
+          real, dimension(:),allocatable :: imax_recv_buffer
+          real, dimension(:),allocatable :: jmax_recv_buffer
+          real, dimension(:),allocatable :: kmax_recv_buffer
+
+          call dmsg(1, 'grid', 'ghost_grid_extrapolate')
+          !-------------------------------------------------------------------
+          !getting ghost cell for all faces even if it is a interface cell
+          ! <algorithm>
+          ! Point_ghost = 2*Point_first_inner_cell - Point_second_inner_cell
+          ! </algorithm>
+          !-------------------------------------------------------------------
+
+          !--- I faces ---!
+          !imin face -> 0 grid point
+          grid_x( 0,:,:)=2*grid_x( 1,:,:)-grid_x(2,:,:)
+          grid_y( 0,:,:)=2*grid_y( 1,:,:)-grid_y(2,:,:)
+          grid_z( 0,:,:)=2*grid_z( 1,:,:)-grid_z(2,:,:)
+          !imin face -> -1 grid point
+          grid_x(-1,:,:)=2*grid_x( 0,:,:)-grid_x(1,:,:)
+          grid_y(-1,:,:)=2*grid_y( 0,:,:)-grid_y(1,:,:)
+          grid_z(-1,:,:)=2*grid_z( 0,:,:)-grid_z(1,:,:)
+          !imin face -> -2 grid point
+          grid_x(-2,:,:)=2*grid_x(-1,:,:)-grid_x(0,:,:)
+          grid_y(-2,:,:)=2*grid_y(-1,:,:)-grid_y(0,:,:)
+          grid_z(-2,:,:)=2*grid_z(-1,:,:)-grid_z(0,:,:)
+
+          !imax face -> imx+1 grid point
+          grid_x(imx+1,:,:)=2*grid_x(imx+0,:,:)-grid_x(imx-1,:,:)
+          grid_y(imx+1,:,:)=2*grid_y(imx+0,:,:)-grid_y(imx-1,:,:)
+          grid_z(imx+1,:,:)=2*grid_z(imx+0,:,:)-grid_z(imx-1,:,:)
+          !imax face -> imx+2 grid point
+          grid_x(imx+2,:,:)=2*grid_x(imx+1,:,:)-grid_x(imx-0,:,:)
+          grid_y(imx+2,:,:)=2*grid_y(imx+1,:,:)-grid_y(imx-0,:,:)
+          grid_z(imx+2,:,:)=2*grid_z(imx+1,:,:)-grid_z(imx-0,:,:)
+          !imax face -> imx+3 grid point
+          grid_x(imx+3,:,:)=2*grid_x(imx+2,:,:)-grid_x(imx+1,:,:)
+          grid_y(imx+3,:,:)=2*grid_y(imx+2,:,:)-grid_y(imx+1,:,:)
+          grid_z(imx+3,:,:)=2*grid_z(imx+2,:,:)-grid_z(imx+1,:,:)
+
+
+          !--- Jmin faces ---!
+          !jmin faces -> 0 grid point
+          grid_x(:, 0,:)=2*grid_x(:, 1,:)-grid_x(:,2,:)
+          grid_y(:, 0,:)=2*grid_y(:, 1,:)-grid_y(:,2,:)
+          grid_z(:, 0,:)=2*grid_z(:, 1,:)-grid_z(:,2,:)
+          !jmin face -> -1 grid point
+          grid_x(:,-1,:)=2*grid_x(:, 0,:)-grid_x(:,1,:)
+          grid_y(:,-1,:)=2*grid_y(:, 0,:)-grid_y(:,1,:)
+          grid_z(:,-1,:)=2*grid_z(:, 0,:)-grid_z(:,1,:)
+          !jmin face -> -2 grid point
+          grid_x(:,-2,:)=2*grid_x(:,-1,:)-grid_x(:,0,:)
+          grid_y(:,-2,:)=2*grid_y(:,-1,:)-grid_y(:,0,:)
+          grid_z(:,-2,:)=2*grid_z(:,-1,:)-grid_z(:,0,:)
+
+          !jmax face -> imx+1 grid point
+          grid_x(:,jmx+1,:)=2*grid_x(:,jmx+0,:)-grid_x(:,jmx-1,:)
+          grid_y(:,jmx+1,:)=2*grid_y(:,jmx+0,:)-grid_y(:,jmx-1,:)
+          grid_z(:,jmx+1,:)=2*grid_z(:,jmx+0,:)-grid_z(:,jmx-1,:)
+          !jmax face -> imx+2 grid point
+          grid_x(:,jmx+2,:)=2*grid_x(:,jmx+1,:)-grid_x(:,jmx-0,:)
+          grid_y(:,jmx+2,:)=2*grid_y(:,jmx+1,:)-grid_y(:,jmx-0,:)
+          grid_z(:,jmx+2,:)=2*grid_z(:,jmx+1,:)-grid_z(:,jmx-0,:)
+          !jmax face -> imx+3 grid point
+          grid_x(:,jmx+3,:)=2*grid_x(:,jmx+2,:)-grid_x(:,jmx+1,:)
+          grid_y(:,jmx+3,:)=2*grid_y(:,jmx+2,:)-grid_y(:,jmx+1,:)
+          grid_z(:,jmx+3,:)=2*grid_z(:,jmx+2,:)-grid_z(:,jmx+1,:)
+
+
+          !--- Kmax faces ---!
+          !kmin faces -> 0 grid point
+          grid_x(:,:, 0)=2*grid_x(:,:, 1)-grid_x(:,:,2)
+          grid_y(:,:, 0)=2*grid_y(:,:, 1)-grid_y(:,:,2)
+          grid_z(:,:, 0)=2*grid_z(:,:, 1)-grid_z(:,:,2)
+          !kmin face -> -1 grid point
+          grid_x(:,:,-1)=2*grid_x(:,:, 0)-grid_x(:,:,1)
+          grid_y(:,:,-1)=2*grid_y(:,:, 0)-grid_y(:,:,1)
+          grid_z(:,:,-1)=2*grid_z(:,:, 0)-grid_z(:,:,1)
+          !kmin face -> -2 grid point
+          grid_x(:,:,-2)=2*grid_x(:,:,-1)-grid_x(:,:,0)
+          grid_y(:,:,-2)=2*grid_y(:,:,-1)-grid_y(:,:,0)
+          grid_z(:,:,-2)=2*grid_z(:,:,-1)-grid_z(:,:,0)
+
+          !kmax face -> imx+1 grid point
+          grid_x(:,:,kmx+1)=2*grid_x(:,:,kmx+0)-grid_x(:,:,kmx-1)
+          grid_y(:,:,kmx+1)=2*grid_y(:,:,kmx+0)-grid_y(:,:,kmx-1)
+          grid_z(:,:,kmx+1)=2*grid_z(:,:,kmx+0)-grid_z(:,:,kmx-1)
+          !kmax face -> imx+2 grid point
+          grid_x(:,:,kmx+2)=2*grid_x(:,:,kmx+1)-grid_x(:,:,kmx-0)
+          grid_y(:,:,kmx+2)=2*grid_y(:,:,kmx+1)-grid_y(:,:,kmx-0)
+          grid_z(:,:,kmx+2)=2*grid_z(:,:,kmx+1)-grid_z(:,:,kmx-0)
+          !kmax face -> imx+3 grid point
+          grid_x(:,:,kmx+3)=2*grid_x(:,:,kmx+2)-grid_x(:,:,kmx+1)
+          grid_y(:,:,kmx+3)=2*grid_y(:,:,kmx+2)-grid_y(:,:,kmx+1)
+          grid_z(:,:,kmx+3)=2*grid_z(:,:,kmx+2)-grid_z(:,:,kmx+1)
+
+          call dmsg(1, 'grid', 'ghost_grid_interface')
+          !---  MPI transfer of grid point across interface  ---!
+          !--- imin face ---!
+          allocate(imin_send_buffer(3*layers*(jmx+6)*(kmx+6)))
+          allocate(jmin_send_buffer(3*layers*(imx+6)*(kmx+6)))
+          allocate(kmin_send_buffer(3*layers*(imx+6)*(jmx+6)))
+          allocate(imin_recv_buffer(3*layers*(jmx+6)*(kmx+6)))
+          allocate(jmin_recv_buffer(3*layers*(imx+6)*(kmx+6)))
+          allocate(kmin_recv_buffer(3*layers*(imx+6)*(jmx+6)))
+          allocate(imax_send_buffer(3*layers*(jmx+6)*(kmx+6)))
+          allocate(jmax_send_buffer(3*layers*(imx+6)*(kmx+6)))
+          allocate(kmax_send_buffer(3*layers*(imx+6)*(jmx+6)))
+          allocate(imax_recv_buffer(3*layers*(jmx+6)*(kmx+6)))
+          allocate(jmax_recv_buffer(3*layers*(imx+6)*(kmx+6)))
+          allocate(kmax_recv_buffer(3*layers*(imx+6)*(jmx+6)))
+          if(imin_id>=0)then
+            !collect grid point in 1d array
+            count=0
+            do l=1,layers
+              do k=-2,kmx+3
+                do j=-2,jmx+3
+                  count=count+1
+                  imin_send_buffer(count) = grid_x(l+1,j,k)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do k=-2,kmx+3
+                do j=-2,jmx+3
+                  count=count+1
+                  imin_send_buffer(count) = grid_y(l+1,j,k)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do k=-2,kmx+3
+                do j=-2,jmx+3
+                  count=count+1
+                  imin_send_buffer(count) = grid_z(l+1,j,k)
+                end do
+              end do
+            end do
+
+            if(mpi_class(1)==0)then
+              call MPI_SEND(imin_send_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD, ierr)
+              call MPI_RECV(imin_recv_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD,status,ierr)
+            else
+              call MPI_RECV(imin_recv_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD,status,ierr)
+              call MPI_SEND(imin_send_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD, ierr)
+            end if
+             ! distribute grid points
+            if(dir_switch(1)==0)then
+              count=0
+              do l=1,layers
+                do k=Gklo(1),Gkhi(1)
+                  do j=Gjlo(1),Gjhi(1)
+                    count=count+1
+                    grid_x(1-l,j,k) = imin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do k=Gklo(1),Gkhi(1)
+                  do j=Gjlo(1),Gjhi(1)
+                    count=count+1
+                    grid_y(1-l,j,k) = imin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do k=Gklo(1),Gkhi(1)
+                  do j=Gjlo(1),Gjhi(1)
+                    count=count+1
+                    grid_z(1-l,j,k) = imin_recv_buffer(count)
+                  end do
+                end do
+              end do
+            else
+              count=0
+              do l=1,layers
+                do j=Gjlo(1),Gjhi(1)
+                  do k=Gklo(1),Gkhi(1)
+                    count=count+1
+                    grid_x(1-l,j,k) = imin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do j=Gjlo(1),Gjhi(1)
+                  do k=Gklo(1),Gkhi(1)
+                    count=count+1
+                    grid_y(1-l,j,k) = imin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do j=Gjlo(1),Gjhi(1)
+                  do k=Gklo(1),Gkhi(1)
+                    count=count+1
+                    grid_z(1-l,j,k) = imin_recv_buffer(count)
+                  end do
+                end do
+              end do
+            end if
+          end if
+
+          !--- IMAX ---!
+          if(imax_id>=0)then
+            !collect grid point in 1d array
+            count=0
+            do l=1,layers
+              do k=-2,kmx+3
+                do j=-2,jmx+3
+                  count=count+1
+                  imax_send_buffer(count) = grid_x(imx-l,j,k)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do k=-2,kmx+3
+                do j=-2,jmx+3
+                  count=count+1
+                  imax_send_buffer(count) = grid_y(imx-l,j,k)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do k=-2,kmx+3
+                do j=-2,jmx+3
+                  count=count+1
+                  imax_send_buffer(count) = grid_z(imx-l,j,k)
+                end do
+              end do
+            end do
+
+            if(mpi_class(2)==0)then
+              call MPI_SEND(imax_send_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD, ierr)
+              call MPI_RECV(imax_recv_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD,status,ierr)
+            else
+              call MPI_RECV(imax_recv_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD,status,ierr)
+              call MPI_SEND(imax_send_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD, ierr)
+            end if
+             ! distribute grid points
+            if(dir_switch(2)==0)then
+              count=0
+              do l=1,layers
+                do k=Gklo(2),Gkhi(2)
+                  do j=Gjlo(2),Gjhi(2)
+                    count=count+1
+                    grid_x(imx+l,j,k) = imax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do k=Gklo(2),Gkhi(2)
+                  do j=Gjlo(2),Gjhi(2)
+                    count=count+1
+                    grid_y(imx+l,j,k) = imax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do k=Gklo(2),Gkhi(2)
+                  do j=Gjlo(2),Gjhi(2)
+                    count=count+1
+                    grid_z(imx+l,j,k) = imax_recv_buffer(count)
+                  end do
+                end do
+              end do
+            else
+              count=0
+              do l=1,layers
+                do j=Gjlo(2),Gjhi(2)
+                  do k=Gklo(2),Gkhi(2)
+                    count=count+1
+                    grid_x(imx+l,j,k) = imax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do j=Gjlo(2),Gjhi(2)
+                  do k=Gklo(2),Gkhi(2)
+                    count=count+1
+                    grid_y(imx+l,j,k) = imax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do j=Gjlo(2),Gjhi(2)
+                  do k=Gklo(2),Gkhi(2)
+                    count=count+1
+                    grid_z(imx+l,j,k) = imax_recv_buffer(count)
+                  end do
+                end do
+              end do
+            end if
+          end if
+
+          !--- JMIN ---!
+          if(jmin_id>=0)then
+            !collect grid point in 1d array
+            count=0
+            do l=1,layers
+              do k=-2,kmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  jmin_send_buffer(count) = grid_x(i,l+1,k)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do k=-2,kmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  jmin_send_buffer(count) = grid_y(i,l+1,k)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do k=-2,kmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  jmin_send_buffer(count) = grid_z(i,l+1,k)
+                end do
+              end do
+            end do
+
+            if(mpi_class(3)==0)then
+              call MPI_SEND(jmin_send_buffer, count,MPI_DOUBLE_PRECISION,jmin_id,1,MPI_COMM_WORLD, ierr)
+              call MPI_RECV(jmin_recv_buffer, count,MPI_DOUBLE_PRECISION,jmin_id,1,MPI_COMM_WORLD,status,ierr)
+            else
+              call MPI_RECV(jmin_recv_buffer, count,MPI_DOUBLE_PRECISION,jmin_id,1,MPI_COMM_WORLD,status,ierr)
+              call MPI_SEND(jmin_send_buffer, count,MPI_DOUBLE_PRECISION,jmin_id,1,MPI_COMM_WORLD, ierr)
+            end if
+             ! distribute grid points
+            if(dir_switch(3)==0)then
+              count=0
+              do l=1,layers
+                do k=Gklo(3),Gkhi(3)
+                  do i=Gilo(3),Gihi(3)
+                    count=count+1
+                    grid_x(i,1-l,k) = jmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do k=Gklo(3),Gkhi(3)
+                  do i=Gilo(3),Gihi(3)
+                    count=count+1
+                    grid_y(i,1-l,k) = jmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do k=Gklo(3),Gkhi(3)
+                  do i=Gilo(3),Gihi(3)
+                    count=count+1
+                    grid_z(i,1-l,k) = jmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+            else
+              count=0
+              do l=1,layers
+                do i=Gilo(3),Gihi(3)
+                  do k=Gklo(3),Gkhi(3)
+                    count=count+1
+                    grid_x(i,1-l,k) = jmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do i=Gilo(3),Gihi(3)
+                  do k=Gklo(3),Gkhi(3)
+                    count=count+1
+                    grid_y(i,1-l,k) = jmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do i=Gilo(3),Gihi(3)
+                  do k=Gklo(3),Gkhi(3)
+                    count=count+1
+                    grid_z(i,1-l,k) = jmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+            end if
+          end if
+
+          !--- JMAX ---!
+          if(jmax_id>=0)then
+            !collect grid point in 1d array
+            count=0
+            do l=1,layers
+              do k=-2,kmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  jmax_send_buffer(count) = grid_x(i,jmx-l,k)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do k=-2,kmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  jmax_send_buffer(count) = grid_y(i,jmx-l,k)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do k=-2,kmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  jmax_send_buffer(count) = grid_z(i,jmx-l,k)
+                end do
+              end do
+            end do
+
+            if(mpi_class(4)==0)then
+              call MPI_SEND(jmax_send_buffer, count,MPI_DOUBLE_PRECISION,jmax_id,1,MPI_COMM_WORLD, ierr)
+              call MPI_RECV(jmax_recv_buffer, count,MPI_DOUBLE_PRECISION,jmax_id,1,MPI_COMM_WORLD,status,ierr)
+            else
+              call MPI_RECV(jmax_recv_buffer, count,MPI_DOUBLE_PRECISION,jmax_id,1,MPI_COMM_WORLD,status,ierr)
+              call MPI_SEND(jmax_send_buffer, count,MPI_DOUBLE_PRECISION,jmax_id,1,MPI_COMM_WORLD, ierr)
+            end if
+             ! distribute grid points
+            if(dir_switch(4)==0)then
+              count=0
+              do l=1,layers
+                do k=Gklo(4),Gkhi(4)
+                  do i=Gilo(4),Gihi(4)
+                    count=count+1
+                    grid_x(i,jmx+l,k) = jmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do k=Gklo(4),Gkhi(4)
+                  do i=Gilo(4),Gihi(4)
+                    count=count+1
+                    grid_y(i,jmx+l,k) = jmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do k=Gklo(4),Gkhi(4)
+                  do i=Gilo(4),Gihi(4)
+                    count=count+1
+                    grid_z(i,jmx+l,k) = jmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+            else
+              count=0
+              do l=1,layers
+                do i=Gilo(4),Gihi(4)
+                  do k=Gklo(4),Gkhi(4)
+                    count=count+1
+                    grid_x(i,jmx+l,k) = jmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do i=Gilo(4),Gihi(4)
+                  do k=Gklo(4),Gkhi(4)
+                    count=count+1
+                    grid_y(i,jmx+l,k) = jmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do i=Gilo(4),Gihi(4)
+                  do k=Gklo(4),Gkhi(4)
+                    count=count+1
+                    grid_z(i,jmx+l,k) = jmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+            end if
+          end if
+            
+          !--- KMIN ---!
+          if(kmin_id>=0)then
+            !collect grid point in 1d array
+            count=0
+            do l=1,layers
+              do j=-2,jmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  kmin_send_buffer(count) = grid_x(i,j,1+l)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do j=-2,jmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  kmin_send_buffer(count) = grid_y(i,j,1+l)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do j=-2,jmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  kmin_send_buffer(count) = grid_z(i,j,1+l)
+                end do
+              end do
+            end do
+
+            if(mpi_class(5)==0)then
+              call MPI_SEND(kmin_send_buffer, count,MPI_DOUBLE_PRECISION,kmin_id,1,MPI_COMM_WORLD, ierr)
+              call MPI_RECV(kmin_recv_buffer, count,MPI_DOUBLE_PRECISION,kmin_id,1,MPI_COMM_WORLD,status,ierr)
+            else
+              call MPI_RECV(kmin_recv_buffer, count,MPI_DOUBLE_PRECISION,kmin_id,1,MPI_COMM_WORLD,status,ierr)
+              call MPI_SEND(kmin_send_buffer, count,MPI_DOUBLE_PRECISION,kmin_id,1,MPI_COMM_WORLD, ierr)
+            end if
+             ! distribute grid points
+            if(dir_switch(5)==0)then
+              count=0
+              do l=1,layers
+                do j=Gjlo(5),Gjhi(5)
+                  do i=Gilo(5),Gihi(5)
+                    count=count+1
+                    grid_x(i,j,1-l) = kmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do j=Gjlo(5),Gjhi(5)
+                  do i=Gilo(5),Gihi(5)
+                    count=count+1
+                    grid_y(i,j,1-l) = kmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do j=Gjlo(5),Gjhi(5)
+                  do i=Gilo(5),Gihi(5)
+                    count=count+1
+                    grid_z(i,j,1-l) = kmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+            else
+              count=0
+              do l=1,layers
+                do i=Gilo(5),Gihi(5)
+                  do j=Gjlo(5),Gjhi(5)
+                    count=count+1
+                    grid_x(i,j,1-l) = kmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do i=Gilo(5),Gihi(5)
+                  do j=Gjlo(5),Gjhi(5)
+                    count=count+1
+                    grid_y(i,j,1-l) = kmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do i=Gilo(5),Gihi(5)
+                  do j=Gjlo(5),Gjhi(5)
+                    count=count+1
+                    grid_z(i,j,1-l) = kmin_recv_buffer(count)
+                  end do
+                end do
+              end do
+            end if
+          end if
+
+          !--- KMAX ---!
+          if(kmax_id>=0)then
+            !collect grid point in 1d array
+            count=0
+            do l=1,layers
+              do j=-2,jmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  kmax_send_buffer(count) = grid_x(i,j,kmx-l)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do j=-2,jmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  kmax_send_buffer(count) = grid_y(i,j,kmx-l)
+                end do
+              end do
+            end do
+
+            do l=1,layers
+              do j=-2,jmx+3
+                do i=-2,imx+3
+                  count=count+1
+                  kmax_send_buffer(count) = grid_z(i,j,kmx-l)
+                end do
+              end do
+            end do
+
+            if(mpi_class(6)==0)then
+              call MPI_SEND(kmax_send_buffer, count,MPI_DOUBLE_PRECISION,kmax_id,1,MPI_COMM_WORLD, ierr)
+              call MPI_RECV(kmax_recv_buffer, count,MPI_DOUBLE_PRECISION,kmax_id,1,MPI_COMM_WORLD,status,ierr)
+            else
+              call MPI_RECV(kmax_recv_buffer, count,MPI_DOUBLE_PRECISION,kmax_id,1,MPI_COMM_WORLD,status,ierr)
+              call MPI_SEND(kmax_send_buffer, count,MPI_DOUBLE_PRECISION,kmax_id,1,MPI_COMM_WORLD, ierr)
+            end if
+             ! distribute grid points
+            if(dir_switch(6)==0)then
+              count=0
+              do l=1,layers
+                do j=Gjlo(6),Gjhi(6)
+                  do i=Gilo(6),Gihi(6)
+                    count=count+1
+                    grid_x(i,j,kmx+l) = kmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do j=Gjlo(6),Gjhi(6)
+                  do i=Gilo(6),Gihi(6)
+                    count=count+1
+                    grid_y(i,j,kmx+l) = kmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do j=Gjlo(6),Gjhi(6)
+                  do i=Gjlo(6),Gihi(6)
+                    count=count+1
+                    grid_z(i,j,kmx+l) = kmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+            else
+              count=0
+              do l=1,layers
+                do i=Gilo(6),Gihi(6)
+                  do j=Gjlo(6),Gjhi(6)
+                    count=count+1
+                    grid_x(i,j,kmx+l) = kmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do i=Gilo(6),Gihi(6)
+                  do j=Gjlo(6),Gjhi(6)
+                    count=count+1
+                    grid_y(i,j,kmx+l) = kmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+
+              do l=1,layers
+                do i=Gilo(6),Gihi(6)
+                  do j=Gjlo(6),Gjhi(6)
+                    count=count+1
+                    grid_z(i,j,kmx+l) = kmax_recv_buffer(count)
+                  end do
+                end do
+              end do
+            end if
+          end if
+            
+          deallocate(imin_send_buffer)
+          deallocate(jmin_send_buffer)
+          deallocate(kmin_send_buffer)
+          deallocate(imin_recv_buffer)
+          deallocate(jmin_recv_buffer)
+          deallocate(kmin_recv_buffer)
+          deallocate(imax_send_buffer)
+          deallocate(jmax_send_buffer)
+          deallocate(kmax_send_buffer)
+          deallocate(imax_recv_buffer)
+          deallocate(jmax_recv_buffer)
+          deallocate(kmax_recv_buffer)
+          call mpi_barrier(MPI_COMM_WORLD,ierr)
+          call dmsg(1, 'grid', 'done with ghost_grid')
+        end subroutine ghost_grid
 !       subroutine populate_sphere_indices()
 !       
 !           implicit none

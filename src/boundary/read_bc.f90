@@ -46,6 +46,8 @@ module read_bc
       implicit none
       integer :: count=0
 
+      call fill_fixed_values()
+
       open(unit=BOUNDARY_CONDITIONS_FILE_UNIT, file=bc_file)
             read(BOUNDARY_CONDITIONS_FILE_UNIT, *)
             read(BOUNDARY_CONDITIONS_FILE_UNIT, *)
@@ -133,6 +135,66 @@ module read_bc
       end do
 
     end subroutine get_fixed_values
+
+    
+    subroutine fill_fixed_values()
+      implicit none
+      integer :: count
+      integer :: ios=-1
+
+      do count = 1,6
+        !case ("FIX_DENSITY")
+          call set_value(fixed_density , density_inf, density_inf , count, ios)
+
+        !case ("FIX_X_SPEED")
+          call set_value(fixed_x_speed , x_speed_inf, x_speed_inf , count, ios)
+
+        !case ("FIX_Y_SPEED")
+          call set_value(fixed_y_speed , y_speed_inf, y_speed_inf , count, ios)
+
+        !case ("FIX_Z_SPEED")
+          call set_value(fixed_z_speed , z_speed_inf, z_speed_inf , count, ios)
+
+        !case ("FIX_PRESSURE")
+          call set_value(fixed_pressure, pressure_inf, pressure_inf, count, ios)
+
+        !case ("WALL_TEMPERATURE")
+          call set_value(fixed_wall_temperature, 0.0, 0.0, count, ios)
+
+        !case ("TOTAL_TEMPERATURE")
+          call set_value(fixed_Ttemperature, 0.0, 0.0, count, ios)
+
+        !case ("TOTAL_PRESSURE")
+          call set_value(fixed_Tpressure, 0.0, 0.0, count, ios)
+
+
+        select case (turbulence)
+
+          case ("none")
+            !do nothing
+            continue
+
+          case ("sst", 'tw')
+            !case ("FIX_tk")
+              call set_value(fixed_tk      , tk_inf, tk_inf      , count, ios)
+            !case ("FIX_tw")
+              call set_value(fixed_tw      , tw_inf, tw_inf      , count, ios)
+            
+          case ("kkl")
+            !case ("FIX_tk")
+              call set_value(fixed_tk      , tk_inf, tk_inf      , count, ios)
+            !case ("FIX_tkl")
+              call set_value(fixed_tkl     , tkl_inf, tkl_inf     , count, ios)
+
+          case DEFAULT
+            Fatal_error
+
+        end select
+      end do
+
+    end subroutine fill_fixed_values
+
+
 
     subroutine set_value(fixed_var, fix_val, inf_val, count, ios)
       implicit none

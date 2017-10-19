@@ -15,6 +15,14 @@ module bc
   use global_vars, only: c3
   use global_vars, only: id
   use global_vars, only: face_names
+  use global_vars, only: make_F_flux_zero
+  use global_vars, only: make_G_flux_zero
+  use global_vars, only: make_H_flux_zero
+  use global_vars, only: imx
+  use global_vars, only: jmx
+  use global_vars, only: kmx
+  use utils, only: alloc
+  use utils, only: dealloc
 
   use read_bc   ,  only: read_fixed_values
 
@@ -25,6 +33,7 @@ module bc
   integer                        :: face_num
 
   public :: setup_bc
+  public :: destroy_bc
 
 
   contains
@@ -50,7 +59,28 @@ module bc
       c1 = c2-c3
       call read_fixed_values()
 
+      call alloc(make_F_flux_zero, 1,imx)
+      call alloc(make_G_flux_zero, 1,jmx)
+      call alloc(make_H_flux_zero, 1,kmx)
+
+      make_F_flux_zero=1
+      make_G_flux_zero=1
+      make_H_flux_zero=1
+
+      if(imin_id==-5 .or. imin_id==-6 .or. imin_id==-7) make_F_flux_zero(1)=0.0
+      if(jmin_id==-5 .or. jmin_id==-6 .or. jmin_id==-7) make_G_flux_zero(1)=0.0
+      if(kmin_id==-5 .or. kmin_id==-6 .or. kmin_id==-7) make_H_flux_zero(1)=0.0
+      if(imax_id==-5 .or. imax_id==-6 .or. imax_id==-7) make_F_flux_zero(imx)=0.0
+      if(jmax_id==-5 .or. jmax_id==-6 .or. jmax_id==-7) make_G_flux_zero(jmx)=0.0
+      if(kmax_id==-5 .or. kmax_id==-6 .or. kmax_id==-7) make_H_flux_zero(kmx)=0.0
+
     end subroutine setup_bc
 
+    subroutine destroy_bc()
+      implicit none
+      call dealloc(make_F_flux_zero)
+      call dealloc(make_G_flux_zero)
+      call dealloc(make_H_flux_zero)
+    end subroutine destroy_bc
 
 end module bc
