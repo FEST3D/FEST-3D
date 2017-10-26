@@ -177,7 +177,14 @@ module global_vars
   ! switches
   logical                                           :: supersonic_flag
   integer                                           :: ilimiter_switch
-  integer                                           :: PB_switch
+  integer                                           :: jlimiter_switch
+  integer                                           :: klimiter_switch
+  integer                                           :: itlimiter_switch
+  integer                                           :: jtlimiter_switch
+  integer                                           :: ktlimiter_switch
+  integer                                           :: iPB_switch
+  integer                                           :: jPB_switch
+  integer                                           :: kPB_switch
   character(len=5)                                  :: turbulence ! todo character length
   
   real, dimension(:, :, :), allocatable             :: mu

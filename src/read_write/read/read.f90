@@ -55,7 +55,14 @@ module read
   use global_vars, only: Sutherland_temp
   use global_vars, only: Pr !prandtl number
   use global_vars, only: ilimiter_switch
-  use global_vars, only: PB_switch
+  use global_vars, only: jlimiter_switch
+  use global_vars, only: klimiter_switch
+  use global_vars, only: itlimiter_switch
+  use global_vars, only: jtlimiter_switch
+  use global_vars, only: ktlimiter_switch
+  use global_vars, only: iPB_switch
+  use global_vars, only: jPB_switch
+  use global_vars, only: kPB_switch
   use global_vars, only: accur
   
   use global_vars, only: interpolant
@@ -265,11 +272,26 @@ module read
 
         ! read ilimiter and PB switch
         call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) ilimiter_switch, PB_switch
+        read(buf, *) ilimiter_switch,jlimiter_switch,klimiter_switch, &
+                     iPB_switch, jPB_switch, kPB_switch
         call dmsg(5, 'read', 'read_scheme', &
-                msg='limiter switch = ' + ilimiter_switch )
+                msg='ilimiter switch = ' + ilimiter_switch )
         call dmsg(5, 'read', 'read_scheme', &
-                  msg='PB switch = ' + PB_switch )
+                msg='jlimiter switch = ' + jlimiter_switch )
+        call dmsg(5, 'read', 'read_scheme', &
+                msg='klimiter switch = ' + klimiter_switch )
+        call dmsg(5, 'read', 'read_scheme', &
+                  msg='PB switch = ' + iPB_switch )
+
+        ! read turbulent limiter
+        call get_next_token(SCHEME_FILE_UNIT, buf)
+        read(buf, *) itlimiter_switch,jtlimiter_switch,ktlimiter_switch 
+        call dmsg(5, 'read', 'read_scheme', &
+                msg='ilimiter switch = ' + itlimiter_switch )
+        call dmsg(5, 'read', 'read_scheme', &
+                msg='jlimiter switch = ' + jtlimiter_switch )
+        call dmsg(5, 'read', 'read_scheme', &
+                msg='klimiter switch = ' + ktlimiter_switch )
 
           ! read turbulence model
           call get_next_token(SCHEME_FILE_UNIT, buf)

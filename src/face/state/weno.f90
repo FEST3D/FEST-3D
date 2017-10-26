@@ -16,7 +16,6 @@ module weno
     use global_vars, only : pressure
     use global_vars, only : pressure_inf
     use global_vars, only : ilimiter_switch
-    use global_vars, only : PB_switch
     use global_vars, only : process_id
 
     implicit none

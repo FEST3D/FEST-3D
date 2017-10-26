@@ -307,7 +307,7 @@ module update
                     case DEFAULT
                       KE = 0.
                   end select
-                  u1(5) = (u1(5)/(gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1) !+ KE
+                  u1(5) = (u1(5)/(gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1) + KE
 
                  ! get R
                   R(1:n_var) = residue(i,j,k,1:n_var) 
@@ -348,7 +348,7 @@ module update
                     case DEFAULT
                       KE = 0.
                   end select
-                  u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) )!- KE)
+                  u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) - KE)
 
                   !check solution for non pyhysical results
                   if((u2(1) < 0.) .or. (u2(5)) < 0. .or. any(isnan(u2)))then

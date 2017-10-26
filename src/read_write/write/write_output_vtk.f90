@@ -132,7 +132,7 @@ module write_output_vtk
             call write_scalar(te, "Dissipation", -2)
 
           case('Wall_distance')
-            call write_scalar(dist, "dist", 1)
+            call write_scalar(dist, "dist", -2)
 
           case('Resnorm')
             call write_resnorm()

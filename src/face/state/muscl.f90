@@ -27,7 +27,14 @@ module muscl
     use global_vars, only : pressure
     use global_vars, only : pressure_inf
     use global_vars, only : ilimiter_switch
-    use global_vars, only : PB_switch
+    use global_vars, only : jlimiter_switch
+    use global_vars, only : klimiter_switch
+    use global_vars, only : itlimiter_switch
+    use global_vars, only : jtlimiter_switch
+    use global_vars, only : ktlimiter_switch
+    use global_vars, only : iPB_switch
+    use global_vars, only : jPB_switch
+    use global_vars, only : kPB_switch
 
     implicit none
     private
@@ -39,7 +46,6 @@ module muscl
     real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
     real, dimension(:, :, :), allocatable :: pdif
     integer :: switch_L=1
-    integer :: switch_P=1
     !TODO: Convert to system of flags to write all 3 directions in a single subroutine
 
 !   character(len=30) :: TVD_scheme
@@ -144,8 +150,8 @@ module muscl
             switch_L=ilimiter_switch
 
             do l = 1, n_var
-              if(l==6  .or. l==7 )then
-                switch_L=1
+              if(l>=6)then
+                switch_L=itlimiter_switch
               end if
              do k = 1, kmx - 1
               do j = 1, jmx - 1
@@ -196,11 +202,11 @@ module muscl
 
             integer :: i, j, k, l
             real :: psi1, psi2, fd, bd, r
-            switch_L=ilimiter_switch
+            switch_L=jlimiter_switch
 
             do l = 1, n_var
-              if(l==6  .or. l==7 )then
-                switch_L=1
+              if(l>=6)then
+                switch_L=jtlimiter_switch
               end if
              do k = 1, kmx - 1
               do j = 0, jmx 
@@ -253,13 +259,15 @@ module muscl
 
             real :: psi1, psi2, fd, bd, r
             integer :: i, j, k, l
-            switch_L=ilimiter_switch
+            switch_L=klimiter_switch
             !TODO: Figure out why in muscl, compute_zeta_face_states(), the order of looping matters
 
             do k = 0, kmx
              do l = 1, n_var
               if(l==6  .or. l==7 )then
-                switch_L=1
+                switch_L=ktlimiter_switch
+              else
+                switch_L=klimiter_switch
               end if
               do j = 1, jmx - 1
                do i = 1, imx - 1
@@ -402,15 +410,15 @@ module muscl
             !---------------------------------------------------------
             
             call compute_xi_face_states()
-            if(PB_switch==1)then
+            if(iPB_switch==1)then
               call pressure_based_switching('x')
             end if
             call compute_eta_face_states()
-            if(PB_switch==1)then
+            if(jPB_switch==1)then
               call pressure_based_switching('y')
             end if
             call compute_zeta_face_states()
-            if(PB_switch==1)then
+            if(kPB_switch==1)then
               call pressure_based_switching('z')
             end if
 

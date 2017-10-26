@@ -372,63 +372,75 @@ module bc_primitive
         real :: T_face
         real :: mu
         real :: rho
-        integer :: i,j,k
+        integer :: i,j,k,l
         
         select case(face)
           case("imin")
+            do l=1,3
           do k = 1,kmx-1
             do j = 1,jmx-1
               T_face = 0.5*((pressure(0, j, k)/density(0, j, k))+(pressure(1, j, k)/density(1, j, k)))/R_gas
               mu = mu_ref * (T_face/T_ref)**1.5*((T_ref + Sutherland_temp )/(T_face + Sutherland_temp))
               rho = 0.5 * (density(0, j, k) + density(1, j, k))
-              tw(0, j, k) = 120*mu/(rho*beta1*(2*dist(1, j, k))**2) - tw(1, j, k)
+              tw(1-l, j, k) = 120*mu/(rho*beta1*(2*dist(1, j, k))**2) - tw(l, j, k)
             end do
           end do
+        end do
         case("imax")
+          do l=1,3
           do k = 1,kmx-1
             do j = 1,jmx-1
               T_face = 0.5*((pressure(imx-1, j, k)/density(imx-1, j, k))+(pressure(imx, j, k)/density(imx, j, k)))/R_gas
               mu = mu_ref * (T_face/T_ref)**1.5*((T_ref + Sutherland_temp )/(T_face + Sutherland_temp))
               rho = 0.5 * (density(imx-1, j, k) + density(imx, j, k))
-              tw(imx, j, k) = 120*mu/(rho*beta1*(2*dist(imx-1, j, k))**2) - tw(imx-1, j, k)
+              tw(imx+l-1, j, k) = 120*mu/(rho*beta1*(2*dist(imx-1, j, k))**2) - tw(imx-l, j, k)
             end do
           end do
+        end do
         case("jmin")
+          do l=1,3
           do k = 1,kmx-1
             do i = 1,imx-1
               T_face = 0.5*((pressure(i, 0, k)/density(i, 0, k))+(pressure(i, 1, k)/density(i, 1, k)))/R_gas
               mu = mu_ref * (T_face/T_ref)**1.5*((T_ref + Sutherland_temp )/(T_face + Sutherland_temp))
               rho = 0.5 * (density(i, 0, k) + density(i, 1, k))
-              tw(i, 0, k) = 120*mu/(rho*beta1*(2*dist(i, 1, k))**2) - tw(i, 1, k)
+              tw(i, 1-l, k) = 120*mu/(rho*beta1*(2*dist(i, 1, k))**2) - tw(i, l, k)
             end do
           end do
+        end do
         case("jmax")
+          do l=1,3
           do k = 1,kmx-1
             do i = 1,imx-1
               T_face = 0.5*((pressure(i, jmx-1, k)/density(i, jmx-1, k))+(pressure(i, jmx, k)/density(i, jmx, k)))/R_gas
               mu = mu_ref * (T_face/T_ref)**1.5*((T_ref + Sutherland_temp )/(T_face + Sutherland_temp))
               rho = 0.5 * (density(i, jmx-1, k) + density(i, jmx, k))
-              tw(i, jmx, k) = 120*mu/(rho*beta1*(2*dist(i, jmx-1, k))**2) - tw(i, jmx-1, k)
+              tw(i, jmx+l-1, k) = 120*mu/(rho*beta1*(2*dist(i, jmx-1, k))**2) - tw(i, jmx-l, k)
             end do
           end do
+        end do
         case("kmin")
+          do l=1,3
           do j = 1,jmx-1
             do i = 1,imx-1
               T_face = 0.5*((pressure(i, j, 0)/density(i, j, 0))+(pressure(i, j, 1)/density(i, j, 1)))/R_gas
               mu = mu_ref * (T_face/T_ref)**1.5*((T_ref + Sutherland_temp )/(T_face + Sutherland_temp))
               rho = 0.5 * (density(i, j, 0) + density(i, j, 1))
-              tw(i, j, 0) = 120*mu/(rho*beta1*(2*dist(i, j, 1))**2) - tw(i, j, 1)
+              tw(i, j, 1-l) = 120*mu/(rho*beta1*(2*dist(i, j, 1))**2) - tw(i, j, l)
             end do
           end do
+        end do
         case("kmax")
+          do l=1,3
           do j = 1,jmx-1
             do i = 1,imx-1
               T_face = 0.5*((pressure(i, j, kmx-1)/density(i, j, kmx-1))+(pressure(i, j, kmx)/density(i, j, kmx)))/R_gas
               mu = mu_ref * (T_face/T_ref)**1.5*((T_ref + Sutherland_temp )/(T_face + Sutherland_temp))
               rho = 0.5 * (density(i, j, kmx-1) + density(i, j, kmx))
-              tw(i, j, kmx) = 120*mu/(rho*beta1*(2*dist(i, j, kmx-1))**2) - tw(i, j, kmx-1)
+              tw(i, j, kmx+l-1) = 120*mu/(rho*beta1*(2*dist(i, j, kmx-1))**2) - tw(i, j, kmx-l)
             end do
           end do
+        end do
 
       end select
     end subroutine set_omega_at_wall

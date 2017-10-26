@@ -14,7 +14,11 @@ module boundary_state_reconstruction
   use global_vars,          only: qp
   use global_vars,          only: n_var
   use global_vars,          only: ilimiter_switch
-  use global_vars,          only: PB_switch
+  use global_vars,          only: jlimiter_switch
+  use global_vars,          only: klimiter_switch
+  use global_vars,          only: itlimiter_switch
+  use global_vars,          only: jtlimiter_switch
+  use global_vars,          only: ktlimiter_switch
 
   use face_interpolant,     only: x_qp_left, x_qp_right
   use face_interpolant,     only: y_qp_left, y_qp_right
@@ -24,6 +28,7 @@ module boundary_state_reconstruction
   private
 
   integer :: ppm_flag=0
+  integer :: switch_L=1
   public :: reconstruct_boundary_state
 
   contains
@@ -75,9 +80,11 @@ module boundary_state_reconstruction
 
       phi = 1.0
       kappa = 1./3.
+      switch_L=ilimiter_switch
 
       if (ppm_flag==1) then
         do l = 1, n_var
+          if(l>=6) switch_L=itlimiter_switch
          do k = 1, kmx - 1
           do j = 1, jmx - 1
            do i = 1, 1 
@@ -88,10 +95,10 @@ module boundary_state_reconstruction
 
               r = fd / bd
               psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-              psi1 = (1 - (1 - psi1)*ilimiter_switch )
+              psi1 = (1 - (1 - psi1)*switch_L )
               r = bd / fd
               psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-              psi2 = (1 - (1 - psi2)*ilimiter_switch )
+              psi2 = (1 - (1 - psi2)*switch_L )
 
               ! right state of firsrt interior cell
               x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
@@ -127,9 +134,11 @@ module boundary_state_reconstruction
 
       phi = 1.0
       kappa = 1./3.
+      switch_L=ilimiter_switch
 
       if (ppm_flag==1) then
         do l = 1, n_var
+          if(l>=6) switch_L=itlimiter_switch
          do k = 1, kmx - 1
           do j = 1, jmx - 1
            do i = imx-1, imx-1 
@@ -139,10 +148,10 @@ module boundary_state_reconstruction
 
              r = fd / bd
              psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-             psi1 = (1 - (1 - psi1)*ilimiter_switch )
+             psi1 = (1 - (1 - psi1)*switch_L )
              r = bd / fd
              psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-             psi2 = (1 - (1 - psi2)*ilimiter_switch )
+             psi2 = (1 - (1 - psi2)*switch_L )
 
              ! right face of last interior cell
              x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
@@ -176,9 +185,11 @@ module boundary_state_reconstruction
 
       phi = 1.0
       kappa = 1./3.
+      switch_L=jlimiter_switch
 
       if (ppm_flag==1) then
         do l = 1, n_var
+          if(l>=6) switch_L=jtlimiter_switch
          do k = 1, kmx - 1
           do j = 1, 1
            do i = 1, imx - 1
@@ -188,10 +199,10 @@ module boundary_state_reconstruction
 
               r = fd / bd
               psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-              psi1 = (1 - (1 - psi1)*ilimiter_switch )
+              psi1 = (1 - (1 - psi1)*switch_L )
               r = bd / fd
               psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-              psi2 = (1 - (1 - psi2)*ilimiter_switch )
+              psi2 = (1 - (1 - psi2)*switch_L )
 
               ! right face of first j cell
               y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
@@ -225,9 +236,11 @@ module boundary_state_reconstruction
 
       phi = 1.0
       kappa = 1./3.
+      switch_L=jlimiter_switch
 
       if (ppm_flag==1) then
         do l = 1, n_var
+          if(l>=6) switch_L=jtlimiter_switch
          do k = 1, kmx - 1
           do j = jmx-1, jmx-1
            do i = 1, imx - 1
@@ -236,10 +249,10 @@ module boundary_state_reconstruction
               bd = qp(i, j, k, l) - qp(i, j-1, k, l)
               r = fd / bd
               psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-              psi1 = (1 - (1 - psi1)*ilimiter_switch )
+              psi1 = (1 - (1 - psi1)*switch_L )
               r = bd / fd
               psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-              psi2 = (1 - (1 - psi2)*ilimiter_switch )
+              psi2 = (1 - (1 - psi2)*switch_L )
 
               ! right face of last j cell
               y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
@@ -273,10 +286,13 @@ module boundary_state_reconstruction
       
       phi = 1.0
       kappa = 1./3.
+      switch_L=klimiter_switch
 
       if (ppm_flag==1) then
         do k = 1, 1
          do l = 1, n_var
+           if(l>=6) switch_L=ktlimiter_switch
+           if(l<6) switch_L=klimiter_switch
           do j = 1, jmx - 1
            do i = 1, imx - 1
 
@@ -285,10 +301,10 @@ module boundary_state_reconstruction
 
               r = fd / bd
               psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-              psi1 = (1 - (1 - psi1)*ilimiter_switch )
+              psi1 = (1 - (1 - psi1)*switch_L )
               r = bd / fd
               psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-              psi2 = (1 - (1 - psi2)*ilimiter_switch )
+              psi2 = (1 - (1 - psi2)*switch_L )
               
               ! right face of first k cell
               z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
@@ -322,9 +338,12 @@ module boundary_state_reconstruction
     
       phi = 1.0
       kappa = 1./3.
+      switch_L=klimiter_switch
 
       do k = kmx-1, kmx-1
        do l = 1, n_var
+         if(l>=6) switch_L=ktlimiter_switch
+         if(l<6) switch_L=klimiter_switch
         do j = 1, jmx - 1
          do i = 1, imx - 1
           ! left face of kmx ghost cell
@@ -337,10 +356,10 @@ module boundary_state_reconstruction
 
             r = fd / bd
             psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi1 = (1 - (1 - psi1)*ilimiter_switch )
+            psi1 = (1 - (1 - psi1)*switch_L )
             r = bd / fd
             psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-            psi2 = (1 - (1 - psi2)*ilimiter_switch )
+            psi2 = (1 - (1 - psi2)*switch_L )
 
             ! right face of last k interior cell
             z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &

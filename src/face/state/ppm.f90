@@ -19,7 +19,11 @@ module ppm
     use global_vars, only : pressure
     use global_vars, only : pressure_inf
     use global_vars, only : ilimiter_switch
-    use global_vars, only : PB_switch
+    use global_vars, only : jlimiter_switch
+    use global_vars, only : klimiter_switch
+    use global_vars, only : iPB_switch
+    use global_vars, only : jPB_switch
+    use global_vars, only : kPB_switch
 
 
     implicit none
@@ -389,7 +393,7 @@ module ppm
             if(ilimiter_switch==1)then
               call remove_extrema('x')
             end if
-            if (PB_switch==1)then
+            if (iPB_switch==1)then
               call pressure_based_switching('x')
             end if
 
@@ -402,19 +406,19 @@ module ppm
 
             call compute_face_estimates('y')
             call init_left_and_right_eta_estimates()
-            if(ilimiter_switch==1)then
+            if(jlimiter_switch==1)then
               call remove_extrema('y')
             end if
-            if (PB_switch==1)then
+            if (jPB_switch==1)then
               call pressure_based_switching('y')
             end if
 
             call compute_face_estimates('z')
             call init_left_and_right_zeta_estimates()
-            if(ilimiter_switch==1)then
+            if(klimiter_switch==1)then
               call remove_extrema('z')
             end if
-            if (PB_switch==1)then
+            if (kPB_switch==1)then
               call pressure_based_switching('z')
             end if
 

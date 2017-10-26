@@ -491,6 +491,10 @@ module viscous
           Tau_xz = total_mu * (dwdx + dudz)
           Tau_yz = total_mu * (dwdy + dvdz)
 
+          ! k in reynolds stress
+          Tau_xx = Tau_xx-((density(i-1,j,k)+density(i,j,k))*(tk(i-1,j,k)+tk(i,j,k)))/6.
+          Tau_yy = Tau_yy-((density(i-1,j,k)+density(i,j,k))*(tk(i-1,j,k)+tk(i,j,k)))/6.
+          Tau_zz = Tau_zz-((density(i-1,j,k)+density(i,j,k))*(tk(i-1,j,k)+tk(i,j,k)))/6.
           ! Pr: Prandtl Number
           ! Qx, Qy, Qz: Conduction fluxes
           K_heat = (mu_f/Pr + mut_f/0.9)* gm * R_gas / (gm - 1)
@@ -706,6 +710,10 @@ module viscous
           Tau_xz = total_mu * (dwdx + dudz)
           Tau_yz = total_mu * (dwdy + dvdz)
 
+          ! k in reynolds stress
+          Tau_xx = Tau_xx-((density(i-1,j,k)+density(i,j,k))*(tk(i-1,j,k)+tk(i,j,k)))/6.
+          Tau_yy = Tau_yy-((density(i-1,j,k)+density(i,j,k))*(tk(i-1,j,k)+tk(i,j,k)))/6.
+          Tau_zz = Tau_zz-((density(i-1,j,k)+density(i,j,k))*(tk(i-1,j,k)+tk(i,j,k)))/6.
           ! Pr: Prandtl Number
           ! Qx, Qy, Qz: Conduction fluxes
           K_heat = (mu_f/Pr + mut_f/0.9)* gm * R_gas / (gm - 1)
@@ -1113,6 +1121,10 @@ module viscous
           Tau_xz = total_mu * (dwdx + dudz)
           Tau_yz = total_mu * (dwdy + dvdz)
 
+          ! k in reynolds stress
+          Tau_xx = Tau_xx-((density(i,j-1,k)+density(i,j,k))*(tk(i,j-1,k)+tk(i,j,k)))/6.
+          Tau_yy = Tau_yy-((density(i,j-1,k)+density(i,j,k))*(tk(i,j-1,k)+tk(i,j,k)))/6.
+          Tau_zz = Tau_zz-((density(i,j-1,k)+density(i,j,k))*(tk(i,j-1,k)+tk(i,j,k)))/6.
           
           ! Pr: Prandtl Number
           ! Qx, Qy, Qz: Conduction fluxes
@@ -1330,6 +1342,10 @@ module viscous
           Tau_xz = total_mu * (dwdx + dudz)
           Tau_yz = total_mu * (dwdy + dvdz)
 
+          ! k in reynolds stress
+          Tau_xx = Tau_xx-((density(i,j-1,k)+density(i,j,k))*(tk(i,j-1,k)+tk(i,j,k)))/6.
+          Tau_yy = Tau_yy-((density(i,j-1,k)+density(i,j,k))*(tk(i,j-1,k)+tk(i,j,k)))/6.
+          Tau_zz = Tau_zz-((density(i,j-1,k)+density(i,j,k))*(tk(i,j-1,k)+tk(i,j,k)))/6.
           
           ! Pr: Prandtl Number
           ! Qx, Qy, Qz: Conduction fluxes
@@ -1735,6 +1751,10 @@ module viscous
           Tau_xz = total_mu * (dwdx + dudz)
           Tau_yz = total_mu * (dwdy + dvdz)
 
+          ! k in reynolds stress
+          Tau_xx = Tau_xx-((density(i,j,k-1)+density(i,j,k))*(tk(i,j,k-1)+tk(i,j,k)))/6.
+          Tau_yy = Tau_yy-((density(i,j,k-1)+density(i,j,k))*(tk(i,j,k-1)+tk(i,j,k)))/6.
+          Tau_zz = Tau_zz-((density(i,j,k-1)+density(i,j,k))*(tk(i,j,k-1)+tk(i,j,k)))/6.
           ! Pr: Prandtl Number
           ! Qx, Qy, Qz: Conduction fluxes
           K_heat = (mu_f/Pr + mut_f/0.9) * gm * R_gas / (gm - 1)
@@ -1951,6 +1971,10 @@ module viscous
           Tau_xz = total_mu * (dwdx + dudz)
           Tau_yz = total_mu * (dwdy + dvdz)
 
+          ! k in reynolds stress
+          Tau_xx = Tau_xx-((density(i,j,k-1)+density(i,j,k))*(tk(i,j,k-1)+tk(i,j,k)))/6.
+          Tau_yy = Tau_yy-((density(i,j,k-1)+density(i,j,k))*(tk(i,j,k-1)+tk(i,j,k)))/6.
+          Tau_zz = Tau_zz-((density(i,j,k-1)+density(i,j,k))*(tk(i,j,k-1)+tk(i,j,k)))/6.
           ! Pr: Prandtl Number
           ! Qx, Qy, Qz: Conduction fluxes
           K_heat = (mu_f/Pr + mut_f/0.9) * gm * R_gas / (gm - 1)
