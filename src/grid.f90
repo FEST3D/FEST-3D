@@ -268,97 +268,380 @@ module grid
           real, dimension(:),allocatable :: imax_recv_buffer
           real, dimension(:),allocatable :: jmax_recv_buffer
           real, dimension(:),allocatable :: kmax_recv_buffer
+          real, dimension(3) :: delI
+          real, dimension(3) :: N
+          real  :: dot
+          real  :: magnitude
+          real :: d1x, d2x, d1y, d2y, d1z, d2z
+          integer :: ii,jj,kk
 
           call dmsg(1, 'grid', 'ghost_grid_extrapolate')
-          !-------------------------------------------------------------------
-          !getting ghost cell for all faces even if it is a interface cell
-          ! <algorithm>
-          ! Point_ghost = 2*Point_first_inner_cell - Point_second_inner_cell
-          ! </algorithm>
-          !-------------------------------------------------------------------
-
-          !--- I faces ---!
-          !imin face -> 0 grid point
-          grid_x( 0,:,:)=2*grid_x( 1,:,:)-grid_x(2,:,:)
-          grid_y( 0,:,:)=2*grid_y( 1,:,:)-grid_y(2,:,:)
-          grid_z( 0,:,:)=2*grid_z( 1,:,:)-grid_z(2,:,:)
-          !imin face -> -1 grid point
-          grid_x(-1,:,:)=2*grid_x( 0,:,:)-grid_x(1,:,:)
-          grid_y(-1,:,:)=2*grid_y( 0,:,:)-grid_y(1,:,:)
-          grid_z(-1,:,:)=2*grid_z( 0,:,:)-grid_z(1,:,:)
-          !imin face -> -2 grid point
-          grid_x(-2,:,:)=2*grid_x(-1,:,:)-grid_x(0,:,:)
-          grid_y(-2,:,:)=2*grid_y(-1,:,:)-grid_y(0,:,:)
-          grid_z(-2,:,:)=2*grid_z(-1,:,:)-grid_z(0,:,:)
-
-          !imax face -> imx+1 grid point
-          grid_x(imx+1,:,:)=2*grid_x(imx+0,:,:)-grid_x(imx-1,:,:)
-          grid_y(imx+1,:,:)=2*grid_y(imx+0,:,:)-grid_y(imx-1,:,:)
-          grid_z(imx+1,:,:)=2*grid_z(imx+0,:,:)-grid_z(imx-1,:,:)
-          !imax face -> imx+2 grid point
-          grid_x(imx+2,:,:)=2*grid_x(imx+1,:,:)-grid_x(imx-0,:,:)
-          grid_y(imx+2,:,:)=2*grid_y(imx+1,:,:)-grid_y(imx-0,:,:)
-          grid_z(imx+2,:,:)=2*grid_z(imx+1,:,:)-grid_z(imx-0,:,:)
-          !imax face -> imx+3 grid point
-          grid_x(imx+3,:,:)=2*grid_x(imx+2,:,:)-grid_x(imx+1,:,:)
-          grid_y(imx+3,:,:)=2*grid_y(imx+2,:,:)-grid_y(imx+1,:,:)
-          grid_z(imx+3,:,:)=2*grid_z(imx+2,:,:)-grid_z(imx+1,:,:)
-
-
-          !--- Jmin faces ---!
-          !jmin faces -> 0 grid point
-          grid_x(:, 0,:)=2*grid_x(:, 1,:)-grid_x(:,2,:)
-          grid_y(:, 0,:)=2*grid_y(:, 1,:)-grid_y(:,2,:)
-          grid_z(:, 0,:)=2*grid_z(:, 1,:)-grid_z(:,2,:)
-          !jmin face -> -1 grid point
-          grid_x(:,-1,:)=2*grid_x(:, 0,:)-grid_x(:,1,:)
-          grid_y(:,-1,:)=2*grid_y(:, 0,:)-grid_y(:,1,:)
-          grid_z(:,-1,:)=2*grid_z(:, 0,:)-grid_z(:,1,:)
-          !jmin face -> -2 grid point
-          grid_x(:,-2,:)=2*grid_x(:,-1,:)-grid_x(:,0,:)
-          grid_y(:,-2,:)=2*grid_y(:,-1,:)-grid_y(:,0,:)
-          grid_z(:,-2,:)=2*grid_z(:,-1,:)-grid_z(:,0,:)
-
-          !jmax face -> imx+1 grid point
-          grid_x(:,jmx+1,:)=2*grid_x(:,jmx+0,:)-grid_x(:,jmx-1,:)
-          grid_y(:,jmx+1,:)=2*grid_y(:,jmx+0,:)-grid_y(:,jmx-1,:)
-          grid_z(:,jmx+1,:)=2*grid_z(:,jmx+0,:)-grid_z(:,jmx-1,:)
-          !jmax face -> imx+2 grid point
-          grid_x(:,jmx+2,:)=2*grid_x(:,jmx+1,:)-grid_x(:,jmx-0,:)
-          grid_y(:,jmx+2,:)=2*grid_y(:,jmx+1,:)-grid_y(:,jmx-0,:)
-          grid_z(:,jmx+2,:)=2*grid_z(:,jmx+1,:)-grid_z(:,jmx-0,:)
-          !jmax face -> imx+3 grid point
-          grid_x(:,jmx+3,:)=2*grid_x(:,jmx+2,:)-grid_x(:,jmx+1,:)
-          grid_y(:,jmx+3,:)=2*grid_y(:,jmx+2,:)-grid_y(:,jmx+1,:)
-          grid_z(:,jmx+3,:)=2*grid_z(:,jmx+2,:)-grid_z(:,jmx+1,:)
+          !---IMIN---!
+          do k = 1, kmx
+           do j = 1, jmx
+             ! finding face normal
+              ii=1
+              jj=j
+              kk=k
+              if(j==jmx) jj=j-1
+              if(k==kmx) kk=k-1
+              d1x = grid_x(ii, jj+1, kk+1) - grid_x(ii, jj  , kk)
+              d1y = grid_y(ii, jj+1, kk+1) - grid_y(ii, jj  , kk)
+              d1z = grid_z(ii, jj+1, kk+1) - grid_z(ii, jj  , kk)
+              d2x = grid_x(ii, jj  , kk+1) - grid_x(ii, jj+1, kk)
+              d2y = grid_y(ii, jj  , kk+1) - grid_y(ii, jj+1, kk)
+              d2z = grid_z(ii, jj  , kk+1) - grid_z(ii, jj+1, kk)
+              N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+              N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+              N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+              magnitude = SUM(N**2)
+              if(magnitude==0)then
+                d1x = grid_x(ii+1, jj+1, kk+1) - grid_x(ii+1, jj  , kk)
+                d1y = grid_y(ii+1, jj+1, kk+1) - grid_y(ii+1, jj  , kk)
+                d1z = grid_z(ii+1, jj+1, kk+1) - grid_z(ii+1, jj  , kk)
+                d2x = grid_x(ii+1, jj  , kk+1) - grid_x(ii+1, jj+1, kk)
+                d2y = grid_y(ii+1, jj  , kk+1) - grid_y(ii+1, jj+1, kk)
+                d2z = grid_z(ii+1, jj  , kk+1) - grid_z(ii+1, jj+1, kk)
+                N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+                N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+                N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+                magnitude = SUM(N**2)
+                if(magnitude==0)then
+                  Fatal_error
+                end if
+              end if
+              do l=1,layers
+                delI(1) = grid_x(ii+1,j,k)-grid_x(ii,j,k)
+                delI(2) = grid_y(ii+1,j,k)-grid_y(ii,j,k)
+                delI(3) = grid_z(ii+1,j,k)-grid_z(ii,j,k)
+                dot=SUM(N*delI)/magnitude
+                grid_x(ii-l,j,k)= grid_x(ii,j,k) + delI(1) - (l+1)*dot*N(1) 
+                grid_y(ii-l,j,k)= grid_y(ii,j,k) + delI(2) - (l+1)*dot*N(2) 
+                grid_z(ii-l,j,k)= grid_z(ii,j,k) + delI(3) - (l+1)*dot*N(3) 
+             end do
+            end do
+           end do
 
 
-          !--- Kmax faces ---!
-          !kmin faces -> 0 grid point
-          grid_x(:,:, 0)=2*grid_x(:,:, 1)-grid_x(:,:,2)
-          grid_y(:,:, 0)=2*grid_y(:,:, 1)-grid_y(:,:,2)
-          grid_z(:,:, 0)=2*grid_z(:,:, 1)-grid_z(:,:,2)
-          !kmin face -> -1 grid point
-          grid_x(:,:,-1)=2*grid_x(:,:, 0)-grid_x(:,:,1)
-          grid_y(:,:,-1)=2*grid_y(:,:, 0)-grid_y(:,:,1)
-          grid_z(:,:,-1)=2*grid_z(:,:, 0)-grid_z(:,:,1)
-          !kmin face -> -2 grid point
-          grid_x(:,:,-2)=2*grid_x(:,:,-1)-grid_x(:,:,0)
-          grid_y(:,:,-2)=2*grid_y(:,:,-1)-grid_y(:,:,0)
-          grid_z(:,:,-2)=2*grid_z(:,:,-1)-grid_z(:,:,0)
+           !--- IMAX ---!
+          do k = 1, kmx
+           do j = 1, jmx
+             ! finding face normal
+              ii=imx
+              jj=j
+              kk=k
+              if(j==jmx) jj=j-1
+              if(k==kmx) kk=k-1
+              d1x = grid_x(ii, jj+1, kk+1) - grid_x(ii, jj  , kk)
+              d1y = grid_y(ii, jj+1, kk+1) - grid_y(ii, jj  , kk)
+              d1z = grid_z(ii, jj+1, kk+1) - grid_z(ii, jj  , kk)
+              d2x = grid_x(ii, jj  , kk+1) - grid_x(ii, jj+1, kk)
+              d2y = grid_y(ii, jj  , kk+1) - grid_y(ii, jj+1, kk)
+              d2z = grid_z(ii, jj  , kk+1) - grid_z(ii, jj+1, kk)
+              N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+              N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+              N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+              magnitude = SUM(N**2)
+              if(magnitude==0)then
+                d1x = grid_x(ii-1, jj+1, kk+1) - grid_x(ii-1, jj  , kk)
+                d1y = grid_y(ii-1, jj+1, kk+1) - grid_y(ii-1, jj  , kk)
+                d1z = grid_z(ii-1, jj+1, kk+1) - grid_z(ii-1, jj  , kk)
+                d2x = grid_x(ii-1, jj  , kk+1) - grid_x(ii-1, jj+1, kk)
+                d2y = grid_y(ii-1, jj  , kk+1) - grid_y(ii-1, jj+1, kk)
+                d2z = grid_z(ii-1, jj  , kk+1) - grid_z(ii-1, jj+1, kk)
+                N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+                N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+                N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+                magnitude = SUM(N**2)
+                if(magnitude==0)then
+                  Fatal_error
+                end if
+              end if
+              do l=1,layers
+                delI(1) = grid_x(ii-1,j,k)-grid_x(ii,j,k)
+                delI(2) = grid_y(ii-1,j,k)-grid_y(ii,j,k)
+                delI(3) = grid_z(ii-1,j,k)-grid_z(ii,j,k)
+                dot=SUM(N*delI)/magnitude
+                grid_x(ii+l,j,k)= grid_x(ii,j,k) + delI(1) - (l+1)*dot*N(1) 
+                grid_y(ii+l,j,k)= grid_y(ii,j,k) + delI(2) - (l+1)*dot*N(2) 
+                grid_z(ii+l,j,k)= grid_z(ii,j,k) + delI(3) - (l+1)*dot*N(3) 
+            end do
+           end do
+          end do
 
-          !kmax face -> imx+1 grid point
-          grid_x(:,:,kmx+1)=2*grid_x(:,:,kmx+0)-grid_x(:,:,kmx-1)
-          grid_y(:,:,kmx+1)=2*grid_y(:,:,kmx+0)-grid_y(:,:,kmx-1)
-          grid_z(:,:,kmx+1)=2*grid_z(:,:,kmx+0)-grid_z(:,:,kmx-1)
-          !kmax face -> imx+2 grid point
-          grid_x(:,:,kmx+2)=2*grid_x(:,:,kmx+1)-grid_x(:,:,kmx-0)
-          grid_y(:,:,kmx+2)=2*grid_y(:,:,kmx+1)-grid_y(:,:,kmx-0)
-          grid_z(:,:,kmx+2)=2*grid_z(:,:,kmx+1)-grid_z(:,:,kmx-0)
-          !kmax face -> imx+3 grid point
-          grid_x(:,:,kmx+3)=2*grid_x(:,:,kmx+2)-grid_x(:,:,kmx+1)
-          grid_y(:,:,kmx+3)=2*grid_y(:,:,kmx+2)-grid_y(:,:,kmx+1)
-          grid_z(:,:,kmx+3)=2*grid_z(:,:,kmx+2)-grid_z(:,:,kmx+1)
+          !--- JMIN ---!
+          do k = 1, kmx
+           do i = -2, imx+3
+             ! finding face normal
+              ii=i
+              jj=1
+              kk=k
+              if(i==imx+3) ii=i-1
+              if(k==kmx) kk=k-1
+              d1x = grid_x(ii+1, jj, kk+1) - grid_x(ii, jj, kk)
+              d1y = grid_y(ii+1, jj, kk+1) - grid_y(ii, jj, kk)
+              d1z = grid_z(ii+1, jj, kk+1) - grid_z(ii, jj, kk)
+              d2x = grid_x(ii+1, jj, kk) - grid_x(ii, jj, kk+1)
+              d2y = grid_y(ii+1, jj, kk) - grid_y(ii, jj, kk+1)
+              d2z = grid_z(ii+1, jj, kk) - grid_z(ii, jj, kk+1)
+              N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+              N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+              N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+              magnitude = SUM(N**2)
+              if(magnitude==0)then
+                d1x = grid_x(ii+1, jj+1, kk) - grid_x(ii  , jj, kk)
+                d1y = grid_y(ii+1, jj+1, kk) - grid_y(ii  , jj, kk)
+                d1z = grid_z(ii+1, jj+1, kk) - grid_z(ii  , jj, kk)
+                d2x = grid_x(ii  , jj+1, kk) - grid_x(ii+1, jj, kk)
+                d2y = grid_y(ii  , jj+1, kk) - grid_y(ii+1, jj, kk)
+                d2z = grid_z(ii  , jj+1, kk) - grid_z(ii+1, jj, kk)
+                N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+                N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+                N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+                magnitude = SUM(N**2)
+                if(magnitude==0)then
+                  Fatal_error
+                end if
+              end if
+              do l=1,layers
+                delI(1) = grid_x(i,jj+1,k)-grid_x(i,jj,k)
+                delI(2) = grid_y(i,jj+1,k)-grid_y(i,jj,k)
+                delI(3) = grid_z(i,jj+1,k)-grid_z(i,jj,k)
+                dot=SUM(N*delI)/magnitude
+                grid_x(i,jj-l,k)= grid_x(i,jj,k) + delI(1) - (l+1)*dot*N(1) 
+                grid_y(i,jj-l,k)= grid_y(i,jj,k) + delI(2) - (l+1)*dot*N(2) 
+                grid_z(i,jj-l,k)= grid_z(i,jj,k) + delI(3) - (l+1)*dot*N(3) 
+              end do
+            end do
+          end do
+
+          
+          !--- JMAX ---!
+          do k = 1, kmx
+           do i = -2, imx+3
+             ! finding face normal
+              ii=i
+              jj=jmx
+              kk=k
+              if(i==imx+3) ii=i-1
+              if(k==kmx) kk=k-1
+              d1x = grid_x(ii+1, jj, kk+1) - grid_x(ii, jj, kk)
+              d1y = grid_y(ii+1, jj, kk+1) - grid_y(ii, jj, kk)
+              d1z = grid_z(ii+1, jj, kk+1) - grid_z(ii, jj, kk)
+              d2x = grid_x(ii+1, jj, kk  ) - grid_x(ii, jj, kk+1)
+              d2y = grid_y(ii+1, jj, kk  ) - grid_y(ii, jj, kk+1)
+              d2z = grid_z(ii+1, jj, kk  ) - grid_z(ii, jj, kk+1)
+              N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+              N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+              N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+              magnitude = SUM(N**2)
+              if(magnitude==0)then
+                d1x = grid_x(ii+1, jj+1, kk) - grid_x(ii  , jj, kk)
+                d1y = grid_y(ii+1, jj+1, kk) - grid_y(ii  , jj, kk)
+                d1z = grid_z(ii+1, jj+1, kk) - grid_z(ii  , jj, kk)
+                d2x = grid_x(ii  , jj+1, kk) - grid_x(ii+1, jj, kk)
+                d2y = grid_y(ii  , jj+1, kk) - grid_y(ii+1, jj, kk)
+                d2z = grid_z(ii  , jj+1, kk) - grid_z(ii+1, jj, kk)
+                N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+                N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+                N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+                magnitude = SUM(N**2)
+                if(magnitude==0)then
+                  Fatal_error
+                end if
+              end if
+              do l=1,layers
+                delI(1) = grid_x(i,jj-1,k)-grid_x(i,jj,k)
+                delI(2) = grid_y(i,jj-1,k)-grid_y(i,jj,k)
+                delI(3) = grid_z(i,jj-1,k)-grid_z(i,jj,k)
+                dot=SUM(N*delI)/magnitude
+                grid_x(i,jj+l,k)= grid_x(i,jj,k) + delI(1) - (l+1)*dot*N(1) 
+                grid_y(i,jj+l,k)= grid_y(i,jj,k) + delI(2) - (l+1)*dot*N(2) 
+                grid_z(i,jj+l,k)= grid_z(i,jj,k) + delI(3) - (l+1)*dot*N(3) 
+              end do
+            end do
+          end do
+
+          !--- KMIN ---!
+          do j = -2, jmx+3
+           do i = -2, imx+3
+              ii=i
+              jj=j
+              kk=1
+              if(i==imx+3) ii=i-1
+              if(j==jmx+3) jj=j-1
+              d1x = grid_x(ii+1, jj+1, kk) - grid_x(ii  , jj, kk)
+              d1y = grid_y(ii+1, jj+1, kk) - grid_y(ii  , jj, kk)
+              d1z = grid_z(ii+1, jj+1, kk) - grid_z(ii  , jj, kk)
+              d2x = grid_x(ii  , jj+1, kk) - grid_x(ii+1, jj, kk)
+              d2y = grid_y(ii  , jj+1, kk) - grid_y(ii+1, jj, kk)
+              d2z = grid_z(ii  , jj+1, kk) - grid_z(ii+1, jj, kk)
+              N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+              N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+              N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+              magnitude = SUM(N**2)
+              if(magnitude==0)then
+                d1x = grid_x(ii+1, jj+1, kk) - grid_x(ii  , jj, kk)
+                d1y = grid_y(ii+1, jj+1, kk) - grid_y(ii  , jj, kk)
+                d1z = grid_z(ii+1, jj+1, kk) - grid_z(ii  , jj, kk)
+                d2x = grid_x(ii  , jj+1, kk) - grid_x(ii+1, jj, kk)
+                d2y = grid_y(ii  , jj+1, kk) - grid_y(ii+1, jj, kk)
+                d2z = grid_z(ii  , jj+1, kk) - grid_z(ii+1, jj, kk)
+                N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+                N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+                N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+                magnitude = SUM(N**2)
+                if(magnitude==0)then
+                  Fatal_error
+                end if
+              end if
+              do l=1,layers
+                delI(1) = grid_x(i,j,kk+1)-grid_x(i,j,kk)
+                delI(2) = grid_y(i,j,kk+1)-grid_y(i,j,kk)
+                delI(3) = grid_z(i,j,kk+1)-grid_z(i,j,kk)
+                dot=SUM(N*delI)/magnitude
+                grid_x(i,j,kk-l)= grid_x(i,j,kk) + delI(1) - (l+1)*dot*N(1) 
+                grid_y(i,j,kk-l)= grid_y(i,j,kk) + delI(2) - (l+1)*dot*N(2) 
+                grid_z(i,j,kk-l)= grid_z(i,j,kk) + delI(3) - (l+1)*dot*N(3) 
+            end do
+           end do
+          end do
+
+          !--- KMAX ---!
+          do j = -2, jmx+3
+           do i = -2, imx+3
+              ii=i
+              jj=j
+              kk=kmx
+              if(i==imx+3) ii=i-1
+              if(j==jmx+3) jj=j-1
+              d1x = grid_x(ii+1, jj+1, kk) - grid_x(ii  , jj, kk)
+              d1y = grid_y(ii+1, jj+1, kk) - grid_y(ii  , jj, kk)
+              d1z = grid_z(ii+1, jj+1, kk) - grid_z(ii  , jj, kk)
+              d2x = grid_x(ii  , jj+1, kk) - grid_x(ii+1, jj, kk)
+              d2y = grid_y(ii  , jj+1, kk) - grid_y(ii+1, jj, kk)
+              d2z = grid_z(ii  , jj+1, kk) - grid_z(ii+1, jj, kk)
+              N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+              N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+              N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+              magnitude = SUM(N**2)
+              if(magnitude==0)then
+                d1x = grid_x(ii+1, jj+1, kk) - grid_x(ii  , jj, kk)
+                d1y = grid_y(ii+1, jj+1, kk) - grid_y(ii  , jj, kk)
+                d1z = grid_z(ii+1, jj+1, kk) - grid_z(ii  , jj, kk)
+                d2x = grid_x(ii  , jj+1, kk) - grid_x(ii+1, jj, kk)
+                d2y = grid_y(ii  , jj+1, kk) - grid_y(ii+1, jj, kk)
+                d2z = grid_z(ii  , jj+1, kk) - grid_z(ii+1, jj, kk)
+                N(1) = 0.5 * (d1y*d2z - d1z*d2y)
+                N(2) = 0.5 * (d1z*d2x - d1x*d2z)
+                N(3) = 0.5 * (d1x*d2y - d1y*d2x)
+                magnitude = SUM(N**2)
+                if(magnitude==0)then
+                  Fatal_error
+                end if
+              end if
+              do l=1,layers
+                delI(1) = grid_x(i,j,kk-1)-grid_x(i,j,kk)
+                delI(2) = grid_y(i,j,kk-1)-grid_y(i,j,kk)
+                delI(3) = grid_z(i,j,kk-1)-grid_z(i,j,kk)
+                dot=SUM(N*delI)/magnitude
+                grid_x(i,j,kk+l)= grid_x(i,j,kk) + delI(1) - (l+1)*dot*N(1) 
+                grid_y(i,j,kk+l)= grid_y(i,j,kk) + delI(2) - (l+1)*dot*N(2) 
+                grid_z(i,j,kk+l)= grid_z(i,j,kk) + delI(3) - (l+1)*dot*N(3) 
+            end do
+           end do
+          end do
+
+
+!          !-------------------------------------------------------------------
+!          !getting ghost cell for all faces even if it is a interface cell
+!          ! <algorithm>
+!          ! Point_ghost = 2*Point_first_inner_cell - Point_second_inner_cell
+!          ! </algorithm>
+!          !-------------------------------------------------------------------
+!
+!          !--- I faces ---!
+!          !imin face -> 0 grid point
+!          grid_x( 0,:,:)=2*grid_x( 1,:,:)-grid_x(2,:,:)
+!          grid_y( 0,:,:)=2*grid_y( 1,:,:)-grid_y(2,:,:)
+!          grid_z( 0,:,:)=2*grid_z( 1,:,:)-grid_z(2,:,:)
+!          !imin face -> -1 grid point
+!          grid_x(-1,:,:)=2*grid_x( 0,:,:)-grid_x(1,:,:)
+!          grid_y(-1,:,:)=2*grid_y( 0,:,:)-grid_y(1,:,:)
+!          grid_z(-1,:,:)=2*grid_z( 0,:,:)-grid_z(1,:,:)
+!          !imin face -> -2 grid point
+!          grid_x(-2,:,:)=2*grid_x(-1,:,:)-grid_x(0,:,:)
+!          grid_y(-2,:,:)=2*grid_y(-1,:,:)-grid_y(0,:,:)
+!          grid_z(-2,:,:)=2*grid_z(-1,:,:)-grid_z(0,:,:)
+!
+!          !imax face -> imx+1 grid point
+!          grid_x(imx+1,:,:)=2*grid_x(imx+0,:,:)-grid_x(imx-1,:,:)
+!          grid_y(imx+1,:,:)=2*grid_y(imx+0,:,:)-grid_y(imx-1,:,:)
+!          grid_z(imx+1,:,:)=2*grid_z(imx+0,:,:)-grid_z(imx-1,:,:)
+!          !imax face -> imx+2 grid point
+!          grid_x(imx+2,:,:)=2*grid_x(imx+1,:,:)-grid_x(imx-0,:,:)
+!          grid_y(imx+2,:,:)=2*grid_y(imx+1,:,:)-grid_y(imx-0,:,:)
+!          grid_z(imx+2,:,:)=2*grid_z(imx+1,:,:)-grid_z(imx-0,:,:)
+!          !imax face -> imx+3 grid point
+!          grid_x(imx+3,:,:)=2*grid_x(imx+2,:,:)-grid_x(imx+1,:,:)
+!          grid_y(imx+3,:,:)=2*grid_y(imx+2,:,:)-grid_y(imx+1,:,:)
+!          grid_z(imx+3,:,:)=2*grid_z(imx+2,:,:)-grid_z(imx+1,:,:)
+!
+!
+!          !--- Jmin faces ---!
+!          !jmin faces -> 0 grid point
+!          grid_x(:, 0,:)=2*grid_x(:, 1,:)-grid_x(:,2,:)
+!          grid_y(:, 0,:)=2*grid_y(:, 1,:)-grid_y(:,2,:)
+!          grid_z(:, 0,:)=2*grid_z(:, 1,:)-grid_z(:,2,:)
+!          !jmin face -> -1 grid point
+!          grid_x(:,-1,:)=2*grid_x(:, 0,:)-grid_x(:,1,:)
+!          grid_y(:,-1,:)=2*grid_y(:, 0,:)-grid_y(:,1,:)
+!          grid_z(:,-1,:)=2*grid_z(:, 0,:)-grid_z(:,1,:)
+!          !jmin face -> -2 grid point
+!          grid_x(:,-2,:)=2*grid_x(:,-1,:)-grid_x(:,0,:)
+!          grid_y(:,-2,:)=2*grid_y(:,-1,:)-grid_y(:,0,:)
+!          grid_z(:,-2,:)=2*grid_z(:,-1,:)-grid_z(:,0,:)
+!
+!          !jmax face -> imx+1 grid point
+!          grid_x(:,jmx+1,:)=2*grid_x(:,jmx+0,:)-grid_x(:,jmx-1,:)
+!          grid_y(:,jmx+1,:)=2*grid_y(:,jmx+0,:)-grid_y(:,jmx-1,:)
+!          grid_z(:,jmx+1,:)=2*grid_z(:,jmx+0,:)-grid_z(:,jmx-1,:)
+!          !jmax face -> imx+2 grid point
+!          grid_x(:,jmx+2,:)=2*grid_x(:,jmx+1,:)-grid_x(:,jmx-0,:)
+!          grid_y(:,jmx+2,:)=2*grid_y(:,jmx+1,:)-grid_y(:,jmx-0,:)
+!          grid_z(:,jmx+2,:)=2*grid_z(:,jmx+1,:)-grid_z(:,jmx-0,:)
+!          !jmax face -> imx+3 grid point
+!          grid_x(:,jmx+3,:)=2*grid_x(:,jmx+2,:)-grid_x(:,jmx+1,:)
+!          grid_y(:,jmx+3,:)=2*grid_y(:,jmx+2,:)-grid_y(:,jmx+1,:)
+!          grid_z(:,jmx+3,:)=2*grid_z(:,jmx+2,:)-grid_z(:,jmx+1,:)
+!
+!
+!          !--- Kmax faces ---!
+!          !kmin faces -> 0 grid point
+!          grid_x(:,:, 0)=2*grid_x(:,:, 1)-grid_x(:,:,2)
+!          grid_y(:,:, 0)=2*grid_y(:,:, 1)-grid_y(:,:,2)
+!          grid_z(:,:, 0)=2*grid_z(:,:, 1)-grid_z(:,:,2)
+!          !kmin face -> -1 grid point
+!          grid_x(:,:,-1)=2*grid_x(:,:, 0)-grid_x(:,:,1)
+!          grid_y(:,:,-1)=2*grid_y(:,:, 0)-grid_y(:,:,1)
+!          grid_z(:,:,-1)=2*grid_z(:,:, 0)-grid_z(:,:,1)
+!          !kmin face -> -2 grid point
+!          grid_x(:,:,-2)=2*grid_x(:,:,-1)-grid_x(:,:,0)
+!          grid_y(:,:,-2)=2*grid_y(:,:,-1)-grid_y(:,:,0)
+!          grid_z(:,:,-2)=2*grid_z(:,:,-1)-grid_z(:,:,0)
+!
+!          !kmax face -> imx+1 grid point
+!          grid_x(:,:,kmx+1)=2*grid_x(:,:,kmx+0)-grid_x(:,:,kmx-1)
+!          grid_y(:,:,kmx+1)=2*grid_y(:,:,kmx+0)-grid_y(:,:,kmx-1)
+!          grid_z(:,:,kmx+1)=2*grid_z(:,:,kmx+0)-grid_z(:,:,kmx-1)
+!          !kmax face -> imx+2 grid point
+!          grid_x(:,:,kmx+2)=2*grid_x(:,:,kmx+1)-grid_x(:,:,kmx-0)
+!          grid_y(:,:,kmx+2)=2*grid_y(:,:,kmx+1)-grid_y(:,:,kmx-0)
+!          grid_z(:,:,kmx+2)=2*grid_z(:,:,kmx+1)-grid_z(:,:,kmx-0)
+!          !kmax face -> imx+3 grid point
+!          grid_x(:,:,kmx+3)=2*grid_x(:,:,kmx+2)-grid_x(:,:,kmx+1)
+!          grid_y(:,:,kmx+3)=2*grid_y(:,:,kmx+2)-grid_y(:,:,kmx+1)
+!          grid_z(:,:,kmx+3)=2*grid_z(:,:,kmx+2)-grid_z(:,:,kmx+1)
 
           call dmsg(1, 'grid', 'ghost_grid_interface')
           !---  MPI transfer of grid point across interface  ---!
