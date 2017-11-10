@@ -8,7 +8,7 @@ BINDIR	:= bin
 OBJDIR	:= obj
 MODDIR	:= mod
 GFC 		:= mpif90
-IFC 		:= mpif90 -f90=ifort
+IFC 		:= scorep mpif90 -f90=ifort
 #IFC 		:= mpiifort
 GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 					-Wno-compare-reals \
@@ -21,7 +21,7 @@ GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 					-Werror \
 					-cpp
 
-IFFLAGS := -O3 -free -r8 -traceback \
+IFFLAGS := -O3 -g -free -r8 -traceback \
 					 -L/sware/intel/mkl/lib/intel64 \
            -cpp \
 					 -zero \

@@ -67,6 +67,7 @@ module bc_primitive
   use global_vars, only: pressure_inf
   use global_vars, only: vel_mag
   use global_vars, only: qp
+  use global_vars, only: current_iter
 
   use global_sst , only: beta1
   use utils,       only: turbulence_read_error
@@ -149,6 +150,7 @@ module bc_primitive
       subroutine supersonic_inlet(face)
         implicit none
         character(len=*), intent(in) :: face
+        if(current_iter<=2)then
         call fix(density , fixed_density , face)
         call fix(x_speed , fixed_x_speed , face)
         call fix(y_speed , fixed_y_speed , face)
@@ -170,6 +172,7 @@ module bc_primitive
             !call turbulence_read_error()
             Fatal_error
         end select
+        end if
       end subroutine supersonic_inlet
 
 
@@ -201,11 +204,11 @@ module bc_primitive
       subroutine subsonic_inlet(face)
         implicit none
         character(len=*), intent(in) :: face
+        if(current_iter<=2)then
         call fix(density , fixed_density , face)
         call fix(x_speed , fixed_x_speed , face)
         call fix(y_speed , fixed_y_speed , face)
         call fix(z_speed , fixed_z_speed , face)
-        call copy3(pressure, "flat", face)
         select case (turbulence)
           case('none')
             !do nothing
@@ -222,6 +225,8 @@ module bc_primitive
            ! call turbulence_read_error()
            Fatal_error
         end select
+        end if
+        call copy3(pressure, "flat", face)
       end subroutine subsonic_inlet
 
 
@@ -232,7 +237,9 @@ module bc_primitive
         call copy3(x_speed, "flat", face)
         call copy3(y_speed, "flat", face)
         call copy3(z_speed, "flat", face)
+        if(current_iter<=2)then
         call fix(pressure, fixed_pressure, face)
+        end if
         select case (turbulence)
           case('none')
             !do nothing
@@ -478,7 +485,9 @@ module bc_primitive
       real :: uf, vf, wf
       integer :: i,j,k
       real :: s
+      integer, dimension(6) :: face_already_has_fixed_values=0!0=.no.
 
+      face_already_has_fixed_values=0
       select case(face)
         case("imin")
           do k = 1,kmx-1
@@ -523,6 +532,7 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  face_already_has_fixed_values(1)=0
                 else
                   vel_diff = Unb - Uninf
                   x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-xnx(i,j,k))
@@ -532,6 +542,7 @@ module bc_primitive
                   density(i-1,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
 
+                  if(face_already_has_fixed_values(1)==0)then
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -548,6 +559,8 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  end if
+                  face_already_has_fixed_values(1)=1
                 end if
               end do
             end do
@@ -597,6 +610,7 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  face_already_has_fixed_values(2)=0
                 else
                   vel_diff = Unb - Uninf
                   x_speed(i,j,k) = x_speed_inf + vel_diff*(xnx(i,j,k))
@@ -606,6 +620,7 @@ module bc_primitive
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
 
+                  if(face_already_has_fixed_values(2)==0)then
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -622,6 +637,8 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  end if
+                  face_already_has_fixed_values(2)=1
                 end if
               end do
             end do
@@ -671,6 +688,7 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  face_already_has_fixed_values(3)=0
                 else
                   vel_diff = Unb - Uninf
                   x_speed(i,j-1,k) = x_speed_inf + vel_diff*(-ynx(i,j,k))
@@ -680,6 +698,7 @@ module bc_primitive
                   density(i,j-1,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j-1,k) = (density(i,j-1,k)*Cb*Cb/gm)
 
+                  if(face_already_has_fixed_values(3)==0)then
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -696,6 +715,8 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  end if
+                  face_already_has_fixed_values(3)=1
                 end if
               end do
             end do
@@ -745,6 +766,7 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  face_already_has_fixed_values(4)=0
                 else
                   vel_diff = Unb - Uninf
                   x_speed(i,j,k) = x_speed_inf + vel_diff*(ynx(i,j,k))
@@ -754,6 +776,7 @@ module bc_primitive
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
 
+                  if(face_already_has_fixed_values(4)==0)then
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -770,6 +793,8 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  end if
+                  face_already_has_fixed_values(4)=1
                 end if
               end do
             end do
@@ -819,6 +844,7 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  face_already_has_fixed_values(5)=0
                 else
                   vel_diff = Unb - Uninf
                   x_speed(i,j,k-1) = x_speed_inf + vel_diff*(-znx(i,j,k))
@@ -828,6 +854,7 @@ module bc_primitive
                   density(i,j,k-1) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k-1) = (density(i,j,k-1)*Cb*Cb/gm)
 
+                  if(face_already_has_fixed_values(5)==0)then
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -844,6 +871,8 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  end if
+                  face_already_has_fixed_values(5)=1
                 end if
               end do
             end do
@@ -893,6 +922,7 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  face_already_has_fixed_values(6)=0
                 else
                   vel_diff = Unb - Uninf
                   x_speed(i,j,k) = x_speed_inf + vel_diff*(znx(i,j,k))
@@ -902,6 +932,7 @@ module bc_primitive
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
 
+                  if(face_already_has_fixed_values(6)==0)then
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -918,6 +949,8 @@ module bc_primitive
                       !call turbulence_read_error()
                       Fatal_error
                   end select
+                  end if
+                  face_already_has_fixed_values(6)=1
                 end if
               end do
             end do

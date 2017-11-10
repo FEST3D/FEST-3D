@@ -77,6 +77,7 @@ module solver
   use global_vars, only: res_write_interval
   use global_vars, only: r_list
   use global_vars, only: w_list
+  use global_vars, only: Res_itr
 
   use utils, only: alloc
   use utils, only:  dealloc 
@@ -622,7 +623,11 @@ module solver
 !            call get_total_conservative_Residue()
 !            call compute_time_step()
             call get_next_solution()
-            call find_resnorm()
+            if((mod(current_iter,res_write_interval)==0 .or. &
+                    current_iter==Res_itr .or.               &
+                    current_iter==1))      then
+              call find_resnorm()
+            end if
             call checkpoint()
             current_iter = current_iter + 1
             if(process_id==0)then

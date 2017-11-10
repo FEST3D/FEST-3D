@@ -118,15 +118,18 @@ module interface
             end do
           end do
         end do
-        if(mpi_class(1)==0)then
-          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
-        elseif(mpi_class(1)==1)then
-          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
-          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
-        else
-          Fatal_error
-        end if
+        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
+                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
+                          MPI_COMM_WORLD,status,ierr)
+!        if(mpi_class(1)==0)then
+!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
+!        elseif(mpi_class(1)==1)then
+!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
+!        else
+!          Fatal_error
+!        end if
         ! redistribute data
         if(dir_switch(1)==0)then
           count=0
@@ -169,15 +172,18 @@ module interface
             end do
           end do
         end do
-        if(mpi_class(2)==0)then
-          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
-        elseif(mpi_class(2)==1)then
-          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
-          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
-        else
-          Fatal_error
-        end if
+        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
+                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
+                          MPI_COMM_WORLD,status,ierr)
+!        if(mpi_class(2)==0)then
+!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
+!        elseif(mpi_class(2)==1)then
+!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
+!        else
+!          Fatal_error
+!        end if
         ! redistribute data
         if(dir_switch(2)==0)then
           count=0
@@ -222,15 +228,18 @@ module interface
             end do
           end do
         end do
-        if(mpi_class(3)==0)then
-          call MPI_SEND(jmin_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(jmin_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,status, ierr)
-        elseif(mpi_class(3)==1)then
-          call MPI_RECV(jmin_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,status, ierr)
-          call MPI_SEND(jmin_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,ierr)
-        else
-          Fatal_error
-        end if
+        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmin_id,tag,&
+                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmin_id,tag,&
+                          MPI_COMM_WORLD,status,ierr)
+!        if(mpi_class(3)==0)then
+!          call MPI_SEND(jmin_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(jmin_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,status, ierr)
+!        elseif(mpi_class(3)==1)then
+!          call MPI_RECV(jmin_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(jmin_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,ierr)
+!        else
+!          Fatal_error
+!        end if
         ! redistribute data
         if(dir_switch(3)==0)then
           count=0
@@ -273,15 +282,18 @@ module interface
             end do
           end do
         end do
-        if(mpi_class(4)==0)then
-          call MPI_SEND(jmax_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(jmax_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,status, ierr)
-        elseif(mpi_class(4)==1)then
-          call MPI_RECV(jmax_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,status, ierr)
-          call MPI_SEND(jmax_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,ierr)
-        else
-          Fatal_error
-        end if
+        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmax_id,tag,&
+                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmax_id,tag,&
+                          MPI_COMM_WORLD,status,ierr)
+!        if(mpi_class(4)==0)then
+!          call MPI_SEND(jmax_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(jmax_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,status, ierr)
+!        elseif(mpi_class(4)==1)then
+!          call MPI_RECV(jmax_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(jmax_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,ierr)
+!        else
+!          Fatal_error
+!        end if
 
         ! redistribute data
         if(dir_switch(4)==0)then
@@ -325,15 +337,18 @@ module interface
             end do
           end do
         end do
-        if(mpi_class(5)==0)then
-          call MPI_SEND(kmin_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(kmin_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,status, ierr)
-        elseif(mpi_class(5)==1)then
-          call MPI_RECV(kmin_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,status, ierr)
-          call MPI_SEND(kmin_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,ierr)
-        else
-          Fatal_error
-        end if
+        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmin_id,tag,&
+                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmin_id,tag,&
+                          MPI_COMM_WORLD,status,ierr)
+!        if(mpi_class(5)==0)then
+!          call MPI_SEND(kmin_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(kmin_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,status, ierr)
+!        elseif(mpi_class(5)==1)then
+!          call MPI_RECV(kmin_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(kmin_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,ierr)
+!        else
+!          Fatal_error
+!        end if
         ! redistribute data
         if(dir_switch(5)==0)then
           count=0
@@ -376,15 +391,18 @@ module interface
             end do
           end do
         end do
-        if(mpi_class(6)==0)then
-          call MPI_SEND(kmax_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(kmax_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,status, ierr)
-        elseif(mpi_class(6)==1)then
-          call MPI_RECV(kmax_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,status, ierr)
-          call MPI_SEND(kmax_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,ierr)
-        else
-          Fatal_error
-        end if
+        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmax_id,tag,&
+                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmax_id,tag,&
+                          MPI_COMM_WORLD,status,ierr)
+!        if(mpi_class(6)==0)then
+!          call MPI_SEND(kmax_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(kmax_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,status, ierr)
+!        elseif(mpi_class(6)==1)then
+!          call MPI_RECV(kmax_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(kmax_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,ierr)
+!        else
+!          Fatal_error
+!        end if
         ! redistribute data
         if(dir_switch(6)==0)then
           count=0

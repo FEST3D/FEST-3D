@@ -145,18 +145,31 @@ module update
               call get_total_conservative_Residue()
               call compute_time_step() ! has to be after get_..._Residue()
               call update_with("conservative", 1. ,1., .FALSE.) 
+              !call update_with("primitive", 1. ,1., .FALSE.) 
+              !call update_laminar_variables_primitive(1. ,1., .FALSE.) 
+              !if(turbulence/='none')then
+              !  call update_turbulent_variables_primitive(1. ,1., .FALSE.) 
+              !end if
             case ("RK4")
               R_store=0.
               U_store = qp
               call get_total_conservative_Residue()
               call compute_time_step()
               call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              !call update_laminar_variables_primitive(0.5, 1., .FALSE., .True., R_store, U_store) 
+              !call update_turbulent_variables_primitive(0.5, 1., .FALSE., .True., R_store, U_store) 
               call get_total_conservative_Residue()
               call update_with("conservative", 0.5  , 2., .FALSE., R_store, U_store) 
+              !call update_laminar_variables_primitive(0.5, 2., .FALSE., .True., R_store, U_store) 
+              !call update_turbulent_variables_primitive(0.5, 2., .FALSE., .True., R_store, U_store) 
               call get_total_conservative_Residue()
               call update_with("conservative", 1.0  , 2., .FALSE., R_store, U_store) 
+              !call update_laminar_variables_primitive(1.0, 2., .FALSE., .True., R_store, U_store) 
+              !call update_turbulent_variables_primitive(1.0, 2., .FALSE., .True., R_store, U_store) 
               call get_total_conservative_Residue()
               call update_with("conservative", 1./6., 1., .TRUE. , R_store, U_store) 
+              !call update_laminar_variables_primitive(1./6., 1., .TRUE., .FALSE., R_store, U_store) 
+              !call update_turbulent_variables_primitive(1./6., 1., .TRUE., .FALSE., R_store, U_store) 
             case("RK2")
               R_store=0.
               U_store = qp
@@ -415,27 +428,39 @@ module update
       end subroutine get_total_conservative_Residue
 
 
-      subroutine update_laminar_variables_primitive(time_factor, store_factor, use, Rn, un)
+      subroutine update_laminar_variables_primitive(time_factor, store_factor, use, tostore, Rn, un)
         implicit none
         real,    intent(in), optional :: time_factor
         real,    intent(in), optional :: store_factor
         logical, intent(in), optional :: use
+        logical, intent(in), optional :: tostore
         real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
         real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
 
         !local variables
         real                              :: TF       = 1.0     !time factor
         real                              :: SF       = 1.0     !store factor
+        real                              :: SFU      = 1.0     !store factor to use inside ijk loop
         integer                           :: R_switch = 0       !R_store use switch based on TU
         Logical                           :: TU       = .FALSE. !to use R_store or not
+        Logical                           :: TS       = .FALSE. !to store R_store or not
         real, dimension(:,:,:,:), pointer :: Quse
         real, dimension(:,:,:,:), pointer :: Rstore
+        real, dimension(5)                :: Res
+        real                              :: t1 !temp variable 1/density
         integer                           :: i,j,k
 
         if(present(time_factor)) TF=time_factor
         if(present(store_factor)) SF=store_factor
         if(present(use)) TU=use
-        if(TU)R_switch=1
+        if(present(tostore)) TS=tostore
+        if(TU)then
+          R_switch=1
+          SFU=SF
+        else
+          R_switch=0
+          SFU=1.0
+        end if
 
         !check if user want to update from particular solution
         if(present(un))then
@@ -457,17 +482,19 @@ module update
             do i = 1,imx-1
         
               u1(1:5) = Quse(i,j,k,1:5)
+              t1      = 1.0/u1(1)
+              Res(1:5)= Residue(i,j,k,1:5)
         
               ! finding primitive residue
-              R(1) = mass_residue(i,j,k)
-              R(2) = -1*(u1(2)/u1(1))*mass_residue(i,j,k) + x_mom_residue(i,j,k)/u1(1)
-              R(3) = -1*(u1(3)/u1(1))*mass_residue(i,j,k) + y_mom_residue(i,j,k)/u1(1)
-              R(4) = -1*(u1(4)/u1(1))*mass_residue(i,j,k) + z_mom_residue(i,j,k)/u1(1)
-              R(5) = 0.5*(gm-1.)*(sum(u1(2:4)**2)*mass_residue(i,j,k)) &
-                     -(gm-1.)*u1(2)*x_mom_residue(i,j,k)               &
-                     -(gm-1.)*u1(3)*y_mom_residue(i,j,k)               &
-                     -(gm-1.)*u1(4)*z_mom_residue(i,j,k)               &
-                     +(gm-1.)*energy_residue(i,j,k)
+              R(1) = Res(1)
+              R(2) = (-1*(u1(2)*Res(1)) + Res(2))*t1
+              R(3) = (-1*(u1(3)*Res(1)) + Res(3))*t1
+              R(4) = (-1*(u1(4)*Res(1)) + Res(4))*t1
+              R(5) = 0.5*(gm-1.)*(u1(2)*u1(2)+u1(3)*u1(3)+u1(4)*u1(4))*Res(1) &
+                     -(gm-1.)*u1(2)*Res(2)               &
+                     -(gm-1.)*u1(3)*Res(3)               &
+                     -(gm-1.)*u1(4)*Res(4)               &
+                     +(gm-1.)*Res(5)
         
                     
              !store residue
@@ -475,14 +502,14 @@ module update
              
         
              !update
-             u2(1:5) = u1(1:5) - (R(1:5)+(R_switch*SF*Rstore(i,j,k,1:5)))&
+             u2(1:5) = u1(1:5) - (SFU*R(1:5)+R_switch*Rstore(i,j,k,1:5))&
                                 *(TF*delta_t(i,j,k)/volume(i,j,k))
         
              qp(i,j,k,1:5) = u2(1:5)
             end do
           end do
         end do
-        if(present(Rn)) then
+        if(present(Rn) .and. TS) then
           Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) = Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) &
                                       + SF*aux(1:imx-1,1:jmx-1,1:kmx-1,1:5)
         end if
@@ -491,6 +518,7 @@ module update
           Fatal_error
         end if
         nullify(Rstore)
+        nullify(Quse)
 
       end subroutine update_laminar_variables_primitive
 
@@ -514,7 +542,13 @@ module update
         if(present(time_factor)) TF=time_factor
         if(present(store_factor)) SF=store_factor
         if(present(use)) TU=use
-        if(TU)R_switch=1
+        ! if not to use R_store for residual calculation make SF=1.0
+        if(.not. TU) SF=1.0
+        if(TU)then
+          R_switch=1
+        else
+          R_switch=0
+        end if
 
         !check if user want to update from particular solution
         if(present(un))then
@@ -542,7 +576,7 @@ module update
               u1(5) = (u1(5)/(gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1)
 
              ! get R
-              R(1:5) = residue(i,j,k,1:5) 
+              R(1:5) = residue(i,j,k,1:5)                                                              
 
              !store conservative variables
              aux(i,j,k,1:n_var)=u1(1:n_var)
@@ -562,33 +596,31 @@ module update
             end do
           end do
         end do
-        if(present(Rn)) then
-          Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) = Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) &
-                                  + SF*residue(1:imx-1,1:jmx-1,1:kmx-1,1:5)
-        end if
 
         if(any(qp(:,:,:,1)<0.) .and. any(qp(:,:,:,5)<0))then
           Fatal_error
         end if
-        nullify(Rstore)
 
       end subroutine update_laminar_variables_conservative
 
 
-      subroutine update_turbulent_variables_primitive(time_factor, store_factor, use, Rn, un)
+      subroutine update_turbulent_variables_primitive(time_factor, store_factor, use, tostore, Rn, un)
         implicit none
         !arguments
         real,    intent(in), optional :: time_factor ! time factor
         real,    intent(in), optional :: store_factor
         logical, intent(in), optional :: use
+        logical, intent(in), optional :: tostore
         real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
         real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
 
         !local variables
         real                              :: TF       = 1.0     !time factor
         real                              :: SF       = 1.0     !store factor
+        real                              :: SFU      = 1.0     !store factor to use in ijk loop
         integer                           :: R_switch = 0       !R_store use switch based on TU
         Logical                           :: TU       = .FALSE. !to use R_store or not
+        Logical                           :: TS       = .FALSE. !to store R_store or not
         real, dimension(:,:,:,:), pointer :: Quse
         real, dimension(:,:,:,:), pointer :: Rstore
         integer                           :: i,j,k
@@ -597,7 +629,14 @@ module update
         if(present(time_factor)) TF=time_factor
         if(present(store_factor)) SF=store_factor
         if(present(use)) TU=use
-        if(TU)R_switch=1
+        if(present(tostore)) TS=tostore
+        if(TU)then
+          R_switch=1
+          SFU=SF
+        else
+          R_switch=0
+          SFU=1.0
+        end if
 
         !check if user want to update from particular solution
         if(present(un))then
@@ -634,7 +673,7 @@ module update
                   !store residue
                   aux(i,j,k,6:n_var)=R(6:n_var)
                   !update
-                  qp(i,j,k,6:n_var) = u1(6:n_var) - (R(6:n_var)+(R_switch*SF*Rstore(i,j,k,6:n_var)))&
+                  qp(i,j,k,6:n_var) = u1(6:n_var) - (SFU*R(6:n_var)+R_switch*Rstore(i,j,k,6:n_var))&
                                               *(TF*delta_t(i,j,k)/volume(i,j,k))
                 end do
               end do
@@ -654,7 +693,7 @@ module update
                   !store residue
                   aux(i,j,k,6:n_var)=R(6:n_var)
                   !update
-                  qp(i,j,k,6:n_var) = u1(6:n_var) - (R(6:n_var)+(R_switch*SF*Rstore(i,j,k,6:n_var)))&
+                  qp(i,j,k,6:n_var) = u1(6:n_var) - (SFU*R(6:n_var)+R_switch*Rstore(i,j,k,6:n_var))&
                                               *(TF*delta_t(i,j,k)/volume(i,j,k))
                 end do
               end do
@@ -665,14 +704,14 @@ module update
 
         !--- end update ---!
         
-        if(present(Rn)) then
+        if(present(Rn) .and. TS) then
           Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) = Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) &
                                           + SF*aux(1:imx-1,1:jmx-1,1:kmx-1,6:n_var)
         end if
         
-        if(any(qp(:,:,:,6)<0.) .and. any(qp(:,:,:,n_var)<0))then
-          Fatal_error
-        end if
+        !if(any(qp(:,:,:,6)<0.) .and. any(qp(:,:,:,n_var)<0))then
+        !  Fatal_error
+        !end if
         nullify(Rstore)
 
       end subroutine update_turbulent_variables_primitive

@@ -262,13 +262,13 @@ module muscl
             switch_L=klimiter_switch
             !TODO: Figure out why in muscl, compute_zeta_face_states(), the order of looping matters
 
-            do k = 0, kmx
-             do l = 1, n_var
-              if(l==6  .or. l==7 )then
-                switch_L=ktlimiter_switch
-              else
-                switch_L=klimiter_switch
-              end if
+            do l = 1, n_var
+             if(l>=5)then
+               switch_L=ktlimiter_switch
+             else
+               switch_L=klimiter_switch
+             end if
+             do k = 0, kmx
               do j = 1, jmx - 1
                do i = 1, imx - 1
                 ! Cell based
