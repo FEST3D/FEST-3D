@@ -119,7 +119,7 @@ module convergence
             Issue_warning
         end select
 
-        if (check < tolerance .and. current_iter>1) then
+        if (check < tolerance .and. current_iter>10) then
           c = .TRUE.
         else
           c = .FALSE.

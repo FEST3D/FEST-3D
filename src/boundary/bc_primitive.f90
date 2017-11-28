@@ -126,7 +126,7 @@ module bc_primitive
             call total_pressure(face)
 
           case Default
-            if(id(i)>=0) then
+            if(id(i)>=0 .or. id(i)==-10) then
               continue !interface boundary 
             else
               print*, " boundary condition not recognised -> id is :", id(i)
@@ -1113,7 +1113,7 @@ module bc_primitive
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                pressure(i,j,k) = fixed_Tpressure(2)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                pressure(i,j,k) = fixed_Tpressure(2)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
               end do
             end do
@@ -1183,7 +1183,7 @@ module bc_primitive
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j-1,k)**2+y_speed(i,j-1,k)**2+z_speed(i,j-1,k)**2)/Cb
-                pressure(i,j-1,k) = fixed_Tpressure(3)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                pressure(i,j-1,k) = fixed_Tpressure(3)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j-1,k) = gm*pressure(i,j-1,k)/(Cb*Cb)
               end do
             end do
@@ -1253,7 +1253,7 @@ module bc_primitive
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                pressure(i,j,k) = fixed_Tpressure(4)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                pressure(i,j,k) = fixed_Tpressure(4)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
               end do
             end do
@@ -1323,7 +1323,7 @@ module bc_primitive
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                pressure(i,j,k-1) = fixed_Tpressure(5)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                pressure(i,j,k-1) = fixed_Tpressure(5)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j,k-1) = gm*pressure(i,j,k-1)/(Cb*Cb)
               end do
             end do
@@ -1393,7 +1393,7 @@ module bc_primitive
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                pressure(i,j,k) = fixed_Tpressure(6)/(((1+0.5*(gm-1.)*Mb))**(gm/(gm-1.)))
+                pressure(i,j,k) = fixed_Tpressure(6)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
               end do
             end do

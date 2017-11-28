@@ -186,7 +186,7 @@ module viscosity
             ! populating ghost cell
             do i = 1,6
               select case(id(i))
-                case(0:)
+                case(-10,0:)
                   !interface
                   continue
 
@@ -262,7 +262,7 @@ module viscosity
             ! populating ghost cell
             do i = 1,6
               select case(id(i))
-                case(0:)
+                case(-10,0:)
                   !interface
                   continue
 

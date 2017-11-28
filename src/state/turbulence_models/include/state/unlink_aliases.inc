@@ -6,7 +6,7 @@
               !include nothing
               continue
           
-          case ("sst")
+          case ("sst", "bsl")
               include "turbulence_models/sst/state/unlink_aliases.inc"
 
           case ("kkl")
@@ -23,6 +23,9 @@
 
           case ("des-sst")
               include "turbulence_models/des-sst/state/unlink_aliases.inc"
+
+          case ("les")
+              include "turbulence_models/les/state/unlink_aliases.inc"
 
           case DEFAULT
               call dmsg(5, "turbulence_models/include/state", "unlink_aliases", &

@@ -40,6 +40,7 @@ module global
     integer, parameter ::     RESTART_FILE_UNIT = 39
     integer, parameter ::       OUTIN_FILE_UNIT = 40
     integer, parameter ::         MAP_FILE_UNIT = 41
+    integer, parameter ::    PERIODIC_FILE_UNIT = 42
 
     ! stop file
     integer, parameter ::       STOP_FILE_UNIT = 41
@@ -57,6 +58,7 @@ module global
     character(len=*), parameter :: resnorm_file='time_directories/aux/resnorm'
     character(len=*), parameter :: stop_file='system/stopfile'
     character(len=*), parameter :: mapfile='system/mesh/layout/mapping.txt'
+    character(len=*), parameter :: periodicfile='system/mesh/layout/periodic.txt'
 
     ! Fixed variable
     integer, parameter :: resnorm_number=10 

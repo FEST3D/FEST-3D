@@ -21,6 +21,7 @@ module bc
   use global_vars, only: imx
   use global_vars, only: jmx
   use global_vars, only: kmx
+  use global_vars, only: PbcId
   use utils, only: alloc
   use utils, only: dealloc
 
@@ -40,6 +41,14 @@ module bc
 
     subroutine setup_bc()
       implicit none
+      !check for periodic bc
+      if(PbcId(1)>=0) imin_id=-10
+      if(PbcId(2)>=0) imax_id=-10
+      if(PbcId(3)>=0) jmin_id=-10
+      if(PbcId(4)>=0) jmax_id=-10
+      if(PbcId(5)>=0) kmin_id=-10
+      if(PbcId(6)>=0) kmax_id=-10
+      ! assign name to each face
       face_names(1) = "imin"
       face_names(2) = "imax"
       face_names(3) = "jmin"
@@ -67,12 +76,12 @@ module bc
       make_G_flux_zero=1
       make_H_flux_zero=1
 
-      if(imin_id==-5 .or. imin_id==-6 .or. imin_id==-7) make_F_flux_zero(1)=0.0
-      if(jmin_id==-5 .or. jmin_id==-6 .or. jmin_id==-7) make_G_flux_zero(1)=0.0
-      if(kmin_id==-5 .or. kmin_id==-6 .or. kmin_id==-7) make_H_flux_zero(1)=0.0
-      if(imax_id==-5 .or. imax_id==-6 .or. imax_id==-7) make_F_flux_zero(imx)=0.0
-      if(jmax_id==-5 .or. jmax_id==-6 .or. jmax_id==-7) make_G_flux_zero(jmx)=0.0
-      if(kmax_id==-5 .or. kmax_id==-6 .or. kmax_id==-7) make_H_flux_zero(kmx)=0.0
+      if(imin_id==-5 .or. imin_id==-6 .or. imin_id==-7) make_F_flux_zero(1)=0
+      if(jmin_id==-5 .or. jmin_id==-6 .or. jmin_id==-7) make_G_flux_zero(1)=0
+      if(kmin_id==-5 .or. kmin_id==-6 .or. kmin_id==-7) make_H_flux_zero(1)=0
+      if(imax_id==-5 .or. imax_id==-6 .or. imax_id==-7) make_F_flux_zero(imx)=0
+      if(jmax_id==-5 .or. jmax_id==-6 .or. jmax_id==-7) make_G_flux_zero(jmx)=0
+      if(kmax_id==-5 .or. kmax_id==-6 .or. kmax_id==-7) make_H_flux_zero(kmx)=0
 
     end subroutine setup_bc
 

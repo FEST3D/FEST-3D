@@ -2,9 +2,12 @@ module mapping
 
   use global, only: MAP_FILE_UNIT
   use global, only: mapfile
+  use global, only: PERIODIC_FILE_UNIT
+  use global, only: periodicfile
 
   use global_vars, only: total_process
   use global_vars, only: process_id
+  use global_vars, only: PbcId
 
   use utils      , only: DEBUG_LEVEL
   use utils      , only: dmsg
@@ -17,6 +20,12 @@ module mapping
   use global_vars, only: kmx
   use global_vars, only: otherface
   use global_vars, only: dir_switch
+  use global_vars, only: imin_id
+  use global_vars, only: imax_id
+  use global_vars, only: jmin_id
+  use global_vars, only: jmax_id
+  use global_vars, only: kmin_id
+  use global_vars, only: kmax_id
 
   implicit none
   private
@@ -91,6 +100,7 @@ module mapping
         otherface(4)=3
         otherface(5)=6
         otherface(6)=5
+        dir_switch = 0
         !--- end of variable intializaiton --!
 
         !--- reading map file  ---!
@@ -158,7 +168,8 @@ module mapping
 
         call close_file(MAP_FILE_UNIT)
         call change_map_to_particular_range()
-        print*, "MPI_CLASS:", mpi_class
+
+        call read_periodic_bc_file()
       end subroutine read_interface_map
 
       subroutine change_map_to_particular_range()
@@ -236,5 +247,26 @@ module mapping
       end subroutine change_map_to_particular_range
           
 
+      subroutine read_periodic_bc_file()
+        implicit none
+        integer :: ios
+        integer :: max_call
+        integer :: i
+        integer :: b1, b2
+        integer :: f1, f2
+        integer :: class
+
+        open(PERIODIC_FILE_UNIT, file=periodicfile, status='old', action='read')
+        read(PERIODIC_FILE_UNIT,*) !ignore first line (header)
+        max_call = total_process*6
+        do i=1,max_call
+          read(PERIODIC_FILE_UNIT,*, iostat=ios) b1,b2,f1,f2, class
+          if(is_iostat_end(ios)) EXIT
+          if(b1==process_id)then
+            PbcId(f1) = b2
+          end if
+        end do
+        close(PERIODIC_FILE_UNIT)
+      end subroutine read_periodic_bc_file
 
 end module mapping

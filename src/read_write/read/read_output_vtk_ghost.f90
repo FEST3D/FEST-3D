@@ -122,7 +122,7 @@ module read_output_vtk
       read(IN_FILE_UNIT, *) !'cfd-iitm output'   ! comment line
       read(IN_FILE_UNIT, *) !trim(read_data_format)
       read(IN_FILE_UNIT, *) !'DATASET STRUCTURED_GRID'
-      !read(IN_FILE_UNIT, *)
+      read(IN_FILE_UNIT, *)
 
 
     end subroutine read_header
@@ -134,9 +134,9 @@ module read_output_vtk
       call dmsg(1, 'read_output_vtk', 'read_grid')
       read(IN_FILE_UNIT, * ) !'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
       read(IN_FILE_UNIT, * ) !'POINTS ', imx*jmx*kmx, ' DOUBLE'
-      do k = 1, kmx
-       do j = 1, jmx
-        do i = 1, imx
+      do k = -2, kmx+3
+       do j = -2, jmx+3
+        do i = -2, imx+3
           read(IN_FILE_UNIT, *) !grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
         end do
        end do
@@ -151,9 +151,9 @@ module read_output_vtk
       call dmsg(1, 'read_output_vtk', 'read_velocity')
       read(IN_FILE_UNIT, *) !'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
       read(IN_FILE_UNIT, *) !'VECTORS Velocity FLOAT'
-      do k = 1, kmx - 1
-       do j = 1, jmx - 1
-        do i = 1, imx - 1
+      do k = -2, kmx + 2
+       do j = -2, jmx + 2
+        do i = -2, imx + 2
           read(IN_FILE_UNIT, *) x_speed(i, j, k), y_speed(i, j, k), z_speed(i, j, k)
         end do
        end do
@@ -171,9 +171,9 @@ module read_output_vtk
       call dmsg(1, 'read_output_vtk', trim(name))
       read(IN_FILE_UNIT, *) !'SCALARS '//trim(name)//' FLOAT'
       read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
-      do k = 1, kmx - 1
-       do j = 1, jmx - 1
-        do i = 1, imx - 1
+      do k = -2, kmx + 2
+       do j = -2, jmx + 2
+        do i = -2, imx + 2
           read(IN_FILE_UNIT, *) var(i, j, k)
         end do
        end do

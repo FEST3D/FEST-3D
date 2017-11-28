@@ -8,7 +8,8 @@ BINDIR	:= bin
 OBJDIR	:= obj
 MODDIR	:= mod
 GFC 		:= mpif90
-IFC 		:= scorep mpif90 -f90=ifort
+#IFC 		:= scorep mpif90 -f90=ifort
+IFC 		:= mpif90 -f90=ifort
 #IFC 		:= mpiifort
 GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 					-Wno-compare-reals \

@@ -13,6 +13,7 @@ module interface
   use global_vars, only: layers
   use global_vars, only: process_id
   use global_vars, only : dir_switch
+  use global_vars, only: PbcId
 
   use mapping, only : PiDir
   use mapping, only : PjDir
@@ -430,6 +431,201 @@ module interface
           end do
         end if
       end if
+      call apply_periodic_bc()
     end subroutine apply_interface
+
+
+    subroutine apply_periodic_bc()
+      implicit none
+      integer:: i,j,k,n,l
+      integer:: status(MPI_STATUS_SIZE)
+      integer:: ierr
+      integer:: tag=1
+      integer:: count=0
+
+      call dmsg(1, 'interface', 'apply_periodic_boundary_condition')
+      if(PbcId(1)>=0)then
+        !collect data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do j=1,jmx-1
+                count=count+1
+                imin_send_buf(count) = qp(l,j,k,n)
+              end do
+            end do
+          end do
+        end do
+        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(1),tag,&
+                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(1),tag,&
+                          MPI_COMM_WORLD,status,ierr)
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do j=1,jmx-1
+                count=count+1
+                qp(1-l,j,k,n) = imin_recv_buf(count)
+              end do
+            end do
+          end do
+        end do
+      end if
+
+      if(PbcId(2)>=0)then
+        !collect data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do j=1,jmx-1
+                count=count+1
+                imax_send_buf(count) = qp(imx-l,j,k,n)
+              end do
+            end do
+          end do
+        end do
+        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(2),tag,&
+                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(2),tag,&
+                          MPI_COMM_WORLD,status,ierr)
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do j=1,jmx-1
+                count=count+1
+                 qp(imx+l-1,j,k,n) = imax_recv_buf(count)
+              end do
+            end do
+          end do
+        end do
+      end if
+      !--- JMIN ---!
+      if(PbcId(3)>=0)then
+        !collect data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do i=1,imx-1
+                count=count+1
+                jmin_send_buf(count) = qp(i,l,k,n)
+              end do
+            end do
+          end do
+        end do
+        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(3),tag,&
+                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(3),tag,&
+                          MPI_COMM_WORLD,status,ierr)
+        ! redistribute data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do i=1,imx-1
+                count=count+1
+                qp(i,1-l,k,n) = jmin_recv_buf(count)
+              end do
+            end do
+          end do
+        end do
+      end if
+
+      !--- JMAX ---!
+      if(PbcId(4)>=0)then
+        !collect data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do i=1,imx-1
+                count=count+1
+                jmax_send_buf(count) = qp(i,jmx-l,k,n)
+              end do
+            end do
+          end do
+        end do
+        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(4),tag,&
+                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(4),tag,&
+                          MPI_COMM_WORLD,status,ierr)
+        ! redistribute data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do i=1,imx-1
+                count=count+1
+                qp(i,jmx+l-1,k,n) = jmax_recv_buf(count)
+              end do
+            end do
+          end do
+        end do
+      end if
+
+      !--- KMIN ---!
+      if(PbcId(5)>=0)then
+        !collect data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do j=1,jmx-1
+              do i=1,imx-1
+                count=count+1
+                kmin_send_buf(count) = qp(i,j,l,n)
+              end do
+            end do
+          end do
+        end do
+        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(5),tag,&
+                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(5),tag,&
+                          MPI_COMM_WORLD,status,ierr)
+        ! redistribute data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do j=1,jmx-1
+              do i=1,imx-1
+                count=count+1
+                qp(i,j,1-l,n) = kmin_recv_buf(count)
+              end do
+            end do
+          end do
+        end do
+      end if
+
+      !--- KMAX ---!
+      if(PbcId(6)>=0)then
+        !collect data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do j=1,jmx-1
+              do i=1,imx-1
+                count=count+1
+                kmax_send_buf(count) = qp(i,j,kmx-l,n)
+              end do
+            end do
+          end do
+        end do
+        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(6),tag,&
+                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(6),tag,&
+                          MPI_COMM_WORLD,status,ierr)
+        ! redistribute data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do j=1,jmx-1
+              do i=1,imx-1
+                count=count+1
+                qp(i,j,kmx+l-1,n) = kmax_recv_buf(count)
+              end do
+            end do
+          end do
+        end do
+      end if
+
+
+    end subroutine apply_periodic_bc
 
 end module interface

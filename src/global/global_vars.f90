@@ -172,7 +172,8 @@ module global_vars
   real                                              :: Sutherland_temp
 
   ! nondimensional numbers
-  real                                              :: Pr !prandtl number
+  real                                              :: Pr=0.7 !prandtl number
+  real                                              :: tPr=0.9 !turbulent Prandtl number
 
   ! switches
   logical                                           :: supersonic_flag
@@ -345,6 +346,17 @@ module global_vars
   integer,dimension(:),allocatable::make_G_flux_zero
   integer,dimension(:),allocatable::make_H_flux_zero
 
+
+  !residual smoothing
+  real :: eps_x =200.0
+  real :: eps_y =200.0
+  real :: eps_z =200.0
+
+  ! dissipation
+  real, dimension(:,:,:,:), allocatable :: Diss
+
+  !periodic boundary condition
+  integer, dimension(6) :: PbcId = -1
 
 end module global_vars
 

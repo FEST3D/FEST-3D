@@ -4,8 +4,8 @@ module read
   !   1. control.md
   !   2. fvscheme.md
   !   3. flow.md
-  !   4. res_control.md ! todo
-  !   5. state_read_write_control.md ! todo
+  !   4. res_control.md
+  !   5. state_read_write_control.md
   !------------------------------------------------------
 
 
@@ -54,6 +54,7 @@ module read
   use global_vars, only: T_ref
   use global_vars, only: Sutherland_temp
   use global_vars, only: Pr !prandtl number
+  use global_vars, only: tPr !Turbulent prandtl number
   use global_vars, only: ilimiter_switch
   use global_vars, only: jlimiter_switch
   use global_vars, only: klimiter_switch
@@ -419,7 +420,7 @@ module read
 
         ! read prandtl number
         call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) Pr
+        read(buf, *) Pr, tPr
         call dmsg(5, 'read', 'read_flow', &
                 msg='Prandtl Number = ' + Pr)
 

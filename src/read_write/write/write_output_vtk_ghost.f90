@@ -221,7 +221,7 @@ module write_output_vtk
         write(OUT_FILE_UNIT, '(a)') 'cfd-iitm output'   ! comment line
         write(OUT_FILE_UNIT, '(a)') trim(Write_data_format)
         write(OUT_FILE_UNIT, '(a)') 'DATASET STRUCTURED_GRID'
-        !write(OUT_FILE_UNIT, *)
+        write(OUT_FILE_UNIT, *)
       elseif (write_data_format == 'BINARY') then
         write(OUT_FILE_UNIT) '# vtk DataFile Version 3.1'//newline
         write(OUT_FILE_UNIT) 'cfd-iitm output'//newline
@@ -240,12 +240,12 @@ module write_output_vtk
       call dmsg(1, 'write_output_vtk', 'write_grid')
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, fmt='(a, i0, a, i0, a, i0)') &
-            'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
+            'DIMENSIONS ', imx+6, ' ', jmx+6, ' ', kmx+6
         write(OUT_FILE_UNIT, fmt='(a, i0, a)') &
-            'POINTS ', imx*jmx*kmx, ' DOUBLE'
-        do k = 1, kmx
-         do j = 1, jmx
-          do i = 1, imx
+            'POINTS ', (imx+6)*(jmx+6)*(kmx+6), ' DOUBLE'
+        do k = -2, kmx+3
+         do j = -2, jmx+3
+          do i = -2, imx+3
               write(OUT_FILE_UNIT, fmt='(f0.16, a, f0.16, a, f0.16)') &
                   grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
           end do
@@ -277,11 +277,11 @@ module write_output_vtk
         ! Cell data
         ! Writing Velocity
       if (Write_data_format == "ASCII") then
-        write(OUT_FILE_UNIT, fmt='(a, i0)') 'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
+        write(OUT_FILE_UNIT, fmt='(a, i0)') 'CELL_DATA ', (imx+5)*(jmx+5)*(kmx+5)
         write(OUT_FILE_UNIT, '(a)') 'VECTORS Velocity FLOAT'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
+        do k = -2, kmx+2
+         do j = -2, jmx+2
+          do i = -2, imx+2
             write(OUT_FILE_UNIT, fmt='(ES27.16E4, a, ES27.16E4, a, ES27.16E4)') &
                 x_speed(i, j, k), ' ', y_speed(i, j, k), ' ', z_speed(i, j, k)
           end do
@@ -424,9 +424,9 @@ module write_output_vtk
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, '(a)') 'SCALARS '//trim(name)//' FLOAT'
         write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
+        do k = -2, kmx+2
+         do j = -2, jmx+2
+          do i = -2, imx+2
             write(OUT_FILE_UNIT, fmt='(ES25.16E4)') var(i, j, k)
           end do
          end do

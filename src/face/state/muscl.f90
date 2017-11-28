@@ -263,7 +263,7 @@ module muscl
             !TODO: Figure out why in muscl, compute_zeta_face_states(), the order of looping matters
 
             do l = 1, n_var
-             if(l>=5)then
+             if(l>5)then
                switch_L=ktlimiter_switch
              else
                switch_L=klimiter_switch
@@ -401,6 +401,87 @@ module muscl
             end do
 
         end subroutine pressure_based_switching
+
+
+        subroutine compute_face_state(f_dir, lam_switch, turb_switch)
+            implicit none
+            ! Character can be x or y or z
+            character, intent(in) :: f_dir
+            integer, intent(in) :: lam_switch
+            integer, intent(in) :: turb_switch
+            integer :: i, j, k, l
+            integer :: ii, jj, kk  ! Flags to determine face direction
+            real :: psi1, psi2, fd, bd, r
+            real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
+
+            call dmsg(1, 'muscl', 'compute_face_state')
+
+            select case (f_dir)
+                case ('x')
+                    f_qp_left(0:imx+1, 1:jmx-1, 1:kmx-1, 1:n_var) => x_qp_left
+                    f_qp_right(0:imx+1, 1:jmx-1, 1:kmx-1, 1:n_var) => x_qp_right
+                    ii = 1
+                    jj = 0
+                    kk = 0
+                case ('y')
+                    f_qp_left(1:imx-1, 0:jmx+1, 1:kmx-1, 1:n_var) => y_qp_left
+                    f_qp_right(1:imx-1, 0:jmx+1, 1:kmx-1, 1:n_var) => y_qp_right
+                    ii = 0
+                    jj = 1
+                    kk = 0
+                case ('z')
+                    f_qp_left(1:imx-1, 1:jmx-1, 0:kmx+1, 1:n_var) => z_qp_left
+                    f_qp_right(1:imx-1, 1:jmx-1, 0:kmx+1, 1:n_var) => z_qp_right
+                    ii = 0
+                    jj = 0
+                    kk = 1
+                case default
+                    call dmsg(5, 'muscl', 'compute_face_state', &
+                            'Direction not recognised')
+                    stop
+            end select
+
+            phi = 1.0
+            kappa = 1./3.
+            switch_L=lam_switch
+
+            do l = 1, n_var
+              if(l>=6)then
+                switch_L=turb_switch
+              end if
+             do k = 1-kk, kmx - 1 + kk
+              do j = 1-jj, jmx - 1 + jj
+               do i = 1-ii, imx - 1 + ii
+                ! Cell based
+                ! Hence (i=1, left) and (i=imx, right) will be dealt separately
+                ! Koren limiter for now
+                ! From paper: delta: forward difference 'fd'
+                !             nabla: backward difference 'bd'
+                fd = qp(i+ii, j+jj, k+kk, l) - qp(i, j, k, l)
+                bd = qp(i, j, k, l) - qp(i-ii, j-jj, k-kk, l)
+                r = fd / bd
+!                psi1 = min(1., (3 - kappa) * r / (1 - kappa)) !minmod
+                psi1 = max(0., min(2*r, (2 + r)/3., 2.))  !koren limiter
+!                psi1 = max(0., min(2*r,1.), min(r,2.))    ! superbee
+                r = bd / fd
+!                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
+                psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+!                psi2 = max(0., min(2*r,1.), min(r,2.))
+                psi1 = (1 - (1 - psi1)*switch_L )
+                psi2 = (1 - (1 - psi2)*switch_L )
+
+                f_qp_left(i+ii, j+jj, k+kk, l) = qp(i, j, k, l) + 0.25*phi* &
+                    (((1.-kappa) * psi1 * bd) + ((1.+kappa) * psi2 * fd))
+                f_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
+                    (((1.+kappa) * psi1 * bd) + ((1.-kappa) * psi2 * fd))
+               end do
+              end do
+             end do
+            end do
+
+
+        end subroutine compute_face_state
+        
         
         subroutine compute_muscl_states()
             !---------------------------------------------------------
@@ -409,15 +490,18 @@ module muscl
             ! and first level ghost cells
             !---------------------------------------------------------
             
-            call compute_xi_face_states()
+            !call compute_xi_face_states()
+            call compute_face_state('x', ilimiter_switch, itlimiter_switch)
             if(iPB_switch==1)then
               call pressure_based_switching('x')
             end if
-            call compute_eta_face_states()
+            !call compute_eta_face_states()
+            call compute_face_state('y', jlimiter_switch, jtlimiter_switch)
             if(jPB_switch==1)then
               call pressure_based_switching('y')
             end if
-            call compute_zeta_face_states()
+            !call compute_zeta_face_states()
+            call compute_face_state('z', klimiter_switch, ktlimiter_switch)
             if(kPB_switch==1)then
               call pressure_based_switching('z')
             end if

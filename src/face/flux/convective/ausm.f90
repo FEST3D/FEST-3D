@@ -274,6 +274,7 @@ module ausm
 
                 ! Get the total flux for a face
                 flux_p(i, j, k, :) = F_plus(:) + F_minus(:)
+                !write(*, '(2(i1.1,x),5(E20.10,2x))') i, j, flux_p(i,j,k,:)
               end do
              end do
             end do 
@@ -313,11 +314,11 @@ module ausm
                 stop
             end if    
             
-            if(kmx==2) then
-              H = 0.
-            else
+            !if(kmx==2) then
+            !  H = 0.
+            !else
               call compute_flux('z')
-            end if
+            !end if
             if (any(isnan(H))) then
                 call dmsg(5, 'ausm', 'compute_residue', 'ERROR: H flux Nan detected')
                 stop
@@ -340,9 +341,11 @@ module ausm
              do k = 1, kmx - 1
               do j = 1, jmx - 1
                do i = 1, imx - 1
-               residue(i, j, k, l) = F(i+1, j, k, l) - F(i, j, k, l) &
-                                   + G(i, j+1, k, l) - G(i, j, k, l) &
-                                   + H(i, j, k+1, l) - H(i, j, k, l)
+               residue(i, j, k, l) = (F(i+1, j, k, l) - F(i, j, k, l)) &
+                                   + (G(i, j+1, k, l) - G(i, j, k, l)) &
+                                   + (H(i, j, k+1, l) - H(i, j, k, l))
+               !print*, i, j, l, F(i+1, j,k,l), F(i,j,k,l), G(i,j+1,k,l)&
+               !       , G(i,j,k,l), H(i,j,k+1,l), H(i,j,k,l)
                end do
               end do
              end do

@@ -240,10 +240,10 @@ module resnorm
           case('X-mom_abs')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(2)
 
-          case('Z-mom_abs')
+          case('Y-mom_abs')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(3)
 
-          case('Y-mom_abs')
+          case('Z-mom_abs')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(4)
 
           case('Energy_abs')
@@ -269,10 +269,10 @@ module resnorm
           case('X-mom_rel')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(2)
 
-          case('Z-mom_rel')
+          case('Y-mom_rel')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(3)
 
-          case('Y-mom_rel')
+          case('Z-mom_rel')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(4)
 
           case('Energy_rel')
