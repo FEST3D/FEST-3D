@@ -46,10 +46,10 @@ module vortex_transport_state
         do j = -2,jmx+2
           do i = -2,imx+2
             radius = sqrt((CellCenter(i,j,k,1)-xc)**2 + (CellCenter(i,j,k,2)-yc)**2)/Radius_vortex
-            x_speed(i,j,k) = X_speed_inf*(1.-Strength*(CellCenter(i,j,k,2)-yc)/Radius_vortex*exp(-0.5*radius**2))
-            y_speed(i,j,k) = X_speed_inf*Strength*(CellCenter(i,j,k,1)-xc)/Radius_vortex*exp(-0.5*radius**2)
-            Temp = Temp_inf - (X_speed_inf**2 * Strength**2 * exp(-radius**2)/Cp)
-            density(i,j,k) = density_inf(Temp/Temp_inf)**(1./(gm-1.))
+            x_speed(i,j,k) = X_speed_inf*(1.-(Strength*(CellCenter(i,j,k,2)-yc)*exp(-0.5*radius**2)/Radius_vortex))
+            y_speed(i,j,k) = X_speed_inf*Strength*(CellCenter(i,j,k,1)-xc)*exp(-0.5*radius**2)/Radius_vortex
+            Temp = Temp_inf - 0.5*((X_speed_inf**2) * (Strength**2) * exp(-radius**2)/Cp)
+            density(i,j,k) = density_inf*((Temp/Temp_inf)**(1./(gm-1.)))
             pressure(i,j,k) = density(i,j,k)*R_gas*Temp
           end do
         end do

@@ -237,13 +237,13 @@ module resnorm
           case('Continuity_abs')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(1)
 
-          case('X-mom_abs')
+          case('X_mom_abs')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(2)
 
-          case('Y-mom_abs')
+          case('Y_mom_abs')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(3)
 
-          case('Z-mom_abs')
+          case('Z_mom_abs')
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(4)
 
           case('Energy_abs')

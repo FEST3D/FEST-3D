@@ -186,6 +186,21 @@ module write_output_tec
           case('Dtwdz')                        
             call write_scalar(gradtw_z,"dtwdz", 0)
 
+          case('Mass_residue')
+            call write_scalar(mass_residue, "Mass_residue", 1)
+
+          case('X_mom_residue')
+            call write_scalar(x_mom_residue, "X_mom_residue", 1)
+
+          case('Y_mom_residue')
+            call write_scalar(y_mom_residue, "Y_mom_residue", 1)
+
+          case('Z_mom_residue')
+            call write_scalar(z_mom_residue, "Z_mom_residue", 1)
+
+          case('Energy_residue')
+            call write_scalar(energy_residue, "Energy_residue", 1)
+
           case('do not write')
             ! do not write
             continue

@@ -42,27 +42,27 @@ module boundary_state_reconstruction
       if (imin_id==-7 .or. jmin_id==-7 .or. kmin_id==-7) ppm_flag=1
       if (imax_id==-7 .or. jmax_id==-7 .or. kmax_id==-7) ppm_flag=1
       if(interpolant /='none')then
-        if(imin_id<0)then
+        if(imin_id<0 .and. imin_id/=-10)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imin')
           call reconstruct_imin()
         end if
-        if(imax_id<0)then
+        if(imax_id<0 .and. imax_id/=-10)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imax')
           call reconstruct_imax()
         end if
-        if(jmin_id<0)then
+        if(jmin_id<0 .and. jmin_id/=-10)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'jmin')
           call reconstruct_jmin()
         end if
-        if(jmax_id<0)then
+        if(jmax_id<0 .and. jmax_id/=-10)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'jmax')
           call reconstruct_jmax()
         end if
-        if(kmin_id<0)then
+        if(kmin_id<0 .and. kmin_id/=-10)then
           call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'kmin')
           call reconstruct_kmin()
         end if
-        if(kmax_id<0)then
+        if(kmax_id<0 .and. kmax_id/=-10)then
         call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'kmax')
           call reconstruct_kmax()
         end if

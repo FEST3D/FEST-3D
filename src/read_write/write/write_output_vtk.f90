@@ -197,6 +197,9 @@ module write_output_vtk
           case('Dtwdz')
             call write_scalar(gradtw_z,"dtwdz", 0)
 
+          case('y-mom-residue')
+            call write_scalar(y_mom_residue, 'Y_mom_residue', 1)
+
           case('do not write')
             ! do nothing
             continue

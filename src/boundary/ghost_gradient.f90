@@ -111,8 +111,8 @@ module ghost_gradients
                 gradqp_z(i-1,j,k,4) = ( T_I -  T_G)*c_z
                 if(imin_id==-5 .and. (fixed_wall_temperature(1)<1. .and. fixed_wall_temperature(1)>=0.))then
                   gradqp_x(i-1,j,k,4) = -gradqp_x(i,j,k,4)
-                  gradqp_y(i-1,j,k,4) = -gradqp_x(i,j,k,4)
-                  gradqp_z(i-1,j,k,4) = -gradqp_x(i,j,k,4)
+                  gradqp_y(i-1,j,k,4) = -gradqp_y(i,j,k,4)
+                  gradqp_z(i-1,j,k,4) = -gradqp_z(i,j,k,4)
                 end if
               end do
             end do

@@ -19,6 +19,7 @@ module time
   use global_vars, only : z_speed
   use global_vars, only : pressure
   use global_vars, only : gm
+  use global_vars, only : Pr
   use global_vars, only : R_gas
   use global_vars, only : mu_ref
   use global_vars, only : mu
@@ -368,6 +369,8 @@ module time
                     (xA(i+1, j, k) * lmx4) + &
                     (yA(i, j+1, k) * lmx5) + &
                     (zA(i, j, k+1) * lmx6)
+
+           lmxsum = gm*lmxsum/Pr
 
            lmxsum = 2./(lmxsum + (2.*CFL*volume(i,j,k)/delta_t(i,j,k)))
         

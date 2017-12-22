@@ -1456,9 +1456,9 @@ module bc_primitive
             do k = 1,kmx-1
               do j = 1,jmx-1
                 do i = imx-1,imx-1
-                  density(i+1,j,k) = pressure(i+1,j,k)/(R_gas*(2*temperature(1)-(pressure(i-0,j,k)/(R_gas*density(i-0,j,k)))))
-                  density(i+2,j,k) = pressure(i+2,j,k)/(R_gas*(2*temperature(1)-(pressure(i-1,j,k)/(R_gas*density(i-1,j,k)))))
-                  density(i+3,j,k) = pressure(i+3,j,k)/(R_gas*(2*temperature(1)-(pressure(i-2,j,k)/(R_gas*density(i-2,j,k)))))
+                  density(i+1,j,k) = pressure(i+1,j,k)/(R_gas*(2*temperature(2)-(pressure(i-0,j,k)/(R_gas*density(i-0,j,k)))))
+                  density(i+2,j,k) = pressure(i+2,j,k)/(R_gas*(2*temperature(2)-(pressure(i-1,j,k)/(R_gas*density(i-1,j,k)))))
+                  density(i+3,j,k) = pressure(i+3,j,k)/(R_gas*(2*temperature(2)-(pressure(i-2,j,k)/(R_gas*density(i-2,j,k)))))
                 end do
               end do
             end do
@@ -1481,9 +1481,9 @@ module bc_primitive
             do k = 1,kmx-1
               do j = 1,1
                 do i = 1,imx-1
-                  density(i,j-1,k) = pressure(i,j-1,k)/(R_gas*(2*temperature(1)-(pressure(i,j+0,k)/(R_gas*density(i,j+0,k)))))
-                  density(i,j-2,k) = pressure(i,j-2,k)/(R_gas*(2*temperature(1)-(pressure(i,j+1,k)/(R_gas*density(i,j+1,k)))))
-                  density(i,j-3,k) = pressure(i,j-3,k)/(R_gas*(2*temperature(1)-(pressure(i,j+2,k)/(R_gas*density(i,j+2,k)))))
+                  density(i,j-1,k) = pressure(i,j-1,k)/(R_gas*(2*temperature(3)-(pressure(i,j+0,k)/(R_gas*density(i,j+0,k)))))
+                  density(i,j-2,k) = pressure(i,j-2,k)/(R_gas*(2*temperature(3)-(pressure(i,j+1,k)/(R_gas*density(i,j+1,k)))))
+                  density(i,j-3,k) = pressure(i,j-3,k)/(R_gas*(2*temperature(3)-(pressure(i,j+2,k)/(R_gas*density(i,j+2,k)))))
                 end do
               end do
             end do
@@ -1506,9 +1506,9 @@ module bc_primitive
             do k = 1,kmx-1
               do j = jmx-1,jmx-1
                 do i = 1,imx-1
-                  density(i,j+1,k) = pressure(i,j+1,k)/(R_gas*(2*temperature(1)-(pressure(i,j-0,k)/(R_gas*density(i,j-0,k)))))
-                  density(i,j+2,k) = pressure(i,j+2,k)/(R_gas*(2*temperature(1)-(pressure(i,j-1,k)/(R_gas*density(i,j-1,k)))))
-                  density(i,j+3,k) = pressure(i,j+3,k)/(R_gas*(2*temperature(1)-(pressure(i,j-2,k)/(R_gas*density(i,j-2,k)))))
+                  density(i,j+1,k) = pressure(i,j+1,k)/(R_gas*(2*temperature(4)-(pressure(i,j-0,k)/(R_gas*density(i,j-0,k)))))
+                  density(i,j+2,k) = pressure(i,j+2,k)/(R_gas*(2*temperature(4)-(pressure(i,j-1,k)/(R_gas*density(i,j-1,k)))))
+                  density(i,j+3,k) = pressure(i,j+3,k)/(R_gas*(2*temperature(4)-(pressure(i,j-2,k)/(R_gas*density(i,j-2,k)))))
                 end do
               end do
             end do
@@ -1531,9 +1531,9 @@ module bc_primitive
             do k = 1,1
               do j = 1,jmx-1
                 do i = 1,imx-1
-                  density(i,j,k-1) = pressure(i,j,k-1)/(R_gas*(2*temperature(1)-(pressure(i,j,k+0)/(R_gas*density(i,j,k+0)))))
-                  density(i,j,k-2) = pressure(i,j,k-2)/(R_gas*(2*temperature(1)-(pressure(i,j,k+1)/(R_gas*density(i,j,k+1)))))
-                  density(i,j,k-3) = pressure(i,j,k-3)/(R_gas*(2*temperature(1)-(pressure(i,j,k+2)/(R_gas*density(i,j,k+2)))))
+                  density(i,j,k-1) = pressure(i,j,k-1)/(R_gas*(2*temperature(5)-(pressure(i,j,k+0)/(R_gas*density(i,j,k+0)))))
+                  density(i,j,k-2) = pressure(i,j,k-2)/(R_gas*(2*temperature(5)-(pressure(i,j,k+1)/(R_gas*density(i,j,k+1)))))
+                  density(i,j,k-3) = pressure(i,j,k-3)/(R_gas*(2*temperature(5)-(pressure(i,j,k+2)/(R_gas*density(i,j,k+2)))))
                 end do
               end do
             end do
@@ -1556,9 +1556,9 @@ module bc_primitive
             do k = kmx-1,kmx-1
               do j = 1,jmx-1
                 do i = 1,imx-1
-                  density(i,j,k+1) = pressure(i,j,k+1)/(R_gas*(2*temperature(1)-(pressure(i,j,k-0)/(R_gas*density(i,j,k-0)))))
-                  density(i,j,k+2) = pressure(i,j,k+2)/(R_gas*(2*temperature(1)-(pressure(i,j,k-1)/(R_gas*density(i,j,k-1)))))
-                  density(i,j,k+3) = pressure(i,j,k+3)/(R_gas*(2*temperature(1)-(pressure(i,j,k-2)/(R_gas*density(i,j,k-2)))))
+                  density(i,j,k+1) = pressure(i,j,k+1)/(R_gas*(2*temperature(6)-(pressure(i,j,k-0)/(R_gas*density(i,j,k-0)))))
+                  density(i,j,k+2) = pressure(i,j,k+2)/(R_gas*(2*temperature(6)-(pressure(i,j,k-1)/(R_gas*density(i,j,k-1)))))
+                  density(i,j,k+3) = pressure(i,j,k+3)/(R_gas*(2*temperature(6)-(pressure(i,j,k-2)/(R_gas*density(i,j,k-2)))))
                 end do
               end do
             end do
@@ -1572,4 +1572,35 @@ module bc_primitive
 
     end subroutine temp_based_density
 
+
+    subroutine periodic_bc(face)
+      implicit none
+      character(len=*), intent(in) :: face
+
+      select case(trim(face))
+
+        case('imin')
+          qp(-2:0,:,:,:) = qp(imx-3:imx-1,:,:,:)
+
+        case('imax')
+          qp(imx:imx+2,:,:,:) = qp(1:3,:,:,:)
+
+        case('jmin')
+          qp(:,-2:0,:,:) =   qp(:,jmx-3:jmx-1,:,:)
+
+        case('jmax')
+          qp(:,jmx:jmx+2,:,:) = qp(:,1:3,:,:)
+
+        case('kmin')
+          qp(:,:,-2:0,:) = qp(:,:,kmx-3:kmx-1,:)
+
+        case('kmax')
+          qp(:,:,kmx:kmx+2,:) = qp(:,:,1:3,:)
+
+        case Default
+          Fatal_error
+
+      end select
+
+    end subroutine periodic_bc
 end module bc_primitive

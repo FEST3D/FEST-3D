@@ -111,6 +111,21 @@ module check_output_control
           case('tke_residue')
             w_list(n) = "TKE_residue"
 
+          case('mass_residue')
+            w_list(n) = "Mass_residue"
+
+          case('x_mom_residue')
+            w_list(n) = "X_mom_residue"
+
+          case('y_mom_residue')
+            w_list(n) = "Y_mom_residue"
+
+          case('z_mom_residue')
+            w_list(n) = "Z_mom_residue"
+
+          case('energy_residue')
+            w_list(n) = "Energy_residue"
+
           case('f1')
             if(trim(turbulence)=='sst')then
               w_list(n) = "F1"
