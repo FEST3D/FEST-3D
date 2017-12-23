@@ -201,9 +201,9 @@ module viscous
           ii  =  0
           jj  =  0
           kk  =  1
-          fnx => ynx
-          fny => yny
-          fnz => ynz
+          fnx => znx
+          fny => zny
+          fnz => znz
           fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
 
         case Default
@@ -374,9 +374,9 @@ module viscous
           ii  =  0
           jj  =  0
           kk  =  1
-          fnx => ynx
-          fny => yny
-          fnz => ynz
+          fnx => znx
+          fny => zny
+          fnz => znz
           fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
 
         case Default
@@ -508,9 +508,9 @@ module viscous
           ii  =  0
           jj  =  0
           kk  =  1
-          fnx => ynx
-          fny => yny
-          fnz => ynz
+          fnx => znx
+          fny => zny
+          fnz => znz
           fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
 
         case Default
