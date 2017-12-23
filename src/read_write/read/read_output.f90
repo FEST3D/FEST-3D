@@ -61,7 +61,7 @@ module read_output
           case ('vtk')
             call read_file_vtk()
           
-          case ('tec')
+          case ('tecplot')
             call read_file_tec()
           
           case DEFAULT

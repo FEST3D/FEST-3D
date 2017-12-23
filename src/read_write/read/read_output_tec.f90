@@ -2,7 +2,7 @@ module read_output_tec
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
-  use global     , only : OUT_FILE_UNIT
+  use global     , only : IN_FILE_UNIT
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
 
@@ -132,15 +132,15 @@ module read_output_tec
       integer :: n
 
       call dmsg(1, 'read_output_tec', 'read_header')
-      read(OUT_FILE_UNIT, *) !"variables = x y z "
+      read(IN_FILE_UNIT, *) !"variables = x y z "
 
       do n = 1,r_count
-        read(OUT_FILE_UNIT, *) !trim(w_list(n))
+        read(IN_FILE_UNIT, *) !trim(w_list(n))
       end do
 
-      read(OUT_FILE_UNIT, *) ! "zone T=block" ...
-      read(OUT_FILE_UNIT, *) !"Varlocation=([1-3]=Nodal)"
-      read(OUT_FILE_UNIT, *) !"Varlocation=([4-",total,"]=CELLCENTERED)"
+      read(IN_FILE_UNIT, *) ! "zone T=block" ...
+      read(IN_FILE_UNIT, *) !"Varlocation=([1-3]=Nodal)"
+      read(IN_FILE_UNIT, *) !"Varlocation=([4-",total,"]=CELLCENTERED)"
 
     end subroutine read_header
 
@@ -151,9 +151,9 @@ module read_output_tec
 
       ! read grid point coordinates
       call dmsg(1, 'read_output_tec', 'read_grid')
-      read(OUT_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
-      read(OUT_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
-      read(OUT_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
+      read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
+      read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
+      read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
 
     end subroutine read_grid
 
@@ -164,7 +164,7 @@ module read_output_tec
       character(len=*),       intent(in):: name
 
       call dmsg(1, 'read_output_tec', trim(name))
-      read(OUT_FILE_UNIT, *) (((var(i, j, k),i=1,imx-1), j=1,jmx-1), k=1,kmx-1)
+      read(IN_FILE_UNIT, *) (((var(i, j, k),i=1,imx-1), j=1,jmx-1), k=1,kmx-1)
 
     end subroutine read_scalar
 
