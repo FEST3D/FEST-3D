@@ -1,21 +1,10 @@
 # SOLVER FILES
 
-# Output Files
-*.fvtk
-*.vtk
-out*
-resnorms
-art_disspn
-vislog
-visitlog.py
-
-# Config file
-bc.config.md
-
 # Folders to skip
 bin/
 mod/
 obj/
+build/
 
 # module  dependency file
 makefile.dep
@@ -23,7 +12,6 @@ files
 
 #grid file or data file
 *.dat
-*.txt
 
 #Boundary_condition files
 bc_*.md
