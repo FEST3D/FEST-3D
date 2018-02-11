@@ -20,10 +20,12 @@ module viscosity
   use global_vars , only : density
   use global_vars  , only : sst_mu
   use global_vars  , only : kkl_mu
+  use global_vars  , only : sa_mu
   use global_vars  , only : mu_t
   use global_vars  , only : tw
   use global_vars  , only : tk
   use global_vars  , only : tkl
+  use global_vars  , only : tv
 
   use global_vars , only : imx
   use global_vars , only : jmx
@@ -37,6 +39,7 @@ module viscosity
   use global_sst   , only : a1
   use global_sst   , only : sst_F1
   use global_sst   , only : sigma_w2
+  use global_sa    , only : cv1
 
   ! gradients
   use global_vars, only : gradu_x
@@ -100,6 +103,10 @@ module viscosity
       real :: right
       real :: left
 
+      ! sa variables
+      real :: fv1
+      real :: xi
+
       !--- calculate_molecular_viscosity ---!
       if (mu_ref/=0.) then
         select case (trim(mu_variation))
@@ -138,6 +145,70 @@ module viscosity
           case ('none')
             !do nothing
             continue
+
+          case ('sa')
+            !call calculate_sa_mu()
+            do k = 0,kmx
+              do j = 0,jmx
+                do i = 0,imx
+                  ! xsi 
+                   xi = tv(i,j,k)*density(i,j,k)/mu(i,j,k)
+                  !calculation fo fv1 function
+                  fv1 = xi**3/(xi**3 + cv1**3)
+                  sa_mu(i,j,k) = density(i,j,k)*tv(i,j,k)*fv1
+                end do
+              end do
+            end do
+
+            ! populating ghost cell
+            do i = 1,6
+              select case(id(i))
+                case(-10,0:)
+                  !interface
+                  continue
+
+                case(-1,-2,-3,-4,-6,-7,-8,-9)
+                  !call copy1(sa_mu, "symm", face_names(i))
+                  select case(face_names(i))
+                    case("imin")
+                        sa_mu(      0, 1:jmx-1, 1:kmx-1) = sa_mu(     1, 1:jmx-1, 1:kmx-1)
+                    case("imax")
+                        sa_mu(  imx  , 1:jmx-1, 1:kmx-1) = sa_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                    case("jmin")
+                        sa_mu(1:imx-1,       0, 1:kmx-1) = sa_mu(1:imx-1,      1, 1:kmx-1)
+                    case("jmax")
+                        sa_mu(1:imx-1,   jmx  , 1:kmx-1) = sa_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                    case("kmin")
+                        sa_mu(1:imx-1, 1:jmx-1,       0) = sa_mu(1:imx-1, 1:jmx-1,      1)
+                    case("kmax")
+                        sa_mu(1:imx-1, 1:jmx-1,   kmx  ) = sa_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                    case DEFAULT
+                      print*, "ERROR: wrong face for boundary condition"
+                      Fatal_error
+                  end select
+
+                case(-5)
+                  !call copy1(sa_mu, "anti", face_names(i))
+                  select case(face_names(i))
+                    case("imin")
+                        sa_mu(      0, 1:jmx-1, 1:kmx-1) = -sa_mu(     1, 1:jmx-1, 1:kmx-1)
+                    case("imax")
+                        sa_mu(  imx  , 1:jmx-1, 1:kmx-1) = -sa_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                    case("jmin")
+                        sa_mu(1:imx-1,       0, 1:kmx-1) = -sa_mu(1:imx-1,      1, 1:kmx-1)
+                    case("jmax")
+                        sa_mu(1:imx-1,   jmx  , 1:kmx-1) = -sa_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                    case("kmin")
+                        sa_mu(1:imx-1, 1:jmx-1,       0) = -sa_mu(1:imx-1, 1:jmx-1,      1)
+                    case("kmax")
+                        sa_mu(1:imx-1, 1:jmx-1,   kmx  ) = -sa_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                    case DEFAULT
+                      print*, "ERROR: wrong face for boundary condition"
+                      Fatal_error
+                  end select
+              end select
+            end do
+            !--- end of sa eddy viscosity  ---!
 
           case ('sst')
             !call calculate_sst_mu()
@@ -340,6 +411,9 @@ module viscosity
             !do nothing
             continue
 
+          case ('sa')
+            sa_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
+
           case ('sst')
             sst_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
             !-- sst blending funciton F1 --!
@@ -374,6 +448,9 @@ module viscosity
           case ('none')
             !do nothing
             continue
+
+          case('sa')
+            nullify(sa_mu)
 
           case ('sst')
             nullify(sst_mu)

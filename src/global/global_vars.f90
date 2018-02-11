@@ -59,6 +59,7 @@ module global_vars
   real :: tolerance            ! minimum value of resnorm after which simulation stop
   character(len=TOLERANCE_LENGTH) :: tolerance_type="abs" ! type of tolerance:absolute or relative
   integer :: want_to_stop=0
+  logical :: Halt = .FALSE.
 
   !solver time secific
   character                                 :: time_stepping_method  ! local or global
@@ -192,6 +193,7 @@ module global_vars
   real, dimension(:, :, :), allocatable, target     :: mu_t
   real, dimension(:, :, :)              , pointer   :: sst_mu
   real, dimension(:, :, :)              , pointer   :: kkl_mu
+  real, dimension(:, :, :)              , pointer   :: sa_mu
 
   !residual specific
   character(len=STATE_NAME_LENGTH), dimension(:), allocatable :: Res_list
@@ -352,8 +354,8 @@ module global_vars
   real :: eps_y =200.0
   real :: eps_z =200.0
 
-  ! dissipation
-  real, dimension(:,:,:,:), allocatable :: Diss
+  ! dissipation - Jameson formulation require extra dissipation
+!  real, dimension(:,:,:,:), allocatable :: Diss
 
   !periodic boundary condition
   integer, dimension(6) :: PbcId = -1

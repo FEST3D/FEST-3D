@@ -72,6 +72,7 @@ module write_output_tec
   use global_vars, only : gradtw_y
   use global_vars, only : gradtw_z
   use global_vars, only : process_id
+  use global_vars, only : checkpoint_iter_count
 
   use utils
   use string
@@ -247,6 +248,8 @@ module write_output_tec
 
       write(OUT_FILE_UNIT,*) "Varlocation=([1-3]=Nodal)"
       write(OUT_FILE_UNIT,'(a,i2.2,a)') "Varlocation=([4-",total,"]=CELLCENTERED)"
+      write(OUT_FILE_UNIT,"(a,i4.4)") "STRANDID=",1
+      write(OUT_FILE_UNIT,"(a,i4.4)") "SOLUTIONTIME=",checkpoint_iter_count
 
 
     end subroutine write_header

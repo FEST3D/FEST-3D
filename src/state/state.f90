@@ -281,6 +281,19 @@ module state
             if (start_from .eq. 0) then
                 ! Set the state to the infinity values
                 call init_state_with_infinity_values()
+                !if(process_id<2) then
+                !  pressure = 1.0
+                !  density = 1.0
+                !  x_speed = 0.0
+                !  y_speed = 0.0
+                !  z_speed = 0.0
+                !else
+                !  pressure = 0.1
+                !  density = 0.125
+                !  x_speed = 0.0
+                !  y_speed = 0.0
+                !  z_speed = 0.0
+                !end if
             else
                 write(infile,'(a,i4.4,a,i2.2)') &
                   "time_directories/",start_from,"/process_",process_id

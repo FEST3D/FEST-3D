@@ -103,8 +103,7 @@ module read_output_vtk
             call read_scalar(tkl, 'Kl', -2)
 
           case('do not read')
-            !skip 
-            continue
+            call skip_scalar()
 
           case Default
             Print*, "read error: list var : "//trim(r_list(n))
@@ -182,5 +181,21 @@ module read_output_vtk
 
     end subroutine read_scalar
 
+    subroutine skip_scalar()
+      implicit none
+
+      call dmsg(1, 'read_output_vtk', "skip_scalar")
+      read(IN_FILE_UNIT, *) !'SCALARS '//trim(name)//' FLOAT'
+      read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
+      do k = 1, kmx - 1
+       do j = 1, jmx - 1
+        do i = 1, imx - 1
+          read(IN_FILE_UNIT, *)
+        end do
+       end do
+      end do
+      read(IN_FILE_UNIT, *)
+
+    end subroutine skip_scalar
 
 end module read_output_vtk

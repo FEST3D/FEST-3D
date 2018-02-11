@@ -2,4 +2,4 @@
          
     call dmsg(1, 'turbulence_models/sa/state', 'init_infinity_values')
         
-    tv_inf = 3*mu_ref
+    tv_inf = 3*mu_ref/density_inf

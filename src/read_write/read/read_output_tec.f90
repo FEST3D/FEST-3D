@@ -115,8 +115,7 @@ module read_output_tec
             call read_scalar(tkl, 'Kl', -2)
 
           case('do not read')
-            !skip 
-            continue
+            call skip_scalar()
 
           case Default
             Print*, "read error: list var : "//trim(r_list(n))
@@ -141,6 +140,8 @@ module read_output_tec
       read(IN_FILE_UNIT, *) ! "zone T=block" ...
       read(IN_FILE_UNIT, *) !"Varlocation=([1-3]=Nodal)"
       read(IN_FILE_UNIT, *) !"Varlocation=([4-",total,"]=CELLCENTERED)"
+      read(IN_FILE_UNIT, *) !"STRANDID"
+      read(IN_FILE_UNIT, *) !"SolutionTime"
 
     end subroutine read_header
 
@@ -168,5 +169,13 @@ module read_output_tec
 
     end subroutine read_scalar
 
+    subroutine skip_scalar()
+      implicit none
+      real :: dummy
+
+      call dmsg(1, 'read_output_tec',"skip_scalar")
+      read(IN_FILE_UNIT, *) (((dummy ,i=1,imx-1), j=1,jmx-1), k=1,kmx-1)
+
+    end subroutine skip_scalar
 
 end module read_output_tec

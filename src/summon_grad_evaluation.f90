@@ -128,6 +128,13 @@ module summon_grad_evaluation
           !do nothing
           continue
 
+        case ('sa')
+          call compute_gradient_G(gradtv_x, tv, 'x')
+          call compute_gradient_G(gradtv_y, tv, 'y')
+          if(kmx>2)then
+          call compute_gradient_G(gradtv_z, tv, 'z')
+          end if
+
         case ('sst')
           call compute_gradient_G(gradtk_x, tk, 'x')
           call compute_gradient_G(gradtw_x, tw, 'x')

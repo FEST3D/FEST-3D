@@ -60,7 +60,6 @@ module update
   use global_vars, only: omega_residue
   use global_vars, only: kl_residue
   use global_vars, only: residue
-  use global_vars, only: Diss
   use global_vars, only: mu_ref
 
   use geometry   , only: CellCenter
@@ -71,7 +70,6 @@ module update
   use utils, only:  DEBUG_LEVEL
 
   use string
-  use residual_smoothing, only : get_smoothen_residue
 
   !subroutine for residual calculation
   use face_interpolant,               only: interpolant
@@ -181,7 +179,6 @@ module update
         select case (time_step_accuracy)
             case ("none")
               call get_total_conservative_Residue()
-              !call get_smoothen_residue()
               call compute_time_step() ! has to be after get_..._Residue()
               call update_with("conservative", 1. ,1., .FALSE.) 
               !call update_with("primitive", 1. ,1., .FALSE.) 
@@ -193,23 +190,19 @@ module update
               R_store=0.
               U_store = qp
               call get_total_conservative_Residue()
-              !call get_smoothen_residue()
               call compute_time_step()
               call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
               !call update_laminar_variables_primitive(0.5, 1., .FALSE., .True., R_store, U_store) 
               !call update_turbulent_variables_primitive(0.5, 1., .FALSE., .True., R_store, U_store) 
               call get_total_conservative_Residue()
-              !call get_smoothen_residue()
               call update_with("conservative", 0.5  , 2., .FALSE., R_store, U_store) 
               !call update_laminar_variables_primitive(0.5, 2., .FALSE., .True., R_store, U_store) 
               !call update_turbulent_variables_primitive(0.5, 2., .FALSE., .True., R_store, U_store) 
               call get_total_conservative_Residue()
-              !call get_smoothen_residue()
               call update_with("conservative", 1.0  , 2., .FALSE., R_store, U_store) 
               !call update_laminar_variables_primitive(1.0, 2., .FALSE., .True., R_store, U_store) 
               !call update_turbulent_variables_primitive(1.0, 2., .FALSE., .True., R_store, U_store) 
               call get_total_conservative_Residue()
-              !call get_smoothen_residue()
               call update_with("conservative", 1./6., 1., .TRUE. , R_store, U_store) 
               !call update_laminar_variables_primitive(1./6., 1., .TRUE., .FALSE., R_store, U_store) 
               !call update_turbulent_variables_primitive(1./6., 1., .TRUE., .FALSE., R_store, U_store) 
@@ -243,33 +236,22 @@ module update
             case ("TVDRK4")
               U_store = qp
               call get_total_conservative_Residue()
-              !do i=1, n_var
-              !Diss(:,:,:,i) = Diss(:,:,:,i)/delta_t
-              !end do
-              call get_smoothen_residue()
-              !residue=residue+Diss
               call compute_time_step()
               call update_laminar_variables_conservative(0.25, un=U_store) 
               if(turbulence/='none')then
                 call update_turbulent_variables_conservative(1.0, un=U_store)
               end if
               call get_total_conservative_Residue()
-              call get_smoothen_residue()
-              !residue=residue+Diss
               call update_laminar_variables_conservative(0.333333, un=U_store) 
               !if(turbulence/='none')then
               !  call update_turbulent_variables_conservative(0.333333, un=U_store)
               !end if
               call get_total_conservative_Residue()
-              call get_smoothen_residue()
-              !residue=residue+Diss
               call update_laminar_variables_conservative(0.5, un=U_store) 
               !if(turbulence/='none')then
               !  call update_turbulent_variables_conservative(0.5, un=U_store)
               !end if
               call get_total_conservative_Residue()
-              call get_smoothen_residue()
-              !residue=residue+Diss
               call update_laminar_variables_conservative(1.00, un=U_store) 
               !if(turbulence/='none')then
               !  call update_turbulent_variables_conservative(1.00, un=U_store)

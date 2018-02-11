@@ -36,6 +36,7 @@ module viscous
   use global_vars, only : tk
   use global_vars, only : tw
   use global_vars, only : tkl
+  use global_vars, only : tv
   use global_vars, only : gradu_x
   use global_vars, only : gradu_y
   use global_vars, only : gradu_z
@@ -57,6 +58,9 @@ module viscous
   use global_vars, only : gradtkl_x
   use global_vars, only : gradtkl_y
   use global_vars, only : gradtkl_z
+  use global_vars, only : gradtv_x
+  use global_vars, only : gradtv_y
+  use global_vars, only : gradtv_z
   use global_vars, only : mu
   use global_vars, only : mu_t
   use global_vars, only : kkl_mu
@@ -69,6 +73,8 @@ module viscous
   use global_sst , only : sigma_w2
   use global_kkl , only : sigma_k
   use global_kkl , only : sigma_phi
+  use global_sa  , only : sigma_sa
+  use global_sa  , only : cb2
   use utils      , only : alloc, dealloc, dmsg
   use string
   implicit none
@@ -96,6 +102,10 @@ module viscous
             !do nothing
             continue
 
+          case('sa')
+            call compute_viscous_fluxes_sa(F, 'x')
+            call compute_viscous_fluxes_sa(G, 'y')
+            call compute_viscous_fluxes_sa(H, 'z')
           case('sst')
             call compute_viscous_fluxes_sst(F, 'x')
             call compute_viscous_fluxes_sst(G, 'y')
@@ -627,5 +637,121 @@ module viscous
       end do
 
     end subroutine compute_viscous_fluxes_kkl
+
+
+    subroutine compute_viscous_fluxes_sa(F, direction)
+      implicit none
+      character(len=*), intent(in) :: direction ! face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F ! flux array
+      ! local variables
+      real :: rhoface
+      real :: normal_comp
+      real :: d_LR
+      real :: mu_f
+      real :: mut_f
+      real :: delx
+      real :: dely
+      real :: delz
+      real :: deltv
+      real :: nx
+      real :: ny
+      real :: nz
+      real :: area
+      real, dimension(:, :, :), pointer :: fA
+      real, dimension(:, :, :), pointer :: fnx
+      real, dimension(:, :, :), pointer :: fny
+      real, dimension(:, :, :), pointer :: fnz
+      integer :: i, j, k
+      integer :: ii, jj, kk
+      !--- sa variable requirement ---!
+      real :: dtvdx, dtvdy, dtvdz
+
+      !--------------------------------------------------------------------
+      ! select Direction
+      !--------------------------------------------------------------------
+      select case(trim(direction))
+        case('x')
+          ii  =  1
+          jj  =  0
+          kk  =  0
+          fnx => xnx
+          fny => xny
+          fnz => xnz
+          fA(-2:imx+3, -2:jmx+2, -2:kmx+2)   => xA
+
+        case('y')
+          ii  =  0
+          jj  =  1
+          kk  =  0
+          fnx => ynx
+          fny => yny
+          fnz => ynz
+          fA(-2:imx+2, -2:jmx+3, -2:kmx+2)   => yA
+
+        case('z')
+          ii  =  0
+          jj  =  0
+          kk  =  1
+          fnx => znx
+          fny => zny
+          fnz => znz
+          fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
+
+        case Default
+          Fatal_error
+
+      end select
+
+
+      !---------------------------------------------------------------------
+      ! Calculating the turbulent viscous fluxes at the faces
+      !--------------------------------------------------------------------
+      do k = 1, kmx - 1 + kk
+       do j = 1, jmx - 1 + jj
+        do i = 1, imx - 1 + ii
+
+          !--- FACE Gradients ---!
+          ! Gradients at face as average of gradients at cell centres
+          dtvdx = 0.5 * (gradtv_x(i-ii, j-jj, k-kk) + gradtv_x(i, j, k))
+          dtvdy = 0.5 * (gradtv_y(i-ii, j-jj, k-kk) + gradtv_y(i, j, k))
+          dtvdz = 0.5 * (gradtv_z(i-ii, j-jj, k-kk) + gradtv_z(i, j, k))
+
+          !--- For ODD-EVEN coupling error ---!
+          ! distance between cell center of adjacent cell for the i,j,k face
+          delx = CellCenter(i, j, k, 1) - CellCenter(i-ii, j-jj, k-kk, 1)
+          dely = CellCenter(i, j, k, 2) - CellCenter(i-ii, j-jj, k-kk, 2)
+          delz = CellCenter(i, j, k, 3) - CellCenter(i-ii, j-jj, k-kk, 3)
+
+          d_LR = sqrt(delx*delx + dely*dely + delz*delz)
+
+          ! difference in state across face
+          deltv = tv(i, j, k) - tv(i-ii, j-jj, k-kk)
+
+          !normal_comp   = ( delta(phi) - (grad(phi).dot.delR) )/magnitudeR
+          !new grad(phi) =  grad(phi) + correction(normal_comp.dot.delR/magnitudeR)
+          normal_comp = (deltv - (dtvdx*delx + dtvdy*dely + dtvdz*delz))/d_LR
+          dtvdx       =  dtvdx + (normal_comp * delx / d_LR)
+          dtvdy       =  dtvdy + (normal_comp * dely / d_LR)
+          dtvdz       =  dtvdz + (normal_comp * delz / d_LR)
+          !--- end of ODD-EVEN coupling correction ---!
+
+          rhoface  = 0.5 * (density(i-ii, j-jj, k-kk) + density(i, j, k))
+          mu_f     = 0.5*(mu(i-ii, j-jj, k-kk) + mu(i, j, k))/rhoface
+          mut_f    = 0.5*(tv(i-ii, j-jj, k-kk) + tv(i, j, k))
+
+          ! calling some element from memory and keep them handy for calculation
+          nx    = fnx(i,j,k)
+          ny    = fny(i,j,k)
+          nz    = fnz(i,j,k)
+          area  =  fA(i,j,k)
+
+          ! adding viscous fluxes to stored convective flux
+          F(i, j, k, 6) = F(i, j, k, 6) - (area*((mu_f + mut_f)*(dtvdx*nx + dtvdy*ny + dtvdz*nz)))/sigma_sa
+         
+        end do
+       end do
+      end do
+    end subroutine compute_viscous_fluxes_sa
+
 
 end module viscous

@@ -31,6 +31,8 @@ module gradients
   use sst_gradients,      only : destroy_sst_grad
   use kkl_gradients,      only : setup_kkl_grad
   use kkl_gradients,      only : destroy_kkl_grad
+  use sa_gradients ,      only : setup_sa_grad
+  use sa_gradients ,      only : destroy_sa_grad
 
   implicit none
   private
@@ -57,6 +59,9 @@ module gradients
           case('none')
             !do nothing
             continue
+
+          case('sa')
+            call setup_sa_grad()
 
           case('sst')
             call setup_sst_grad()
@@ -90,6 +95,9 @@ module gradients
             !do nothing
             continue
 
+          case('sa')
+            call destroy_sa_grad()
+
           case('sst')
             call destroy_sst_grad()
 
@@ -115,6 +123,9 @@ module gradients
         case('none')
           !do nothing
           continue
+
+        case ('sa')
+          n_grad = 5
 
         case('sst')
           n_grad = 6

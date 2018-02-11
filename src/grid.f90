@@ -268,15 +268,15 @@ module grid
           real, dimension(:),allocatable :: imax_recv_buffer
           real, dimension(:),allocatable :: jmax_recv_buffer
           real, dimension(:),allocatable :: kmax_recv_buffer
-          real, dimension(3) :: delI
-          real, dimension(3) :: N
-          real  :: dot
-          real  :: magnitude
-          real :: d1x, d2x, d1y, d2y, d1z, d2z
-          integer :: ii,jj,kk
-
-          call dmsg(1, 'grid', 'ghost_grid_extrapolate')
-          !---IMIN---!
+!          real, dimension(3) :: delI
+!          real, dimension(3) :: N
+!          real  :: dot
+!          real  :: magnitude
+!          real :: d1x, d2x, d1y, d2y, d1z, d2z
+!          integer :: ii,jj,kk
+!
+!          call dmsg(1, 'grid', 'ghost_grid_extrapolate')
+!          !---IMIN---!
 !          do k = 1, kmx
 !           do j = 1, jmx
 !             ! finding face normal

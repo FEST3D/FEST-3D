@@ -8,6 +8,7 @@ module solver
   use global, only: STOP_FILE_UNIT
   use global, only: stop_file
   use global_vars, only : want_to_stop
+  use global_vars, only : Halt
 
   use global_kkl , only : cmu
   use global_kkl , only : cd1
@@ -136,8 +137,8 @@ module solver
   use update, only : setup_update
   use update, only : destroy_update
   use mapping, only : read_interface_map
-  use residual_smoothing, only: setup_implicit_residual_smoothing
-  use residual_smoothing, only: destroy_implicit_residual_smoothing
+!  use residual_smoothing, only: setup_implicit_residual_smoothing
+!  use residual_smoothing, only: destroy_implicit_residual_smoothing
 #include "error.inc"
 #include "mpi.inc"
     private
@@ -174,7 +175,7 @@ module solver
             call setup_bc()
             call setup_time()
             call setup_update()
-            call setup_implicit_residual_smoothing()
+            !call setup_implicit_residual_smoothing()
             !call allocate_memory()
             !call allocate_buffer_cells(3) !parallel buffers
             call setup_interface()
@@ -213,7 +214,7 @@ module solver
               close(STOP_FILE_UNIT)
             end if
             call destroy_update()
-            call destroy_implicit_residual_smoothing()
+            !call destroy_implicit_residual_smoothing()
             call destroy_viscosity()
 !            if(mu_ref /= 0. .or. turbulence /= 'none')  then 
 !              call destroy_source()
@@ -639,7 +640,8 @@ module solver
               read(STOP_FILE_UNIT,*) want_to_stop
             end if
             call MPI_BCAST(want_to_stop,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
-            if (want_to_stop==1) max_iters=current_iter-1
+            !if (want_to_stop==1) max_iters=current_iter-1
+            if (want_to_stop==1) Halt = .TRUE.
 
         end subroutine iterate_one_more_time_step
 
