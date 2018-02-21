@@ -42,6 +42,7 @@ read_write/write/write_output_vtk.f90
 read_write/write/write_output.f90 
 read_write/write/dump_solution.f90 
 read_write/write/write_output_tec.f90 
+read_write/write/write_output_tec_node.f90 
 wall/wall.f90 
 wall/wall_dist.f90 
 convergence/convergence.f90 
@@ -53,12 +54,15 @@ aux/check_outout_control.f90
 aux/string.f90 
 aux/utils.f90 
 face/state/weno.f90 
+face/state/weno_NM.f90 
 face/state/muscl.f90 
 face/state/face_interpolant.f90 
 face/state/ppm.f90 
 face/flux/convective/van_leer.f90 
 face/flux/convective/ldfss0.f90 
 face/flux/convective/ausm.f90 
+face/flux/convective/ausmUP2.f90
+face/flux/convective/slau.f90
 face/flux/convective/scheme.f90 )
 
 Add_executable(${EXE} ${Source})

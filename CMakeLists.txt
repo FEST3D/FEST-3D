@@ -20,7 +20,7 @@ ENDIF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 
 # Set some options the user may choose
 # Uncomment the below if you want the user to choose a parallelization library
-OPTION(USE_MPI "Use the MPI library for parallelization" OFF)
+OPTION(USE_MPI "Use the MPI library for parallelization" ON)
 #OPTION(USE_OPENMP "Use OpenMP for parallelization" OFF)
 
 # This INCLUDE statement executes code that sets the compile flags for DEBUG,
@@ -48,9 +48,6 @@ ENDIF(FCNAME STREQUAL "pgf90")
 
 # Define the executable name
 SET(EXE FEST3D)
-
-# Define the library name
-#SET(BARLIB bar)
 
 # Define some directories
 SET(SRC ${CMAKE_SOURCE_DIR}/src)

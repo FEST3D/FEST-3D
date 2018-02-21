@@ -8,6 +8,7 @@ module write_output
   use string
   use write_output_vtk       ,only : write_file_vtk     => write_file
   use write_output_tec       ,only : write_file_tec => write_file
+  use write_output_tec_node  ,only : write_file_tec_nodal => write_file
 
   implicit none
   private
@@ -23,11 +24,11 @@ module write_output
       call dmsg(1, 'write_output_vtk', 'setup_file')
       if (write_file_format == "vtk") then
         file_format = ".vtk"
-      elseif (write_file_format == "tecplot") then
+      elseif (write_file_format == "tecplot" .or. write_file_format == "tecplot_nodal") then
         file_format = ".dat"
       else
         print*, "File format not recoganised. Accepted formats are"
-        print*, "'vtk' and 'tecplot' "
+        print*, "'vtk', 'tecplot' and 'tecplot_nodal' "
       end if
 
       if (write_data_format == "ASCII") then
@@ -72,6 +73,9 @@ module write_output
 
         case ('tecplot')
           call write_file_tec()
+
+        case ('tecplot_nodal')
+          call write_file_tec_nodal()
 
         case DEFAULT
           call dmsg(5, 'write_output', 'write_file',&

@@ -41,6 +41,15 @@ module face_interpolant
             y_qp_right_weno => y_qp_right, &
              z_qp_left_weno => z_qp_left, &
             z_qp_right_weno => z_qp_right
+    use weno_NM, only: setup_scheme_weno_NM => setup_scheme, &
+            destroy_scheme_weno_NM => destroy_scheme, &
+            compute_weno_NM_states, &
+             x_qp_left_weno_NM => x_qp_left, &
+            x_qp_right_weno_NM => x_qp_right, &
+             y_qp_left_weno_NM => y_qp_left, &
+            y_qp_right_weno_NM => y_qp_right, &
+             z_qp_left_weno_NM => z_qp_left, &
+            z_qp_right_weno_NM => z_qp_right
     include "turbulence_models/include/face_interpolant/import_module.inc"
 
     implicit none
@@ -185,6 +194,8 @@ module face_interpolant
                     call setup_scheme_muscl()
                 case ("weno")
                     call setup_scheme_weno()
+                case ("weno_NM")
+                    call setup_scheme_weno_NM()
                 case default
                     call dmsg(5, 'state_interpolant', &
                             'setup_interpolant_scheme', &
@@ -267,6 +278,8 @@ module face_interpolant
                     call destroy_scheme_muscl()
                 case ("weno")
                     call destroy_scheme_weno()
+                case ("weno_NM")
+                    call destroy_scheme_weno_NM()
                 case default
                     call dmsg(5, 'state_interpolant', &
                             'destroy_interpolant_scheme', &
@@ -317,6 +330,14 @@ module face_interpolant
                     y_qp_right = y_qp_right_weno
                     z_qp_left  =  z_qp_left_weno
                     z_qp_right = z_qp_right_weno
+                case ("weno_NM")
+                    call compute_weno_NM_states()
+                    x_qp_left  =  x_qp_left_weno_NM
+                    x_qp_right = x_qp_right_weno_NM
+                    y_qp_left  =  y_qp_left_weno_NM
+                    y_qp_right = y_qp_right_weno_NM
+                    z_qp_left  =  z_qp_left_weno_NM
+                    z_qp_right = z_qp_right_weno_NM
                 case default
                     call dmsg(5, 'state_interpolant', &
                             'compute_face_interpolant', &

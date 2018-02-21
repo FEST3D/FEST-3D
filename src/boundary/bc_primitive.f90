@@ -144,8 +144,23 @@ module bc_primitive
 !        qp(0,:,kmx,:) = 0.5*(qp(0,:,kmx-1,:)+qp(1,:,kmx,:))
 !        qp(imx,:,0,:) = 0.5*(qp(imx,:,1,:)+qp(imx-1,:,0,:))
 !        qp(imx,:,kmx,:) = 0.5*(qp(imx,:,jmx-1,:)+qp(imx-1,:,jmx,:))
-!         qp(:,0,0,:) = 0.33*(qp(:,1,1,:)+qp(:,0,1,:)+qp(:,1,0,:))
-!         qp(:,0,kmx,:) = 0.33*(qp(:,1,kmx-1,:)+qp(:,0,kmx-1,:)+qp(:,1,kmx,:))
+         !qp(:,0,0,:) = 0.33*(qp(:,1,1,:)+qp(:,0,1,:)+qp(:,1,0,:))
+         !qp(:,0,kmx,:) = 0.33*(qp(:,1,kmx-1,:)+qp(:,0,kmx-1,:)+qp(:,1,kmx,:))
+         !qp(:,jmx,0,:)   = 0.33*(qp(:,jmx-1,1,:)+qp(:,jmx,1,:)+qp(:,jmx-1,0,:))
+         !qp(:,jmx,kmx,:) = 0.33*(qp(:,jmx-1,kmx-1,:)+qp(:,jmx,kmx-1,:)+qp(:,jmx-1,kmx,:))
+         !qp(imx,0,:,:) = 0.33*(qp(imx-1,1,:,:)+qp(imx-1,0,:,:)+qp(imx,1,:,:))
+         !qp(0,0,:,:) = 0.33*(qp(1,1,:,:)+qp(1,0,:,:)+qp(0,1,:,:))
+         !qp(0,jmx,:,:)   = 0.33*(qp(1,jmx-1,:,:)+qp(1,jmx,:,:)+qp(0,jmx-1,:,:))
+         !qp(imx,jmx,:,:) = 0.33*(qp(imx-1,jmx-1,:,:)+qp(imx-1,jmx,:,:)+qp(imx,jmx-1,:,:))
+         !qp(0,0,0,:) = 0.33*(qp(1,0,0,:) + qp(0,1,0,:) + qp(0,0,1,:))
+         !qp(imx,0,0,:) = 0.33*(qp(imx-1,0,0,:) + qp(imx,1,0,:) + qp(imx,0,1,:))
+         !qp(0,jmx,0,:) = 0.33*(qp(1,jmx,0,:) + qp(0,jmx-1,0,:) + qp(0,jmx,1,:))
+         !qp(0,0,kmx,:) = 0.33*(qp(1,0,kmx,:) + qp(0,1,kmx,:) + qp(0,0,kmx-1,:))
+         !qp(imx,jmx,0,:) = 0.33*(qp(imx-1,jmx,0,:) + qp(imx,jmx-1,0,:) + qp(imx,jmx,1,:))
+         !qp(imx,0,kmx,:) = 0.33*(qp(imx-1,0,kmx,:) + qp(imx,1,kmx,:) + qp(imx,0,kmx-1,:))
+         !qp(0,jmx,kmx,:) = 0.33*(qp(1,jmx,kmx,:) + qp(0,jmx-1,kmx,:) + qp(0,jmx,kmx-1,:))
+         !qp(imx,jmx,kmx,:) = 0.33*(qp(imx-1,jmx,kmx,:) + qp(imx,jmx-1,kmx,:) + qp(imx,jmx,kmx-1,:))
+
       end subroutine populate_ghost_primitive
 
 

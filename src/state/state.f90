@@ -60,6 +60,7 @@ module state
     use global_vars, only  : free_stream_tk
     use global_vars, only  : free_stream_tw
     use global_vars, only  : vel_mag
+    use global_vars, only  : MInf
 
   use global_vars, only: mass_residue
   use global_vars, only: x_mom_residue
@@ -217,6 +218,7 @@ module state
             z_speed_inf = free_stream_z_speed
             pressure_inf = free_stream_pressure
             vel_mag = sqrt(x_speed_inf**2 + y_speed_inf**2 + z_speed_inf**2)
+            MInf    = Vel_mag/sqrt(gm*pressure_inf/density_inf)
             include "turbulence_models/include/state/init_infinity_values.inc"
 
         end subroutine init_infinity_values
@@ -294,6 +296,9 @@ module state
                 !  y_speed = 0.0
                 !  z_speed = 0.0
                 !end if
+                !X_speed = 0.0
+                !Y_speed = 0.0
+                !Z_speed = 0.0
             else
                 write(infile,'(a,i4.4,a,i2.2)') &
                   "time_directories/",start_from,"/process_",process_id

@@ -105,6 +105,7 @@ module global_vars
   real                                    , pointer :: y_speed_inf  
   real                                    , pointer :: z_speed_inf  
   real                                    , pointer :: pressure_inf 
+  real                                              :: MInf
 
   ! Freestram variable used to read file before inf pointer are linked and allocated
    ! read Rho_inf from control file

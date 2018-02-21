@@ -48,6 +48,24 @@ module scheme
             G_ausm => G, &
             H_ausm => H, &
             residue_ausm => residue
+    use ausmUP, only: &
+            setup_scheme_ausmUP => setup_scheme, &
+            destroy_scheme_ausmUP => destroy_scheme, &
+            compute_fluxes_ausmUP => compute_fluxes, &
+            get_residue_ausmUP => get_residue, &
+            F_ausmUP => F, &
+            G_ausmUP => G, &
+            H_ausmUP => H, &
+            residue_ausmUP => residue
+    use slau, only: &
+            setup_scheme_slau => setup_scheme, &
+            destroy_scheme_slau => destroy_scheme, &
+            compute_fluxes_slau => compute_fluxes, &
+            get_residue_slau => get_residue, &
+            F_slau => F, &
+            G_slau => G, &
+            H_slau => H, &
+            residue_slau => residue
     use ldfss0, only: &
             setup_scheme_ldfss0=> setup_scheme, &
             destroy_scheme_ldfss0=> destroy_scheme, &
@@ -108,6 +126,30 @@ module scheme
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 5)
                     include "turbulence_models/include/scheme/ausm_setup.inc" 
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausm(:,:,:,:)
+                case ("ausmUP")
+                    call setup_scheme_ausmUP()
+                    F_p => F_ausmUP
+                    G_p => G_ausmUP
+                    H_p => H_ausmUP
+                    mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 1)
+                    x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 2)
+                    y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 3)
+                    z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 4)
+                    energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 5)
+                    include "turbulence_models/include/scheme/ausmUP_setup.inc" 
+                    residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausmUP(:,:,:,:)
+                case ("slau")
+                    call setup_scheme_slau()
+                    F_p => F_slau
+                    G_p => G_slau
+                    H_p => H_slau
+                    mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 1)
+                    x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 2)
+                    y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 3)
+                    z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 4)
+                    energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 5)
+                    include "turbulence_models/include/scheme/slau_setup.inc" 
+                    residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_slau(:,:,:,:)
                 case ("ldfss0")
                     call setup_scheme_ldfss0()
                     F_p => F_ldfss0
@@ -156,6 +198,10 @@ module scheme
                     call destroy_scheme_van_leer
                 case ("ausm")
                     call destroy_scheme_ausm()
+                case ("ausmUP")
+                    call destroy_scheme_ausmUP()
+                case ("slau")
+                    call destroy_scheme_slau()
                 case ("ldfss0")
                     call destroy_scheme_ldfss0()
 !               case ("hlle")
@@ -180,6 +226,10 @@ module scheme
                     call compute_fluxes_van_leer()
                 case ("ausm")
                     call compute_fluxes_ausm()
+                case ("ausmUP")
+                    call compute_fluxes_ausmUP()
+                case ("slau")
+                    call compute_fluxes_slau()
                 case ("ldfss0")
                     call compute_fluxes_ldfss0()
 !               case ("hlle")
@@ -201,6 +251,10 @@ module scheme
                     call get_residue_van_leer()
                 case ("ausm")
                     call get_residue_ausm()
+                case ("ausmUP")
+                    call get_residue_ausmUP()
+                case ("slau")
+                    call get_residue_slau()
                 case ("ldfss0")
                     call get_residue_ldfss0()
 !               case ("hlle")
