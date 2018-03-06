@@ -13,7 +13,7 @@
           case ("kkl")
               include "turbulence_models/kkl/ldfss0/compute_flux_select.inc"
 
-          case ("sa")
+          case ("sa", "saBC")
               include "turbulence_models/sa/ldfss0/compute_flux_select.inc"
 
           case ("kw")

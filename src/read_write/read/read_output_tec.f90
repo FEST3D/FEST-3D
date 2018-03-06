@@ -22,6 +22,7 @@ module read_output_tec
   use global_vars, only : tk 
   use global_vars, only : tw 
   use global_vars, only : tkl
+  use global_vars, only : tv
   use global_vars, only : mu 
   use global_vars, only : mu_t 
   use global_vars, only : density_inf
@@ -113,6 +114,9 @@ module read_output_tec
 
           case('Kl')
             call read_scalar(tkl, 'Kl', -2)
+
+          case('tv')
+            call read_scalar(tv, 'tv', -2)
 
           case('do not read')
             call skip_scalar()

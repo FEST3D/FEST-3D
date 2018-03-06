@@ -14,6 +14,7 @@ module ausm
 
     use global_vars, only : gm
     use global_vars, only : n_var
+    use global_vars, only : density
     use global_vars, only : turbulence
     use global_vars, only : process_id
     use global_vars, only : current_iter

@@ -5,6 +5,9 @@ module sa_gradients
   ! aim : link sst pointer to allocated memory for gradients
   !---------------------------------------------------------------
 
+#include "../debug.h"
+
+  use global_vars,  only : process_id
   use global_vars,  only : imx
   use global_vars,  only : jmx
   use global_vars,  only : kmx
@@ -25,9 +28,10 @@ module sa_gradients
   contains
 
     subroutine setup_sa_grad()
+
       implicit none
 
-      call dmsg(1, 'gradients', 'setup_sa_grad')
+      DebugCall("setup_sa_grad")
 
       gradtv_x(0:imx, 0:jmx, 0:kmx) => gradqp_x(:, :, :, 5)
       gradtv_y(0:imx, 0:jmx, 0:kmx) => gradqp_y(:, :, :, 5)
@@ -36,10 +40,12 @@ module sa_gradients
     end subroutine setup_sa_grad
 
 
+
     subroutine destroy_sa_grad()
+
       implicit none
 
-      call dmsg(1, 'gradients', 'destroy_sa_grad')
+      DebugCall("destroy_sa_grad")
 
       nullify(gradtv_x)
       nullify(gradtv_y)

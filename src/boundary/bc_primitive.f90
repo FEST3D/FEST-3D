@@ -177,7 +177,7 @@ module bc_primitive
           case('none')
             !do nothing
             continue
-          case('sa')
+          case('sa', 'saBC')
             call fix(tv, fixed_tv, face)
           case('sst')
             call check_if_value_fixed("sst")
@@ -207,7 +207,7 @@ module bc_primitive
           case('none')
             !do nothing
             continue
-          case('sa')
+          case('sa', 'saBC')
             call copy3(tv, "flat", face)
           case('sst')
             call copy3(tk, "flat", face)
@@ -234,7 +234,7 @@ module bc_primitive
           case('none')
             !do nothing
             continue
-          case('sa')
+          case('sa', 'saBC')
             call fix(tv, fixed_tv, face)
           case('sst')
             call check_if_value_fixed("sst")
@@ -267,7 +267,7 @@ module bc_primitive
           case('none')
             !do nothing
             continue
-          case('sa')
+          case('sa', 'saBC')
             call copy3(tv, "flat", face)
           case('sst')
             call copy3(tk, "flat", face)
@@ -299,7 +299,7 @@ module bc_primitive
           case('none')
             !do nothing
             continue
-          case('sa')
+          case('sa', 'saBC')
             call copy3(tv, "symm", face)
           case('sst')
             call copy3(tk, "symm", face)
@@ -327,7 +327,7 @@ module bc_primitive
           case('none')
             !do nothing
             continue
-          case('sa')
+          case('sa', 'saBC')
             call copy3(tv, "flat", face) 
           case('sst')
             call copy3(tk, "flat", face)
@@ -391,7 +391,7 @@ module bc_primitive
           case("none")
             !do nothing
             continue
-          case('sa')
+          case('sa', 'saBC')
             call copy3(tv  , "anti", face)
           case("sst")
             call copy3(tk  , "anti", face)
@@ -494,7 +494,7 @@ module bc_primitive
         case("none")
           !do nothing
           continue
-        case("sa")
+        case("sa", 'saBC')
           if(fixed_tv(face_num)==0.0)fixed_tv(face_num)=tv_inf
         case("sst")
           if(fixed_tk(face_num)==0.) fixed_tk(face_num)=tk_inf
@@ -558,7 +558,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -585,7 +585,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -640,7 +640,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -667,7 +667,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -722,7 +722,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -749,7 +749,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -804,7 +804,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -831,7 +831,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -886,7 +886,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -913,7 +913,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -968,7 +968,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -995,7 +995,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -1070,7 +1070,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -1091,7 +1091,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -1144,7 +1144,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -1165,7 +1165,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -1218,7 +1218,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -1239,7 +1239,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -1292,7 +1292,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -1313,7 +1313,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -1366,7 +1366,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -1387,7 +1387,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")
@@ -1440,7 +1440,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call copy3(tv, "flat", face)
                     case('sst')
                       call copy3(tk, "flat", face)
@@ -1461,7 +1461,7 @@ module bc_primitive
                     case('none')
                       !do nothing
                       continue
-                    case('sa')
+                    case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
                     case('sst')
                       call check_if_value_fixed("sst")

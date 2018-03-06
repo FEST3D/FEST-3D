@@ -150,7 +150,7 @@ module resnorm
         case('des')
           Res_scale(6) = density_inf*vel_mag*tk_inf
           Res_scale(7) = density_inf*vel_mag*tw_inf
-        case('sa')
+        case('sa', 'saBC')
           Res_scale(6) = density_inf*vel_mag*tv_inf
         case('kw')
           Res_scale(6) = density_inf*vel_mag*tk_inf
@@ -284,7 +284,7 @@ module resnorm
             end if
 
           case('tv_abs')
-            if(trim(turbulence)=='sa')then
+            if(trim(turbulence)=='sa' .or. trim(turbulence)=='saBC')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(6)
             end if
 
@@ -309,7 +309,7 @@ module resnorm
             end if
 
           case('tv_rel')
-            if(trim(turbulence)=='sa')then
+            if(trim(turbulence)=='sa' .or. trim(turbulence)=='saBC')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(6)
             end if
 

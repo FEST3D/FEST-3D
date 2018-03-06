@@ -146,7 +146,7 @@ module viscosity
             !do nothing
             continue
 
-          case ('sa')
+          case ('sa', 'saBC')
             !call calculate_sa_mu()
             do k = 0,kmx
               do j = 0,jmx
@@ -154,7 +154,7 @@ module viscosity
                   ! xsi 
                    xi = tv(i,j,k)*density(i,j,k)/mu(i,j,k)
                   !calculation fo fv1 function
-                  fv1 = xi**3/(xi**3 + cv1**3)
+                  fv1 = (xi**3)/((xi**3) + (cv1**3))
                   sa_mu(i,j,k) = density(i,j,k)*tv(i,j,k)*fv1
                 end do
               end do
@@ -411,7 +411,7 @@ module viscosity
             !do nothing
             continue
 
-          case ('sa')
+          case ('sa', 'saBC')
             sa_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
 
           case ('sst')
@@ -449,7 +449,7 @@ module viscosity
             !do nothing
             continue
 
-          case('sa')
+          case('sa', 'saBC')
             nullify(sa_mu)
 
           case ('sst')

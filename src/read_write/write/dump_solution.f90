@@ -127,7 +127,7 @@ module dump_solution
           
         case ('none')
           write(RESTART_FILE_UNIT, '(A)') 'viscous'
-        case('sst', 'kkl', 'ke', 'kw', 'sa', 'des-sst')
+        case('sst', 'kkl', 'ke', 'kw', 'sa', 'saBC', 'des-sst')
           write(RESTART_FILE_UNIT, '(A)') trim(turbulence)
         case DEFAULT
           call dmsg(5, 'dump_solution', 'write_restart_log',&

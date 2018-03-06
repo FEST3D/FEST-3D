@@ -5,6 +5,9 @@ module laminar_gradients
   ! aim : link laminar pointer to allocated memory for gradients
   !---------------------------------------------------------------
 
+#include "../debug.h"
+  
+  use global_vars,  only : process_id
   use global_vars,  only : imx
   use global_vars,  only : jmx
   use global_vars,  only : kmx
@@ -33,9 +36,10 @@ module laminar_gradients
   contains
 
     subroutine setup_laminar_grad()
+
       implicit none
 
-      call dmsg(1, 'gradients', 'setup_laminar_grad')
+      DebugCall('setup_laminar_grad')
 
       gradu_x(0:imx, 0:jmx, 0:kmx) => gradqp_x(:, :, :, 1)
       gradv_x(0:imx, 0:jmx, 0:kmx) => gradqp_x(:, :, :, 2)
@@ -56,9 +60,10 @@ module laminar_gradients
 
 
     subroutine destroy_laminar_grad()
+
       implicit none
 
-      call dmsg(1, 'gradients', 'destroy_laminar_grad')
+      DebugCall('destroy_laminar_grad')
 
       nullify(gradu_x)
       nullify(gradv_x)

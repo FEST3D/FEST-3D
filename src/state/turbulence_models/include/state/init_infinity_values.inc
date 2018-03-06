@@ -15,6 +15,9 @@
           case ("sa")
               include "turbulence_models/sa/state/init_infinity_values.inc"
 
+          case ("saBC")
+              include "turbulence_models/saBC/state/init_infinity_values.inc"
+
           case ("kw")
               include "turbulence_models/kw/state/init_infinity_values.inc"
 

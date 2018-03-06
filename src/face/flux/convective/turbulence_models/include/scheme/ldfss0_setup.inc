@@ -13,7 +13,7 @@
           case ("kkl")
               include "turbulence_models/kkl/scheme/ldfss0_setup.inc"
 
-          case ("sa")
+          case ("sa", "saBC")
               include "turbulence_models/sa/scheme/ldfss0_setup.inc"
 
           case ("ke")

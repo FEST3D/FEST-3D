@@ -106,6 +106,7 @@ module global_vars
   real                                    , pointer :: z_speed_inf  
   real                                    , pointer :: pressure_inf 
   real                                              :: MInf
+  real, dimension(:, :, :), allocatable, target  :: intermittency
 
   ! Freestram variable used to read file before inf pointer are linked and allocated
    ! read Rho_inf from control file
@@ -190,7 +191,7 @@ module global_vars
   integer                                           :: kPB_switch
   character(len=5)                                  :: turbulence ! todo character length
   
-  real, dimension(:, :, :), allocatable             :: mu
+  real, dimension(:, :, :), allocatable, target     :: mu
   real, dimension(:, :, :), allocatable, target     :: mu_t
   real, dimension(:, :, :)              , pointer   :: sst_mu
   real, dimension(:, :, :)              , pointer   :: kkl_mu

@@ -14,7 +14,7 @@
 
               include "turbulence_models/kkl/ausm/compute_flux_select.inc"
 
-          case ("sa")
+          case ("sa", "saBC")
               include "turbulence_models/sa/ausm/compute_flux_select.inc"
 
           case ("kw")

@@ -102,7 +102,7 @@ module viscous
             !do nothing
             continue
 
-          case('sa')
+          case('sa', 'saBC')
             call compute_viscous_fluxes_sa(F, 'x')
             call compute_viscous_fluxes_sa(G, 'y')
             call compute_viscous_fluxes_sa(H, 'z')
@@ -736,8 +736,8 @@ module viscous
           !--- end of ODD-EVEN coupling correction ---!
 
           rhoface  = 0.5 * (density(i-ii, j-jj, k-kk) + density(i, j, k))
-          mu_f     = 0.5*(mu(i-ii, j-jj, k-kk) + mu(i, j, k))/rhoface
-          mut_f    = 0.5*(tv(i-ii, j-jj, k-kk) + tv(i, j, k))
+          mu_f     = 0.5*(mu(i-ii, j-jj, k-kk) + mu(i, j, k))
+          mut_f    = 0.5*(tv(i-ii, j-jj, k-kk) + tv(i, j, k))*rhoface
 
           ! calling some element from memory and keep them handy for calculation
           nx    = fnx(i,j,k)

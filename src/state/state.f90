@@ -8,6 +8,9 @@ module state
     ! version assumes the grid is in atmost two dimensions. 
     !-------------------------------------------------------------------
     
+#include "../debug.h"
+#include "../error.h"
+
     use global, only: FILE_NAME_LENGTH, STATE_FILE_UNIT, OUT_FILE_UNIT, &
             DESCRIPTION_STRING_LENGTH, STRING_BUFFER_LENGTH
     use global_vars, only : start_from
@@ -48,9 +51,9 @@ module state
     use global_vars, only : tkl_inf
     use global_vars, only : gm
     use global_vars, only : mu_ref
-    use global_vars, only : supersonic_flag
     use global_vars, only : turbulence
     use global_vars, only : infile
+    use global_vars, only : intermittency
     
     use global_vars, only  : free_stream_density
     use global_vars, only  : free_stream_x_speed
@@ -62,105 +65,177 @@ module state
     use global_vars, only  : vel_mag
     use global_vars, only  : MInf
 
-  use global_vars, only: mass_residue
-  use global_vars, only: x_mom_residue
-  use global_vars, only: y_mom_residue
-  use global_vars, only: z_mom_residue
-  use global_vars, only: energy_residue
-  use global_vars, only:    vis_resnorm
-  use global_vars, only:   cont_resnorm
-  use global_vars, only:  x_mom_resnorm
-  use global_vars, only:  y_mom_resnorm
-  use global_vars, only:  z_mom_resnorm
-  use global_vars, only: energy_resnorm
-  use global_vars, only: r_list
-  use global_vars, only: w_list
 
-  use utils,       only: alloc, dealloc, dmsg
-  use layout,      only: process_id
-  use string
-  use read_output, only: read_file
-  use check_output_control, only : verify_write_control
+    use utils,       only: alloc, dealloc, dmsg
+    use layout,      only: process_id
+    use string
+    use read_output, only: read_file
+
+    use check_output_control, only : verify_write_control
 
     implicit none
     private
 
 
-    real :: speed_inf
     ! Public methods
     public :: setup_state
     public :: destroy_state
-!   public :: set_ghost_cell_data
 
     contains
 
+
         subroutine link_aliases()
+
             implicit none
-            call dmsg(1, 'state', 'link_aliases')
+
+            DebugCall("link_aliases")
+
             density(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 1)
             x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 2)
             y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 3)
             z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 4)
             pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 5)
+
             density_inf => qp_inf(1)
             x_speed_inf => qp_inf(2)
             y_speed_inf => qp_inf(3)
             z_speed_inf => qp_inf(4)
             pressure_inf => qp_inf(5)
-            include "turbulence_models/include/state/link_aliases.inc"
+
+            select case (trim(turbulence))
+
+                case ("none")
+                    !include nothing
+                    continue
+                
+                case ("sst", "bsl", "des-sst", "kw")
+                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+                    tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
+                    tk_inf => qp_inf(6)
+                    tw_inf => qp_inf(7)
+
+                case ("kkl")
+                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+                    tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
+                    tk_inf => qp_inf(6)
+                    tkl_inf => qp_inf(7)
+
+                case ("sa", "saBC")
+                    tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+                    tv_inf => qp_inf(6)
+
+                case ("ke")
+                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+                    te(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
+                    tk_inf => qp_inf(6)
+                    te_inf => qp_inf(7)
+
+                case ("les")
+                  continue
+                  ! todo
+
+                case DEFAULT
+                  Fatal_error
+
+            end select
+
         end subroutine link_aliases
 
+
+
         subroutine unlink_aliases()
+
             implicit none
-            call dmsg(1, 'state', 'unlink_aliases')
+
+            DebugCall("unlink_aliases")
+
             nullify(density)
             nullify(x_speed)
             nullify(y_speed)
             nullify(z_speed)
             nullify(pressure)
+
             nullify(density_inf)
             nullify(x_speed_inf)
             nullify(y_speed_inf)
             nullify(z_speed_inf)
             nullify(pressure_inf)
-            include "turbulence_models/include/state/unlink_aliases.inc"
+
+            select case (trim(turbulence))
+
+                case ("none")
+                    continue
+
+                  case ("sst", "bsl", "kw", "des-sst")
+                    nullify(tk)
+                    nullify(tw)
+                    nullify(tk_inf)
+                    nullify(tw_inf)
+
+                case ("kkl")
+                    nullify(tk)
+                    nullify(tkl)
+                    nullify(tk_inf)
+                    nullify(tkl_inf)
+
+                case ("sa", "saBC")
+                    nullify(tv)
+                    nullify(tv_inf)
+
+                case ("ke")
+                    nullify(tk)
+                    nullify(te)
+                    nullify(tk_inf)
+                    nullify(te_inf)
+
+                case ("les")
+                    continue
+                    ! todo
+
+                case DEFAULT
+                  Fatal_error
+
+            end select
+
         end subroutine unlink_aliases
+
+
+
 
         subroutine allocate_memory()
             !-----------------------------------------------------------
             ! Allocate memory for the state variables
-            !
-            ! This assumes that imx and jmx (the grid size) has been set
-            ! within the state module.
             !-----------------------------------------------------------
-
             implicit none
 
-            call dmsg(1, 'state', 'allocate_memory')
+            DebugCall("allocate_memory")
 
             ! The state of the system is defined by the primitive 
             ! variables (density, velocity and pressure) at the grid
             ! cell centers. 
-            ! There are (imx - 1) x (jmx - 1) grid cells within the 
-            ! domain. We require a row of ghost cells on each boundary.
-            ! This current implementation is for a 2D/1D case. 
-            call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for state ' // &
-                        'variable qp.')
-            call alloc(qp_inf, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for state ' // &
-                        'variable qp_inf.')
+            call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, AErrMsg("qp"))
+            call alloc(qp_inf, 1, n_var, AErrMsg("qp_inf"))
+
+            if(trim(turbulence)=="saBC")then
+              call alloc(intermittency, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("intermittency"))
+            end if
+            
         end subroutine allocate_memory
+
+
 
         subroutine deallocate_memory()
 
             implicit none
 
-            call dmsg(1, 'state', 'deallocate_memory')
+            DebugCall("allocate_memory")
 
             call dealloc(qp)
+            call dealloc(intermittency)
 
         end subroutine deallocate_memory
+
+
 
         subroutine setup_state()
             !-----------------------------------------------------------
@@ -174,16 +249,17 @@ module state
 
             implicit none
 
-            call dmsg(1, 'state', 'setup_state')
+            DebugCall("setup_state")
 
             call set_n_var_value()
             call allocate_memory()
             call link_aliases()
             call init_infinity_values()
-            call set_supersonic_flag()
             call initstate()
 
         end subroutine setup_state
+
+
 
         subroutine destroy_state()
             !-----------------------------------------------------------
@@ -196,12 +272,14 @@ module state
 
             implicit none
             
-            call dmsg(1, 'state', 'destroy_state')
+            DebugCall("destroy_state")
 
             call unlink_aliases()
             call deallocate_memory()
 
         end subroutine destroy_state
+
+
 
         subroutine init_infinity_values()
             !-----------------------------------------------------------
@@ -210,7 +288,7 @@ module state
 
             implicit none
             
-            call dmsg(1, 'state', 'init_infinity_values')
+            DebugCall("init_infinity_values")
 
             density_inf = free_stream_density
             x_speed_inf = free_stream_x_speed
@@ -219,9 +297,50 @@ module state
             pressure_inf = free_stream_pressure
             vel_mag = sqrt(x_speed_inf**2 + y_speed_inf**2 + z_speed_inf**2)
             MInf    = Vel_mag/sqrt(gm*pressure_inf/density_inf)
-            include "turbulence_models/include/state/init_infinity_values.inc"
+
+            select case (trim(turbulence))
+                
+                case ("none")
+                    continue
+
+                case ("sst", "bsl")
+                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
+                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+
+                case ("kkl")
+                    tk_inf = 9*(1e-9)*(sound_speed_inf()**2)
+                    tkl_inf = 1.5589*(1e-6)*(mu_ref*sound_speed_inf())/density_inf
+
+                case ("sa")
+                    tv_inf = 3*mu_ref/density_inf
+
+                case ("saBC")
+                    tv_inf = 0.005*3*mu_ref/density_inf
+
+                case ("kw")
+                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
+                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+
+                case ("ke")
+                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
+                    te_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+
+                case ("des-sst")
+                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
+                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+
+                case ("les")
+                  continue
+                  ! todo
+
+                case DEFAULT
+                  Fatal_error
+
+            end select
 
         end subroutine init_infinity_values
+
+
         
         function sound_speed_inf() result(a)
             !-----------------------------------------------------------
@@ -235,35 +354,7 @@ module state
 
         end function sound_speed_inf
 
-        subroutine set_supersonic_flag()
-            !-----------------------------------------------------------
-            ! Set the supersonic flag based on the infinity conditions.
-            !
-            ! In the ghost cells, the values of the primitive variables
-            ! are set either based on the neighbouring cells' values or 
-            ! the infinity values. This splitting is based on the wave
-            ! speeds. The supersonic flag is used as an indication as 
-            ! to how these cells should get their values. 
-            !-----------------------------------------------------------
 
-            implicit none
-            real :: avg_inlet_mach
-
-            call dmsg(1, 'state', 'set_supersonic_flag')
-
-            avg_inlet_mach = sqrt(x_speed_inf ** 2. + y_speed_inf ** 2. + &
-                                  z_speed_inf ** 2.) / sound_speed_inf()
-
-            if (avg_inlet_mach >= 1) then
-                supersonic_flag = .TRUE.
-            else
-                supersonic_flag = .FALSE.
-            end if
-
-            call dmsg(5, 'state', 'set_supersonic_flag', &
-                    'Supersonic flag set to ' + supersonic_flag)
-
-        end subroutine set_supersonic_flag
 
         subroutine initstate()
             !-----------------------------------------------------------
@@ -276,7 +367,7 @@ module state
 
             implicit none
             
-            call dmsg(1, 'state', 'initstate')
+            DebugCall("initstate")
 
             call  verify_write_control()
 
@@ -311,6 +402,8 @@ module state
 
         end subroutine initstate
 
+
+
         subroutine init_state_with_infinity_values()
             !-----------------------------------------------------------
             ! Initialize the state based on the infinity values.
@@ -319,7 +412,7 @@ module state
             implicit none
             integer :: i
             
-            call dmsg(1, 'state', 'init_state_with_infinity_values')
+            DebugCall("init_state_with_infinity_values")
             
             do i = 1,n_var
                 qp(:, :, :, i) = qp_inf(i)
@@ -328,18 +421,23 @@ module state
         end subroutine init_state_with_infinity_values
 
 
+
         subroutine set_n_var_value()
           implicit none
+
+          DebugCall("set_n_var_value")
+
           select case (trim(turbulence))
             case('none')
               n_var=5
-            case('sa')
+            case('sa', 'saBC')
               n_var=6
             case('sst','bsl', 'kw', 'ke', 'kkl', 'Des-kw')
               n_var=7
             case DEFAULT
               n_var=5
           end select
+
         end subroutine set_n_var_value
 
 end module state

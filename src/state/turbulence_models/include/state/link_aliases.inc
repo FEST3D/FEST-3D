@@ -12,7 +12,7 @@
           case ("kkl")
               include "turbulence_models/kkl/state/link_aliases.inc"
 
-          case ("sa")
+          case ("sa", "saBC")
               include "turbulence_models/sa/state/link_aliases.inc"
 
           case ("kw")

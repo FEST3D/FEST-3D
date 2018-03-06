@@ -117,6 +117,9 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                          "-Mbounds"       # Portland Group
                 )
 
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
+                 Fortran "-I_MPI_HYDRA_DEBUG=1" #intel
+                 )
 #####################
 ### TESTING FLAGS ###
 #####################

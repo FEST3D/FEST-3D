@@ -127,6 +127,15 @@ module read_bc
                   continue
               end select
 
+            case ("sa", "saBC")
+              select case(buf(3:index(buf(3:), " ")+1))
+                case ("FIX_tv")
+                  call set_value(fixed_tk      , fix_val, tv_inf      , count, ios)
+                case DEFAULT
+                  ! no a value to fix
+                  continue
+              end select
+
           end select
 
         else
@@ -185,6 +194,10 @@ module read_bc
               call set_value(fixed_tk      , tk_inf, tk_inf      , count, ios)
             !case ("FIX_tkl")
               call set_value(fixed_tkl     , tkl_inf, tkl_inf     , count, ios)
+
+          case ("sa", "saBC")
+            !case ("FIX_tv")
+              call set_value(fixed_tk      , tv_inf, tv_inf      , count, ios)
 
           case DEFAULT
             Fatal_error

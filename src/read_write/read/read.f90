@@ -8,6 +8,7 @@ module read
   !   5. state_read_write_control.md
   !------------------------------------------------------
 
+#include "../../debug.h"
 
   use global, only: CONTROL_FILE_UNIT
   use global, only:  SCHEME_FILE_UNIT
@@ -34,6 +35,7 @@ module read
   use global_vars, only: purge_write
   use global_vars, only: tolerance
   use global_vars, only: tolerance_type
+  use global_vars, only: process_id
 
   use global_vars, only: time_stepping_method
   use global_vars, only: time_step_accuracy
@@ -149,7 +151,7 @@ module read
         implicit none
         character(len=STRING_BUFFER_LENGTH) :: buf
 
-        call dmsg(1, 'read', 'read_controls')
+        DebugCall('read_controls')
 
         open(CONTROL_FILE_UNIT, file=control_file, status='old', action='read')
 
@@ -161,80 +163,67 @@ module read
         ! READ CFL
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) CFL
-        call dmsg(5, 'read', 'read_controls', &
-                msg='CFL = ' + CFL)
+        DebugInfo("CFL = "//trim(buf))
 
         ! READ start_from
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) start_from
-        call dmsg(5, 'read', 'read_controls', &
-                msg='Simlulation  start from  level = ' + start_from)
+        DebugInfo('Start from  level = '//trim(buf))
 
         ! READ max_iters
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) max_iters
-        call dmsg(5, 'read', 'read_controls', &
-                msg=' Stop at iteration = ' + max_iters)
+        DebugInfo('Stop at iteration = '//trim(buf))
 
         ! READ checkpoint_iter
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) checkpoint_iter
-        call dmsg(5, 'read', 'read_controls', &
-                msg=' Solution write interval = ' + checkpoint_iter)
+        DebugInfo(' Solution write interval = '//trim(buf))
 
         ! READ write_file_format
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) write_file_format
-        call dmsg(5, 'read', 'read_controls', &
-                msg='Solution file format  = ' + write_file_format)
+        DebugInfo('Solution file format  = '//trim(buf))
 
         ! READ write_data_format
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) write_data_format
-        call dmsg(5, 'read', 'read_controls', &
-                msg='solution file data format = ' + write_data_format)
+        DebugInfo('solution file data format = '//trim(buf))
 
         ! READ read_file_format
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) read_file_format
-        call dmsg(5, 'read', 'read_controls', &
-                msg='Restart file format  = ' + read_file_format)
+        DebugInfo('Restart file format  = '//trim(buf))
 
         ! READ_read data_format
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) read_data_format
-        call dmsg(5, 'read', 'read_controls', &
-                msg='Restart file data format = ' + read_data_format)
+        DebugInfo('Restart file data format = '//trim(buf))
 
         ! READ write_percision
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) write_percision
-        call dmsg(5, 'read', 'read_controls', &
-                msg='File write percision = ' + write_percision)
+        DebugInfo('File write percision = '//trim(buf))
 
         ! READ purge_write
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) purge_write
-        call dmsg(5, 'read', 'read_controls', &
-                msg='Purge folder more then  = ' + purge_write)
+        DebugInfo('Purge folder more then  = '//trim(buf))
 
         ! READ res_write_interval
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) res_write_interval
-        call dmsg(5, 'read', 'read_controls', &
-                msg='resnorm write interval  = ' + res_write_interval)
+        DebugInfo('resnorm write interval  = '//trim(buf))
 
         ! READ tolerance
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) tolerance, tolerance_type
-        call dmsg(5, 'read', 'read_controls', &
-                msg=trim(tolerance_type)//'Tolerance  = ' + tolerance)
+        DebugInfo(trim(tolerance_type)//' Tolerance  = '//trim(buf))
 
         ! READ DEBUG_LEVEL
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) DEBUG_LEVEL
-        call dmsg(5, 'read', 'read_controls', &
-                msg='DEBUG_LEVEL = ' + DEBUG_LEVEL)
+        DebugInfo('DEBUG_LEVEL = '//trim(buf))
 
         close(CONTROL_FILE_UNIT)
 
@@ -249,7 +238,7 @@ module read
         character(len=STRING_BUFFER_LENGTH) :: buf
         integer                             :: ios
 
-        call dmsg(1, 'read', 'read_scheme')
+        DebugCall('read_scheme')
 
         open(SCHEME_FILE_UNIT, file=scheme_file, status='old', action='read')
 
@@ -261,44 +250,34 @@ module read
         ! read scheme name
         call get_next_token(SCHEME_FILE_UNIT, buf)
         read(buf, *) scheme_name
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='scheme_name = ' + scheme_name)
+        DebugInfo('scheme_name = '//trim(buf))
 
         ! read interpolant
         call get_next_token(SCHEME_FILE_UNIT, buf)
         read(buf, *) interpolant
         interpolant = trim(interpolant)
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='interpolant = ' + interpolant)
+        DebugInfo('interpolant = '//trim(buf))
 
         ! read ilimiter and PB switch
         call get_next_token(SCHEME_FILE_UNIT, buf)
         read(buf, *) ilimiter_switch,jlimiter_switch,klimiter_switch, &
                      iPB_switch, jPB_switch, kPB_switch
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='ilimiter switch = ' + ilimiter_switch )
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='jlimiter switch = ' + jlimiter_switch )
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='klimiter switch = ' + klimiter_switch )
-        call dmsg(5, 'read', 'read_scheme', &
-                  msg='PB switch = ' + iPB_switch )
+        DebugInfo('ilimiter switch = '//trim(buf) )
+        DebugInfo('jlimiter switch = '//trim(buf) )
+        DebugInfo('klimiter switch = '//trim(buf) )
+          DebugInfo('PB switch = '//trim(buf) )
 
         ! read turbulent limiter
         call get_next_token(SCHEME_FILE_UNIT, buf)
         read(buf, *) itlimiter_switch,jtlimiter_switch,ktlimiter_switch 
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='ilimiter switch = ' + itlimiter_switch )
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='jlimiter switch = ' + jtlimiter_switch )
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='klimiter switch = ' + ktlimiter_switch )
+        DebugInfo('ilimiter switch = '//trim(buf) )
+        DebugInfo('jlimiter switch = '//trim(buf) )
+        DebugInfo('klimiter switch = '//trim(buf) )
 
           ! read turbulence model
           call get_next_token(SCHEME_FILE_UNIT, buf)
           read(buf, *) turbulence
-          call dmsg(5, 'read', 'read_scheme', &
-                  msg='Turbulence Model = ' + turbulence)
+          DebugInfo('Turbulence Model = '//trim(buf))
 
         ! read time stepping method
         call get_next_token(SCHEME_FILE_UNIT, buf)
@@ -307,22 +286,18 @@ module read
             read(buf, *) time_stepping_method
             global_time_step = -1
         end if
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='time_stepping_method = ' + time_stepping_method)
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='global_time_step = ' + global_time_step)
+        DebugInfo('time_stepping_method = '//trim(buf))
+        DebugInfo('global_time_step = '//trim(buf))
 
         ! read time integration method
         call get_next_token(SCHEME_FILE_UNIT, buf)
         read(buf, *) time_step_accuracy
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='time_step_accuracy  = ' + time_step_accuracy)
+        DebugInfo('time_step_accuracy  = '//trim(buf))
 
         ! read higher order boundary
         call get_next_token(SCHEME_FILE_UNIT, buf)
         read(buf, *) accur
-        call dmsg(5, 'read', 'read_scheme', &
-                msg='higher order boundary  = ' + accur)
+        DebugInfo('higher order boundary  = '//trim(buf))
 
 
         close(SCHEME_FILE_UNIT)
@@ -337,7 +312,7 @@ module read
 
         character(len=STRING_BUFFER_LENGTH) :: buf
 
-        call dmsg(1, 'read', 'read_flow')
+        DebugCall('read_flow')
 
         open(FLOW_FILE_UNIT, file=flow_file, status='old', action='read')
 
@@ -349,92 +324,77 @@ module read
         ! read number of variable
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) n_var
-        call dmsg(5, 'read', 'read_flow', &
-                msg='Number of variables = ' + n_var)
+        DebugInfo('Number of variables = '//trim(buf))
 
         ! read rho_inf
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) free_stream_density
-        call dmsg(5, 'read', 'read_flow', &
-                msg='free_stream_density = ' + free_stream_density)
+        DebugInfo('free_stream_density = '//trim(buf))
 
         ! read u_inf
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) free_stream_x_speed
-        call dmsg(5, 'read', 'read_flow', &
-                msg='free_stream_x_speed = ' + free_stream_x_speed)
+        DebugInfo('free_stream_x_speed = '//trim(buf))
 
         ! read v_inf
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) free_stream_y_speed
-        call dmsg(5, 'read', 'read_flow', &
-                msg='free_stream_y_speed = ' + free_stream_y_speed)
+        DebugInfo('free_stream_y_speed = '//trim(buf))
 
         ! read w_inf
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) free_stream_z_speed
-        call dmsg(5, 'read', 'read_flow', &
-                msg='free_stream_z_speed = ' + free_stream_z_speed)
+        DebugInfo('free_stream_z_speed = '//trim(buf))
 
         ! read P_inf
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) free_stream_pressure
-        call dmsg(5, 'read', 'read_flow', &
-                msg='free_stream_pressure = ' + free_stream_pressure)
+        DebugInfo('free_stream_pressure = '//trim(buf))
 
         ! read TKE_inf
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) free_stream_tk
-        call dmsg(5, 'read', 'read_flow', &
-                msg='free_stream_TKE = ' + free_stream_tk)
+        DebugInfo('free_stream_TKE = '//trim(buf))
 
         ! read omega_inf
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) free_stream_tw
-        call dmsg(5, 'read', 'read_flow', &
-                msg='free_stream_omega = ' + free_stream_tw)
+        DebugInfo('free_stream_omega = '//trim(buf))
 
         ! read reference viscosity
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) mu_ref
-        call dmsg(5, 'read', 'read_flow', &
-                msg='mu_reference = ' + mu_ref)
+        DebugInfo('mu_reference = '//trim(buf))
 
         ! Type of variation for viscosity
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) mu_variation
-        call dmsg(5, 'read', 'read_flow', &
-                msg='mu_variation = ' + mu_variation)
+        DebugInfo('mu_variation = '//trim(buf))
 
         ! read T_red
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) T_ref
-        call dmsg(5, 'read', 'read_flow', &
-                msg='T_reference = ' + T_ref)
+        DebugInfo('T_reference = '//trim(buf))
 
         ! read Sutherland temp
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) Sutherland_temp
-        call dmsg(5, 'read', 'read_flow', &
-                msg='Sutherland temperature = ' + Sutherland_temp)
+        DebugInfo('Sutherland temperature = '//trim(buf))
 
         ! read prandtl number
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) Pr, tPr
-        call dmsg(5, 'read', 'read_flow', &
-                msg='Prandtl Number = ' + Pr)
+        DebugInfo('Prandtl Number = '//trim(buf))
 
         ! read gamma
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) gm
-        call dmsg(5, 'read', 'read_flow', &
-                msg='gamma = ' + gm)
+        DebugInfo('gamma = '//trim(buf))
 
         ! read universal gas constant
         call get_next_token(FLOW_FILE_UNIT, buf)
         read(buf, *) R_gas
-        call dmsg(5, 'read', 'read_flow', &
-                msg='R_gas = ' + R_gas)
+        DebugInfo('R_gas = '//trim(buf))
           
 
         close(FLOW_FILE_UNIT)

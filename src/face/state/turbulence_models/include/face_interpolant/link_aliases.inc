@@ -15,7 +15,7 @@
           case ("kkl")
               include "turbulence_models/kkl/face_interpolant/link_aliases.inc"
 
-          case ("sa")
+          case ("sa", "saBC")
               include "turbulence_models/sa/face_interpolant/link_aliases.inc"
 
           case ("ke")

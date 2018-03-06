@@ -46,6 +46,7 @@ module write_output_vtk
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
   use global_vars, only : TKE_residue
+  use global_vars, only : intermittency
 
   use global_vars, only : turbulence
   use global_vars, only : mu_ref
@@ -200,6 +201,9 @@ module write_output_vtk
           case('y-mom-residue')
             call write_scalar(y_mom_residue, 'Y_mom_residue', 1)
 
+          case('intermittency')
+            call write_scalar(intermittency, "Intermittency", -2)
+          
           case('do not write')
             ! do nothing
             continue

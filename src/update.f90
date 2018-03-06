@@ -9,6 +9,21 @@ module update
   use global_sst , only : beta2
   use global_sst , only : bstar
   use global_sst , only : sst_F1
+  use global_sa  , only : cb1
+  use global_sa  , only : cw1
+  use global_sa  , only : cw2
+  use global_sa  , only : cw3
+  use global_sa  , only : cv1
+  use global_sa  , only : kappa_sa
+  use global_vars  ,only :   gradu_x
+  use global_vars  ,only :   gradu_y
+  use global_vars  ,only :   gradu_z
+  use global_vars  ,only :   gradv_x
+  use global_vars  ,only :   gradv_y
+  use global_vars  ,only :   gradv_z
+  use global_vars  ,only :   gradw_x
+  use global_vars  ,only :   gradw_y
+  use global_vars  ,only :   gradw_z
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
@@ -259,13 +274,14 @@ module update
             case ("implicit")
               call get_total_conservative_Residue()
               call compute_time_step() ! has to be after get_..._Residue()
-              if(mu_ref/=0.0 .and. trim(turbulence)=='none') then
-                call matrix_free_implicit_update_viscous()
-              elseif(mu_ref/=0.0 .and. trim(turbulence)=='sst') then
-                call matrix_free_implicit_update_SST()
-              else
-                call matrix_free_implicit_update()
-              end if
+              call update_with_lusgs()
+              !if(mu_ref/=0.0 .and. trim(turbulence)=='none') then
+              !  call matrix_free_implicit_update_viscous()
+              !elseif(mu_ref/=0.0 .and. trim(turbulence)=='sst') then
+              !  call matrix_free_implicit_update_SST()
+              !else
+              ! call matrix_free_implicit_update()
+              !end if
             case default
               Fatal_error
         end select
@@ -286,6 +302,17 @@ module update
         integer :: i,j,k
         real :: KE=0.
         real :: beta
+
+        !sa variables
+        real :: vort
+        real :: fv1
+        real :: fv2
+        real :: fw
+        real :: g
+        real :: scap
+        real :: rsa
+        real :: kd2
+        real :: xi 
 
         if(present(time_factor)) TF=time_factor
         if(present(store_factor)) SF=store_factor
@@ -386,6 +413,8 @@ module update
                   select case(turbulence)
                     case('sst', 'kkl')
                       KE = u1(6)
+                    case('sa','saBC')
+                      KE=0.0
                     case DEFAULT
                       KE = 0.
                   end select
@@ -408,6 +437,21 @@ module update
                       R(6) = R(6)/(1.+((2.5*((cmu**0.75)*sqrt(u1(1))*(u1(6)**1.5)/max(u1(7),1.e-20))&
                              +(2*mu(i,j,k)/(dist(i,j,k)**2)))*delta_t(i,j,k)))
                       R(7) = R(7)/(1.+(6*mu(i,j,k)*fphi/(dist(i,j,k)**2))*delta_t(i,j,k))
+                    case('sa', 'saBC')
+                      vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
+                                      + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
+                                      + (gradv_x(i,j,k)- gradu_y(i,j,k))**2 &
+                                       )&
+                                 )
+                      kd2  = (kappa_sa*dist(i,j,k))**2
+                      xi   = U1(6)*density(i,j,k)/mu(i,j,k)
+                      fv1  = xi**3/(xi**3 + cv1**3)
+                      fv2  = 1.0 - xi/(1 + xi*fv1)
+                      scap = vort + U1(6)*fv2/(kd2)
+                      rsa    = min(U1(6)/(Scap*kd2), 10.0)
+                      g    = rsa + cw2*(rsa**6 - rsa)
+                      fw   = g*( (1.0+cw3**6)/(g**6+cw3**6) )**(1.0/6.0)
+                      !R(6) = R(6)/(1.+((-1.0*u1(1)*cb1*scap)+(2.0*u1(1)*cw1*fw*u1(6)/(dist(i,j,k)**2)))*delta_t(i,j,k))
                     case DEFAULT
                       Fatal_error
                   end select
@@ -427,6 +471,9 @@ module update
                   select case(turbulence)
                     case('sst', 'kkl')
                       KE = u2(6)
+                    case('sa', 'saBC')
+                      !u2(6) = u2(6)*u2(1)
+                      KE=0.0
                     case DEFAULT
                       KE = 0.
                   end select
@@ -459,6 +506,8 @@ module update
                        !                +max(qp(i,j-1,k,7),0.) + max(qp(i,j+1,k,7),0.) &
                        !                )/4
                        end if
+                     case('sa', 'saBC')
+                       qp(i,j,k,6) = max(u2(6), 1.e-12)
                      case DEFAULT
                        ! do nothing
                        continue

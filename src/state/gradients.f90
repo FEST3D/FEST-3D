@@ -5,7 +5,8 @@ module gradients
   !aim : 1) allocate memory to laminar gradients if flow is viscous
   !      2) allocate memory to tubulence gradients base on model used
   !-------------------------------------------------------------------
-#include "../error.inc"
+#include "../error.h"
+#include "../debug.h"
 
   use global_vars,  only : imx
   use global_vars,  only : jmx
@@ -42,8 +43,12 @@ module gradients
 
   contains
 
+
     subroutine setup_gradients
+
       implicit none
+
+      DebugCall("setup_gradients")
 
       if(mu_ref/=0)then
 
@@ -52,6 +57,7 @@ module gradients
 
         ! linking pointer to laminar gradients
         call setup_laminar_grad()
+        print*, Error_msg
 
         ! linking pointer to turbulent gradients
         select case (trim(turbulence))
@@ -60,7 +66,7 @@ module gradients
             !do nothing
             continue
 
-          case('sa')
+          case('sa', 'saBC')
             call setup_sa_grad()
 
           case('sst')
@@ -78,8 +84,13 @@ module gradients
       end if
     end subroutine setup_gradients
 
+
+
     subroutine destroy_gradients
+      
       implicit none
+
+      DebugCall("destroy_gradients")
 
       if(mu_ref/=0)then
 
@@ -95,7 +106,7 @@ module gradients
             !do nothing
             continue
 
-          case('sa')
+          case('sa', 'saBC')
             call destroy_sa_grad()
 
           case('sst')
@@ -115,8 +126,12 @@ module gradients
     end subroutine destroy_gradients
 
 
+
     subroutine get_n_grad()
+
       implicit none
+
+      DebugCall("get_n_grad")
 
       select case (trim(turbulence))
         
@@ -124,7 +139,7 @@ module gradients
           !do nothing
           continue
 
-        case ('sa')
+        case ('sa', 'saBC')
           n_grad = 5
 
         case('sst')
@@ -142,28 +157,26 @@ module gradients
     end subroutine get_n_grad
 
 
+
     subroutine allocate_memory()
+
       implicit none
 
-      call dmsg(1, 'gradients', 'allocate_memory')
+      DebugCall("allocate_memory")
 
-      call alloc(gradqp_x, 0, imx, 0, jmx, 0, kmx, 1, n_grad,&
-              errmsg='Error: Unable to allocate memory for ' // &
-                  'Gradu_x - gradients')
-      call alloc(gradqp_y, 0, imx, 0, jmx, 0, kmx, 1, n_grad, &
-              errmsg='Error: Unable to allocate memory for ' // &
-                  'Gradu_y - gradients')
-      call alloc(gradqp_z, 0, imx, 0, jmx, 0, kmx, 1, n_grad, &
-              errmsg='Error: Unable to allocate memory for ' // &
-                  'Gradu_z - gradients')
+      call alloc(gradqp_x, 0, imx, 0, jmx, 0, kmx, 1, n_grad, AErrMsg("gradqp_x"))
+      call alloc(gradqp_y, 0, imx, 0, jmx, 0, kmx, 1, n_grad, AErrMsg("gradqp_y"))
+      call alloc(gradqp_z, 0, imx, 0, jmx, 0, kmx, 1, n_grad, AErrMsg("gradqp_z"))
 
     end subroutine allocate_memory
 
 
+
     subroutine destroy_memory()
+
       implicit none
 
-      call dmsg(1, 'gradients', 'destroy_memory')
+      DebugCall("deallocate_memory")
 
       call dealloc(gradqp_x)
       call dealloc(gradqp_y)
@@ -171,5 +184,6 @@ module gradients
 
     end subroutine destroy_memory
     
+
 
 end module gradients

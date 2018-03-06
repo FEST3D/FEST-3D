@@ -90,7 +90,7 @@ module check_output_control
 
           case('tv')
             select case (trim(turbulence))
-              case('sa')
+              case('sa', 'saBC')
                 w_list(n) = "tv"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -279,7 +279,7 @@ module check_output_control
 
           case('dtvdx')
             select case (trim(turbulence))
-              case('sa')
+              case('sa', 'saBC')
                 w_list(n) = "Dtvdx"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -288,7 +288,7 @@ module check_output_control
 
           case('dtvdy')
             select case (trim(turbulence))
-              case('sa')
+              case('sa', 'saBC')
                 w_list(n) = "Dtvdy"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -297,8 +297,17 @@ module check_output_control
 
           case('dtvdz')
             select case (trim(turbulence))
-              case('sa')
+              case('sa', 'saBC')
                 w_list(n) = "Dtvdz"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+          case('intermittency')
+            select case (trim(turbulence))
+              case('saBC')
+                w_list(n) = "intermittency"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
                 w_list(n) = "do not write"
@@ -408,9 +417,9 @@ module check_output_control
 
           case('tv')
             select case (trim(turbulence))
-              case('sa')
+              case('sa', 'saBC')
                 select case (trim(previous_flow_type))
-                  case('sa')
+                  case('sa', 'saBC')
                     r_list(n) = "tv"
                   case DEFAULT
                     print*, err//trim(w_list(n))//" to file"

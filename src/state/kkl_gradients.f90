@@ -4,7 +4,9 @@ module kkl_gradients
   !          - first build
   ! aim : link kkl pointer to allocated memory for gradients
   !---------------------------------------------------------------
+#include "../debug.h"
 
+  use global_vars,  only : process_id
   use global_vars,  only : imx
   use global_vars,  only : jmx
   use global_vars,  only : kmx
@@ -29,9 +31,10 @@ module kkl_gradients
   contains
 
     subroutine setup_kkl_grad()
+
       implicit none
 
-      call dmsg(1, 'gradients', 'setup_kkl_grad')
+      DebugCall('setup_kkl_grad')
 
       gradtk_x(0:imx, 0:jmx, 0:kmx) => gradqp_x(:, :, :, 5)
       gradtkl_x(0:imx, 0:jmx, 0:kmx) => gradqp_x(:, :, :, 6)
@@ -46,9 +49,10 @@ module kkl_gradients
 
 
     subroutine destroy_kkl_grad()
+
       implicit none
 
-      call dmsg(1, 'gradients', 'destroy_kkl_grad')
+      DebugCall('destroy_kkl_grad')
 
       nullify(gradtk_x)
       nullify(gradtkl_x)

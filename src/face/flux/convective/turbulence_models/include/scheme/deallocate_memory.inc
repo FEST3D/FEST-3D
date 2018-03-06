@@ -14,7 +14,7 @@
           case ("kkl")
               include "turbulence_models/kkl/scheme/deallocate_memory.inc"
 
-          case ("sa")
+          case ("sa", "saBC")
               include "turbulence_models/sa/scheme/deallocate_memory.inc"
 
           case ("ke")
