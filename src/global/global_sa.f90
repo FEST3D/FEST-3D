@@ -12,4 +12,7 @@ module global_sa
 
   real, parameter  :: cw1    = (cb1/(kappa_sa**2)) + ((1+cb2)/sigma_sa)
 
+  real, parameter  :: cv1_3 = cv1**3
+  real, parameter  :: cw3_6 = cw3**6
+
 end module global_sa

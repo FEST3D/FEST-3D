@@ -133,7 +133,7 @@ module write_output_tec
             call write_scalar(tv, "tv", -2)
 
           case('Wall_distance')
-            call write_scalar(dist, "Wall_dist", 1)
+            call write_scalar(dist, "Wall_dist", -2)
 
           case('F1')
             call write_scalar(sst_F1, "F1",  -2)

@@ -451,7 +451,7 @@ module update
                       rsa    = min(U1(6)/(Scap*kd2), 10.0)
                       g    = rsa + cw2*(rsa**6 - rsa)
                       fw   = g*( (1.0+cw3**6)/(g**6+cw3**6) )**(1.0/6.0)
-                      !R(6) = R(6)/(1.+((-1.0*u1(1)*cb1*scap)+(2.0*u1(1)*cw1*fw*u1(6)/(dist(i,j,k)**2)))*delta_t(i,j,k))
+                      R(6) = R(6)/(1.+((-1.0*u1(1)*cb1*scap)+(2.0*u1(1)*cw1*fw*u1(6)/(dist(i,j,k)**2)))*delta_t(i,j,k))
                     case DEFAULT
                       Fatal_error
                   end select
