@@ -2,6 +2,8 @@ module write_output_vtk
   !---------------------------------------------------------
   ! This module write state + other variable in output file
   !---------------------------------------------------------
+#include "../../debug.h"
+#include "../../error.h"
   use global     , only : OUT_FILE_UNIT
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
@@ -47,7 +49,13 @@ module write_output_vtk
   use global_vars, only : energy_residue
   use global_vars, only : TKE_residue
   use global_vars, only : intermittency
+  use global_vars, only : ExtraVar1
+  use global_vars, only : ExtraVar2
+  use global_vars, only : ExtraVar3
+  use global_vars, only : ExtraVar4
+  use global_vars, only : ExtraVar5
 
+  use global_vars, only : process_id
   use global_vars, only : turbulence
   use global_vars, only : mu_ref
   use global_vars, only : current_iter
@@ -94,6 +102,7 @@ module write_output_vtk
       implicit none
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
+      DebugCall("write_file")
 
       call write_header()
       call write_grid()
@@ -204,6 +213,41 @@ module write_output_vtk
           case('intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
           
+          case('extravar1')
+            if(allocated(ExtraVar1))then
+              call write_scalar(ExtraVar1, "ExtraVar1", -2)
+            else
+              Issue_warning
+            end if
+          
+          case('extravar2')
+            if(allocated(ExtraVar2))then
+              call write_scalar(ExtraVar2, "ExtraVar2", -2)
+            else
+              Issue_warning
+            end if
+          
+          case('extravar3')
+            if(allocated(ExtraVar3))then
+              call write_scalar(ExtraVar3, "ExtraVar3", -2)
+            else
+              Issue_warning
+            end if
+          
+          case('extravar4')
+            if(allocated(ExtraVar4))then
+              call write_scalar(ExtraVar4, "ExtraVar4", -2)
+            else
+              Issue_warning
+            end if
+          
+          case('extravar5')
+            if(allocated(ExtraVar5))then
+              call write_scalar(ExtraVar5, "ExtraVar5", -2)
+            else
+              Issue_warning
+            end if
+          
           case('do not write')
             ! do nothing
             continue
@@ -221,7 +265,7 @@ module write_output_vtk
     subroutine write_header()
       implicit none
 
-      call dmsg(1, 'write_output_vtk', 'write_header')
+      DebugCall("write_header")
 
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, fmt='(a)') '# vtk DataFile Version 3.1'
@@ -244,7 +288,7 @@ module write_output_vtk
       implicit none
 
       ! write grid point coordinates
-      call dmsg(1, 'write_output_vtk', 'write_grid')
+      DebugCall("write_grid")
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, fmt='(a, i0, a, i0, a, i0)') &
             'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
@@ -279,7 +323,7 @@ module write_output_vtk
 
     subroutine write_velocity()
       implicit none
-      call dmsg(1, 'write_output_vtk', 'write_velocity')
+      DebugCall("write_velocity")
 
         ! Cell data
         ! Writing Velocity
@@ -314,7 +358,7 @@ module write_output_vtk
     subroutine write_resnorm()
       implicit none
 
-      call dmsg(1, 'write_output_vtk', 'write_resnorm')
+      DebugCall("write_resnorm")
       ! Writing resnorm for each cell
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, '(a)') 'SCALARS Resnorm FLOAT'
@@ -426,7 +470,7 @@ module write_output_vtk
       character(len=*),       intent(in):: name
       character(len=128)                  :: line
 
-      call dmsg(1, 'write_output_vtk', trim(name))
+      DebugCall("write_scalar: "//trim(name))
 
       if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, '(a)') 'SCALARS '//trim(name)//' FLOAT'

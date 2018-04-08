@@ -313,6 +313,9 @@ module check_output_control
                 w_list(n) = "do not write"
              end select
 
+          case('extravar1','extravar2', 'extravar3', 'extravar4', 'extravar5')
+            w_list(n) = trim(lcase(w_list(n)))
+
           case Default
             print*, err//trim(w_list(n))//" to file"
             w_list(n) = "do not write"

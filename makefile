@@ -1,19 +1,23 @@
 #compiler options
 program := FEST3D
-FC 			 = $(IFC)
-FFLAGS	 = $(IFFLAGS)
+FC 			 = $(GFC)
+FFLAGS	 = $(GFFLAGS)
+MODOPT   = $(GMODOPT) 
 VPATH 	:= src
 BINDIR	:= bin
 OBJDIR	:= obj
 MODDIR	:= mod
 GFC 		:= mpif90
 #IFC 		:= scorep mpif90 -f90=ifort
-#IFC 		:= mpif90 -f90=ifort
-IFC 		:= /usr/local/mpich/bin/mpifort
-MODOPT  := module 
+IFC 		:= mpifort -fc=ifort
+#IFC 		:= /usr/local/mpich/bin/mpifort
+GMODOPT := J
+IMODOPT := module
+
 
 MAKEFLAGS += --silent
-GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
+GFFLAGS	:= -Og -Wall -Wextra -Wconversion \
+	        -ffree-line-length-256 \
 					-Wno-compare-reals \
 					-fdefault-real-8 \
 					-Waliasing \
@@ -21,8 +25,8 @@ GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 					-Wintrinsic-shadow \
 					-pedantic-errors \
 					-fbounds-check \
-					-Werror \
 					-cpp
+					#-Werror \
 
 IFFLAGS := -O3 -g -free -r8 -traceback \
 					 -L/sware/intel/mkl/lib/intel64 \

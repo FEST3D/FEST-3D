@@ -54,6 +54,11 @@ module state
     use global_vars, only : turbulence
     use global_vars, only : infile
     use global_vars, only : intermittency
+    use global_vars, only : ExtraVar1
+    use global_vars, only : ExtraVar2
+    use global_vars, only : ExtraVar3
+    use global_vars, only : ExtraVar4
+    use global_vars, only : ExtraVar5
     
     use global_vars, only  : free_stream_density
     use global_vars, only  : free_stream_x_speed
@@ -64,6 +69,7 @@ module state
     use global_vars, only  : free_stream_tw
     use global_vars, only  : vel_mag
     use global_vars, only  : MInf
+    use global_vars, only  : Reynolds_number
 
 
     use utils,       only: alloc, dealloc, dmsg
@@ -219,6 +225,10 @@ module state
             if(trim(turbulence)=="saBC")then
               call alloc(intermittency, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("intermittency"))
             end if
+            call alloc(ExtraVar1, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar1"))
+            call alloc(ExtraVar2, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar2"))
+            call alloc(ExtraVar3, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar3"))
+            call alloc(ExtraVar4, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar4"))
             
         end subroutine allocate_memory
 
@@ -297,6 +307,7 @@ module state
             pressure_inf = free_stream_pressure
             vel_mag = sqrt(x_speed_inf**2 + y_speed_inf**2 + z_speed_inf**2)
             MInf    = Vel_mag/sqrt(gm*pressure_inf/density_inf)
+            Reynolds_number = density_inf*vel_mag*1.0/mu_ref
 
             select case (trim(turbulence))
                 

@@ -2,6 +2,8 @@ module write_output_tec
   !---------------------------------------------------------
   ! This module write state + other variable in output file
   !---------------------------------------------------------
+#include "../../debug.h"
+#include "../../error.h"
   use global     , only : OUT_FILE_UNIT
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
@@ -46,6 +48,11 @@ module write_output_tec
   use global_vars, only : energy_residue
   use global_vars, only : TKE_residue
   use global_vars, only : intermittency
+  use global_vars, only : ExtraVar1
+  use global_vars, only : ExtraVar2
+  use global_vars, only : ExtraVar3
+  use global_vars, only : ExtraVar4
+  use global_vars, only : ExtraVar5
 
   use global_vars, only : turbulence
   use global_vars, only : mu_ref
@@ -96,6 +103,7 @@ module write_output_tec
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
+      DebugCall("write_file")
       call write_header()
       call write_grid()
 
@@ -209,6 +217,41 @@ module write_output_tec
 
           case('intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
+
+          case('extravar1')
+            if(allocated(ExtraVar1))then
+              call write_scalar(ExtraVar1, "ExtraVar1", -2)
+            else
+              Issue_warning
+            end if
+          
+          case('extravar2')
+            if(allocated(ExtraVar2))then
+              call write_scalar(ExtraVar2, "ExtraVar2", -2)
+            else
+              Issue_warning
+            end if
+          
+          case('extravar3')
+            if(allocated(ExtraVar3))then
+              call write_scalar(ExtraVar3, "ExtraVar3", -2)
+            else
+              Issue_warning
+            end if
+          
+          case('extravar4')
+            if(allocated(ExtraVar4))then
+              call write_scalar(ExtraVar4, "ExtraVar4", -2)
+            else
+              Issue_warning
+            end if
+          
+          case('extravar5')
+            if(allocated(ExtraVar5))then
+              call write_scalar(ExtraVar5, "ExtraVar5", -2)
+            else
+              Issue_warning
+            end if
           
           case('do not write')
             ! do not write
@@ -229,7 +272,7 @@ module write_output_tec
       integer :: n
       integer :: total
 
-      call dmsg(1, 'write_output_vtk', 'write_header')
+      DebugCall("write_header")
       write(OUT_FILE_UNIT,'(a)') "variables = x y z "
 
       total=3
@@ -266,7 +309,7 @@ module write_output_tec
       implicit none
 
       ! write grid point coordinates
-      call dmsg(1, 'write_output_tec', 'write_grid')
+      DebugCall("write_grid")
       write(OUT_FILE_UNIT, format) (((grid_x(i, j, k),i=1,imx), j=1,jmx), k=1,kmx)
       write(OUT_FILE_UNIT, format) (((grid_y(i, j, k),i=1,imx), j=1,jmx), k=1,kmx)
       write(OUT_FILE_UNIT, format) (((grid_z(i, j, k),i=1,imx), j=1,jmx), k=1,kmx)
@@ -279,7 +322,7 @@ module write_output_tec
       real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var
       character(len=*),       intent(in):: name
 
-      call dmsg(1, 'write_output_tec', trim(name))
+      DebugCall("write_scalar: "//trim(name))
 
       write(OUT_FILE_UNIT, format) (((var(i, j, k),i=1,imx-1), j=1,jmx-1), k=1,kmx-1)
 

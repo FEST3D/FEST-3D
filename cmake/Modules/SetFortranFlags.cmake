@@ -80,6 +80,12 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                          "-fdefault-real-8" # GNU
                 )
 
+# Set Free format
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+                 Fortran "-ffree-line-length-256" #GNU
+                         "-extend_soruce"                 #Intel
+                 )
+
 ###################
 ### DEBUG FLAGS ###
 ###################

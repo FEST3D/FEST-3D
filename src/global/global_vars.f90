@@ -107,6 +107,11 @@ module global_vars
   real                                    , pointer :: pressure_inf 
   real                                              :: MInf
   real, dimension(:, :, :), allocatable, target  :: intermittency
+  real, dimension(:, :, :), allocatable, target  :: ExtraVar1
+  real, dimension(:, :, :), allocatable, target  :: ExtraVar2
+  real, dimension(:, :, :), allocatable, target  :: ExtraVar3
+  real, dimension(:, :, :), allocatable, target  :: ExtraVar4
+  real, dimension(:, :, :), allocatable, target  :: ExtraVar5
 
   ! Freestram variable used to read file before inf pointer are linked and allocated
    ! read Rho_inf from control file
@@ -128,6 +133,7 @@ module global_vars
   real                                              :: free_stream_tv
   real                                              :: free_stream_tkl
   real                                              :: vel_mag ! free_stream velocity magnitude
+  real                                              :: Reynolds_number ! free_stream Reynolds_number
   real, dimension(:, :, :), allocatable             :: dist 
 
   ! state variable turbulent
