@@ -80,7 +80,11 @@ module ghost_gradients
       real    :: c_y
       real    :: c_z
       integer :: n
-      integer :: i,j,k
+      integer :: i,j,k,l
+      real    :: nx
+      real    :: ny
+      real    :: nz
+      real    :: dot
 
       !-----------------------------------------------------------
       ! gradqp_G = (qp_I - qp_G)*Area_W*unit_normal_G/(volume_G)
@@ -95,14 +99,18 @@ module ghost_gradients
           do k = 1,kmx-1
             do j = 1,jmx-1
               do i = 1,1
-                c_x  = xA(i,j,k)*xnx(i,j,k)/volume(i,j,k)
-                c_y  = xA(i,j,k)*xny(i,j,k)/volume(i,j,k)
-                c_z  = xA(i,j,k)*xnz(i,j,k)/volume(i,j,k)
+                nx   = xnx(i,j,k)
+                ny   = xny(i,j,k)
+                nz   = xnz(i,j,k)
+                c_x  = xA(i,j,k)*nx/volume(i,j,k)
+                c_y  = xA(i,j,k)*ny/volume(i,j,k)
+                c_z  = xA(i,j,k)*nz/volume(i,j,k)
                 T_I  = pressure(i  ,j,k)/(R_gas*density(i  ,j,k))
                 T_G  = pressure(i-1,j,k)/(R_gas*density(i-1,j,k))
                 qp_I = qp(i  ,j,k,2:n_var)
                 qp_G = qp(i-1,j,k,2:n_var)
 
+                ! normal component of gradient
                 gradqp_x(i-1,j,k,:) = (qp_I - qp_G)*c_x 
                 gradqp_y(i-1,j,k,:) = (qp_I - qp_G)*c_y
                 gradqp_z(i-1,j,k,:) = (qp_I - qp_G)*c_z
@@ -113,7 +121,15 @@ module ghost_gradients
                   gradqp_x(i-1,j,k,4) = -gradqp_x(i,j,k,4)
                   gradqp_y(i-1,j,k,4) = -gradqp_y(i,j,k,4)
                   gradqp_z(i-1,j,k,4) = -gradqp_z(i,j,k,4)
+
                 end if
+                !parallel component of gradient
+                do l=1,n
+                  dot = (gradqp_x(i,j,k,l)*nx) + (gradqp_y(i,j,k,l)*ny) + (gradqp_z(i,j,k,l)*nz)
+                  gradqp_x(i-1,j,k,l) = gradqp_x(i-1,j,k,l) + (gradqp_x(i,j,k,l) - dot*nx)
+                  gradqp_y(i-1,j,k,l) = gradqp_y(i-1,j,k,l) + (gradqp_y(i,j,k,l) - dot*ny)
+                  gradqp_z(i-1,j,k,l) = gradqp_z(i-1,j,k,l) + (gradqp_z(i,j,k,l) - dot*nz)
+                end do
               end do
             end do
           end do
@@ -122,14 +138,18 @@ module ghost_gradients
           do k = 1,kmx-1
             do j = 1,jmx-1
               do i = imx,imx
-                c_x  = xA(i,j,k)*xnx(i,j,k)/volume(i-1,j,k)
-                c_y  = xA(i,j,k)*xny(i,j,k)/volume(i-1,j,k)
-                c_z  = xA(i,j,k)*xnz(i,j,k)/volume(i-1,j,k)
+                nx   = xnx(i,j,k)
+                ny   = xny(i,j,k)
+                nz   = xnz(i,j,k)
+                c_x  = xA(i,j,k)*nx/volume(i-1,j,k)
+                c_y  = xA(i,j,k)*ny/volume(i-1,j,k)
+                c_z  = xA(i,j,k)*nz/volume(i-1,j,k)
                 T_I  = pressure(i-1,j,k)/(R_gas*density(i-1,j,k))
                 T_G  = pressure(i  ,j,k)/(R_gas*density(i  ,j,k))
                 qp_I = qp(i-1,j,k,2:n_var)
                 qp_G = qp(i  ,j,k,2:n_var)
 
+                ! normal component of gradient
                 gradqp_x(i,j,k,:) = -(qp_I - qp_G)*c_x 
                 gradqp_y(i,j,k,:) = -(qp_I - qp_G)*c_y
                 gradqp_z(i,j,k,:) = -(qp_I - qp_G)*c_z
@@ -141,6 +161,13 @@ module ghost_gradients
                 gradqp_y(i,j,k,4) = -gradqp_y(i-1,j,k,4)
                 gradqp_z(i,j,k,4) = -gradqp_z(i-1,j,k,4)
                 end if
+                !parallel component of gradient
+                do l=1,n
+                  dot = (gradqp_x(i-1,j,k,l)*nx) + (gradqp_y(i-1,j,k,l)*ny) + (gradqp_z(i-1,j,k,l)*nz)
+                  gradqp_x(i,j,k,l) = gradqp_x(i,j,k,l) + (gradqp_x(i-1,j,k,l) - dot*nx)
+                  gradqp_y(i,j,k,l) = gradqp_y(i,j,k,l) + (gradqp_y(i-1,j,k,l) - dot*ny)
+                  gradqp_z(i,j,k,l) = gradqp_z(i,j,k,l) + (gradqp_z(i-1,j,k,l) - dot*nz)
+                end do
               end do
             end do
           end do
@@ -150,14 +177,18 @@ module ghost_gradients
           do k = 1,kmx-1
             do j = 1,1
               do i = 1,imx-1
-                c_x  = yA(i,j,k)*ynx(i,j,k)/volume(i,j,k)
-                c_y  = yA(i,j,k)*yny(i,j,k)/volume(i,j,k)
-                c_z  = yA(i,j,k)*ynz(i,j,k)/volume(i,j,k)
+                nx   = ynx(i,j,k)
+                ny   = yny(i,j,k)
+                nz   = ynz(i,j,k)
+                c_x  = yA(i,j,k)*nx/volume(i,j,k)
+                c_y  = yA(i,j,k)*ny/volume(i,j,k)
+                c_z  = yA(i,j,k)*nz/volume(i,j,k)
                 T_I  = pressure(i,j  ,k)/(R_gas*density(i,j  ,k))
                 T_G  = pressure(i,j-1,k)/(R_gas*density(i,j-1,k))
                 qp_I = qp(i,j  ,k,2:n_var)
                 qp_G = qp(i,j-1,k,2:n_var)
 
+                ! normal component of gradient
                 gradqp_x(i,j-1,k,:) = (qp_I - qp_G)*c_x 
                 gradqp_y(i,j-1,k,:) = (qp_I - qp_G)*c_y
                 gradqp_z(i,j-1,k,:) = (qp_I - qp_G)*c_z
@@ -169,6 +200,13 @@ module ghost_gradients
                 gradqp_y(i,j-1,k,4) = -gradqp_y(i,j,k,4)
                 gradqp_z(i,j-1,k,4) = -gradqp_z(i,j,k,4)
                 end if
+                !parallel component of gradient
+                do l=1,n
+                  dot = (gradqp_x(i,j,k,l)*nx) + (gradqp_y(i,j,k,l)*ny) + (gradqp_z(i,j,k,l)*nz)
+                  gradqp_x(i,j-1,k,l) = gradqp_x(i,j-1,k,l) + (gradqp_x(i,j,k,l) - dot*nx)
+                  gradqp_y(i,j-1,k,l) = gradqp_y(i,j-1,k,l) + (gradqp_y(i,j,k,l) - dot*ny)
+                  gradqp_z(i,j-1,k,l) = gradqp_z(i,j-1,k,l) + (gradqp_z(i,j,k,l) - dot*nz)
+                end do
               end do
             end do
           end do
@@ -177,14 +215,18 @@ module ghost_gradients
           do k = 1,kmx-1
             do j = jmx,jmx
               do i = 1,imx-1
-                c_x  = yA(i,j,k)*ynx(i,j,k)/volume(i,j-1,k)
-                c_y  = yA(i,j,k)*yny(i,j,k)/volume(i,j-1,k)
-                c_z  = yA(i,j,k)*ynz(i,j,k)/volume(i,j-1,k)
+                nx   = ynx(i,j,k)
+                ny   = yny(i,j,k)
+                nz   = ynz(i,j,k)
+                c_x  = yA(i,j,k)*nx/volume(i,j,k)
+                c_y  = yA(i,j,k)*ny/volume(i,j,k)
+                c_z  = yA(i,j,k)*nz/volume(i,j,k)
                 T_I  = pressure(i,j-1,k)/(R_gas*density(i,j-1,k))
                 T_G  = pressure(i,j  ,k)/(R_gas*density(i,j  ,k))
                 qp_I = qp(i,j-1,k,2:n_var)
                 qp_G = qp(i,j  ,k,2:n_var)
 
+                ! normal component of gradient
                 gradqp_x(i,j,k,:) = -(qp_I - qp_G)*c_x 
                 gradqp_y(i,j,k,:) = -(qp_I - qp_G)*c_y
                 gradqp_z(i,j,k,:) = -(qp_I - qp_G)*c_z
@@ -196,6 +238,13 @@ module ghost_gradients
                 gradqp_y(i,j,k,4) = -gradqp_y(i,j-1,k,4)
                 gradqp_z(i,j,k,4) = -gradqp_z(i,j-1,k,4)
                 end if
+                !parallel component of gradient
+                do l=1,n
+                  dot = (gradqp_x(i,j-1,k,l)*nx) + (gradqp_y(i,j-1,k,l)*ny) + (gradqp_z(i,j-1,k,l)*nz)
+                  gradqp_x(i,j,k,l) = gradqp_x(i,j,k,l) + (gradqp_x(i,j-1,k,l) - dot*nx)
+                  gradqp_y(i,j,k,l) = gradqp_y(i,j,k,l) + (gradqp_y(i,j-1,k,l) - dot*ny)
+                  gradqp_z(i,j,k,l) = gradqp_z(i,j,k,l) + (gradqp_z(i,j-1,k,l) - dot*nz)
+                end do
               end do
             end do
           end do
@@ -205,14 +254,18 @@ module ghost_gradients
           do k = 1,1
             do j = 1,jmx-1
               do i = 1,imx-1
-                c_x  = zA(i,j,k)*znx(i,j,k)/volume(i,j,k)
-                c_y  = zA(i,j,k)*zny(i,j,k)/volume(i,j,k)
-                c_z  = zA(i,j,k)*znz(i,j,k)/volume(i,j,k)
+                nx   = znx(i,j,k)
+                ny   = zny(i,j,k)
+                nz   = znz(i,j,k)
+                c_x  = zA(i,j,k)*nx/volume(i,j,k)
+                c_y  = zA(i,j,k)*ny/volume(i,j,k)
+                c_z  = zA(i,j,k)*nz/volume(i,j,k)
                 T_I  = pressure(i,j,k  )/(R_gas*density(i,j,k  ))
                 T_G  = pressure(i,j,k-1)/(R_gas*density(i,j,k-1))
                 qp_I = qp(i,j,k  ,2:n_var)
                 qp_G = qp(i,j,k-1,2:n_var)
 
+                ! normal component of gradient
                 gradqp_x(i,j,k-1,:) = (qp_I - qp_G)*c_x 
                 gradqp_y(i,j,k-1,:) = (qp_I - qp_G)*c_y
                 gradqp_z(i,j,k-1,:) = (qp_I - qp_G)*c_z
@@ -224,6 +277,13 @@ module ghost_gradients
                 gradqp_y(i,j,k-1,4) = -gradqp_y(i,j,k,4)
                 gradqp_z(i,j,k-1,4) = -gradqp_z(i,j,k,4)
                 end if
+                !parallel component of gradient
+                do l=1,n
+                  dot = (gradqp_x(i,j,k,l)*nx) + (gradqp_y(i,j,k,l)*ny) + (gradqp_z(i,j,k,l)*nz)
+                  gradqp_x(i,j,k-1,l) = gradqp_x(i,j,k-1,l) + (gradqp_x(i,j,k,l) - dot*nx)
+                  gradqp_y(i,j,k-1,l) = gradqp_y(i,j,k-1,l) + (gradqp_y(i,j,k,l) - dot*ny)
+                  gradqp_z(i,j,k-1,l) = gradqp_z(i,j,k-1,l) + (gradqp_z(i,j,k,l) - dot*nz)
+                end do
               end do
             end do
           end do
@@ -232,14 +292,18 @@ module ghost_gradients
           do k = kmx,kmx
             do j = 1,jmx-1
               do i = 1,imx-1
-                c_x  = zA(i,j,k)*znx(i,j,k)/volume(i,j,k-1)
-                c_y  = zA(i,j,k)*zny(i,j,k)/volume(i,j,k-1)
-                c_z  = zA(i,j,k)*znz(i,j,k)/volume(i,j,k-1)
+                nx   = znx(i,j,k)
+                ny   = zny(i,j,k)
+                nz   = znz(i,j,k)
+                c_x  = zA(i,j,k)*nx/volume(i,j,k)
+                c_y  = zA(i,j,k)*ny/volume(i,j,k)
+                c_z  = zA(i,j,k)*nz/volume(i,j,k)
                 T_I  = pressure(i,j,k-1)/(R_gas*density(i,j,k-1))
                 T_G  = pressure(i,j,k  )/(R_gas*density(i,j,k  ))
                 qp_I = qp(i,j,k-1,2:n_var)
                 qp_G = qp(i,j,k  ,2:n_var)
 
+                ! normal component of gradient
                 gradqp_x(i,j,k,:) = -(qp_I - qp_G)*c_x 
                 gradqp_y(i,j,k,:) = -(qp_I - qp_G)*c_y
                 gradqp_z(i,j,k,:) = -(qp_I - qp_G)*c_z
@@ -251,6 +315,13 @@ module ghost_gradients
                 gradqp_y(i,j,k,4) = -gradqp_y(i,j,k-1,4)
                 gradqp_z(i,j,k,4) = -gradqp_z(i,j,k-1,4)
                 end if
+                !parallel component of gradient
+                do l=1,n
+                  dot = (gradqp_x(i,j,k-1,l)*nx) + (gradqp_y(i,j,k-1,l)*ny) + (gradqp_z(i,j,k-1,l)*nz)
+                  gradqp_x(i,j,k,l) = gradqp_x(i,j,k,l) + (gradqp_x(i,j,k-1,l) - dot*nx)
+                  gradqp_y(i,j,k,l) = gradqp_y(i,j,k,l) + (gradqp_y(i,j,k-1,l) - dot*ny)
+                  gradqp_z(i,j,k,l) = gradqp_z(i,j,k,l) + (gradqp_z(i,j,k-1,l) - dot*nz)
+                end do
               end do
             end do
           end do

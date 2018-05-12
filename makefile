@@ -16,7 +16,7 @@ IMODOPT := module
 
 
 MAKEFLAGS += --silent
-GFFLAGS	:= -Og -Wall -Wextra -Wconversion \
+GFFLAGS	:= -O3 -Wall -Wextra -Wconversion \
 	        -ffree-line-length-256 \
 					-Wno-compare-reals \
 					-fdefault-real-8 \

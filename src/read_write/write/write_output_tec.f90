@@ -215,6 +215,9 @@ module write_output_tec
           case('Energy_residue')
             call write_scalar(energy_residue, "Energy_residue", 1)
 
+          case('TKE_residue')
+            call write_scalar(tke_residue, "TKE_residue", 1)
+
           case('intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
 

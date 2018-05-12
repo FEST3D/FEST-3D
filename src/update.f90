@@ -412,7 +412,7 @@ module update
                   u1(2:) = Quse(i,j,k,2:)*u1(1)
                   select case(turbulence)
                     case('sst', 'kkl')
-                      KE = u1(6)
+                      KE = 0.0!u1(6)
                     case('sa','saBC')
                       KE=0.0
                     case DEFAULT
@@ -470,7 +470,7 @@ module update
                   u2(2:) = u2(2:)/u2(1)
                   select case(turbulence)
                     case('sst', 'kkl')
-                      KE = u2(6)
+                      KE = 0.0!u2(6)
                     case('sa', 'saBC')
                       !u2(6) = u2(6)*u2(1)
                       KE=0.0

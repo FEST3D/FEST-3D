@@ -20,9 +20,11 @@ module time
   use global_vars, only : pressure
   use global_vars, only : gm
   use global_vars, only : Pr
+  use global_vars, only : tPr
   use global_vars, only : R_gas
   use global_vars, only : mu_ref
   use global_vars, only : mu
+  use global_vars, only : mu_t
 
   use global_vars, only : CFL
   use global_vars, only : total_process
@@ -235,6 +237,9 @@ module time
             if(mu_ref/=0.0) then
               call add_viscous_time()
             end if
+            if(mu_ref/=0 .and. trim(turbulence)/='none')then
+              call add_turbulent_time()
+            end if
 
         end subroutine compute_local_time_step
 
@@ -379,4 +384,69 @@ module time
          end do
         end do
       end subroutine add_viscous_time
+
+      subroutine add_turbulent_time()
+        implicit none
+
+        real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
+        integer :: i, j, k
+
+        call dmsg(1, 'time', 'add_viscous_time_step')
+
+        do k = 1, kmx - 1
+         do j = 1, jmx - 1
+          do i = 1, imx - 1
+
+           ! Faces with lower index
+
+           
+           ! For left face: i.e., lower index face along xi direction
+           lmx1 = mu_t(i,j,k)/(density(i,j,k)*abs( &
+                ((CellCenter(i-1,j,k,1) - CellCenter(i,j,k,1)) * xnx(i, j, k)) + &
+                ((CellCenter(i-1,j,k,2) - CellCenter(i,j,k,2)) * xny(i, j, k)) + &
+                ((CellCenter(i-1,j,k,3) - CellCenter(i,j,k,3)) * xnz(i, j, k))))
+           ! For front face, i.e., lower index face along eta direction
+           lmx2 = mu_t(i,j,k)/(density(i,j,k)*abs( &
+                ((CellCenter(i,j-1,k,1) - CellCenter(i,j,k,1)) * ynx(i, j, k)) + &
+                ((CellCenter(i,j-1,k,2) - CellCenter(i,j,k,2)) * yny(i, j, k)) + &
+                ((CellCenter(i,j-1,k,3) - CellCenter(i,j,k,3)) * ynz(i, j, k))))
+           ! For bottom face, i.e., lower index face along zeta direction
+           lmx3 = mu_t(i,j,k)/(density(i,j,k)*abs( &
+                ((CellCenter(i,j,k-1,1) - CellCenter(i,j,k,1)) * znx(i, j, k)) + &
+                ((CellCenter(i,j,k-1,2) - CellCenter(i,j,k,2)) * zny(i, j, k)) + &
+                ((CellCenter(i,j,k-1,3) - CellCenter(i,j,k,3)) * znz(i, j, k))))
+
+           
+           ! For right face, i.e., higher index face along xi direction
+           lmx4 = mu_t(i+1,j,k)/(density(i+1,j,k)*abs( &
+                ((CellCenter(i,j,k,1) - CellCenter(i+1,j,k,1)) * xnx(i+1, j, k)) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i+1,j,k,2)) * xny(i+1, j, k)) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i+1,j,k,3)) * xnz(i+1, j, k))))
+           ! For back face, i.e., higher index face along eta direction
+           lmx5 = mu_t(i,j+1,k)/(density(i,j+1,k)*abs( &
+                ((CellCenter(i,j,k,1) - CellCenter(i,j+1,k,1)) * ynx(i, j+1, k)) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i,j+1,k,2)) * yny(i, j+1, k)) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i,j+1,k,3)) * ynz(i, j+1, k))))
+           ! For top face, i.e., higher index face along zeta direction
+           lmx6 = mu_t(i,j,k+1)/(density(i,j,k+1)*abs( &
+                ((CellCenter(i,j,k,1) - CellCenter(i,j,k+1,1)) * znx(i, j, k+1)) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i,j,k+1,2)) * zny(i, j, k+1)) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i,j,k+1,3)) * znz(i, j, k+1))))
+
+           lmxsum = (xA(i, j, k) * lmx1) + &
+                    (yA(i, j, k) * lmx2) + &
+                    (zA(i, j, k) * lmx3) + &
+                    (xA(i+1, j, k) * lmx4) + &
+                    (yA(i, j+1, k) * lmx5) + &
+                    (zA(i, j, k+1) * lmx6)
+
+           lmxsum = gm*lmxsum/tPr
+
+           lmxsum = 2./(lmxsum + (2.*CFL*volume(i,j,k)/delta_t(i,j,k)))
+        
+           delta_t(i, j, k) = CFL*( lmxsum * volume(i, j, k))
+          end do
+         end do
+        end do
+      end subroutine add_turbulent_time
 end module time
