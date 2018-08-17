@@ -19,6 +19,7 @@ module bc_primitive
   use global_vars, only: fixed_tk
   use global_vars, only: fixed_tw
   use global_vars, only: fixed_tkl
+  use global_vars, only: fixed_tgm
   use global_vars, only: fixed_wall_temperature
   use global_vars, only: fixed_Ttemperature
   use global_vars, only: fixed_Tpressure
@@ -35,11 +36,13 @@ module bc_primitive
   use global_vars, only: tw
   use global_vars, only: tkl
   use global_vars, only: tv
+  use global_vars, only: tgm
   use global_vars, only: accur
   use global_vars, only: imx
   use global_vars, only: jmx
   use global_vars, only: kmx
   use global_vars, only: turbulence
+  use global_vars, only: transition
   use global_vars, only: xnx
   use global_vars, only: xny
   use global_vars, only: xnz
@@ -57,6 +60,7 @@ module bc_primitive
   use global_vars, only: tw_inf
   use global_vars, only: te_inf
   use global_vars, only: tv_inf
+  use global_vars, only: tgm_inf
   use global_vars, only: tkl_inf
   use global_vars, only: face_names
   use global_vars, only: id
@@ -144,22 +148,22 @@ module bc_primitive
 !        qp(0,:,kmx,:) = 0.5*(qp(0,:,kmx-1,:)+qp(1,:,kmx,:))
 !        qp(imx,:,0,:) = 0.5*(qp(imx,:,1,:)+qp(imx-1,:,0,:))
 !        qp(imx,:,kmx,:) = 0.5*(qp(imx,:,jmx-1,:)+qp(imx-1,:,jmx,:))
-         !qp(:,0,0,:) = 0.33*(qp(:,1,1,:)+qp(:,0,1,:)+qp(:,1,0,:))
-         !qp(:,0,kmx,:) = 0.33*(qp(:,1,kmx-1,:)+qp(:,0,kmx-1,:)+qp(:,1,kmx,:))
-         !qp(:,jmx,0,:)   = 0.33*(qp(:,jmx-1,1,:)+qp(:,jmx,1,:)+qp(:,jmx-1,0,:))
-         !qp(:,jmx,kmx,:) = 0.33*(qp(:,jmx-1,kmx-1,:)+qp(:,jmx,kmx-1,:)+qp(:,jmx-1,kmx,:))
-         !qp(imx,0,:,:) = 0.33*(qp(imx-1,1,:,:)+qp(imx-1,0,:,:)+qp(imx,1,:,:))
-         !qp(0,0,:,:) = 0.33*(qp(1,1,:,:)+qp(1,0,:,:)+qp(0,1,:,:))
-         !qp(0,jmx,:,:)   = 0.33*(qp(1,jmx-1,:,:)+qp(1,jmx,:,:)+qp(0,jmx-1,:,:))
-         !qp(imx,jmx,:,:) = 0.33*(qp(imx-1,jmx-1,:,:)+qp(imx-1,jmx,:,:)+qp(imx,jmx-1,:,:))
-         !qp(0,0,0,:) = 0.33*(qp(1,0,0,:) + qp(0,1,0,:) + qp(0,0,1,:))
-         !qp(imx,0,0,:) = 0.33*(qp(imx-1,0,0,:) + qp(imx,1,0,:) + qp(imx,0,1,:))
-         !qp(0,jmx,0,:) = 0.33*(qp(1,jmx,0,:) + qp(0,jmx-1,0,:) + qp(0,jmx,1,:))
-         !qp(0,0,kmx,:) = 0.33*(qp(1,0,kmx,:) + qp(0,1,kmx,:) + qp(0,0,kmx-1,:))
-         !qp(imx,jmx,0,:) = 0.33*(qp(imx-1,jmx,0,:) + qp(imx,jmx-1,0,:) + qp(imx,jmx,1,:))
-         !qp(imx,0,kmx,:) = 0.33*(qp(imx-1,0,kmx,:) + qp(imx,1,kmx,:) + qp(imx,0,kmx-1,:))
-         !qp(0,jmx,kmx,:) = 0.33*(qp(1,jmx,kmx,:) + qp(0,jmx-1,kmx,:) + qp(0,jmx,kmx-1,:))
-         !qp(imx,jmx,kmx,:) = 0.33*(qp(imx-1,jmx,kmx,:) + qp(imx,jmx-1,kmx,:) + qp(imx,jmx,kmx-1,:))
+         qp(:,0,0,:) = 0.33*(qp(:,1,1,:)+qp(:,0,1,:)+qp(:,1,0,:))
+         qp(:,0,kmx,:) = 0.33*(qp(:,1,kmx-1,:)+qp(:,0,kmx-1,:)+qp(:,1,kmx,:))
+         qp(:,jmx,0,:)   = 0.33*(qp(:,jmx-1,1,:)+qp(:,jmx,1,:)+qp(:,jmx-1,0,:))
+         qp(:,jmx,kmx,:) = 0.33*(qp(:,jmx-1,kmx-1,:)+qp(:,jmx,kmx-1,:)+qp(:,jmx-1,kmx,:))
+         qp(imx,0,:,:) = 0.33*(qp(imx-1,1,:,:)+qp(imx-1,0,:,:)+qp(imx,1,:,:))
+         qp(0,0,:,:) = 0.33*(qp(1,1,:,:)+qp(1,0,:,:)+qp(0,1,:,:))
+         qp(0,jmx,:,:)   = 0.33*(qp(1,jmx-1,:,:)+qp(1,jmx,:,:)+qp(0,jmx-1,:,:))
+         qp(imx,jmx,:,:) = 0.33*(qp(imx-1,jmx-1,:,:)+qp(imx-1,jmx,:,:)+qp(imx,jmx-1,:,:))
+         qp(0,0,0,:) = 0.33*(qp(1,0,0,:) + qp(0,1,0,:) + qp(0,0,1,:))
+         qp(imx,0,0,:) = 0.33*(qp(imx-1,0,0,:) + qp(imx,1,0,:) + qp(imx,0,1,:))
+         qp(0,jmx,0,:) = 0.33*(qp(1,jmx,0,:) + qp(0,jmx-1,0,:) + qp(0,jmx,1,:))
+         qp(0,0,kmx,:) = 0.33*(qp(1,0,kmx,:) + qp(0,1,kmx,:) + qp(0,0,kmx-1,:))
+         qp(imx,jmx,0,:) = 0.33*(qp(imx-1,jmx,0,:) + qp(imx,jmx-1,0,:) + qp(imx,jmx,1,:))
+         qp(imx,0,kmx,:) = 0.33*(qp(imx-1,0,kmx,:) + qp(imx,1,kmx,:) + qp(imx,0,kmx-1,:))
+         qp(0,jmx,kmx,:) = 0.33*(qp(1,jmx,kmx,:) + qp(0,jmx-1,kmx,:) + qp(0,jmx,kmx-1,:))
+         qp(imx,jmx,kmx,:) = 0.33*(qp(imx-1,jmx,kmx,:) + qp(imx,jmx-1,kmx,:) + qp(imx,jmx,kmx-1,:))
 
       end subroutine populate_ghost_primitive
 
@@ -179,7 +183,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call fix(tv, fixed_tv, face)
-          case('sst')
+          case('sst', 'sst2003')
             call check_if_value_fixed("sst")
             call fix(tk, fixed_tk, face)
             call fix(tw, fixed_tw, face)
@@ -190,6 +194,13 @@ module bc_primitive
           case DEFAULT
             !call turbulence_read_error()
             Fatal_error
+        end select
+        select case(trim(transition))
+          case('lctm2015')
+            call check_if_value_fixed("lctm2015")
+            call fix(tgm, fixed_tgm, face)
+          case DEFAULT
+            continue
         end select
         end if
       end subroutine supersonic_inlet
@@ -209,7 +220,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv, "flat", face)
-          case('sst')
+          case('sst', 'sst2003')
             call copy3(tk, "flat", face)
             call copy3(tw, "flat", face)
           case('kkl')
@@ -218,6 +229,12 @@ module bc_primitive
           case DEFAULT
             !call turbulence_read_error()
             Fatal_error
+        end select
+        select case(trim(transition))
+          case('lctm2015')
+            call copy3(tgm, "flat", face)
+          case DEFAULT
+            continue
         end select
       end subroutine supersonic_outlet
 
@@ -236,7 +253,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call fix(tv, fixed_tv, face)
-          case('sst')
+          case('sst', 'sst2003')
             call check_if_value_fixed("sst")
             call fix(tk, fixed_tk, face)
             call fix(tw, fixed_tw, face)
@@ -247,6 +264,13 @@ module bc_primitive
           case DEFAULT
            ! call turbulence_read_error()
            Fatal_error
+        end select
+        select case(trim(transition))
+          case('lctm2015')
+            call check_if_value_fixed("lctm2015")
+            call fix(tgm, fixed_tgm, face)
+          case DEFAULT
+            continue
         end select
         end if
         call copy3(pressure, "flat", face)
@@ -269,7 +293,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv, "flat", face)
-          case('sst')
+          case('sst', 'sst2003')
             call copy3(tk, "flat", face)
             call copy3(tw, "flat", face)
           case('kkl')
@@ -278,6 +302,12 @@ module bc_primitive
           case DEFAULT
            ! call turbulence_read_error()
            Fatal_error
+        end select
+        select case(trim(transition))
+          case('lctm2015')
+            call copy3(tgm, "flat", face)
+          case DEFAULT
+            continue
         end select
       end subroutine subsonic_outlet
 
@@ -301,7 +331,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv, "symm", face)
-          case('sst')
+          case('sst', 'sst2003')
             call copy3(tk, "symm", face)
             call copy3(tw, "symm", face)
           case('kkl')
@@ -310,6 +340,12 @@ module bc_primitive
           case DEFAULT
             !call turbulence_read_error()
             Fatal_error
+        end select
+        select case(trim(transition))
+          case('lctm2015')
+            call copy3(tgm, "flat", face)
+          case DEFAULT
+            continue
         end select
         call flow_tangency(face)
       end subroutine slip_wall
@@ -329,7 +365,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv, "flat", face) 
-          case('sst')
+          case('sst', 'sst2003')
             call copy3(tk, "flat", face)
             call copy3(tw, "flat", face)
           case('kkl')
@@ -337,6 +373,12 @@ module bc_primitive
             call copy3(tkl, "flat", face)
           case DEFAULT
             call turbulence_read_error()
+        end select
+        select case(trim(transition))
+          case('lctm2015')
+            call copy3(tgm, "flat", face)
+          case DEFAULT
+            continue
         end select
       end subroutine pole
 
@@ -393,7 +435,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv  , "anti", face)
-          case("sst")
+          case("sst", 'sst2003')
             call copy3(tk  , "anti", face)
             call set_omega_at_wall(face)
           case("kkl")
@@ -402,6 +444,12 @@ module bc_primitive
           case DEFAULT
             !call turbulence_read_error()
             Fatal_error
+        end select
+        select case(trim(transition))
+          case('lctm2015')
+            call copy3(tgm, "flat", face)
+          case DEFAULT
+            continue
         end select
       end subroutine no_slip
 
@@ -491,12 +539,12 @@ module bc_primitive
       character(len=*), intent(in) :: model
 
       select case(model)
-        case("none")
+        case("none", "lctm2015")
           !do nothing
           continue
         case("sa", 'saBC')
           if(fixed_tv(face_num)==0.0)fixed_tv(face_num)=tv_inf
-        case("sst")
+        case("sst", 'sst2003')
           if(fixed_tk(face_num)==0.) fixed_tk(face_num)=tk_inf
           if(fixed_tw(face_num)==0.) fixed_tw(face_num)=tw_inf
         case("kkl")
@@ -505,6 +553,13 @@ module bc_primitive
         case DEFAULT
          ! call turbulence_read_error()
          Fatal_error
+      end select
+
+      select case(trim(transition))
+        case('lctm2015')
+          if(fixed_tgm(face_num)==0.0) fixed_tgm(face_num)=tgm_inf
+        Case DEFAULT
+          continue
       end select
     end subroutine check_if_value_fixed
 
@@ -560,7 +615,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -569,6 +624,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                   face_already_has_fixed_values(1)=0
                 else
@@ -587,7 +648,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -598,6 +659,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                   end if
                   face_already_has_fixed_values(1)=1
@@ -642,7 +710,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -651,6 +719,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                   face_already_has_fixed_values(2)=0
                 else
@@ -669,7 +743,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -680,6 +754,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                   end if
                   face_already_has_fixed_values(2)=1
@@ -724,7 +805,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -733,6 +814,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                   face_already_has_fixed_values(3)=0
                 else
@@ -751,7 +838,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -762,6 +849,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                   end if
                   face_already_has_fixed_values(3)=1
@@ -806,7 +900,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -815,6 +909,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                   face_already_has_fixed_values(4)=0
                 else
@@ -833,7 +933,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -844,6 +944,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                   end if
                   face_already_has_fixed_values(4)=1
@@ -888,7 +995,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -897,6 +1004,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                   face_already_has_fixed_values(5)=0
                 else
@@ -915,7 +1028,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -926,6 +1039,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                   end if
                   face_already_has_fixed_values(5)=1
@@ -970,7 +1090,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -979,6 +1099,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                   face_already_has_fixed_values(6)=0
                 else
@@ -997,7 +1123,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -1008,6 +1134,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                   end if
                   face_already_has_fixed_values(6)=1
@@ -1072,7 +1205,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -1081,6 +1214,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                 else
                   vel_diff = Unb - Uninf
@@ -1093,7 +1232,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -1104,6 +1243,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/Cb
@@ -1146,7 +1292,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -1155,6 +1301,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                 else
                   vel_diff = Unb - Uninf
@@ -1167,7 +1319,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -1178,6 +1330,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
@@ -1220,7 +1379,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -1229,6 +1388,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                 else
                   vel_diff = Unb - Uninf
@@ -1241,7 +1406,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -1252,6 +1417,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j-1,k)**2+y_speed(i,j-1,k)**2+z_speed(i,j-1,k)**2)/Cb
@@ -1294,7 +1466,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -1303,6 +1475,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                 else
                   vel_diff = Unb - Uninf
@@ -1315,7 +1493,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -1326,6 +1504,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
@@ -1368,7 +1553,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -1377,6 +1562,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                 else
                   vel_diff = Unb - Uninf
@@ -1389,7 +1580,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -1400,6 +1591,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
@@ -1442,7 +1640,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call copy3(tk, "flat", face)
                       call copy3(tw, "flat", face)
                     case('kkl')
@@ -1451,6 +1649,12 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call copy3(tgm, "flat", face)
+                    case DEFAULT
+                      continue
                   end select
                 else
                   vel_diff = Unb - Uninf
@@ -1463,7 +1667,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, fixed_tv, face)
-                    case('sst')
+                    case('sst', 'sst2003')
                       call check_if_value_fixed("sst")
                       call fix(tk, fixed_tk, face)
                       call fix(tw, fixed_tw, face)
@@ -1474,6 +1678,13 @@ module bc_primitive
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
+                  end select
+                  select case(trim(transition))
+                    case('lctm2015')
+                      call check_if_value_fixed("lctm2015")
+                      call fix(tgm, fixed_tgm, face)
+                    case DEFAULT
+                      continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb

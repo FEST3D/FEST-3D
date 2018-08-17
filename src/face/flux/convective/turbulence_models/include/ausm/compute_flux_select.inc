@@ -7,7 +7,7 @@
               !include nothing
               continue
 
-          case ("sst")
+          case ("sst", "sst2003")
               include "turbulence_models/sst/ausm/compute_flux_select.inc"
 
           case ("kkl")

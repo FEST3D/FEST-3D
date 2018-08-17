@@ -25,6 +25,7 @@ module write_output_vtk
   use global_vars, only : tw
   use global_vars, only : tkl
   use global_vars, only : tv
+  use global_vars, only : tgm
   use global_vars, only : te
   use global_vars, only : mu
   use global_vars, only : mu_t
@@ -48,6 +49,7 @@ module write_output_vtk
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
   use global_vars, only : TKE_residue
+  use global_vars, only : Tv_residue
   use global_vars, only : intermittency
   use global_vars, only : ExtraVar1
   use global_vars, only : ExtraVar2
@@ -138,6 +140,9 @@ module write_output_vtk
           case('tv')
             call write_scalar(tv, "tv", -2)
 
+          case('tgm')
+            call write_scalar(tgm, "tgm", -2)
+
           case('Dissipation')
             call write_scalar(te, "Dissipation", -2)
 
@@ -149,6 +154,9 @@ module write_output_vtk
 
           case('TKE_residue')
             call write_scalar(TKE_residue ,"TKE_residue", 1)
+
+          case('Tv_residue')
+            call write_scalar(Tv_residue ,"Tv_residue", 1)
 
           case('F1')
             call write_scalar(sst_F1 ,"F1", -2)
@@ -210,7 +218,7 @@ module write_output_vtk
           case('y-mom-residue')
             call write_scalar(y_mom_residue, 'Y_mom_residue', 1)
 
-          case('intermittency')
+          case('Intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
           
           case('extravar1')

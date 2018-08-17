@@ -7,7 +7,7 @@
               !include nothing
               continue
 
-          case ("sst")
+          case ("sst", "sst2003")
               include "turbulence_models/sst/scheme/van_leer_setup.inc"
 
           case ("kkl")

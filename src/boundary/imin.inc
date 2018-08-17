@@ -19,7 +19,7 @@
               case('none')
                 !do nothing
                 continue
-              case('sst')
+              case('sst', 'sst2003')
                 call check_if_value_fixed("sst")
                 call fix(tk, fixed_tk, face)
                 call fix(tw, fixed_tw, face)
@@ -37,7 +37,7 @@
           case('none')
             !do nothing
             continue
-          case('sst')
+          case('sst', 'sst2003')
             call copy3(tk, "flat", face)
             call copy3(tw, "flat", face)
           case DEFAULT
@@ -54,7 +54,7 @@
           case('none')
             !do nothing
             continue
-          case('sst')
+          case('sst', 'sst2003')
             call check_if_value_fixed("sst")
             call fix(tk, fixed_tk, face)
             call fix(tw, fixed_tw, face)
@@ -72,7 +72,7 @@
           case('none')
             !do nothing
             continue
-          case('sst')
+          case('sst', 'sst2003')
             call copy3(tk, "flat", face)
             call copy3(tw, "flat", face)
           case DEFAULT
@@ -91,7 +91,7 @@
           case('none')
             !do nothing
             continue
-          case('sst')
+          case('sst', 'sst2003')
             call copy3(tk, "symm", face)
             call copy3(tw, "symm", face)
           case DEFAULT
@@ -124,7 +124,7 @@
           case("none")
             !do nothing
             continue
-          case("sst")
+          case("sst", 'sst2003')
             call copy3(tk  , "anti", face)
             call set_omega_at_wall(face)
           case DEFAULT
@@ -209,7 +209,7 @@
         case("none")
           !do nothing
           continue
-        case("sst")
+        case("sst", 'sst2003')
           if(fixed_tk(face_num)==0.) fixed_tk(face_num)=tk_inf
           if(fixed_tw(face_num)==0.) fixed_tw(face_num)=tw_inf
         case DEFAULT

@@ -141,7 +141,7 @@ module resnorm
         case('none')
           !do nothing
           continue
-        case('sst')
+        case('sst', 'sst2003')
           Res_scale(6) = density_inf*vel_mag*tk_inf
           Res_scale(7) = density_inf*vel_mag*tw_inf
         case('kkl')
@@ -279,11 +279,11 @@ module resnorm
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(5)
 
           case('TKE_abs')
-            if(trim(turbulence)=='sst' .or. trim(turbulence)=='kkl')then
+            if(trim(turbulence)=='sst' .or. trim(turbulence)=='kkl'.or. trim(turbulence)=='sst2003' )then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(6)
             end if
 
-          case('tv_abs')
+          case('Tv_abs')
             if(trim(turbulence)=='sa' .or. trim(turbulence)=='saBC')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(6)
             end if
@@ -294,7 +294,7 @@ module resnorm
             end if
 
           case('Omega_abs')
-            if(trim(turbulence)=='sst')then
+            if(trim(turbulence)=='sst'.or. trim(turbulence)=='sst2003')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(7)
             end if
 
@@ -304,11 +304,11 @@ module resnorm
             end if
 
           case('TKE_rel')
-            if(trim(turbulence)=='sst' .or. trim(turbulence)=='kkl')then
+            if(trim(turbulence)=='sst' .or. trim(turbulence)=='kkl'.or.  trim(turbulence)=='sst2003')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(6)
             end if
 
-          case('tv_rel')
+          case('Tv_rel')
             if(trim(turbulence)=='sa' .or. trim(turbulence)=='saBC')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(6)
             end if
@@ -319,7 +319,7 @@ module resnorm
             end if
 
           case('Omega_rel')
-            if(trim(turbulence)=='sst')then
+            if(trim(turbulence)=='sst'.or. trim(turbulence)=='sst2003')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(7)
             end if
 

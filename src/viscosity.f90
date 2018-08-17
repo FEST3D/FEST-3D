@@ -8,6 +8,7 @@ module viscosity
   !-----------------------------------------------------
 
   use global_vars , only : turbulence
+  use global_vars , only : transition
   use global_vars , only : mu
   use global_vars , only : mu_ref
   use global_vars , only : Sutherland_temp
@@ -97,6 +98,11 @@ module viscosity
       real :: wx
       real :: wy
       real :: wz
+      !for strain calculation
+      real :: SijSij
+      real :: Sxx, Syy, Szz
+      real :: Sxy, Szx, Syz
+      real :: strain
       !for arg1
       real :: arg1
       real :: CD
@@ -210,6 +216,131 @@ module viscosity
             end do
             !--- end of sa eddy viscosity  ---!
 
+          case ('sst2003')
+            !call calculate_sst_mu()
+            do k = 0,kmx
+              do j = 0,jmx
+                do i = 0,imx
+
+                  ! calculate_arg2()
+                  var1 = sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))
+                  var2 = 500*(mu(i,j,k)/density(i,j,k))/((dist(i,j,k)**2)*tw(i,j,k))
+                  arg2 = max(2*var1, var2)
+
+                  ! calculate_f2()
+                  F = tanh(arg2**2)
+
+                  ! calculate_vorticity(
+                  sxx = (gradu_x(i,j,k))
+                  syy = (gradv_y(i,j,k))
+                  szz = (gradw_z(i,j,k))
+                  syz = (gradw_y(i,j,k) + gradv_z(i,j,k))
+                  szx = (gradu_z(i,j,k) + gradw_x(i,j,k))
+                  sxy = (gradv_x(i,j,k) + gradu_y(i,j,k))
+
+                  SijSij = (2.0*(sxx**2)) + (2.0*(syy**2)) + (2.0*(szz**2)) + syz**2 + szx**2 + sxy**2
+
+                  strain = sqrt(SijSij)
+
+                  NUM = density(i,j,k)*a1*tk(i,j,k)
+                  DENOM = max(max((a1*tw(i,j,k)), strain*F),1.0e-10)
+                  sst_mu(i,j,k) = NUM/DENOM
+                  !-- end eddy visocisyt calculation --!
+                  !-- calculating blending function F1 --!
+                  CD = max(2*density(i,j,k)*sigma_w2*(                             & 
+                                                      gradtk_x(i,j,k)*gradtw_x(i,j,k)&
+                                                    + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
+                                                    + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
+                                                     )/tw(i,j,k),                  &
+                           1.0e-10)
+
+                  right = 4*(density(i,j,k)*sigma_w2*tk(i,j,k))/(CD*(dist(i,j,k)**2))
+                  left = max(var1, var2)
+                  arg1 = min(left, right)
+                  sst_F1(i,j,k) = tanh(arg1**4)
+                  !-- end of blending function F1 calculation --!
+                end do
+              end do
+            end do
+
+            select case(trim(transition))
+              case('j10', 'lctm2015')
+                do k = 0,kmx
+                  do j = 0,jmx
+                    do i = 0,imx
+                      !modified blending function (Menter 2015)
+                      var1 = density(i,j,k)*dist(i,j,k)*sqrt(tk(i,j,k))/mu(i,j,k)
+                      var2 = exp(-(var1/120)**8)
+                      sst_F1(i,j,k) = max(sst_F1(i,j,k),var2)
+                    end do
+                  end do
+                end do
+              case DEFAULT
+                !do nothing
+                continue
+            end select
+
+            ! populating ghost cell
+            do i = 1,6
+              select case(id(i))
+                case(-10,0:)
+                  !interface
+                  continue
+
+                case(-1,-2,-3,-4,-6,-7,-8,-9)
+                  !call copy1(sst_mu, "symm", face_names(i))
+                  select case(face_names(i))
+                    case("imin")
+                        sst_mu(      0, 1:jmx-1, 1:kmx-1) = sst_mu(     1, 1:jmx-1, 1:kmx-1)
+                        sst_F1(      0, 1:jmx-1, 1:kmx-1) = sst_F1(     1, 1:jmx-1, 1:kmx-1)
+                    case("imax")
+                        sst_mu(  imx  , 1:jmx-1, 1:kmx-1) = sst_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        sst_F1(  imx  , 1:jmx-1, 1:kmx-1) = sst_F1( imx-1, 1:jmx-1, 1:kmx-1)
+                    case("jmin")
+                        sst_mu(1:imx-1,       0, 1:kmx-1) = sst_mu(1:imx-1,      1, 1:kmx-1)
+                        sst_F1(1:imx-1,       0, 1:kmx-1) = sst_F1(1:imx-1,      1, 1:kmx-1)
+                    case("jmax")
+                        sst_mu(1:imx-1,   jmx  , 1:kmx-1) = sst_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        sst_F1(1:imx-1,   jmx  , 1:kmx-1) = sst_F1(1:imx-1,  jmx-1, 1:kmx-1)
+                    case("kmin")
+                        sst_mu(1:imx-1, 1:jmx-1,       0) = sst_mu(1:imx-1, 1:jmx-1,      1)
+                        sst_F1(1:imx-1, 1:jmx-1,       0) = sst_F1(1:imx-1, 1:jmx-1,      1)
+                    case("kmax")
+                        sst_mu(1:imx-1, 1:jmx-1,   kmx  ) = sst_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        sst_F1(1:imx-1, 1:jmx-1,   kmx  ) = sst_F1(1:imx-1, 1:jmx-1,  kmx-1)
+                    case DEFAULT
+                      print*, "ERROR: wrong face for boundary condition"
+                      Fatal_error
+                  end select
+                case(-5)
+                  !call copy1(sst_mu, "anti", face_names(i))
+                  select case(face_names(i))
+                    case("imin")
+                        sst_mu(      0, 1:jmx-1, 1:kmx-1) = -sst_mu(     1, 1:jmx-1, 1:kmx-1)
+                        sst_F1(      0, 1:jmx-1, 1:kmx-1) =  sst_F1(     1, 1:jmx-1, 1:kmx-1)
+                    case("imax")
+                        sst_mu(  imx  , 1:jmx-1, 1:kmx-1) = -sst_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        sst_F1(  imx  , 1:jmx-1, 1:kmx-1) =  sst_F1( imx-1, 1:jmx-1, 1:kmx-1)
+                    case("jmin")
+                        sst_mu(1:imx-1,       0, 1:kmx-1) = -sst_mu(1:imx-1,      1, 1:kmx-1)
+                        sst_F1(1:imx-1,       0, 1:kmx-1) =  sst_F1(1:imx-1,      1, 1:kmx-1)
+                    case("jmax")
+                        sst_mu(1:imx-1,   jmx  , 1:kmx-1) = -sst_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        sst_F1(1:imx-1,   jmx  , 1:kmx-1) =  sst_F1(1:imx-1,  jmx-1, 1:kmx-1)
+                    case("kmin")
+                        sst_mu(1:imx-1, 1:jmx-1,       0) = -sst_mu(1:imx-1, 1:jmx-1,      1)
+                        sst_F1(1:imx-1, 1:jmx-1,       0) =  sst_F1(1:imx-1, 1:jmx-1,      1)
+                    case("kmax")
+                        sst_mu(1:imx-1, 1:jmx-1,   kmx  ) = -sst_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        sst_F1(1:imx-1, 1:jmx-1,   kmx  ) =  sst_F1(1:imx-1, 1:jmx-1,  kmx-1)
+                    case DEFAULT
+                      print*, "ERROR: wrong face for boundary condition"
+                      Fatal_error
+                  end select
+              end select
+            end do
+            !--- end of sst2003 eddy viscosity  and blending fucntion calculation ---!
+
           case ('sst')
             !call calculate_sst_mu()
             do k = 0,kmx
@@ -253,6 +384,23 @@ module viscosity
                 end do
               end do
             end do
+
+            select case(trim(transition))
+              case('j10', 'lctm2015')
+                do k = 0,kmx
+                  do j = 0,jmx
+                    do i = 0,imx
+                      !modified blending function (Menter 2015)
+                      var1 = density(i,j,k)*dist(i,j,k)*sqrt(tk(i,j,k))/mu(i,j,k)
+                      var2 = exp(-(var1/120)**8)
+                      sst_F1(i,j,k) = max(sst_F1(i,j,k),var2)
+                    end do
+                  end do
+                end do
+              case DEFAULT
+                !do nothing
+                continue
+            end select
 
             ! populating ghost cell
             do i = 1,6
@@ -314,6 +462,7 @@ module viscosity
               end select
             end do
             !--- end of sst eddy viscosity  and blending fucntion calculation ---!
+
 
           case ('kkl')
             !--- calculate_kkl_mu()
@@ -414,7 +563,7 @@ module viscosity
           case ('sa', 'saBC')
             sa_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
 
-          case ('sst')
+          case ('sst', 'sst2003')
             sst_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
             !-- sst blending funciton F1 --!
             call alloc(sst_F1, -2,imx+2, -2,jmx+2, -2,kmx+2)
@@ -452,7 +601,7 @@ module viscosity
           case('sa', 'saBC')
             nullify(sa_mu)
 
-          case ('sst')
+          case ('sst', 'sst2003')
             nullify(sst_mu)
             !-- blending funciton F1 --!
             call dealloc(sst_F1)

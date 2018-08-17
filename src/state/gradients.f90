@@ -13,6 +13,7 @@ module gradients
   use global_vars,  only : kmx
   use global_vars,  only : mu_ref
   use global_vars,  only : turbulence 
+  use global_vars,  only : transition 
   use global_vars,  only : n_grad
   use global_vars,  only : sst_n_grad
   use global_vars,  only : gradqp_x
@@ -34,6 +35,8 @@ module gradients
   use kkl_gradients,      only : destroy_kkl_grad
   use sa_gradients ,      only : setup_sa_grad
   use sa_gradients ,      only : destroy_sa_grad
+  use lctm2015_gradients ,      only : setup_lctm2015_grad
+  use lctm2015_gradients ,      only : destroy_lctm2015_grad
 
   implicit none
   private
@@ -69,7 +72,7 @@ module gradients
           case('sa', 'saBC')
             call setup_sa_grad()
 
-          case('sst')
+          case('sst', 'sst2003')
             call setup_sst_grad()
 
           case('kkl')
@@ -80,6 +83,21 @@ module gradients
             Fatal_error
 
         end select
+
+        !Transition modeling
+        select case(trim(transition))
+
+          case('lctm2015')
+            call setup_lctm2015_grad()
+
+          case('j10','none','bc')
+            !do nothing
+            continue
+
+          case DEFAULT
+            Fatal_error
+
+        end Select
 
       end if
     end subroutine setup_gradients
@@ -109,7 +127,7 @@ module gradients
           case('sa', 'saBC')
             call destroy_sa_grad()
 
-          case('sst')
+          case('sst', 'sst2003')
             call destroy_sst_grad()
 
           case('kkl')
@@ -120,6 +138,21 @@ module gradients
            Fatal_error
 
         end select
+
+        !Transition modeling
+        select case(trim(transition))
+
+          case('lctm2015')
+            call destroy_lctm2015_grad()
+
+          case('j10','none','bc')
+            !do nothing
+            continue
+
+          case DEFAULT
+            Fatal_error
+
+        end Select
 
       end if
 
@@ -142,7 +175,7 @@ module gradients
         case ('sa', 'saBC')
           n_grad = 5
 
-        case('sst')
+        case('sst', 'sst2003')
           n_grad = 6
 
         case('kkl')
@@ -153,6 +186,21 @@ module gradients
           Fatal_error
 
       end select
+
+
+      !Transition modeling
+      select case(trim(transition))
+
+        case('lctm2015')
+          n_grad = n_grad + 1
+
+        case('j10','none','bc')
+          n_grad = n_grad + 0
+
+        case DEFAULT
+          Fatal_error
+
+      end Select
 
     end subroutine get_n_grad
 

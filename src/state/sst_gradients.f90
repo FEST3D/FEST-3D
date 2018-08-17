@@ -6,6 +6,7 @@ module sst_gradients
   !---------------------------------------------------------------
 
 #include "../debug.h"
+#include "../error.h"
 
   use global_vars,  only : process_id
   use global_vars,  only : imx
@@ -27,6 +28,9 @@ module sst_gradients
   use global_vars,  only : gradT_x
   use global_vars,  only : gradT_y
   use global_vars,  only : gradT_z
+  use global_vars,  only : gradtgm_x
+  use global_vars,  only : gradtgm_y
+  use global_vars,  only : gradtgm_z
 
   use utils,        only : dmsg
   implicit none
@@ -68,6 +72,7 @@ module sst_gradients
 
       nullify(gradtk_z)
       nullify(gradtw_z)
+
 
     end subroutine destroy_sst_grad
 

@@ -132,8 +132,12 @@ module global_vars
   real                                              :: free_stream_te
   real                                              :: free_stream_tv
   real                                              :: free_stream_tkl
+  real                                              :: free_stream_tu
+  real                                              :: free_stream_tgm
   real                                              :: vel_mag ! free_stream velocity magnitude
   real                                              :: Reynolds_number ! free_stream Reynolds_number
+  real                                              :: mu_ratio_inf ! free_stream viscosity ratio
+  real                                              :: Turb_intensity_inf ! free_stream turbulence intensity
   real, dimension(:, :, :), allocatable             :: dist 
 
   ! state variable turbulent
@@ -146,11 +150,13 @@ module global_vars
   real, dimension(:, :, :)                , pointer :: te        ! Dissipation
   real, dimension(:, :, :)                , pointer :: tv        ! sa visocity
   real, dimension(:, :, :)                , pointer :: tkl       ! KL K-KL method
+  real, dimension(:, :, :)                , pointer :: tgm       ! intermittency of LCTM2015
   real                                    , pointer :: tk_inf    ! TKE/mass at inf
   real                                    , pointer :: tw_inf    ! omega at inf
   real                                    , pointer :: te_inf    ! dissipation at inf
   real                                    , pointer :: tv_inf    ! SA viscosity at inf
   real                                    , pointer :: tkl_inf   ! kl at inf
+  real                                    , pointer :: tgm_inf   ! intermittency at inf
 
   ! residue variables
   real, dimension(:, :, :, :)             , pointer :: F_p
@@ -195,7 +201,8 @@ module global_vars
   integer                                           :: iPB_switch
   integer                                           :: jPB_switch
   integer                                           :: kPB_switch
-  character(len=5)                                  :: turbulence ! todo character length
+  character(len=8)                                  :: turbulence
+  character(len=8)                                  :: transition
   
   real, dimension(:, :, :), allocatable, target     :: mu
   real, dimension(:, :, :), allocatable, target     :: mu_t
@@ -308,6 +315,9 @@ module global_vars
   real, dimension(:, :, :),                 pointer :: gradtv_x
   real, dimension(:, :, :),                 pointer :: gradtv_y
   real, dimension(:, :, :),                 pointer :: gradtv_z
+  real, dimension(:, :, :),                 pointer :: gradtgm_x
+  real, dimension(:, :, :),                 pointer :: gradtgm_y
+  real, dimension(:, :, :),                 pointer :: gradtgm_z
 
   ! higher order boundary condtioion
   integer  :: accur=1
@@ -328,6 +338,7 @@ module global_vars
   real, dimension(6) :: fixed_te       = 0.
   real, dimension(6) :: fixed_tv       = 0.
   real, dimension(6) :: fixed_tkl       = 0.
+  real, dimension(6) :: fixed_tgm       = 0.
   real, dimension(6) :: fixed_wall_temperature  = 0.
   real, dimension(6) :: fixed_Tpressure         = 0.
   real, dimension(6) :: fixed_Ttemperature      = 0.

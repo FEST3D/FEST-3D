@@ -23,6 +23,7 @@ module read_output_tec
   use global_vars, only : tw 
   use global_vars, only : tkl
   use global_vars, only : tv
+  use global_vars, only : tgm
   use global_vars, only : mu 
   use global_vars, only : mu_t 
   use global_vars, only : density_inf
@@ -45,6 +46,7 @@ module read_output_tec
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
   use global_vars, only : TKE_residue
+  use global_vars, only : intermittency
 
   use global_vars, only : turbulence
   use global_vars, only : mu_ref
@@ -117,6 +119,12 @@ module read_output_tec
 
           case('tv')
             call read_scalar(tv, 'tv', -2)
+
+          case('tgm')
+            call read_scalar(tgm, 'tgm', -2)
+
+          case('Intermittency')
+            call read_scalar(intermittency, 'Intermittency', -2)
 
           case('do not read')
             call skip_scalar()

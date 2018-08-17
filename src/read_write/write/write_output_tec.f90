@@ -25,6 +25,7 @@ module write_output_tec
   use global_vars, only : tw 
   use global_vars, only : tkl
   use global_vars, only : tv
+  use global_vars, only : tgm
   use global_vars, only : mu 
   use global_vars, only : mu_t 
   use global_vars, only : density_inf
@@ -47,6 +48,8 @@ module write_output_tec
   use global_vars, only :  z_mom_residue
   use global_vars, only : energy_residue
   use global_vars, only : TKE_residue
+  use global_vars, only : omega_residue
+  use global_vars, only : tv_residue
   use global_vars, only : intermittency
   use global_vars, only : ExtraVar1
   use global_vars, only : ExtraVar2
@@ -140,6 +143,9 @@ module write_output_tec
           case('tv')
             call write_scalar(tv, "tv", -2)
 
+          case('tgm')
+            call write_scalar(tgm, "tgm", -2)
+
           case('Wall_distance')
             call write_scalar(dist, "Wall_dist", -2)
 
@@ -218,7 +224,13 @@ module write_output_tec
           case('TKE_residue')
             call write_scalar(tke_residue, "TKE_residue", 1)
 
-          case('intermittency')
+          case('Omega_residue')
+            call write_scalar(omega_residue, "Omega_residue", 1)
+
+          case('Tv_residue')
+            call write_scalar(tv_residue, "Tv_residue", 1)
+
+          case('Intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
 
           case('extravar1')

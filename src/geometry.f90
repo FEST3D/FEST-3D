@@ -497,7 +497,7 @@ module geometry
                         p_list(:, 7) = (/ grid_x(i+1,j+1,k+1), grid_y(i+1,j+1,k+1), grid_z(i+1,j+1,k+1) /)
                         p_list(:, 8) = (/ grid_x(i,j+1,k+1), grid_y(i,j+1,k+1), grid_z(i,j+1,k+1) /)
                         volume(i, j, k) = (vol_hexahedron(p_list))
-                        if(volume(i,j,k)<0.0) print*, process_id, i,j,k
+                        if(volume(i,j,k)<=0.0) print*, process_id, i,j,k
                     end do
                 end do
             end do

@@ -37,6 +37,7 @@ module viscous
   use global_vars, only : tw
   use global_vars, only : tkl
   use global_vars, only : tv
+  use global_vars, only : tgm
   use global_vars, only : gradu_x
   use global_vars, only : gradu_y
   use global_vars, only : gradu_z
@@ -61,11 +62,15 @@ module viscous
   use global_vars, only : gradtv_x
   use global_vars, only : gradtv_y
   use global_vars, only : gradtv_z
+  use global_vars, only : gradtgm_x
+  use global_vars, only : gradtgm_y
+  use global_vars, only : gradtgm_z
   use global_vars, only : mu
   use global_vars, only : mu_t
   use global_vars, only : kkl_mu
   use global_vars, only : sst_mu
   use global_vars, only : turbulence
+  use global_vars, only : transition
   use global_sst , only : sst_F1
   use global_sst , only : sigma_k1
   use global_sst , only : sigma_k2
@@ -106,14 +111,14 @@ module viscous
             call compute_viscous_fluxes_sa(F, 'x')
             call compute_viscous_fluxes_sa(G, 'y')
             call compute_viscous_fluxes_sa(H, 'z')
-          case('sst')
+          case('sst', 'sst2003')
             call compute_viscous_fluxes_sst(F, 'x')
             call compute_viscous_fluxes_sst(G, 'y')
-            !if(kmx==2)then
-            !  continue
-            !else
+            if(kmx==2)then
+              continue
+            else
               call compute_viscous_fluxes_sst(H, 'z')
-            !end if
+            end if
           case('kkl')
             call compute_viscous_fluxes_kkl(F, 'x')
             call compute_viscous_fluxes_kkl(G, 'y')
@@ -122,6 +127,23 @@ module viscous
             !else
               call compute_viscous_fluxes_kkl(H, 'z')
             !end if
+          case DEFAULT
+            Fatal_error
+        end select
+
+
+        select case(trim(transition))
+          case('lctm2015')
+            call compute_viscous_fluxes_lctm2015(F, 'x')
+            call compute_viscous_fluxes_lctm2015(G, 'y')
+            if(kmx==2)then
+              continue
+            else
+              call compute_viscous_fluxes_lctm2015(H, 'z')
+            end if
+          case('none', 'j10', 'bc')
+            !do nothing
+            continue
           case DEFAULT
             Fatal_error
         end select
@@ -752,6 +774,121 @@ module viscous
        end do
       end do
     end subroutine compute_viscous_fluxes_sa
+
+
+    subroutine compute_viscous_fluxes_lctm2015(F, direction)
+      implicit none
+      character(len=*), intent(in) :: direction ! face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F ! flux array
+      ! local variables
+      real :: rhoface
+      real :: normal_comp
+      real :: d_LR
+      real :: mu_f
+      real :: mut_f
+      real :: delx
+      real :: dely
+      real :: delz
+      real :: deltgm
+      real :: nx
+      real :: ny
+      real :: nz
+      real :: area
+      real, dimension(:, :, :), pointer :: fA
+      real, dimension(:, :, :), pointer :: fnx
+      real, dimension(:, :, :), pointer :: fny
+      real, dimension(:, :, :), pointer :: fnz
+      integer :: i, j, k
+      integer :: ii, jj, kk
+      !--- sa variable requirement ---!
+      real :: dtgmdx, dtgmdy, dtgmdz
+
+      !--------------------------------------------------------------------
+      ! select Direction
+      !--------------------------------------------------------------------
+      select case(trim(direction))
+        case('x')
+          ii  =  1
+          jj  =  0
+          kk  =  0
+          fnx => xnx
+          fny => xny
+          fnz => xnz
+          fA(-2:imx+3, -2:jmx+2, -2:kmx+2)   => xA
+
+        case('y')
+          ii  =  0
+          jj  =  1
+          kk  =  0
+          fnx => ynx
+          fny => yny
+          fnz => ynz
+          fA(-2:imx+2, -2:jmx+3, -2:kmx+2)   => yA
+
+        case('z')
+          ii  =  0
+          jj  =  0
+          kk  =  1
+          fnx => znx
+          fny => zny
+          fnz => znz
+          fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
+
+        case Default
+          Fatal_error
+
+      end select
+
+
+      !---------------------------------------------------------------------
+      ! Calculating the turbulent viscous fluxes at the faces
+      !--------------------------------------------------------------------
+      do k = 1, kmx - 1 + kk
+       do j = 1, jmx - 1 + jj
+        do i = 1, imx - 1 + ii
+
+          !--- FACE Gradients ---!
+          ! Gradients at face as average of gradients at cell centres
+          dtgmdx = 0.5 * (gradtgm_x(i-ii, j-jj, k-kk) + gradtgm_x(i, j, k))
+          dtgmdy = 0.5 * (gradtgm_y(i-ii, j-jj, k-kk) + gradtgm_y(i, j, k))
+          dtgmdz = 0.5 * (gradtgm_z(i-ii, j-jj, k-kk) + gradtgm_z(i, j, k))
+
+          !--- For ODD-EVEN coupling error ---!
+          ! distance between cell center of adjacent cell for the i,j,k face
+          delx = CellCenter(i, j, k, 1) - CellCenter(i-ii, j-jj, k-kk, 1)
+          dely = CellCenter(i, j, k, 2) - CellCenter(i-ii, j-jj, k-kk, 2)
+          delz = CellCenter(i, j, k, 3) - CellCenter(i-ii, j-jj, k-kk, 3)
+
+          d_LR = sqrt(delx*delx + dely*dely + delz*delz)
+
+          ! difference in state across face
+          deltgm = tgm(i, j, k) - tgm(i-ii, j-jj, k-kk)
+
+          !normal_comp   = ( delta(phi) - (grad(phi).dot.delR) )/magnitudeR
+          !new grad(phi) =  grad(phi) + correction(normal_comp.dot.delR/magnitudeR)
+          normal_comp = (deltgm - (dtgmdx*delx + dtgmdy*dely + dtgmdz*delz))/d_LR
+          dtgmdx       =  dtgmdx + (normal_comp * delx / d_LR)
+          dtgmdy       =  dtgmdy + (normal_comp * dely / d_LR)
+          dtgmdz       =  dtgmdz + (normal_comp * delz / d_LR)
+          !--- end of ODD-EVEN coupling correction ---!
+
+          rhoface  = 0.5 * (density(i-ii, j-jj, k-kk) + density(i, j, k))
+          mu_f     = 0.5*(mu(i-ii, j-jj, k-kk) + mu(i, j, k))
+          mut_f    = 0.5*(mu_t(i-ii, j-jj, k-kk) + mu_t(i, j, k))
+
+          ! calling some element from memory and keep them handy for calculation
+          nx    = fnx(i,j,k)
+          ny    = fny(i,j,k)
+          nz    = fnz(i,j,k)
+          area  =  fA(i,j,k)
+
+          ! adding viscous fluxes to stored convective flux
+          F(i, j, k, n_var) = F(i, j, k, n_var) - (area*((mu_f + mut_f)*(dtgmdx*nx + dtgmdy*ny + dtgmdz*nz)))
+         
+        end do
+       end do
+      end do
+    end subroutine compute_viscous_fluxes_lctm2015
 
 
 end module viscous

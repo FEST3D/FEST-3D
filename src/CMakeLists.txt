@@ -1,6 +1,11 @@
 Set(Source 
 main.f90
 lusgs.f90 
+SGSR.f90 
+DP_LUSGS.f90
+HLU_SGS.f90
+gmres.f90
+solvergmres.f90
 layout.f90 
 resnorm.f90 
 interface.f90 
@@ -17,6 +22,7 @@ main.f90
 source.f90 
 state/gradients.f90 
 state/laminar_gradients.f90 
+state/lctm2015_gradients.f90 
 state/sst_gradients.f90 
 state/sa_gradients.f90 
 state/state.f90 

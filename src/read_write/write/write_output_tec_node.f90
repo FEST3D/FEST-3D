@@ -192,7 +192,7 @@ module write_output_tec_node
           case('Dtwdz')                        
             call write_scalar(gradtw_z,"dtwdz", 0)
 
-          case('intermittency')
+          case('Intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
           
          ! case('Mass_residue')

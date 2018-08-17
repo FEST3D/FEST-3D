@@ -98,7 +98,7 @@ module viscous
             else
               call compute_zeta_viscous_fluxes_laminar(H)
             end if
-          case('sst')
+          case('sst', 'sst2003')
             call compute_xi_viscous_fluxes_sst(F)
             call compute_eta_viscous_fluxes_sst(G)
             if(kmx==2)then

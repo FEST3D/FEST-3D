@@ -7,6 +7,7 @@ module check_output_control
   use global_vars, only: w_list
   use global_vars, only: previous_flow_type
   use global_vars, only: turbulence
+  use global_vars, only: transition
   use global_vars, only: mu_ref
   use global_vars, only: r_count
   use global_vars, only: w_count
@@ -54,7 +55,7 @@ module check_output_control
             
           case('tke','tk','turbulent_kinetic_enrgy','k')
             select case (trim(turbulence))
-              case('sst','kw','bsl','kkl','ke','des-sst')
+              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
                 w_list(n) = "TKE"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -63,7 +64,7 @@ module check_output_control
 
           case('omega','tw')
             select case (trim(turbulence))
-              case('sst','kw','bsl','des-sst')
+              case('sst', 'sst2003','kw','bsl','des-sst')
                 w_list(n) = "Omega"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -111,6 +112,12 @@ module check_output_control
           case('tke_residue')
             w_list(n) = "TKE_residue"
 
+          case('omega_residue')
+            w_list(n) = "Omega_residue"
+
+          case('tv_residue')
+            w_list(n) = "Tv_residue"
+
           case('mass_residue')
             w_list(n) = "Mass_residue"
 
@@ -127,7 +134,7 @@ module check_output_control
             w_list(n) = "Energy_residue"
 
           case('f1')
-            if(trim(turbulence)=='sst')then
+            if(trim(turbulence)=='sst' .or. trim(turbulence)=='sst2003')then
               w_list(n) = "F1"
             else
               w_list(n) = 'do not write'
@@ -171,7 +178,7 @@ module check_output_control
 
           case('dtkdx')
             select case (trim(turbulence))
-              case('sst','kw','bsl','kkl','ke','des-sst')
+              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
                 w_list(n) = "Dtkdx"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -180,7 +187,7 @@ module check_output_control
 
           case('dtkdy')
             select case (trim(turbulence))
-              case('sst','kw','bsl','kkl','ke','des-sst')
+              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
                 w_list(n) = "Dtkdy"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -189,7 +196,7 @@ module check_output_control
 
           case('dtkdz')
             select case (trim(turbulence))
-              case('sst','kw','bsl','kkl','ke','des-sst')
+              case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
                 w_list(n) = "Dtkdz"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -198,7 +205,7 @@ module check_output_control
 
           case('dtwdx')
             select case (trim(turbulence))
-              case('sst','kw','bsl','des-sst')
+              case('sst','sst2003','kw','bsl','des-sst')
                 w_list(n) = "Dtwdx"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -207,7 +214,7 @@ module check_output_control
 
           case('dtwdy')
             select case (trim(turbulence))
-              case('sst','kw','bsl','des-sst')
+              case('sst','sst2003','kw','bsl','des-sst')
                 w_list(n) = "Dtwdy"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -216,7 +223,7 @@ module check_output_control
 
           case('dtwdz')
             select case (trim(turbulence))
-              case('sst','kw','bsl','des-sst')
+              case('sst','sst2003','kw','bsl','des-sst')
                 w_list(n) = "Dtwdz"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
@@ -307,7 +314,16 @@ module check_output_control
           case('intermittency')
             select case (trim(turbulence))
               case('saBC')
-                w_list(n) = "intermittency"
+                w_list(n) = "Intermittency"
+              case DEFAULT
+                print*, err//trim(w_list(n))//" to file"
+                w_list(n) = "do not write"
+             end select
+
+           case('tgm')
+            select case (trim(transition))
+              case('lctm2015')
+                w_list(n) = "tgm"
               case DEFAULT
                 print*, err//trim(w_list(n))//" to file"
                 w_list(n) = "do not write"
@@ -363,9 +379,9 @@ module check_output_control
             
           case('tke','tk','turbulent_kinetic_enrgy','k')
             select case (trim(turbulence))
-              case('sst','kw','bsl','kkl','ke','des-sst')
+              case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
                 select case (trim(previous_flow_type))
-                  case('sst','kw','bsl','kkl','ke','des-sst')
+                  case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
                     r_list(n) = "TKE"
                 end select
               case DEFAULT
@@ -375,9 +391,9 @@ module check_output_control
 
           case('omega','tw')
             select case (trim(turbulence))
-              case('sst','kw','bsl','des-sst')
+              case('sst','sst2003','kw','bsl','des-sst')
                 select case (trim(previous_flow_type))
-                  case('sst','kw','bsl','des-sst')
+                  case('sst','sst2003','kw','bsl','des-sst')
                     r_list(n) = "Omega"
                   case DEFAULT
                     print*, err//trim(w_list(n))//" from file"
@@ -442,6 +458,36 @@ module check_output_control
             !  r_list(n) = "do not read"
             !end if
 
+          case('intermittency')
+            select case (trim(turbulence))
+              case('saBC')
+                select case(trim(previous_flow_type))
+                  case('saBC')
+                    r_list(n) = "Intermittency"
+                  case DEFAULT
+                    print*, err//trim(r_list(n))//" to file"
+                    r_list(n) = "do not read"
+                end select
+              case DEFAULT
+                print*, err//trim(r_list(n))//" to file"
+                r_list(n) = "do not read"
+             end select
+
+          case('tgm')
+            select case (trim(transition))
+              case('lctm2015')
+                select case(trim(previous_flow_type))
+                  case('sst','sst2003')
+                    r_list(n) = "tgm"
+                  case DEFAULT
+                    print*, err//trim(r_list(n))//" to file"
+                    r_list(n) = "do not read"
+                end select
+              case DEFAULT
+                print*, err//trim(r_list(n))//" to file"
+                r_list(n) = "do not read"
+             end select
+
           case('resnorm')
             r_list(n) = "do not read"
             !r_list(n) = "Resnorm"
@@ -449,6 +495,10 @@ module check_output_control
           case('tke_residue')
             r_list(n) = "do not read"
             !r_list(n) = "TKE_residue"
+
+          case('omega_residue')
+            r_list(n) = "do not read"
+            !w_list(n) = "Omega_residue"
 
           case('f1')
             r_list(n) = "do not read"
@@ -525,6 +575,10 @@ module check_output_control
           case('dtwdz')
             r_list(n) = "do not read"
             !r_list(n) = "Dtwdz"
+
+          case('extravar1','extravar2', 'extravar3', 'extravar4', 'extravar5')
+            r_list(n) = "do not read"
+            !r_list(n) = trim(lcase(w_list(n)))
 
           case Default
             print*, err//trim(r_list(n))//" from file"

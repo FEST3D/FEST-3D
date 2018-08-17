@@ -26,6 +26,8 @@ module read_output_vtk
   use global_vars, only : tw
   use global_vars, only : tkl
   use global_vars, only : tv
+  use global_vars, only : tgm
+  use global_vars, only : intermittency
   use global_vars, only : density_inf
   use global_vars, only : x_speed_inf
   use global_vars, only : y_speed_inf
@@ -105,6 +107,12 @@ module read_output_vtk
 
           case('tv')
             call read_scalar(tv, 'tv', -2)
+
+          case('tgm')
+            call read_scalar(tgm, 'tgm', -2)
+
+          case('Intermittecny')
+            call read_scalar(intermittency, 'Intermittecny', -2)
 
           case('do not read')
             call skip_scalar()

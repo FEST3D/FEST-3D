@@ -112,6 +112,21 @@ module update
   use lusgs     , only : update_with_lusgs
   use lusgs     , only : setup_lusgs
   use lusgs     , only : destroy_lusgs
+  use SGSR     , only : update_with_SGSR
+  use SGSR     , only : setup_SGSR
+  use SGSR     , only : destroy_SGSR
+  use DP_LUSGS , only : update_with_DP_LUSGS
+  use DP_LUSGS , only : setup_DP_LUSGS
+  use DP_LUSGS , only : destroy_DP_LUSGS
+  use HLU_SGS , only : update_with_HLU_SGS
+  use HLU_SGS , only : setup_HLU_SGS
+  use HLU_SGS , only : destroy_HLU_SGS
+  use GMRES    , only : update_with_GMRES
+  use GMRES    , only : setup_GMRES
+  use GMRES    , only : destroy_GMRES
+  use solvergmres, only: performgmres
+  use solvergmres, only: setup_solvergmres
+  use solvergmres, only: destroy_solvergmres
 #include "error.inc"
 #include "mpi.inc"
     private
@@ -125,6 +140,9 @@ module update
     real :: eps=0.05
     real, dimension(:,:,:,:), allocatable :: delQ
     real, dimension(:,:,:,:), allocatable :: delQstar
+
+    integer :: m = 20
+    integer :: mrestart = 5
 
     ! Public methods
     public :: setup_update
@@ -155,6 +173,19 @@ module update
             call setup_lusgs()
             call alloc(delQ, 0, imx, 0, jmx, 0, kmx, 1, n_var)
             call alloc(delQstar, 0, imx, 0, jmx, 0, kmx, 1, n_var)
+          case ("sgsr")
+            call setup_SGSR()
+          case ("dplusgs")
+            call setup_DP_LUSGS()
+          case ("hlusgs")
+            call setup_HLU_SGS()
+          case ("gmres")
+            !call setup_GMRES()
+            call setup_solvergmres(m)
+            call alloc(delQ, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var)
+            call alloc(delQstar, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var)
+            delQstar=0.0
+            delQ=0.0
           case default
             Fatal_error
         end select
@@ -178,6 +209,16 @@ module update
             call destroy_lusgs()
             call dealloc(delQ)
             call dealloc(delQstar)
+          case ("sgsr")
+            call destroy_SGSR()
+          case ("dplusgs")
+            call destroy_DP_LUSGS()
+          case ("hlusgs")
+            call destroy_HLU_SGS()
+          case ("gmres")
+            call destroy_solvergmres()
+            call dealloc(delQ)
+            call dealloc(delQstar)
           case default
             Fatal_error
         end select
@@ -191,7 +232,7 @@ module update
 
       subroutine get_next_solution()
         implicit none
-        select case (time_step_accuracy)
+        select case (trim(time_step_accuracy))
             case ("none")
               call get_total_conservative_Residue()
               call compute_time_step() ! has to be after get_..._Residue()
@@ -282,6 +323,25 @@ module update
               !else
               ! call matrix_free_implicit_update()
               !end if
+            case ("sgsr")
+              call get_total_conservative_Residue()
+              call compute_time_step() ! has to be after get_..._Residue()
+              call update_with_SGSR()
+            case ("dplusgs")
+              call get_total_conservative_Residue()
+              call compute_time_step() ! has to be after get_..._Residue()
+              call update_with_DP_LUSGS()
+            case ("hlusgs")
+              call get_total_conservative_Residue()
+              call compute_time_step() ! has to be after get_..._Residue()
+              call update_with_HLU_SGS()
+            case ("gmres")
+              call get_total_conservative_Residue()
+              call compute_time_step() ! has to be after get_..._Residue()
+              !call update_with_GMRES()
+              residue = -residue
+              delQstar = 0.0
+              call performgmres(residue, delQstar, delQ, m, mrestart)
             case default
               Fatal_error
         end select
@@ -350,7 +410,7 @@ module update
                     case('none')
                       !do nothing
                       continue
-                    case('sst')
+                    case('sst', 'sst2003')
                       beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
                       R(5) = R(5) - (gm-1.)*TKE_residue(i,j,k)
                       R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
@@ -387,7 +447,7 @@ module update
                   else !update
                     qp(i,j,k,1:5) = u2(1:5)
                     select case(trim(turbulence))
-                     case('sst', 'kkl')
+                     case('sst', 'sst2003', 'kkl')
                        if(u2(6)>0.) qp(i,j,k,6) = u2(6)
                        if(u2(7)>0.) qp(i,j,k,7) = u2(7)
                      case DEFAULT
@@ -411,7 +471,7 @@ module update
                   u1(1)  = Quse(i,j,k,1)
                   u1(2:) = Quse(i,j,k,2:)*u1(1)
                   select case(turbulence)
-                    case('sst', 'kkl')
+                    case('sst', 'sst2003', 'kkl')
                       KE = 0.0!u1(6)
                     case('sa','saBC')
                       KE=0.0
@@ -427,7 +487,7 @@ module update
                     case('none')
                       !do nothing
                       continue
-                    case('sst')
+                    case('sst', 'sst2003')
                       beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
                       R(6) = R(6)/(1+(beta*qp(i,j,k,7)*delta_t(i,j,k)))
                       R(7) = R(7)/(1+(2*beta*qp(i,j,k,7)*delta_t(i,j,k)))
@@ -469,7 +529,7 @@ module update
                   u2(1)  = u2(1)
                   u2(2:) = u2(2:)/u2(1)
                   select case(turbulence)
-                    case('sst', 'kkl')
+                    case('sst', 'sst2003', 'kkl')
                       KE = 0.0!u2(6)
                     case('sa', 'saBC')
                       !u2(6) = u2(6)*u2(1)
@@ -488,7 +548,7 @@ module update
                   else !update
                     qp(i,j,k,1:5) = u2(1:5)
                     select case(trim(turbulence))
-                     case('sst', 'kkl')
+                     case('sst', 'sst2003', 'kkl')
                        if(u2(6)>=0.) then
                          qp(i,j,k,6) = u2(6)
                        else
@@ -789,7 +849,7 @@ module update
             !do nothing
             continue
           
-          case('sst')
+          case('sst', 'sst2003')
             do k = 1,kmx-1
               do j = 1,jmx-1
                 do i = 1,imx-1
@@ -902,7 +962,7 @@ module update
             !do nothing
             continue
           
-          case('sst')
+          case('sst', 'sst2003')
             do k = 1,kmx-1
               do j = 1,jmx-1
                 do i = 1,imx-1

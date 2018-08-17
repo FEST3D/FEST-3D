@@ -16,7 +16,9 @@ module summon_grad_evaluation
   use global_vars, only : tv
   use global_vars, only : te
   use global_vars, only : tkl
+  use global_vars, only : tgm
   use global_vars, only : turbulence
+  use global_vars, only : transition
   use global_vars, only : gradu_x
   use global_vars, only : gradu_y
   use global_vars, only : gradu_z
@@ -44,6 +46,9 @@ module summon_grad_evaluation
   use global_vars, only : gradtkl_x
   use global_vars, only : gradtkl_y
   use global_vars, only : gradtkl_z
+  use global_vars, only : gradtgm_x
+  use global_vars, only : gradtgm_y
+  use global_vars, only : gradtgm_z
   use global_vars, only : gradqp_z
   use global_vars, only : process_id
   use global_vars, only : xn
@@ -135,7 +140,7 @@ module summon_grad_evaluation
           call compute_gradient_G(gradtv_z, tv, 'z')
           end if
 
-        case ('sst')
+        case ('sst', 'sst2003')
           call compute_gradient_G(gradtk_x, tk, 'x')
           call compute_gradient_G(gradtw_x, tw, 'x')
           call compute_gradient_G(gradtk_y, tk, 'y')
@@ -160,6 +165,25 @@ module summon_grad_evaluation
           Fatal_error
 
       end select
+
+
+      select case(trim(transition))
+        case('lctm2015')
+          call compute_gradient_G(gradtgm_x, tgm, 'x')
+          call compute_gradient_G(gradtgm_y, tgm, 'y')
+          if(kmx>2)then
+          call compute_gradient_G(gradtgm_z, tgm, 'z')
+          end if
+
+        case('j10', 'bc', 'none')
+          !do nothing
+          continue
+
+        case DEFAULT
+          Fatal_error
+
+      end Select
+
 
       !gradqp_z=0.0
       !applying boundary condition to gradients

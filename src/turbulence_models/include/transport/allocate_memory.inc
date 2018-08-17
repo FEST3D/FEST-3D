@@ -6,7 +6,7 @@
               !include nothing
               continue
 
-          case ("sst")
+          case ("sst", "sst2003")
               include "turbulence_models/sst/transport/allocate_memory.inc"
 
           case DEFAULT

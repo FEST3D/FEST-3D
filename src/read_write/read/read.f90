@@ -47,8 +47,9 @@ module read
   use global_vars, only: free_stream_y_speed
   use global_vars, only: free_stream_z_speed
   use global_vars, only: free_stream_pressure
-  use global_vars, only: free_stream_tk
-  use global_vars, only: free_stream_tw
+  use global_vars, only: free_stream_tu
+  use global_vars, only: free_stream_tgm
+  use global_vars, only: mu_ratio_inf
   use global_vars, only: gm    !gamma
   use global_vars, only: R_gas !univarsal gas constant
   use global_vars, only: mu_ref !viscoity
@@ -71,6 +72,7 @@ module read
   use global_vars, only: interpolant
   use global_vars, only: scheme_name
   use global_vars, only: turbulence
+  use global_vars, only: transition
   use global_vars, only: r_list
   use global_vars, only: w_list
   use global_vars, only: r_count
@@ -274,10 +276,15 @@ module read
         DebugInfo('jlimiter switch = '//trim(buf) )
         DebugInfo('klimiter switch = '//trim(buf) )
 
-          ! read turbulence model
-          call get_next_token(SCHEME_FILE_UNIT, buf)
-          read(buf, *) turbulence
-          DebugInfo('Turbulence Model = '//trim(buf))
+        ! read turbulence model
+        call get_next_token(SCHEME_FILE_UNIT, buf)
+        read(buf, *) turbulence
+        DebugInfo('Turbulence Model = '//trim(buf))
+
+        ! read transition model
+        call get_next_token(SCHEME_FILE_UNIT, buf)
+        read(buf, *) transition
+        DebugInfo('Transition Model = '//trim(buf))
 
         ! read time stepping method
         call get_next_token(SCHEME_FILE_UNIT, buf)
@@ -351,15 +358,20 @@ module read
         read(buf, *) free_stream_pressure
         DebugInfo('free_stream_pressure = '//trim(buf))
 
-        ! read TKE_inf
+        ! read turbulence intensity in percentage
         call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_tk
-        DebugInfo('free_stream_TKE = '//trim(buf))
+        read(buf, *) free_stream_tu
+        DebugInfo('free_stream_Turb_intensity = '//trim(buf))
 
-        ! read omega_inf
+        ! read viscosity ratio
         call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_tw
-        DebugInfo('free_stream_omega = '//trim(buf))
+        read(buf, *) mu_ratio_inf
+        DebugInfo('free_stream_mu_ratio = '//trim(buf))
+
+        ! read intermittency
+        call get_next_token(FLOW_FILE_UNIT, buf)
+        read(buf, *) free_stream_tgm
+        DebugInfo('free_stream_Intermittency = '//trim(buf))
 
         ! read reference viscosity
         call get_next_token(FLOW_FILE_UNIT, buf)

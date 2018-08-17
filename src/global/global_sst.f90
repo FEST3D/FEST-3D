@@ -9,8 +9,8 @@ module global_sst
   real, parameter  :: bstar      = 0.09
   real, parameter  :: kappa      = 0.41
   real, parameter  :: a1         = 0.31
-  real, parameter  :: gama1     = (beta1/bstar)-((sigma_w1*(kappa**2))/sqrt(bstar))
-  real, parameter  :: gama2     = (beta2/bstar)-((sigma_w2*(kappa**2))/sqrt(bstar))
+  real  :: gama1     = (beta1/bstar)-((sigma_w1*(kappa**2))/sqrt(bstar))
+  real  :: gama2     = (beta2/bstar)-((sigma_w2*(kappa**2))/sqrt(bstar))
 
   ! to be used after blending with F1
   real             :: beta
@@ -19,6 +19,6 @@ module global_sst
   real             :: gama
 
   ! blending function
-  real, dimension(:,:,:), allocatable :: sst_F1
+  real, dimension(:,:,:), allocatable, target :: sst_F1
 
 end module global_sst

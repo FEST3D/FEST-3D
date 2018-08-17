@@ -6,7 +6,7 @@
               !include nothing
               continue
 
-          case ("sst")
+          case ("sst", "sst2003")
               include "turbulence_models/sst/solver/link_aliases_solver.inc"
 
           case ("kkl")

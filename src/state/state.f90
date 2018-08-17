@@ -44,14 +44,17 @@ module state
     use global_vars, only : te
     use global_vars, only : tv
     use global_vars, only : tkl
+    use global_vars, only : tgm
     use global_vars, only : tk_inf
     use global_vars, only : tw_inf
     use global_vars, only : te_inf
     use global_vars, only : tv_inf
     use global_vars, only : tkl_inf
+    use global_vars, only : tgm_inf
     use global_vars, only : gm
     use global_vars, only : mu_ref
     use global_vars, only : turbulence
+    use global_vars, only : transition
     use global_vars, only : infile
     use global_vars, only : intermittency
     use global_vars, only : ExtraVar1
@@ -67,9 +70,13 @@ module state
     use global_vars, only  : free_stream_pressure
     use global_vars, only  : free_stream_tk
     use global_vars, only  : free_stream_tw
+    use global_vars, only  : free_stream_tu
+    use global_vars, only  : free_stream_tgm
     use global_vars, only  : vel_mag
     use global_vars, only  : MInf
     use global_vars, only  : Reynolds_number
+    use global_vars, only  : mu_ratio_inf
+    use global_vars, only  : Turb_intensity_inf
 
 
     use utils,       only: alloc, dealloc, dmsg
@@ -114,7 +121,7 @@ module state
                     !include nothing
                     continue
                 
-                case ("sst", "bsl", "des-sst", "kw")
+                case ("sst", "sst2003", "bsl", "des-sst", "kw")
                     tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
                     tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
                     tk_inf => qp_inf(6)
@@ -145,6 +152,23 @@ module state
 
             end select
 
+
+            ! Transition modeling
+            select case(trim(transition))
+
+              case('lctm2015')
+                tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, n_var)
+                tgm_inf => qp_inf(n_var)
+
+              case('j10', 'bc', 'none')
+                !do nothing
+                continue
+
+              case DEFAULT
+                Fatal_error
+
+            end Select
+
         end subroutine link_aliases
 
 
@@ -172,7 +196,7 @@ module state
                 case ("none")
                     continue
 
-                  case ("sst", "bsl", "kw", "des-sst")
+                  case ("sst", "sst2003", "bsl", "kw", "des-sst")
                     nullify(tk)
                     nullify(tw)
                     nullify(tk_inf)
@@ -202,6 +226,23 @@ module state
                   Fatal_error
 
             end select
+
+
+            !Transition modeling
+            select case(trim(transition))
+
+              case('lctm2015')
+                nullify(tgm)
+                nullify(tgm_inf)
+
+              case('j10', 'bc', 'none')
+                !do nothing
+                continue
+
+              case DEFAULT
+                Fatal_error
+
+            end Select
 
         end subroutine unlink_aliases
 
@@ -242,6 +283,10 @@ module state
 
             call dealloc(qp)
             call dealloc(intermittency)
+            call dealloc(ExtraVar1)
+            call dealloc(ExtraVar2)
+            call dealloc(ExtraVar3)
+            call dealloc(ExtraVar4)
 
         end subroutine deallocate_memory
 
@@ -308,37 +353,38 @@ module state
             vel_mag = sqrt(x_speed_inf**2 + y_speed_inf**2 + z_speed_inf**2)
             MInf    = Vel_mag/sqrt(gm*pressure_inf/density_inf)
             Reynolds_number = density_inf*vel_mag*1.0/mu_ref
+            Turb_intensity_inf = free_stream_tu/100
 
             select case (trim(turbulence))
                 
                 case ("none")
                     continue
 
-                case ("sst", "bsl")
-                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
-                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+                case ("sst", "sst2003", "bsl")
+                    tk_inf = 1.5*((Vel_mag*Turb_Intensity_inf)**2)
+                    tw_inf = density_inf*tk_inf/(mu_ref*mu_ratio_inf)
 
                 case ("kkl")
                     tk_inf = 9*(1e-9)*(sound_speed_inf()**2)
                     tkl_inf = 1.5589*(1e-6)*(mu_ref*sound_speed_inf())/density_inf
 
                 case ("sa")
-                    tv_inf = 3*mu_ref/density_inf
+                     tv_inf = mu_ratio_inf*mu_ref/density_inf
 
                 case ("saBC")
-                    tv_inf = 0.005*3*mu_ref/density_inf
+                    tv_inf = 0.005*mu_ratio_inf*mu_ref/density_inf
 
                 case ("kw")
-                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
-                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+                    tk_inf = 1.5*((Vel_mag*Turb_Intensity_inf)**2)
+                    tw_inf = density_inf*tk_inf/(mu_ref*mu_ratio_inf)
 
                 case ("ke")
-                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
-                    te_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+                    tk_inf = 1.5*((Vel_mag*Turb_Intensity_inf)**2)
+                    tw_inf = 0.09*density_inf*tk_inf*tk_inf/(mu_ref*mu_ratio_inf)
 
                 case ("des-sst")
-                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
-                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+                    tk_inf = 1.5*((Vel_mag*Turb_Intensity_inf)**2)
+                    tw_inf = density_inf*tk_inf/(mu_ref*mu_ratio_inf)
 
                 case ("les")
                   continue
@@ -348,6 +394,63 @@ module state
                   Fatal_error
 
             end select
+
+
+            !Transition modeling
+            select case(trim(transition))
+
+              case('lctm2015')
+                tgm_inf = free_stream_tgm
+
+              case('j10', 'bc', 'none')
+                !do nothing
+                continue
+
+              case DEFAULT
+                Fatal_error
+
+            end Select
+
+            ! old version kept for compasion
+!            select case (trim(turbulence))
+!                
+!                case ("none")
+!                    continue
+!
+!                case ("sst", "sst2003", "bsl")
+!                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
+!                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+!
+!                case ("kkl")
+!                    tk_inf = 9*(1e-9)*(sound_speed_inf()**2)
+!                    tkl_inf = 1.5589*(1e-6)*(mu_ref*sound_speed_inf())/density_inf
+!
+!                case ("sa")
+!                     tv_inf = 3*mu_ref/density_inf
+!
+!                case ("saBC")
+!                    tv_inf = 0.005*3*mu_ref/density_inf
+!
+!                case ("kw")
+!                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
+!                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+!
+!                case ("ke")
+!                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
+!                    te_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+!
+!                case ("des-sst")
+!                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
+!                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
+!
+!                case ("les")
+!                  continue
+!                  ! todo
+!
+!                case DEFAULT
+!                  Fatal_error
+!
+!            end select
 
         end subroutine init_infinity_values
 
@@ -441,13 +544,31 @@ module state
           select case (trim(turbulence))
             case('none')
               n_var=5
+
             case('sa', 'saBC')
               n_var=6
-            case('sst','bsl', 'kw', 'ke', 'kkl', 'Des-kw')
+              
+            case('sst', "sst2003", 'bsl', 'kw', 'ke', 'kkl', 'Des-kw')
               n_var=7
+
             case DEFAULT
               n_var=5
+
           end select
+
+
+          !Transition modeling
+          select case(trim(transition))
+            case('lctm2015')
+              n_var = n_var + 1
+
+            case('j10', 'bc', 'none')
+              n_var = n_var + 0
+
+            case DEFAULT
+              Fatal_error
+
+          end Select
 
         end subroutine set_n_var_value
 

@@ -1065,7 +1065,7 @@ contains
     select case(turbulence)
       case('none')
         comm_var=n_var !rho,u,v,w,P
-      case('sst')
+      case('sst', 'sst2003')
         comm_var= 9 !n_var+2 !k, omega, F1, mu_t
       case('kkl')
         comm_var= 8 !n_var+2 !k, kl, mu_t
