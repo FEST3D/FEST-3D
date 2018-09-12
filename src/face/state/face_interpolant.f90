@@ -322,12 +322,12 @@ module face_interpolant
                     y_qp_right = y_qp_right_muscl
                     z_qp_left = z_qp_left_muscl
                     z_qp_right = z_qp_right_muscl
-                    x_qp_left( :, :, :, 6:) = qp(-1:imx, 1:jmx-1, 1:kmx-1, 6:n_var)
-                    x_qp_right(:, :, :, 6:) = qp(0:imx+1, 1:jmx-1, 1:kmx-1, 6:n_var)
-                    y_qp_left( :, :, :, 6:) = qp(1:imx-1, -1:jmx, 1:kmx-1, 6:n_var)
-                    y_qp_right(:, :, :, 6:) = qp(1:imx-1, 0:jmx+1, 1:kmx-1, 6:n_var)
-                    z_qp_left( :, :, :, 6:) = qp(1:imx-1, 1:jmx-1, -1:kmx, 6:n_var)
-                    z_qp_right(:, :, :, 6:) = qp(1:imx-1, 1:jmx-1, 0:kmx+1, 6:n_var)
+                    !x_qp_left( :, :, :, 6:) = qp(-1:imx, 1:jmx-1, 1:kmx-1, 6:n_var)
+                    !x_qp_right(:, :, :, 6:) = qp(0:imx+1, 1:jmx-1, 1:kmx-1, 6:n_var)
+                    !y_qp_left( :, :, :, 6:) = qp(1:imx-1, -1:jmx, 1:kmx-1, 6:n_var)
+                    !y_qp_right(:, :, :, 6:) = qp(1:imx-1, 0:jmx+1, 1:kmx-1, 6:n_var)
+                    !z_qp_left( :, :, :, 6:) = qp(1:imx-1, 1:jmx-1, -1:kmx, 6:n_var)
+                    !z_qp_right(:, :, :, 6:) = qp(1:imx-1, 1:jmx-1, 0:kmx+1, 6:n_var)
                 case ("weno")
                     call compute_weno_states()
                     x_qp_left  =  x_qp_left_weno

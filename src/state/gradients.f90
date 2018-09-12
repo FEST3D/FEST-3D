@@ -60,7 +60,6 @@ module gradients
 
         ! linking pointer to laminar gradients
         call setup_laminar_grad()
-        print*, Error_msg
 
         ! linking pointer to turbulent gradients
         select case (trim(turbulence))

@@ -1,4 +1,4 @@
-#define Debug
+#define Release
 
 #ifdef Debug
 #define DebugCall(arg) if(process_id==0) write(*,'(A,I0,A)') "Call_one (In "//__FILE__//", at ",__LINE__,", "//arg//" )"

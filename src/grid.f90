@@ -662,200 +662,210 @@ module grid
           allocate(imax_recv_buffer(3*layers*(jmx+6)*(kmx+6)))
           allocate(jmax_recv_buffer(3*layers*(imx+6)*(kmx+6)))
           allocate(kmax_recv_buffer(3*layers*(imx+6)*(jmx+6)))
-          if(imin_id>=0)then
-            !collect grid point in 1d array
-            count=0
-            do l=1,layers
-              do k=-2,kmx+3
-                do j=-2,jmx+3
-                  count=count+1
-                  imin_send_buffer(count) = grid_x(l+1,j,k)
-                end do
-              end do
-            end do
-
-            do l=1,layers
-              do k=-2,kmx+3
-                do j=-2,jmx+3
-                  count=count+1
-                  imin_send_buffer(count) = grid_y(l+1,j,k)
-                end do
-              end do
-            end do
-
-            do l=1,layers
-              do k=-2,kmx+3
-                do j=-2,jmx+3
-                  count=count+1
-                  imin_send_buffer(count) = grid_z(l+1,j,k)
-                end do
-              end do
-            end do
-
-            if(mpi_class(1)==0)then
-              call MPI_SEND(imin_send_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD, ierr)
-              call MPI_RECV(imin_recv_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD,status,ierr)
-            else
-              call MPI_RECV(imin_recv_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD,status,ierr)
-              call MPI_SEND(imin_send_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD, ierr)
-            end if
-             ! distribute grid points
-            if(dir_switch(1)==0)then
-              count=0
-              do l=1,layers
-                do k=Gklo(1),Gkhi(1)
-                  do j=Gjlo(1),Gjhi(1)
-                    count=count+1
-                    grid_x(1-l,j,k) = imin_recv_buffer(count)
-                  end do
-                end do
-              end do
-
-              do l=1,layers
-                do k=Gklo(1),Gkhi(1)
-                  do j=Gjlo(1),Gjhi(1)
-                    count=count+1
-                    grid_y(1-l,j,k) = imin_recv_buffer(count)
-                  end do
-                end do
-              end do
-
-              do l=1,layers
-                do k=Gklo(1),Gkhi(1)
-                  do j=Gjlo(1),Gjhi(1)
-                    count=count+1
-                    grid_z(1-l,j,k) = imin_recv_buffer(count)
-                  end do
-                end do
-              end do
-            else
-              count=0
-              do l=1,layers
-                do j=Gjlo(1),Gjhi(1)
-                  do k=Gklo(1),Gkhi(1)
-                    count=count+1
-                    grid_x(1-l,j,k) = imin_recv_buffer(count)
-                  end do
-                end do
-              end do
-
-              do l=1,layers
-                do j=Gjlo(1),Gjhi(1)
-                  do k=Gklo(1),Gkhi(1)
-                    count=count+1
-                    grid_y(1-l,j,k) = imin_recv_buffer(count)
-                  end do
-                end do
-              end do
-
-              do l=1,layers
-                do j=Gjlo(1),Gjhi(1)
-                  do k=Gklo(1),Gkhi(1)
-                    count=count+1
-                    grid_z(1-l,j,k) = imin_recv_buffer(count)
-                  end do
-                end do
-              end do
-            end if
-          end if
-
-          !--- IMAX ---!
-          if(imax_id>=0)then
-            !collect grid point in 1d array
-            count=0
-            do l=1,layers
-              do k=-2,kmx+3
-                do j=-2,jmx+3
-                  count=count+1
-                  imax_send_buffer(count) = grid_x(imx-l,j,k)
-                end do
-              end do
-            end do
-
-            do l=1,layers
-              do k=-2,kmx+3
-                do j=-2,jmx+3
-                  count=count+1
-                  imax_send_buffer(count) = grid_y(imx-l,j,k)
-                end do
-              end do
-            end do
-
-            do l=1,layers
-              do k=-2,kmx+3
-                do j=-2,jmx+3
-                  count=count+1
-                  imax_send_buffer(count) = grid_z(imx-l,j,k)
-                end do
-              end do
-            end do
-
-            if(mpi_class(2)==0)then
-              call MPI_SEND(imax_send_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD, ierr)
-              call MPI_RECV(imax_recv_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD,status,ierr)
-            else
-              call MPI_RECV(imax_recv_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD,status,ierr)
-              call MPI_SEND(imax_send_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD, ierr)
-            end if
-             ! distribute grid points
-            if(dir_switch(2)==0)then
-              count=0
-              do l=1,layers
-                do k=Gklo(2),Gkhi(2)
-                  do j=Gjlo(2),Gjhi(2)
-                    count=count+1
-                    grid_x(imx+l,j,k) = imax_recv_buffer(count)
-                  end do
-                end do
-              end do
-
-              do l=1,layers
-                do k=Gklo(2),Gkhi(2)
-                  do j=Gjlo(2),Gjhi(2)
-                    count=count+1
-                    grid_y(imx+l,j,k) = imax_recv_buffer(count)
-                  end do
-                end do
-              end do
-
-              do l=1,layers
-                do k=Gklo(2),Gkhi(2)
-                  do j=Gjlo(2),Gjhi(2)
-                    count=count+1
-                    grid_z(imx+l,j,k) = imax_recv_buffer(count)
-                  end do
-                end do
-              end do
-            else
-              count=0
-              do l=1,layers
-                do j=Gjlo(2),Gjhi(2)
-                  do k=Gklo(2),Gkhi(2)
-                    count=count+1
-                    grid_x(imx+l,j,k) = imax_recv_buffer(count)
-                  end do
-                end do
-              end do
-
-              do l=1,layers
-                do j=Gjlo(2),Gjhi(2)
-                  do k=Gklo(2),Gkhi(2)
-                    count=count+1
-                    grid_y(imx+l,j,k) = imax_recv_buffer(count)
-                  end do
-                end do
-              end do
-
-              do l=1,layers
-                do j=Gjlo(2),Gjhi(2)
-                  do k=Gklo(2),Gkhi(2)
-                    count=count+1
-                    grid_z(imx+l,j,k) = imax_recv_buffer(count)
-                  end do
-                end do
-              end do
-            end if
-          end if
+!          if(imin_id>=0)then
+!            !collect grid point in 1d array
+!            count=0
+!            do l=1,layers
+!              do k=-2,kmx+3
+!                do j=-2,jmx+3
+!                  count=count+1
+!                  imin_send_buffer(count) = grid_x(l+1,j,k)
+!                end do
+!              end do
+!            end do
+!
+!            do l=1,layers
+!              do k=-2,kmx+3
+!                do j=-2,jmx+3
+!                  count=count+1
+!                  imin_send_buffer(count) = grid_y(l+1,j,k)
+!                end do
+!              end do
+!            end do
+!
+!            do l=1,layers
+!              do k=-2,kmx+3
+!                do j=-2,jmx+3
+!                  count=count+1
+!                  imin_send_buffer(count) = grid_z(l+1,j,k)
+!                end do
+!              end do
+!            end do
+!
+!        call MPI_SENDRECV(imin_send_buffer,count, MPI_DOUBLE_PRECISION, imin_id,1,&
+!                          imin_recv_buffer,count, MPI_DOUBLE_PRECISION, imin_id,1,&
+!                          MPI_COMM_WORLD,status,ierr)
+!        !    if(mpi_class(1)==0)then
+!        !      print*, Process_id, "imin master"
+!        !      call MPI_SEND(imin_send_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD, ierr)
+!        !      call MPI_RECV(imin_recv_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD,status,ierr)
+!        !    else
+!        !      print*, Process_id, "imin slave"
+!        !      call MPI_RECV(imin_recv_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD,status,ierr)
+!        !      call MPI_SEND(imin_send_buffer, count,MPI_DOUBLE_PRECISION,imin_id,1,MPI_COMM_WORLD, ierr)
+!        !    end if
+!             ! distribute grid points
+!            if(dir_switch(1)==0)then
+!              count=0
+!              do l=1,layers
+!                do k=Gklo(1),Gkhi(1)
+!                  do j=Gjlo(1),Gjhi(1)
+!                    count=count+1
+!                    grid_x(1-l,j,k) = imin_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!
+!              do l=1,layers
+!                do k=Gklo(1),Gkhi(1)
+!                  do j=Gjlo(1),Gjhi(1)
+!                    count=count+1
+!                    grid_y(1-l,j,k) = imin_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!
+!              do l=1,layers
+!                do k=Gklo(1),Gkhi(1)
+!                  do j=Gjlo(1),Gjhi(1)
+!                    count=count+1
+!                    grid_z(1-l,j,k) = imin_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!            else
+!              count=0
+!              do l=1,layers
+!                do j=Gjlo(1),Gjhi(1)
+!                  do k=Gklo(1),Gkhi(1)
+!                    count=count+1
+!                    grid_x(1-l,j,k) = imin_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!
+!              do l=1,layers
+!                do j=Gjlo(1),Gjhi(1)
+!                  do k=Gklo(1),Gkhi(1)
+!                    count=count+1
+!                    grid_y(1-l,j,k) = imin_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!
+!              do l=1,layers
+!                do j=Gjlo(1),Gjhi(1)
+!                  do k=Gklo(1),Gkhi(1)
+!                    count=count+1
+!                    grid_z(1-l,j,k) = imin_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!            end if
+!          end if
+!
+!          !--- IMAX ---!
+!          if(imax_id>=0)then
+!            !collect grid point in 1d array
+!            count=0
+!            do l=1,layers
+!              do k=-2,kmx+3
+!                do j=-2,jmx+3
+!                  count=count+1
+!                  imax_send_buffer(count) = grid_x(imx-l,j,k)
+!                end do
+!              end do
+!            end do
+!
+!            do l=1,layers
+!              do k=-2,kmx+3
+!                do j=-2,jmx+3
+!                  count=count+1
+!                  imax_send_buffer(count) = grid_y(imx-l,j,k)
+!                end do
+!              end do
+!            end do
+!
+!            do l=1,layers
+!              do k=-2,kmx+3
+!                do j=-2,jmx+3
+!                  count=count+1
+!                  imax_send_buffer(count) = grid_z(imx-l,j,k)
+!                end do
+!              end do
+!            end do
+!
+!        call MPI_SENDRECV(imax_send_buffer,count, MPI_DOUBLE_PRECISION, imax_id,1,&
+!                          imax_recv_buffer,count, MPI_DOUBLE_PRECISION, imax_id,1,&
+!                          MPI_COMM_WORLD,status,ierr)
+!        !    if(mpi_class(2)==0)then
+!        !      print*, Process_id, "imax master"
+!        !      call MPI_SEND(imax_send_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD, ierr)
+!        !      call MPI_RECV(imax_recv_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD,status,ierr)
+!        !    else
+!        !      print*, Process_id, "imax slave"
+!        !      call MPI_RECV(imax_recv_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD,status,ierr)
+!        !      call MPI_SEND(imax_send_buffer, count,MPI_DOUBLE_PRECISION,imax_id,1,MPI_COMM_WORLD, ierr)
+!        !    end if
+!             ! distribute grid points
+!            if(dir_switch(2)==0)then
+!              count=0
+!              do l=1,layers
+!                do k=Gklo(2),Gkhi(2)
+!                  do j=Gjlo(2),Gjhi(2)
+!                    count=count+1
+!                    grid_x(imx+l,j,k) = imax_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!
+!              do l=1,layers
+!                do k=Gklo(2),Gkhi(2)
+!                  do j=Gjlo(2),Gjhi(2)
+!                    count=count+1
+!                    grid_y(imx+l,j,k) = imax_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!
+!              do l=1,layers
+!                do k=Gklo(2),Gkhi(2)
+!                  do j=Gjlo(2),Gjhi(2)
+!                    count=count+1
+!                    grid_z(imx+l,j,k) = imax_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!            else
+!              count=0
+!              do l=1,layers
+!                do j=Gjlo(2),Gjhi(2)
+!                  do k=Gklo(2),Gkhi(2)
+!                    count=count+1
+!                    grid_x(imx+l,j,k) = imax_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!
+!              do l=1,layers
+!                do j=Gjlo(2),Gjhi(2)
+!                  do k=Gklo(2),Gkhi(2)
+!                    count=count+1
+!                    grid_y(imx+l,j,k) = imax_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!
+!              do l=1,layers
+!                do j=Gjlo(2),Gjhi(2)
+!                  do k=Gklo(2),Gkhi(2)
+!                    count=count+1
+!                    grid_z(imx+l,j,k) = imax_recv_buffer(count)
+!                  end do
+!                end do
+!              end do
+!            end if
+!          end if
 
           !--- JMIN ---!
           if(jmin_id>=0)then
