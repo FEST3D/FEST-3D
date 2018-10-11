@@ -85,6 +85,9 @@ module solver
   use utils, only:  dmsg
   use utils, only:  DEBUG_LEVEL
 
+  use CC,    only: setupCC
+  use CC,    only: destroyCC
+
   use string
   use read, only : read_input_and_controls
 
@@ -186,6 +189,7 @@ module solver
               call mpi_barrier(MPI_COMM_WORLD,ierr)
               call find_wall_dist()
             end if
+            call setupCC()
 !            if(mu_ref /= 0. .or. turbulence /= 'none') then
 !              call setup_source()
 !            end if
@@ -220,6 +224,7 @@ module solver
 !              call destroy_source()
 !            end if
             call destroy_gradients()
+            call destroyCC()
             if(turbulence /= 'none') then
               call destroy_wall_dist()
             end if

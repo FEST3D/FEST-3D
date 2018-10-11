@@ -109,6 +109,9 @@ module update
   use global_sst, only : sigma_w1
   use global_sst, only : sigma_w2
 
+  use plusgs     , only : update_with_plusgs
+  use plusgs     , only : setup_plusgs
+  use plusgs     , only : destroy_plusgs
   use lusgs     , only : update_with_lusgs
   use lusgs     , only : setup_lusgs
   use lusgs     , only : destroy_lusgs
@@ -139,6 +142,8 @@ module update
     real, dimension(:)      , allocatable :: R
     real :: eps=0.05
     real, dimension(:,:,:,:), allocatable :: delQ
+    real, dimension(:,:,:,:), allocatable :: Qm
+    real, dimension(:,:,:,:), allocatable :: Qn
     real, dimension(:,:,:,:), allocatable :: delQstar
 
     integer :: m = 20
@@ -179,6 +184,12 @@ module update
             call setup_DP_LUSGS()
           case ("hlusgs")
             call setup_HLU_SGS()
+          case ("plusgs")
+            call setup_plusgs()
+            call alloc(Qm, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var)
+            call alloc(Qn, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var)
+            Qm = qp
+            Qn = qp
           case ("gmres")
             !call setup_GMRES()
             call setup_solvergmres(m)
@@ -215,6 +226,8 @@ module update
             call destroy_DP_LUSGS()
           case ("hlusgs")
             call destroy_HLU_SGS()
+          case ("plusgs")
+            call destroy_plusgs()
           case ("gmres")
             call destroy_solvergmres()
             call dealloc(delQ)
@@ -335,6 +348,10 @@ module update
               call get_total_conservative_Residue()
               call compute_time_step() ! has to be after get_..._Residue()
               call update_with_HLU_SGS()
+            case ("plusgs")
+              call get_total_conservative_Residue()
+              call compute_time_step() ! has to be after get_..._Residue()
+              call update_with_plusgs()
             case ("gmres")
               call get_total_conservative_Residue()
               call compute_time_step() ! has to be after get_..._Residue()

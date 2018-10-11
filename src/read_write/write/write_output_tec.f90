@@ -96,7 +96,7 @@ module write_output_tec
   character(len=8) :: file_format
   character(len=16) :: data_format
   character                          :: newline=achar(10)
-  character(len=*), parameter :: format="(35e25.15)"
+  character(len=*), parameter :: format="(1ES28.15E4)"
   public :: write_file
 
   contains

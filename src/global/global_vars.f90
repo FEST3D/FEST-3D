@@ -139,6 +139,13 @@ module global_vars
   real                                              :: mu_ratio_inf ! free_stream viscosity ratio
   real                                              :: Turb_intensity_inf ! free_stream turbulence intensity
   real, dimension(:, :, :), allocatable             :: dist 
+  real, dimension(:, :, :), allocatable             :: CCnormalX ! Cell-Center normal nx
+  real, dimension(:, :, :), allocatable             :: CCnormalY! Cell-Center normal ny
+  real, dimension(:, :, :), allocatable             :: CCnormalZ! Cell-Center normal nz
+  real, dimension(:, :, :), allocatable             :: CCVn ! Cell-Center vec(Velocity).normal
+  real, dimension(:, :, :), allocatable             :: DCCVnX! Derivative of Cell-Center vec(Velocity).normal
+  real, dimension(:, :, :), allocatable             :: DCCVnY! Derivative of Cell-Center vec(Velocity).normal
+  real, dimension(:, :, :), allocatable             :: DCCVnZ! Derivative of Cell-Center vec(Velocity).normal
 
   ! state variable turbulent
   integer                                           :: sst_n_var=2

@@ -1,6 +1,6 @@
-module ausmUP
+module ausmP
     !-------------------------------------------------------------------
-    ! The ausmUP scheme is a type of flux-splitting scheme
+    ! The slau scheme is a type of flux-splitting scheme
     !-------------------------------------------------------------------
     
     use global_vars, only : imx
@@ -12,7 +12,6 @@ module ausmUP
     use global_vars, only : znx, zny, znz !face unit normal z
     use global_vars, only : xA, yA, zA    !face area
 
-    use global_vars, only : MInf
     use global_vars, only : gm
     use global_vars, only : n_var
     use global_vars, only : turbulence
@@ -27,6 +26,7 @@ module ausmUP
     use face_interpolant, only: x_qp_left, x_qp_right 
     use face_interpolant, only: y_qp_left, y_qp_right
     use face_interpolant, only:  z_qp_left, z_qp_right
+
 
     implicit none
     private
@@ -46,20 +46,20 @@ module ausmUP
 
             implicit none
 
-            call dmsg(1, 'ausmUP', 'setup_scheme')
+            call dmsg(1, 'slau', 'setup_scheme')
 
             call alloc(F, 1, imx, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'F - ausmUP.')
+                        'F - slau.')
             call alloc(G, 1, imx-1, 1, jmx, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'G - ausmUP.')
+                        'G - slau.')
             call alloc(H, 1, imx-1, 1, jmx-1, 1, kmx, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'H - ausmUP.')
+                        'H - slau.')
             call alloc(residue, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'residue - ausmUP.')
+                        'residue - slau.')
 
         end subroutine setup_scheme
 
@@ -67,7 +67,7 @@ module ausmUP
 
             implicit none
 
-            call dmsg(1, 'ausmUP', 'destroy_scheme')
+            call dmsg(1, 'slau', 'destroy_scheme')
             
             call dealloc(F)
             call dealloc(G)
@@ -93,24 +93,17 @@ module ausmUP
             real :: pL, pR
             real :: rL, rR
             real :: cL, cR
-            real :: C, Cstar2
+            real :: C
             real :: ML, MR
             real :: VnL, VnR
             real :: betaL, betaR
             real :: alphaL, alphaR
-            real :: fna
-            real :: Mo
-            real :: MF
-            real :: MB2
-            real :: Pu
-            real :: fnML, fnMR
-            real :: alfa
-            real, parameter :: Ku = 0.75
-            real, parameter :: Kp = 0.25
-            real, parameter :: sigma = 1.0
-            real :: Mp
+            real :: FmL, FmR
+            real :: Mface
+            real :: Cs
 
-            call dmsg(1, 'ausmUP', 'compute_flux '//trim(f_dir))
+
+            call dmsg(1, 'slau', 'compute_flux '//trim(f_dir))
             
             select case (f_dir)
                 case ('x')
@@ -147,7 +140,7 @@ module ausmUP
                     f_qp_left => z_qp_left
                     f_qp_right => z_qp_right
                 case default
-                    call dmsg(5, 'ausmUP', 'compute_flux', &
+                    call dmsg(5, 'slau', 'compute_flux', &
                             'Direction not recognised')
                     stop
             end select
@@ -182,64 +175,51 @@ module ausmUP
                 VnR = uR*nx(i, j, k) + vR*ny(i, j, k) + wR*nz(i, j, k)
 
                 ! ---- speed of sound ----
-                Cstar2 = 1.0*(gm-1.0)*(HL + HR)/(gm+1.0)
-                cL = Cstar2/(max(sqrt(Cstar2),VnL))
-                cR = Cstar2/(max(sqrt(Cstar2),-VnR))
-                C  = min(cL,cR)
+                cs = sqrt(2.0*(gm-1.0)*(0.5*(HL + HR))/(gm+1.0))
+                cL = cs*cs/(max(cs, abs(VnL)))
+                cR = cs*cs/(max(cs, abs(VnR)))
+                C  = min(cL, CR)
 
                 ! ---- Mach at face ----
                 ML = VnL/C
                 MR = VnR/C
-                MB2= 0.5*((VnL*VnL) + (VnR*VnR))/(C*C)
-
-
-                ! -- function at face --
-                Mo = sqrt(min(1.0, max(MB2, MInf*MInf)))
-                fna = Mo*(2.0 - Mo)
-                alfa = 3.0*(-4.0 + 5.0*fna*fna)/16.0
 
                 ! ---- switch for supersonic flow ----
-                !alphaL= max(0.0, 1.0-floor(abs(ML)))
-                !alphaR= max(0.0, 1.0-floor(abs(MR)))
-                !Above two line of code is eqvivalent to following code
-                    if(abs(ML)>=1.0) then
-                      alphaL = 0.0
-                    else
-                      alphaL=1.0
-                    end if
-                    if(abs(MR)>=1.0) then
-                      alphaR=0.0
-                    else
-                      alphaR=1.0
-                    end if
+                alphaL= max(0, 1-floor(abs(ML)))
+                alphaR= max(0, 1-floor(abs(MR)))
 
-                ! -- pressure factor --
-                betaL = (1.0-alphaL)*0.5*(1.0+sign(1.0,ML)) + (alphaL)*0.25*(2.0-ML)*((ML+1.0)**2) &
-                                                            + (alphaL)*alfa*ML*((ML*ML)-1.0)**2
-                betaR = (1.0-alphaR)*0.5*(1.0-sign(1.0,MR)) + (alphaR)*0.25*(2.0+MR)*((MR-1.0)**2) &
-                                                            - (alphaR)*alfa*MR*((MR*MR)-1.0)**2
-                !betaL = 0.25*(2.0-ML)*((ML+1.0)**2) + alfa*ML*(((ML*ML)-1.0)**2)
-                !betaR = 0.25*(2.0+MR)*((MR-1.0)**2) - alfa*MR*(((MR*MR)-1.0)**2)
-                Pu    = -Ku*betaL*betaR*(rL+rR)*fna*C*(VnR-VnL)
                 
-                ! -- mass flux factor --
-                fnML =((1.0-alphaL)*0.5*(1.0+sign(1.0,ML))*ML) + (alphaL)*((0.25*(ML+1.0)**2)+(0.125*((ML*ML)-1.0)**2))
-                fnMR =((1.0-alphaR)*0.5*(1.0-sign(1.0,MR))*MR) - (alphaR)*((0.25*(MR-1.0)**2)-(0.125*((MR*MR)-1.0)**2))
-                !fnML =((0.25*(ML+1.0)**2)+(0.125*((ML*ML)-1.0)**2))
-                !fnMR =((0.25*(MR-1.0)**2)-(0.125*((MR*MR)-1.0)**2))
-                Mp   = -2.0*Kp*max(1.0-sigma*MB2,0.0)*(pR-pL)/(fna*(rL+rR)*C*C)
+                ! Compute '+' direction quantities
+                FmL   = (0.5*(1.0+sign(1.0,ML))*(1.0-alphaL)*ML) + alphaL*0.25*((1.0+ML)**2)
+                betaL = (0.5*(1.0+sign(1.0,ML))*(1.0-alphaL))    + alphaL*0.25*((1.0+ML)**2) * (2.0 - ML)
 
-                ! -- Pressure --
-                pbar = betaL*pL + betaR*pR + Pu
+                ! Compute '-' direction quantities
+                FmR   = (0.5*(1.0-sign(1.0,MR))*(1.0-alphaR)*MR) - alphaR*0.25*((1.0-MR)**2)
+                betaR = (0.5*(1.0-sign(1.0,MR))*(1.0-alphaR))    + alphaR*0.25*((1.0-MR)**2)*(2.0 + MR)
+
+                !AUSM+modification
+                ! Compute '+' direction quantities
+                FmL   = FmL   + alphaL*0.1250*((ML**2-1.0)**2)
+                betaL = betaL + alphaL*0.1875*((ML**2-1.0)**2)*ML
+
+                ! Compute '-' direction quantities
+                FmR   = FmR   - alphaR*0.1250*((MR**2-1.0)**2)
+                betaR = betaR - alphaR*0.1875*((MR**2-1.0)**2)*MR
+
+                
+                ! mass coefficient
+                Mface = FmL + FmR
+                ! -- Pressure coeffient--
+                pbar = betaL*pL + betaR*pR
+
 
                 ! -- mass --
-                MF = fnML + fnMR + Mp
-                if(MF>0)then
-                    mass = 0.5*MF*C*rL
-                else 
-                    mass = 0.5*MF*C*rR
+                if(Mface>0.0)then
+                    mass = Mface*C*rL
+                else
+                    mass = Mface*c*rR
                 end if
-                !mass = 0.5*C*(rL*(MF+abs(MF)) + rR*(MF-abs(MF))) 
+
                 mass = mass *(i_f*make_F_flux_zero(i) &
                             + j_f*make_G_flux_zero(j) &
                             + k_f*make_H_flux_zero(k))
@@ -261,26 +241,22 @@ module ausmUP
                 F_minus(4) = (F_minus(1) * wR)
                 F_minus(5) = (F_minus(1) * HR)
 
-                ! -- Turbulence variables mass flux --
+                !! -- Turbulence variables mass flux --
                 if(n_var>5) then
                   F_plus(6:)  = F_Plus(1)  * f_qp_left(i,j,k,6:)
                   F_minus(6:) = F_minus(1) * f_qp_right(i,j,k,6:)
                 end if
 
-                ! Get the total flux for a face
+                ! total flux
                 flux_p(i, j, k, :) = F_plus(:) + F_minus(:)
 
+                ! Get the total flux for a face
                 ! -- Pressure flux addition --
                 flux_p(i, j, K, 2) = flux_p(i, j, k, 2) + (pbar * nx(i, j, k))
                 flux_p(i, j, K, 3) = flux_p(i, j, k, 3) + (pbar * ny(i, j, k))
                 flux_p(i, j, K, 4) = flux_p(i, j, k, 4) + (pbar * nz(i, j, k))
 
-                flux_P(i, j, k, :) = flux_p(i, j, k, :) * fA(i, j, k)
-
-                if(i_f==1 .and. (i==2) .and. j==1 .and. k==1)then
-                    print*, process_id, "Flux: ",flux_p(i,j,k,:)
-                end if
-
+                flux_p(i, j, k, :) = flux_p(i, j, k, :)*fA(i,j,k)
               end do
              end do
             end do 
@@ -291,42 +267,42 @@ module ausmUP
             
             implicit none
             
-            call dmsg(1, 'ausmUP', 'compute_fluxes')
+            call dmsg(1, 'slau', 'compute_fluxes')
 
             call compute_flux('x')
             if (any(isnan(F))) then
-                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: F flux Nan detected')
+                call dmsg(5, 'slau', 'compute_residue', 'ERROR: F flux Nan detected')
                 stop
             end if    
 
-!            call compute_flux('y')
-!            if (any(isnan(G))) then 
-!                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: G flux Nan detected')
-!                stop
-!            end if    
-!            
-!            if(kmx==2) then
-!              H = 0.
-!            else
-!              call compute_flux('z')
-!            end if
-!            if (any(isnan(H))) then
-!                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: H flux Nan detected')
-!                stop
-!            end if
+            call compute_flux('y')
+            if (any(isnan(G))) then 
+                call dmsg(5, 'slau', 'compute_residue', 'ERROR: G flux Nan detected')
+                stop
+            end if    
+            
+            if(kmx==2) then
+              H = 0.
+            else
+              call compute_flux('z')
+            end if
+            if (any(isnan(H))) then
+                call dmsg(5, 'slau', 'compute_residue', 'ERROR: H flux Nan detected')
+                stop
+            end if
 
         end subroutine compute_fluxes
 
         subroutine get_residue()
             !-----------------------------------------------------------
-            ! Compute the residue for the ausmUP scheme
+            ! Compute the residue for the slau scheme
             !-----------------------------------------------------------
 
             implicit none
             
             integer :: i, j, k, l
 
-            call dmsg(1, 'ausmUP', 'compute_residue')
+            call dmsg(1, 'slau', 'compute_residue')
 
             do l = 1, n_var
              do k = 1, kmx - 1
@@ -342,4 +318,4 @@ module ausmUP
         
         end subroutine get_residue
 
-end module ausmUP
+end module ausmP

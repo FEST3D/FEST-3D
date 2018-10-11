@@ -48,6 +48,15 @@ module scheme
             G_ausm => G, &
             H_ausm => H, &
             residue_ausm => residue
+    use ausmP, only: &
+            setup_scheme_ausmP => setup_scheme, &
+            destroy_scheme_ausmP => destroy_scheme, &
+            compute_fluxes_ausmP => compute_fluxes, &
+            get_residue_ausmP => get_residue, &
+            F_ausmP => F, &
+            G_ausmP => G, &
+            H_ausmP => H, &
+            residue_ausmP => residue
     use ausmUP, only: &
             setup_scheme_ausmUP => setup_scheme, &
             destroy_scheme_ausmUP => destroy_scheme, &
@@ -126,6 +135,18 @@ module scheme
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 5)
                     include "turbulence_models/include/scheme/ausm_setup.inc" 
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausm(:,:,:,:)
+                case ("ausmP")
+                    call setup_scheme_ausmP()
+                    F_p => F_ausmP
+                    G_p => G_ausmP
+                    H_p => H_ausmP
+                    mass_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 1)
+                    x_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 2)
+                    y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 3)
+                    z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 4)
+                    energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 5)
+                    include "turbulence_models/include/scheme/ausmP_setup.inc" 
+                    residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausmP(:,:,:,:)
                 case ("ausmUP")
                     call setup_scheme_ausmUP()
                     F_p => F_ausmUP
@@ -198,6 +219,8 @@ module scheme
                     call destroy_scheme_van_leer
                 case ("ausm")
                     call destroy_scheme_ausm()
+                case ("ausmP")
+                    call destroy_scheme_ausmP()
                 case ("ausmUP")
                     call destroy_scheme_ausmUP()
                 case ("slau")
@@ -226,6 +249,8 @@ module scheme
                     call compute_fluxes_van_leer()
                 case ("ausm")
                     call compute_fluxes_ausm()
+                case ("ausmP")
+                    call compute_fluxes_ausmP()
                 case ("ausmUP")
                     call compute_fluxes_ausmUP()
                 case ("slau")
@@ -251,6 +276,8 @@ module scheme
                     call get_residue_van_leer()
                 case ("ausm")
                     call get_residue_ausm()
+                case ("ausmP")
+                    call get_residue_ausmP()
                 case ("ausmUP")
                     call get_residue_ausmUP()
                 case ("slau")

@@ -1,6 +1,6 @@
 module ausmUP
     !-------------------------------------------------------------------
-    ! The ausmUP scheme is a type of flux-splitting scheme
+    ! The slau scheme is a type of flux-splitting scheme
     !-------------------------------------------------------------------
     
     use global_vars, only : imx
@@ -13,7 +13,7 @@ module ausmUP
     use global_vars, only : xA, yA, zA    !face area
 
     use global_vars, only : gm
-    use global_vars, only : R_gas
+    use global_vars, only : MInf
     use global_vars, only : n_var
     use global_vars, only : turbulence
     use global_vars, only : process_id
@@ -22,24 +22,12 @@ module ausmUP
     use global_vars, only : make_F_flux_zero
     use global_vars, only : make_G_flux_zero
     use global_vars, only : make_H_flux_zero
-    use global_vars, only : MInf
 
     use utils, only: alloc, dealloc, dmsg
-    use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
-                z_qp_left, z_qp_right, &
-            x_density_left, x_x_speed_left, x_y_speed_left, x_z_speed_left, &
-                x_pressure_left, &
-            x_density_right, x_x_speed_right, x_y_speed_right, x_z_speed_right, &
-                x_pressure_right, &
-            y_density_left, y_x_speed_left, y_y_speed_left, y_z_speed_left, &
-                y_pressure_left, &
-            y_density_right, y_x_speed_right, y_y_speed_right, y_z_speed_right, &
-                y_pressure_right, &
-            z_density_left, z_x_speed_left, z_y_speed_left, z_z_speed_left, &
-                z_pressure_left, &
-            z_density_right, z_x_speed_right, z_y_speed_right, z_z_speed_right, &
-                z_pressure_right
-    include "turbulence_models/include/ausmUP/import_module.inc" !for turbulent variables
+    use face_interpolant, only: x_qp_left, x_qp_right 
+    use face_interpolant, only: y_qp_left, y_qp_right
+    use face_interpolant, only:  z_qp_left, z_qp_right
+
 
     implicit none
     private
@@ -59,20 +47,20 @@ module ausmUP
 
             implicit none
 
-            call dmsg(1, 'ausmUP', 'setup_scheme')
+            call dmsg(1, 'slau', 'setup_scheme')
 
             call alloc(F, 1, imx, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'F - ausmUP.')
+                        'F - slau.')
             call alloc(G, 1, imx-1, 1, jmx, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'G - ausmUP.')
+                        'G - slau.')
             call alloc(H, 1, imx-1, 1, jmx-1, 1, kmx, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'H - ausmUP.')
+                        'H - slau.')
             call alloc(residue, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'residue - ausmUP.')
+                        'residue - slau.')
 
         end subroutine setup_scheme
 
@@ -80,7 +68,7 @@ module ausmUP
 
             implicit none
 
-            call dmsg(1, 'ausmUP', 'destroy_scheme')
+            call dmsg(1, 'slau', 'destroy_scheme')
             
             call dealloc(F)
             call dealloc(G)
@@ -94,51 +82,37 @@ module ausmUP
             character, intent(in) :: f_dir
             integer :: i, j, k 
             integer :: i_f, j_f, k_f ! Flags to determine face direction
-            real, dimension(:, :, :), pointer :: fA, nx, ny, nz, &
-                f_x_speed_left, f_x_speed_right, &
-                f_y_speed_left, f_y_speed_right, &
-                f_z_speed_left, f_z_speed_right, &
-                f_density_left, f_density_right, &
-                f_pressure_left, f_pressure_right
+            real, dimension(:, :, :), pointer :: fA, nx, ny, nz
+            real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
             real, dimension(1:n_var) :: F_plus, F_minus
-            real :: M_perp_left, M_perp_right
-            real :: alpha_plus, alpha_minus
-            real :: beta_left, beta_right
-            real :: M_plus, M_minus
-            real :: D_plus, D_minus
-            real :: c_plus, c_minus
-            real :: scrD_plus, scrD_minus
-            real :: sound_speed_avg, face_normal_speeds
-            real :: temp_c
-            real :: VnPlus
-            real :: VnMinus
-            real :: PFace
-            real :: TFace
-            real :: RhoFace
-            real :: aFace
-            real :: aL
-            real :: aR
-            real :: N_plus
-            real :: N_minus
-            real :: Mp
-            real :: ptilde
-            real :: Pu
-            real :: Minf2
-            real :: MBar2
+            real :: pbar
+            real :: mass
+            real :: HL, HR !enthalpy
+            real :: uL, uR
+            real :: vL, vR
+            real :: wL, wR
+            real :: pL, pR
+            real :: rL, rR
+            real :: cL, cR
+            real :: C
+            real :: ML, MR
+            real :: VnL, VnR
+            real :: betaL, betaR
+            real :: alphaL, alphaR
+            real :: FmL, FmR
+            real :: Mface
+            real :: Cs
+            real :: Mb
             real :: Mo
-            real :: aStar
-            real :: alpha
-            real :: Fna
-            real, parameter :: kp=0.25
-            real, parameter :: ku=0.75
-            real, parameter :: sigma=1.0
+            real :: fna
+            real :: Pu
+            real :: Mp
+            real :: alfa
+            real, parameter :: Kp = 0.25
+            real, parameter :: Ku = 0.75
+            real, parameter :: sigma = 1.0
 
-            !include compute_flux_variable and select.inc before select
-            !as it contains variables deceleration
-            include "turbulence_models/include/ausmUP/compute_flux_var.inc"
-            include "turbulence_models/include/ausmUP/compute_flux_select.inc"
-
-            call dmsg(1, 'ausmUP', 'compute_flux')
+            call dmsg(1, 'slau', 'compute_flux '//trim(f_dir))
             
             select case (f_dir)
                 case ('x')
@@ -150,16 +124,8 @@ module ausmUP
                     nx => xnx
                     ny => xny
                     nz => xnz
-                    f_x_speed_left => x_x_speed_left
-                    f_x_speed_right => x_x_speed_right
-                    f_y_speed_left => x_y_speed_left
-                    f_y_speed_right => x_y_speed_right
-                    f_z_speed_left => x_z_speed_left
-                    f_z_speed_right => x_z_speed_right
-                    f_density_left => x_density_left
-                    f_density_right => x_density_right
-                    f_pressure_left => x_pressure_left
-                    f_pressure_right => x_pressure_right
+                    f_qp_left => x_qp_left
+                    f_qp_right => x_qp_right
                 case ('y')
                     i_f = 0
                     j_f = 1
@@ -169,16 +135,8 @@ module ausmUP
                     nx => ynx
                     ny => yny
                     nz => ynz
-                    f_x_speed_left => y_x_speed_left
-                    f_x_speed_right => y_x_speed_right
-                    f_y_speed_left => y_y_speed_left
-                    f_y_speed_right => y_y_speed_right
-                    f_z_speed_left => y_z_speed_left
-                    f_z_speed_right => y_z_speed_right
-                    f_density_left => y_density_left
-                    f_density_right => y_density_right
-                    f_pressure_left => y_pressure_left
-                    f_pressure_right => y_pressure_right
+                    f_qp_left => y_qp_left
+                    f_qp_right => y_qp_right
                 case ('z')
                     i_f = 0
                     j_f = 0
@@ -188,18 +146,10 @@ module ausmUP
                     nx => znx
                     ny => zny
                     nz => znz
-                    f_x_speed_left => z_x_speed_left
-                    f_x_speed_right => z_x_speed_right
-                    f_y_speed_left => z_y_speed_left
-                    f_y_speed_right => z_y_speed_right
-                    f_z_speed_left => z_z_speed_left
-                    f_z_speed_right => z_z_speed_right
-                    f_density_left => z_density_left
-                    f_density_right => z_density_right
-                    f_pressure_left => z_pressure_left
-                    f_pressure_right => z_pressure_right
+                    f_qp_left => z_qp_left
+                    f_qp_right => z_qp_right
                 case default
-                    call dmsg(5, 'ausmUP', 'compute_flux', &
+                    call dmsg(5, 'slau', 'compute_flux', &
                             'Direction not recognised')
                     stop
             end select
@@ -208,125 +158,130 @@ module ausmUP
             do k = 1, kmx - 1 + k_f
              do j = 1, jmx - 1 + j_f 
               do i = 1, imx - 1 + i_f
-                VnPlus  = f_x_speed_left(i, j, k) * nx(i, j, k) + &
-                          f_y_speed_left(i, j, k) * ny(i, j, k) + &
-                          f_z_speed_left(i, j, k) * nz(i, j, k)
-                VnMinus = f_x_speed_right(i, j, k) * nx(i, j, k) + &
-                          f_y_speed_right(i, j, k) * ny(i, j, k) + &
-                          f_z_speed_right(i, j, k) * nz(i, j, k)
-                PFace = 0.5*(f_pressure_left(i,j,k) + f_pressure_right(i,j,k))
-                RhoFace = 0.5*(f_density_left(i,j,k) + f_density_right(i,j,k))
-                TFace = PFace/(R_gas*RhoFace)
-                aStar = sqrt(2.0*gm*R_gas*TFace/(gm+1.0))
-                aL    = aStar**2/(max(aStar, VnPlus))
-                aR    = aStar**2/(max(aStar,-VnMinus))
-                aFace = min(aL, aR)
-                MBar2 = (VnPlus**2 + VnMinus**2)/(2.0*aFace**2)
-                MInf2 = Minf**2
-                Mo    = sqrt(min(1.0, max(MBar2, MInf2)))
-                Fna    = Mo*(2.0 - Mo)
-                alpha = 3.0*(-4.0 + 5.0*Fna*Fna)/16.0
+
+                ! -- primitve face state assignment --
+                ! ---- left face quantities ----
+                rL = f_qp_left(i,j,k,1)
+                uL = f_qp_left(i,j,k,2)
+                vL = f_qp_left(i,j,k,3)
+                wL = f_qp_left(i,j,k,4)
+                pL = f_qp_left(i,j,k,5)
+
+                ! ---- right face quantities ----
+                rR = f_qp_right(i,j,k,1)
+                uR = f_qp_right(i,j,k,2)
+                vR = f_qp_right(i,j,k,3)
+                wR = f_qp_right(i,j,k,4)
+                pR = f_qp_right(i,j,k,5)
+
+                !-- calculated quntaties --
+                ! ---- total enthalpy ----
+                HL = (0.5*(uL*uL + vL*vL + wL*wL)) + ((gm/(gm - 1.))*pL/rL)
+                HR = (0.5*(uR*uR + vR*vR + wR*wR)) + ((gm/(gm - 1.))*pR/rR)
+
+                ! ---- face normal velocity ----
+                VnL = uL*nx(i, j, k) + vL*ny(i, j, k) + wL*nz(i, j, k)
+                VnR = uR*nx(i, j, k) + vR*ny(i, j, k) + wR*nz(i, j, k)
+
+                ! ---- speed of sound ----
+                cs = sqrt(2.0*(gm-1.0)*(0.5*(HL + HR))/(gm+1.0))
+                cL = cs*cs/(max(cs, VnL))
+                cR = cs*cs/(max(cs,-VnR))
+                C  = min(cL, CR)
+
+                ! ---- Mach at face ----
+                ML = VnL/C
+                MR = VnR/C
+                Mb = sqrt(0.5*((VnL*VnL) + (VnR*VnR))/(C*C))
+
+                ! ---- function at face ----
+                 Mo   = sqrt(min(1.0, max(Mb*Mb, MInf*MInf)))
+                 fna  = Mo*(2.0 - Mo)
+                 alfa = 3.0*(-4.0 + (5.0*fna*fna))/16.0
+
+                ! ---- switch for supersonic flow ----
+                alphaL= max(0, 1-floor(abs(ML)))
+                alphaR= max(0, 1-floor(abs(MR)))
+
                 
                 ! Compute '+' direction quantities
-                M_perp_left = VnPlus/aL
-                alpha_plus = 0.5 * (1.0 + sign(1.0, M_perp_left))
-                beta_left = -max(0, 1 - floor(abs(M_perp_left)))
-                M_plus = 0.25 * ((1. + M_perp_left) ** 2.)
-                N_plus = 0.125*(M_perp_left**2 - 1.0)**2
-                D_plus = 0.25 * ((1. + M_perp_left) ** 2.) * (2. - M_perp_left)
-                D_plus = D_plus + alpha*M_perp_left*(M_perp_left**2 -1.0)**2
-                c_plus = (alpha_plus * (1.0 + beta_left) * M_perp_left) - &
-                          beta_left * (M_plus + N_plus)
-                scrD_plus = (alpha_plus * (1. + beta_left)) - &
-                        (beta_left * D_plus)
+                FmL   = (0.5*(1.0+sign(1.0,ML))*(1.0-alphaL)*ML) + alphaL*0.25*((1.0+ML)**2)
+                betaL = (0.5*(1.0+sign(1.0,ML))*(1.0-alphaL))    + alphaL*0.25*((1.0+ML)**2) * (2.0 - ML)
 
                 ! Compute '-' direction quantities
-                M_perp_right = VnMinus/aR
-                alpha_minus = 0.5 * (1.0 - sign(1.0, M_perp_right))
-                beta_right = -max(0, 1 - floor(abs(M_perp_right)))
-                M_minus = -0.25 * ((1. - M_perp_right) ** 2.)
-                N_minus = -0.125*(M_perp_right**2 - 1.0)**2
-                D_minus = 0.25 * ((1. - M_perp_right) ** 2.) * (2. + M_perp_right)
-                D_minus = D_minus - alpha*M_perp_right*(M_perp_right**2 -1.0)**2
-                c_minus = (alpha_minus * (1.0 + beta_right) * M_perp_right) - &
-                          beta_right * (M_minus + N_minus)
-                scrD_minus = (alpha_minus * (1. + beta_right)) - &
-                             (beta_right * D_minus)
+                FmR   = (0.5*(1.0-sign(1.0,MR))*(1.0-alphaR)*MR) - alphaR*0.25*((1.0-MR)**2)
+                betaR = (0.5*(1.0-sign(1.0,MR))*(1.0-alphaR))    + alphaR*0.25*((1.0-MR)**2)*(2.0 + MR)
 
-                Pu = -Ku*scrD_minus*scrD_plus*(2*RhoFace)*Fna*aFace*(VnMinus - VnPlus)
-                Ptilde = scrD_plus*f_pressure_left(i,j,k) + scrD_minus*f_pressure_right(i,j,k) + Pu
+                !AUSM+modification
+                ! Compute '+' direction quantities
+                FmL   = FmL   + alphaL*0.125*((ML**2-1.0)**2)
+                betaL = betaL + alphaL*alfa *((ML**2-1.0)**2)*ML
+
+                ! Compute '-' direction quantities
+                FmR   = FmR   - alphaR*0.125*((MR**2-1.0)**2)
+                betaR = betaR - alphaR*alfa *((MR**2-1.0)**2)*MR
+
+                !AUSM+- modification
+                Pu = -Ku*betaL*betaR*(rL+rR)*fna*C*(VnR-VnL) 
+                Mp = -2.0*Kp*max(1.0-(sigma*Mb*Mb),0.0)*(pR-pL)/(fna*(rL+rR)*C*C)
                 
-                Mp = -Kp*max(1.0 - sigma*MBar2,0.0)*(f_pressure_left(i,j,k) -f_pressure_right(i,j,k))/(Fna*RhoFace*aFace**2)
-                ! ausmUP modification             
-                temp_c = c_plus + c_minus + Mp
-                c_plus = max(0., temp_c)
-                c_minus = min(0., temp_c)
+                if(isnan(Pu))then
+                    print*,"Nan:", f_qp_left(i,j,k,:), f_qp_right(i,j,k,:)
+                end if
+                
+                ! mass coefficient
+                Mface = FmL + FmR + Mp
+                ! -- Pressure coeffient--
+                pbar = betaL*pL + betaR*pR + Pu
 
+
+                ! -- mass --
+                if(Mface>0.0)then
+                    mass = Mface*C*rL
+                else
+                    mass = Mface*c*rR
+                end if
+
+                mass = mass *(i_f*make_F_flux_zero(i) &
+                            + j_f*make_G_flux_zero(j) &
+                            + k_f*make_H_flux_zero(k))
 
 
                 ! F plus mass flux
-                F_plus(1) = f_density_left(i, j, k) * sound_speed_avg * c_plus
-                ! F minus mass flux
-                F_minus(1) = f_density_right(i, j, k) * sound_speed_avg * c_minus
-                F_plus(1)  = F_plus(1) *(i_f*make_F_flux_zero(i) &
-                                       + j_f*make_G_flux_zero(j) &
-                                       + k_f*make_H_flux_zero(k))
-                F_minus(1) = F_minus(1)*(i_f*make_F_flux_zero(i) &
-                                       + j_f*make_G_flux_zero(j) &
-                                       + k_f*make_H_flux_zero(k))
-
                 ! Construct other fluxes in terms of the F mass flux
-                F_plus(2) = (F_plus(1) * f_x_speed_left(i, j, k)) + Ptilde * nx(i, j, k)
-                F_plus(3) = (F_plus(1) * f_y_speed_left(i, j, k)) + Ptilde * ny(i, j, k)
-                F_plus(4) = (F_plus(1) * f_z_speed_left(i, j, k)) + Ptilde * nz(i, j, k)
-                F_plus(5) = F_plus(1) * &
-                            ((0.5 * (f_x_speed_left(i, j, k) ** 2. + &
-                                     f_y_speed_left(i, j, k) ** 2. + &
-                                     f_z_speed_left(i, j, k) ** 2.)) + &
-                            ((gm / (gm - 1.)) * Ptilde / &
-                             f_density_left(i, j, k)))
-
-
+                F_plus(1) = 0.5*(mass + abs(mass))
+                F_plus(2) = (F_plus(1) * uL)
+                F_plus(3) = (F_plus(1) * vL)
+                F_plus(4) = (F_plus(1) * wL)
+                F_plus(5) = (F_plus(1) * HL)
                 
+                ! F minus mass flux
                 ! Construct other fluxes in terms of the F mass flux
-                F_minus(2) = (F_minus(1) * f_x_speed_right(i, j, k)) + Ptilde * nx(i, j, k)
-                F_minus(3) = (F_minus(1) * f_y_speed_right(i, j, k)) + Ptilde * ny(i, j, k)
-                F_minus(4) = (F_minus(1) * f_z_speed_right(i, j, k)) + Ptilde * nz(i, j, k)
-                F_minus(5) = F_minus(1) * &
-                            ((0.5 * (f_x_speed_right(i, j, k) ** 2. + &
-                                     f_y_speed_right(i, j, k) ** 2. + &
-                                     f_z_speed_right(i, j, k) ** 2.)) + &
-                            ((gm / (gm - 1.)) * ptilde / &
-                             f_density_right(i, j, k)))
-         
-                !turbulent fluxes
-                include "turbulence_models/include/ausmUP/Fcompute_flux.inc"
+                F_minus(1) = 0.5*(mass - abs(mass))
+                F_minus(2) = (F_minus(1) * uR)
+                F_minus(3) = (F_minus(1) * vR)
+                F_minus(4) = (F_minus(1) * wR)
+                F_minus(5) = (F_minus(1) * HR)
 
-                ! Multiply in the face areas
-                F_plus(:) = F_plus(:) * fA(i, j, k)
-                F_minus(:) = F_minus(:) * fA(i, j, k)
+                !! -- Turbulence variables mass flux --
+                if(n_var>5) then
+                  F_plus(6:)  = F_Plus(1)  * f_qp_left(i,j,k,6:)
+                  F_minus(6:) = F_minus(1) * f_qp_right(i,j,k,6:)
+                end if
+
+                ! total flux
+                flux_p(i, j, k, :) = F_plus(:) + F_minus(:)
 
                 ! Get the total flux for a face
-                flux_p(i, j, k, :) = F_plus(:) + F_minus(:)
-                !write(*, '(2(i1.1,x),5(E20.10,2x))') i, j, flux_p(i,j,k,:)
+                ! -- Pressure flux addition --
+                flux_p(i, j, K, 2) = flux_p(i, j, k, 2) + (pbar * nx(i, j, k))
+                flux_p(i, j, K, 3) = flux_p(i, j, k, 3) + (pbar * ny(i, j, k))
+                flux_p(i, j, K, 4) = flux_p(i, j, k, 4) + (pbar * nz(i, j, k))
+
+                flux_p(i, j, k, :) = flux_p(i, j, k, :)*fA(i,j,k)
               end do
              end do
             end do 
-
-            nullify(fA)
-            nullify(nx)
-            nullify(ny)
-            nullify(nz)
-            nullify(f_x_speed_left )
-            nullify(f_x_speed_right)
-            nullify(f_y_speed_left )
-            nullify(f_y_speed_right)
-            nullify(f_z_speed_left )
-            nullify(f_z_speed_right)
-            nullify(f_density_left )
-            nullify(f_density_right)
-            nullify(f_pressure_left)
-            nullify(f_pressure_right)
 
         end subroutine compute_flux
 
@@ -334,7 +289,7 @@ module ausmUP
             
             implicit none
             
-            call dmsg(1, 'ausmUP', 'compute_fluxes')
+            call dmsg(1, 'slau', 'compute_fluxes')
 
             call compute_flux('x')
             if (any(isnan(F))) then
@@ -348,11 +303,11 @@ module ausmUP
                 stop
             end if    
             
-            !if(kmx==2) then
-            !  H = 0.
-            !else
+            if(kmx==2) then
+              H = 0.
+            else
               call compute_flux('z')
-            !end if
+            end if
             if (any(isnan(H))) then
                 call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: H flux Nan detected')
                 stop
@@ -362,14 +317,14 @@ module ausmUP
 
         subroutine get_residue()
             !-----------------------------------------------------------
-            ! Compute the residue for the ausmUP scheme
+            ! Compute the residue for the slau scheme
             !-----------------------------------------------------------
 
             implicit none
             
             integer :: i, j, k, l
 
-            call dmsg(1, 'ausmUP', 'compute_residue')
+            call dmsg(1, 'slau', 'compute_residue')
 
             do l = 1, n_var
              do k = 1, kmx - 1
@@ -378,8 +333,6 @@ module ausmUP
                residue(i, j, k, l) = (F(i+1, j, k, l) - F(i, j, k, l)) &
                                    + (G(i, j+1, k, l) - G(i, j, k, l)) &
                                    + (H(i, j, k+1, l) - H(i, j, k, l))
-               !print*, i, j, l, F(i+1, j,k,l), F(i,j,k,l), G(i,j+1,k,l)&
-               !       , G(i,j,k,l), H(i,j,k+1,l), H(i,j,k,l)
                end do
               end do
              end do

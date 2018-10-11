@@ -1,6 +1,7 @@
 Set(Source 
 main.f90
 lusgs.f90 
+plusgs.f90 
 SGSR.f90 
 DP_LUSGS.f90
 HLU_SGS.f90
@@ -20,6 +21,7 @@ update.f90
 geometry.f90 
 main.f90 
 source.f90 
+CC.f90
 state/gradients.f90 
 state/laminar_gradients.f90 
 state/lctm2015_gradients.f90 
@@ -67,7 +69,8 @@ face/state/ppm.f90
 face/flux/convective/van_leer.f90 
 face/flux/convective/ldfss0.f90 
 face/flux/convective/ausm.f90 
-face/flux/convective/ausmUP2.f90
+face/flux/convective/ausmP.f90
+face/flux/convective/ausmUP.f90
 face/flux/convective/slau.f90
 face/flux/convective/scheme.f90 )
 
