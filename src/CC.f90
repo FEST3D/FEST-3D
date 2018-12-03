@@ -78,9 +78,13 @@ module CC
       call compute_gradient(CCnormalX, dist, 'x')
       call compute_gradient(CCnormalY, dist, 'y')
       call compute_gradient(CCnormalZ, dist, 'z')
-      CCnormalX = CCnormalX/sqrt(CCnormalX**2 + CCnormalY**2 + CCnormalZ**2)
-      CCnormalY = CCnormalY/sqrt(CCnormalX**2 + CCnormalY**2 + CCnormalZ**2)
-      CCnormalZ = CCnormalZ/sqrt(CCnormalX**2 + CCnormalY**2 + CCnormalZ**2)
+      !using already allocated memeory for storing magnitude
+      CCVn = sqrt(CCnormalX**2 + CCnormalY**2 + CCnormalZ**2)
+      !CCVn hold the magnitude of CCnormal temporaraly and can be 
+      !overwritten after next three lines of code.
+      CCnormalX = CCnormalX/(CCVn + 1e-12)
+      CCnormalY = CCnormalY/(CCVn + 1e-12)
+      CCnormalZ = CCnormalZ/(CCVn + 1e-12)
     end subroutine find_CCnormal
 
 
@@ -101,7 +105,7 @@ module CC
 
     subroutine compute_gradient(grad, var, dir)
       implicit none
-      real, dimension( 0:imx  , 0:jmx  , 0:kmx  ), intent(out) :: grad
+      real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(out) :: grad
       real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(in) :: var
       character(len=*)                           , intent(in) :: dir
       
@@ -112,6 +116,9 @@ module CC
       integer :: i
       integer :: j
       integer :: k
+
+      ! initialize
+      grad = 0.0
 
       select case(dir)
         case('x')

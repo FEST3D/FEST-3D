@@ -104,7 +104,7 @@ module solver
           extrapolate_cell_averages_to_faces
   use scheme, only: scheme_name, setup_scheme, destroy_scheme, &
           compute_fluxes, compute_residue
-  use source, only: add_source_term_residue
+  use source, only: add_source_term_residue, setup_source, destroy_source
   use wall_dist, only: setup_wall_dist, destroy_wall_dist, find_wall_dist
   use viscous, only: compute_viscous_fluxes
 !  use turbulent_fluxes, only: compute_turbulent_fluxes
@@ -175,6 +175,7 @@ module solver
             call setup_viscosity()
             call setup_state()
             call setup_gradients()
+            call setup_source
             call setup_bc()
             call setup_time()
             call setup_update()
@@ -231,6 +232,7 @@ module solver
             call destroy_scheme()
             !call deallocate_misc()
            ! call unlink_aliases_solver()
+            call destroy_source()
             call destroy_state()
             call destroy_geometry()
             call destroy_grid()

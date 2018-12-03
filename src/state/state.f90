@@ -363,7 +363,6 @@ module state
                 case ("sst", "sst2003", "bsl")
                     tk_inf = 1.5*((Vel_mag*Turb_Intensity_inf)**2)
                     tw_inf = density_inf*tk_inf/(mu_ref*mu_ratio_inf)
-                    print*, Vel_mag, Turb_Intensity_inf, tk_inf
 
                 case ("kkl")
                     tk_inf = 9*(1e-9)*(sound_speed_inf()**2)
