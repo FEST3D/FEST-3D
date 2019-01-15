@@ -270,6 +270,7 @@ module state
             call alloc(ExtraVar2, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar2"))
             call alloc(ExtraVar3, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar3"))
             call alloc(ExtraVar4, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar4"))
+            call alloc(ExtraVar5, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar4"))
             
         end subroutine allocate_memory
 
@@ -287,6 +288,7 @@ module state
             call dealloc(ExtraVar2)
             call dealloc(ExtraVar3)
             call dealloc(ExtraVar4)
+            call dealloc(ExtraVar5)
 
         end subroutine deallocate_memory
 
