@@ -89,7 +89,7 @@ module update
   !subroutine for residual calculation
   use face_interpolant,               only: interpolant
   use global_vars,                    only : mu_ref
-  use interface,                      only: apply_interface
+  use interface1,                      only: apply_interface
   use bc_primitive,                   only: populate_ghost_primitive
   use face_interpolant,               only: compute_face_interpolant
   use boundary_state_reconstruction,  only: reconstruct_boundary_state

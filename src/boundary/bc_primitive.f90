@@ -129,6 +129,9 @@ module bc_primitive
             call far_field(face)
 
           case(-9)
+            call periodic_bc(face)
+
+          case(-11)
             call total_pressure(face)
 
           case Default

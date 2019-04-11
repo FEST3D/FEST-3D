@@ -1,4 +1,4 @@
-module interface
+module interface1
   use global_vars, only: imx
   use global_vars, only: jmx
   use global_vars, only: kmx
@@ -104,6 +104,121 @@ module interface
       integer:: count=0
 
 
+      !----------------------------------------------------------
+      ! call pattern is change for first block = 0
+      ! to avoid O-Grid infinite loop for mpi communication call
+      !-----------------------------------------------------------
+      if(mod(process_id,2)==0)then
+      !--- IMAX ---!
+      if(imax_id>=0)then
+        !collect data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do j=1,jmx-1
+                count=count+1
+                imax_send_buf(count) = qp(imx-l,j,k,n)
+              end do
+            end do
+          end do
+        end do
+        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
+                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
+                          MPI_COMM_WORLD,status,ierr)
+!        if(mpi_class(2)==0)then
+!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
+!        elseif(mpi_class(2)==1)then
+!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
+!        else
+!          Fatal_error
+!        end if
+        ! redistribute data
+        if(dir_switch(2)==0)then
+          count=0
+          do n=1,n_var
+            do l=1,layers
+              do k=Pklo(2),Pkhi(2),PkDir(2)
+                do j=Pjlo(2),Pjhi(2),PjDir(2)
+                  count=count+1
+                   qp(imx+l-1,j,k,n) = imax_recv_buf(count)
+                end do
+              end do
+            end do
+          end do
+        else
+          count=0
+          do n=1,n_var
+            do l=1,layers
+              do j=Pjlo(2),Pjhi(2),Pjdir(2)
+                do k=Pklo(2),Pkhi(2),PkDir(2)
+                  count=count+1
+                   qp(imx+l-1,j,k,n) = imax_recv_buf(count)
+                end do
+              end do
+            end do
+          end do
+        end if
+      end if
+
+      !--- IMIN ---!
+      call dmsg(1, 'interface', 'apply_interface')
+      if(imin_id>=0)then
+        !collect data
+        count=0
+        do n=1,n_var
+          do l=1,layers
+            do k=1,kmx-1
+              do j=1,jmx-1
+                count=count+1
+                imin_send_buf(count) = qp(l,j,k,n)
+              end do
+            end do
+          end do
+        end do
+        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
+                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
+                          MPI_COMM_WORLD,status,ierr)
+!        if(mpi_class(1)==0)then
+!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
+!        elseif(mpi_class(1)==1)then
+!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
+!        else
+!          Fatal_error
+!        end if
+        ! redistribute data
+        if(dir_switch(1)==0)then
+          count=0
+          do n=1,n_var
+            do l=1,layers
+              do k=Pklo(1),Pkhi(1),PkDir(1)
+                do j=Pjlo(1),Pjhi(1),PjDir(1)
+                  count=count+1
+                  qp(1-l,j,k,n) = imin_recv_buf(count)
+                end do
+              end do
+            end do
+          end do
+        else
+          count=0
+          do n=1,n_var
+            do l=1,layers
+              do j=Pjlo(1),Pjhi(1),PjDir(1)
+                do k=Pklo(1),Pkhi(1),PkDir(1)
+                  count=count+1
+                  qp(1-l,j,k,n) = imin_recv_buf(count)
+                end do
+              end do
+            end do
+          end do
+        end if
+      end if
+
+      else
       !--- IMIN ---!
       call dmsg(1, 'interface', 'apply_interface')
       if(imin_id>=0)then
@@ -211,6 +326,8 @@ module interface
             end do
           end do
         end if
+      end if
+
       end if
 
 
@@ -628,4 +745,4 @@ module interface
 
     end subroutine apply_periodic_bc
 
-end module interface
+end module interface1

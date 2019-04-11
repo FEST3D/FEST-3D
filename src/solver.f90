@@ -112,8 +112,8 @@ module solver
   use layout, only: process_id, grid_file_buf, bc_file, &
   get_process_data, read_layout_file, total_process
 !  use parallel, only: allocate_buffer_cells,send_recv
-  use interface, only: setup_interface
-  use interface, only: destroy_interface
+  use interface1, only: setup_interface
+  use interface1, only: destroy_interface
 !  use state, only: turbulence
   use resnorm, only : find_resnorm, setup_resnorm, destroy_resnorm
   use dump_solution, only : checkpoint

@@ -402,10 +402,13 @@ module geometry
             A(:, 2) = p2 - p4
             A(:, 3) = p3 - p4
 
-            vol_tetrahedron = A(1,1) * (A(2,2)*A(3,3) - A(2,3)*A(3,2)) + &
-                              A(1,2) * (A(2,3)*A(3,1) - A(2,1)*A(3,3)) + &
-                              A(1,3) * (A(2,1)*A(3,2) - A(2,2)*A(3,1))
-            vol_tetrahedron = vol_tetrahedron / 6.                  
+            !vol_tetrahedron = A(1,1) * (A(2,2)*A(3,3) - A(2,3)*A(3,2)) + &
+            !                  A(1,2) * (A(2,3)*A(3,1) - A(2,1)*A(3,3)) + &
+            !                  A(1,3) * (A(2,1)*A(3,2) - A(2,2)*A(3,1))
+            vol_tetrahedron = (p4(1) - p1(1))*((p2(2)-p1(2))*(p3(3)-p1(3)) - (p2(3)-p1(3))*(p3(2)-p1(2))) &
+                            + (p4(2) - p1(2))*((p2(3)-p1(3))*(p3(1)-p1(1)) - (p2(1)-p1(1))*(p3(3)-p1(3))) &
+                            + (p4(3) - p1(3))*((p2(1)-p1(1))*(p3(2)-p1(2)) - (p2(2)-p1(2))*(p3(1)-p1(1)))
+            vol_tetrahedron = -vol_tetrahedron / 6.                  
         
         end function vol_tetrahedron
         
@@ -452,23 +455,42 @@ module geometry
             implicit none
             real, dimension(1:3, 1:8), intent(in) :: p_list
             real :: vol_hexahedron
+            real :: vol_hexahedron1
             
-            vol_hexahedron = 0.
-            vol_hexahedron = vol_hexahedron + &
+            vol_hexahedron1 = 0.
+            vol_hexahedron1 = vol_hexahedron1 + &
                              vol_tetrahedron(p_list(:,1), p_list(:,5), &
                                              p_list(:,8), p_list(:,6))
-            vol_hexahedron = vol_hexahedron + &
+            vol_hexahedron1 = vol_hexahedron1 + &
                              vol_tetrahedron(p_list(:,7), p_list(:,8), &
                                              p_list(:,6), p_list(:,3))
-            vol_hexahedron = vol_hexahedron + &
+            vol_hexahedron1 = vol_hexahedron1 + &
                              vol_tetrahedron(p_list(:,8), p_list(:,4), &
                                              p_list(:,1), p_list(:,3))
-            vol_hexahedron = vol_hexahedron + &
+            vol_hexahedron1 = vol_hexahedron1 + &
                              vol_tetrahedron(p_list(:,6), p_list(:,1), &
                                              p_list(:,3), p_list(:,8))
-            vol_hexahedron = vol_hexahedron + &
+            vol_hexahedron1 = vol_hexahedron1 + &
                              vol_tetrahedron(p_list(:,1), p_list(:,2), &
                                              p_list(:,6), p_list(:,3))
+            vol_hexahedron = 0.
+            vol_hexahedron = vol_hexahedron + &
+                             vol_tetrahedron(p_list(:,2), p_list(:,6), &
+                                             p_list(:,5), p_list(:,7))
+            vol_hexahedron = vol_hexahedron + &
+                             vol_tetrahedron(p_list(:,8), p_list(:,5), &
+                                             p_list(:,7), p_list(:,4))
+            vol_hexahedron = vol_hexahedron + &
+                             vol_tetrahedron(p_list(:,5), p_list(:,1), &
+                                             p_list(:,2), p_list(:,4))
+            vol_hexahedron = vol_hexahedron + &
+                             vol_tetrahedron(p_list(:,7), p_list(:,2), &
+                                             p_list(:,4), p_list(:,5))
+            vol_hexahedron = vol_hexahedron + &
+                             vol_tetrahedron(p_list(:,2), p_list(:,3), &
+                                             p_list(:,7), p_list(:,4))
+
+            vol_hexahedron = max(vol_hexahedron,vol_hexahedron1)
             
         end function vol_hexahedron
         
@@ -497,7 +519,12 @@ module geometry
                         p_list(:, 7) = (/ grid_x(i+1,j+1,k+1), grid_y(i+1,j+1,k+1), grid_z(i+1,j+1,k+1) /)
                         p_list(:, 8) = (/ grid_x(i,j+1,k+1), grid_y(i,j+1,k+1), grid_z(i,j+1,k+1) /)
                         volume(i, j, k) = (vol_hexahedron(p_list))
-                        if(volume(i,j,k)<=0.0) print*, process_id, i,j,k
+                        if(volume(i,j,k)<=0.0) then
+                          print*, process_id, i,j,k
+                          if(i==0 .or. i==imx .or. j==0 .or. j==jmx .or. k==0 .or. k==kmx) print*, "Ghost Cell volume negative"
+                          print*, "volume :", (vol_hexahedron(p_list))
+                          STOP
+                        end if
                     end do
                 end do
             end do
