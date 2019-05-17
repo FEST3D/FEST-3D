@@ -65,13 +65,20 @@ scheme, higher face-state reconstruction scheme, and time-integration scheme.
 ## FEST-3D Team
 Over the last five years, many individuals have contributed to the development of FEST-3D. 
 
-* ```Jatinder Pal Singh```<br>, Ph.D. Student 
-  _Added turbulence and transition models; implicit time-integration method and weno scheme_
-* ```Raskesh Ramakrishnan```<br>
-  _Developed FEST-3D into a three-dimensional laminar flow solver_
-* ```Anant Girdhar```<br>
-  _Initiated the FEST-3D code as two-dimensional inviscid flow solver_
-* ```R. D. Teja```<br>
-  _Introudued the MPI capability to the solver_
+* ```Jatinder Pal Singh Sandhu```  
+  Ph.D. Student (Current)  
+  _Added turbulence and transition models; implicit time-integration method and weno scheme_   
+
+* ```Raskesh Ramakrishnan```  
+   Dual Degree Student (2016)   
+  _Developed FEST-3D into a three-dimensional laminar flow solver_   
+
+* ```Anant Girdhar```  
+    B.Tech Student (2015)   
+  _Initiated the FEST-3D code as two-dimensional inviscid flow solver_  
+
+* ```R. D. Teja```  
+   B.Tech Student (2016)  
+  _Introudued the MPI capability to the solver_  
 
 All the above individuals were guided by ```Dr. Santanu Ghosh```.

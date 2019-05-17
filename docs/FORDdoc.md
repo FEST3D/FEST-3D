@@ -3,7 +3,7 @@ project: FEST-3D
 project_dir: ./
 src_dir: ../src/
 project_github: https://github.com/FEST3D/FEST-3D
-project_download: https://fest3d.github.io/
+project_download: https://github.com/FEST3D/FEST-3D/archive/master.zip
 media_dir: ./media
 output_dir: ./html
 page_dir: ./user_guide
