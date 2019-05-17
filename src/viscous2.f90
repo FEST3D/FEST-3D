@@ -1,7 +1,6 @@
+  !< The viscous module contains the viscous fluxes calculations 
 module viscous
-  !-----------------------------------------------------------------
-  ! The viscous module contains the viscous flux calculations and 
-  ! the boundary conditions to be imposed
+  !< The viscous module contains the viscous fluxes calculations
   !-----------------------------------------------------------------
 #include "error.inc"
   use global     , only: FILE_NAME_LENGTH
@@ -90,6 +89,9 @@ module viscous
   contains
 
     subroutine compute_viscous_fluxes(F, G, H)
+      !< Call to all viscous flux subroutine based on 
+      !< the drection and turbulence/transition model being
+      !< used
 
         implicit none
         real, dimension(:, :, :, :), pointer :: F, G, H
@@ -141,7 +143,7 @@ module viscous
             else
               call compute_viscous_fluxes_lctm2015(H, 'z')
             end if
-          case('none', 'j10', 'bc')
+          case('none', 'bc')
             !do nothing
             continue
           case DEFAULT
@@ -162,9 +164,10 @@ module viscous
     end subroutine compute_viscous_fluxes
 
     subroutine compute_viscous_fluxes_laminar(F, direction)
+      !< Compute viscous fluxes for first five Navier-Stokes equation
       implicit none
-      character(len=*), intent(in) :: direction ! face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F ! flux array
+      character(len=*), intent(in) :: direction !< face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
       ! local variables
       real :: dudx, dudy, dudz
       real :: dvdx, dvdy, dvdz
@@ -368,9 +371,10 @@ module viscous
 
 
     subroutine compute_viscous_fluxes_sst(F, direction)
+      !< Compute viscous fluxes for additianal equations due to SST turbulence model
       implicit none
-      character(len=*), intent(in) :: direction ! face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F ! flux array
+      character(len=*), intent(in) :: direction !< face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
       ! local variables
       real :: tkface
       real :: rhoface
@@ -516,9 +520,10 @@ module viscous
 
 
     subroutine compute_viscous_fluxes_kkl(F, direction)
+      !< Compute viscous fluxes for additianal equations due to k-kL turbulence model
       implicit none
-      character(len=*), intent(in) :: direction ! face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F ! flux array
+      character(len=*), intent(in) :: direction !< face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
       ! local variables
       real :: tkface
       real :: rhoface
@@ -662,9 +667,10 @@ module viscous
 
 
     subroutine compute_viscous_fluxes_sa(F, direction)
+      !< Compute viscous fluxes for additianal equations due to SA turbulence model
       implicit none
-      character(len=*), intent(in) :: direction ! face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F ! flux array
+      character(len=*), intent(in) :: direction !< face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
       ! local variables
       real :: rhoface
       real :: normal_comp
@@ -777,9 +783,10 @@ module viscous
 
 
     subroutine compute_viscous_fluxes_lctm2015(F, direction)
+      !< Compute viscous fluxes for additianal equations due to LCTM2015 transition model
       implicit none
-      character(len=*), intent(in) :: direction ! face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F ! flux array
+      character(len=*), intent(in) :: direction !< face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
       ! local variables
       real :: rhoface
       real :: normal_comp

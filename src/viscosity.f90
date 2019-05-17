@@ -1,4 +1,6 @@
+  !< Setup, destroy, calculate molecular and turbulence viscosity
 module viscosity
+  !< Setup, destroy, calculate molecular and turbulence viscosity
   !----------------------------------------------------
   ! author   - Jatinder Pal Singh Sandhu
   ! obective - setup     ,
@@ -80,6 +82,7 @@ module viscosity
   contains
 
     subroutine calculate_viscosity()
+      !< Calculate molecular and turbulent viscosity
       implicit none
       integer :: i,j,k
       real :: T ! molecular viscosity
@@ -264,7 +267,7 @@ module viscosity
             end do
 
             select case(trim(transition))
-              case('j10', 'lctm2015')
+              case('lctm2015')
                 do k = 0,kmx
                   do j = 0,jmx
                     do i = 0,imx
@@ -386,7 +389,7 @@ module viscosity
             end do
 
             select case(trim(transition))
-              case('j10', 'lctm2015')
+              case('lctm2015')
                 do k = 0,kmx
                   do j = 0,jmx
                     do i = 0,imx
@@ -543,6 +546,7 @@ module viscosity
     end subroutine calculate_viscosity
 
     subroutine setup_viscosity()
+      !< allocate and pointer for molecular and turbulent viscosity
 
       !setup_molecular_viscosity()
       if (mu_ref/=0.) then
@@ -584,6 +588,7 @@ module viscosity
     end subroutine setup_viscosity
 
     subroutine destroy_viscosity()
+      !< deallocate and nullify viscosity (turbulent/molecular)
 
       ! destroy_molecular_viscosity ---!
       if (mu_ref/=0.) then

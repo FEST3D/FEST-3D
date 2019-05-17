@@ -1,4 +1,6 @@
+  !< Declare all the constants used by SA turbulence model
 module global_sa
+  !< Declare all the constants used by SA turbulence model
 
   real, parameter  :: cb1    = 0.1355
   real, parameter  :: cb2    = 0.6220

@@ -1,4 +1,6 @@
+  !< Calculate the time step for the current iteration
 module time
+  !< Calculate the time step for the current iteration
 
   use global_vars, only : imx
   use global_vars, only : jmx
@@ -54,14 +56,14 @@ module time
 
     private
     INTEGER :: &
-    nb_ticks_initial, & ! initial value of the clock tick counter
-    nb_ticks_final,   & ! final value of the clock tick counter
-    nb_ticks_max,     & ! maximum value of the clock counter
-    nb_ticks_sec,     & ! number of clock ticks per second
-    nb_ticks           ! number of clock ticks of the code
-    REAL :: elapsed_time  ! real time in seconds
-    REAL :: t1         ! start clock time
-    REAL :: t2         ! finish clock time
+    nb_ticks_initial, & !< initial value of the clock tick counter
+    nb_ticks_final,   & !< final value of the clock tick counter
+    nb_ticks_max,     & !< maximum value of the clock counter
+    nb_ticks_sec,     & !< number of clock ticks per second
+    nb_ticks           !< number of clock ticks of the code
+    REAL :: elapsed_time  !< real time in seconds
+    REAL :: t1         !< start clock time
+    REAL :: t2         !< finish clock time
     real :: cpu_time_elapsed
 
     ! Public methods
@@ -73,9 +75,10 @@ module time
     contains
 
         subroutine setup_time()
+          !< allocate memeroy and setup initial clock
             implicit none
             
-            call dmsg(1, 'solver', 'initmisc')
+            call dmsg(1, 'time', 'initmisc')
             call alloc(delta_t, 1, imx-1, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for delta_t.')
             CALL SYSTEM_CLOCK(COUNT_RATE=nb_ticks_sec, COUNT_MAX=nb_ticks_max)
@@ -85,6 +88,7 @@ module time
         end subroutine setup_time
 
         subroutine destroy_time()
+          !< deallocate memory and find simulation time.
             implicit none
             real, dimension(:), allocatable :: total_time 
             integer :: ierr
@@ -93,7 +97,7 @@ module time
 
             !simlulation clock data
             if(process_id==0) write(*, '(A)') '>> TIME <<'
-            if(process_id==0) write(*, '(A)'), "Simulation Clock : "//trim(write_time(sim_clock))
+            if(process_id==0) write(*, '(A)') "Simulation Clock : "//trim(write_time(sim_clock))
             call alloc(total_time, 1, total_process)
             CALL CPU_TIME(t2)
             CALL SYSTEM_CLOCK(COUNT=nb_ticks_final)
@@ -120,9 +124,12 @@ module time
         end subroutine destroy_time
 
         function write_time(time_in_seconds) result(string)
+          !< Particular format to write time in output log file
           implicit none
           real, intent(in) :: time_in_seconds
+          !< time to output
           character(len=64):: string
+          !< time as string in particlar format
           if(time_in_seconds>86400) then
             write(string,'(f0.16,2x,A)') time_in_seconds/86400.,"days"
           elseif(time_in_seconds>3600) then
@@ -137,13 +144,12 @@ module time
         end function write_time
 
         subroutine compute_local_time_step()
-            !-----------------------------------------------------------
-            ! Compute the time step to be used at each cell center
-            !
-            ! Local time stepping can be used to get the solution 
-            ! advance towards steady state faster. If only the steady
-            ! state solution is required, i.e., transients are 
-            ! irrelevant, use local time stepping. 
+            !< Compute the time step to be used at each cell center
+            !<
+            !< Local time stepping can be used to get the solution 
+            !< advance towards steady state faster. If only the steady
+            !< state solution is required, i.e., transients are 
+            !< irrelevant, use local time stepping. 
             !-----------------------------------------------------------
 
             implicit none
@@ -244,13 +250,12 @@ module time
         end subroutine compute_local_time_step
 
         subroutine compute_global_time_step()
-            !-----------------------------------------------------------
-            ! Compute a common time step to be used at all cell centers
-            !
-            ! Global time stepping is generally used to get time 
-            ! accurate solutions; transients can be studied by 
-            ! employing this strategy.
-            !-----------------------------------------------------------
+            !< Compute a common time step to be used at all cell centers
+            !<
+            !< Global time stepping is generally used to get time 
+            !< accurate solutions; transients can be studied by 
+            !< employing this strategy.
+            !<-----------------------------------------------------------
 
             implicit none
             
@@ -268,12 +273,11 @@ module time
         end subroutine compute_global_time_step
 
         subroutine compute_time_step()
-            !-----------------------------------------------------------
-            ! Compute the time step to be used
-            !
-            ! This calls either compute_global_time_step() or 
-            ! compute_local_time_step() based on what 
-            ! time_stepping_method is set to.
+            !< Compute the time step to be used
+            !<
+            !< This calls either compute_global_time_step() or 
+            !< compute_local_time_step() based on what 
+            !< time_stepping_method is set to.
             !-----------------------------------------------------------
 
             implicit none
@@ -297,18 +301,17 @@ module time
 
 
       subroutine update_simulation_clock
-          !-----------------------------------------------------------
-          ! Update the simulation clock
-          !
-          ! It is sometimes useful to know what the simulation time is
-          ! at every iteration so that a comparison with an analytical
-          ! solution is possible. Since, the global timesteps used may
-          ! not be uniform, we need to track this explicitly.
-          !
-          ! Of course, it makes sense to track this only if the time 
-          ! stepping is global and not local. If the time stepping is
-          ! local, the simulation clock is set to -1. If it is global
-          ! it is incremented according to the time step found.
+          !<  Update the simulation clock
+          !< 
+          !<  It is sometimes useful to know what the simulation time is
+          !<  at every iteration so that a comparison with an analytical
+          !<  solution is possible. Since, the global timesteps used may
+          !<  not be uniform, we need to track this explicitly.
+          !< 
+          !<  Of course, it makes sense to track this only if the time 
+          !<  stepping is global and not local. If the time stepping is
+          !<  local, the simulation clock is set to -1. If it is global
+          !<  it is incremented according to the time step found.
           !-----------------------------------------------------------
 
           implicit none
@@ -321,6 +324,7 @@ module time
       end subroutine update_simulation_clock
 
       subroutine add_viscous_time()
+        !< addition to local time step due to viscous effects
         implicit none
 
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
@@ -386,6 +390,7 @@ module time
       end subroutine add_viscous_time
 
       subroutine add_turbulent_time()
+        !< addition to local time step due to turbulence 
         implicit none
 
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum

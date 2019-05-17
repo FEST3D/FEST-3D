@@ -1,6 +1,5 @@
 function intlen(i) result(l)
-    !-------------------------------------------------------------------
-    ! Return the "string length of an integer"
+    !< Return the "string length of an integer"
     !
     ! The string length of an integer is defined as the length of the 
     ! string containing only that integer (computed using len_trim).
@@ -15,8 +14,7 @@ function intlen(i) result(l)
 end function intlen
 
 function reallen(r) result(l)
-    !-------------------------------------------------------------------
-    ! Return the "string length of a real"
+    !< Return the "string length of a real"
     !
     ! The string length of a real is defined as the length of the string
     ! containing only that real (computed using len_trim).

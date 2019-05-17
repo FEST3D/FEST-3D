@@ -1,4 +1,6 @@
+  !< A module contains generalized subroutine to copy variable in ghost cells
 module copy_bc
+  !< A module contains generalized subroutine to copy variable in ghost cells
   !--------------------------------------------
   ! 170515  Jatinder Pal Singh Sandhu
   ! Aim : applying boundary condition to domain
@@ -20,10 +22,14 @@ module copy_bc
   contains
 
     subroutine copy1(var, type, face)
+      !< Copy 1 layer of interior cell to first ghost cell layer
       implicit none
       character(len=*), intent(in) :: face
+      !< Face over which boundary condition is being called.
       character(len=*), intent(in) :: type
+      !< type of copy: flat, symmetry, anti-symmetry
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
+      !< Varible over which these operation has to be performed
       real :: a2=1
 
       select case(type)
@@ -55,10 +61,14 @@ module copy_bc
 
     
     subroutine copy3(var, type, face)
+      !< Copy 3 layer of interior cell to three ghost cell layer
       implicit none
       character(len=*), intent(in) :: face
+      !< Face over which boundary condition is being called.
       character(len=*), intent(in) :: type
+      !< type of copy: flat, symmetry, anti-symmetry
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
+      !< Varible over which these operation has to be performed
 
       real :: a1=1
       real :: a2=1

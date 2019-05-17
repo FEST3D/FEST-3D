@@ -1,4 +1,6 @@
+ !< Calculate gradients of any primitive variables and temperature
 module summon_grad_evaluation
+ !< Calculate gradients of any primitive variables and temperature
   !----------------------------------------------------------
   !170608  -Jatinder Pal Singh Sandhu
   ! Aim : call is made to all the required gradients
@@ -82,13 +84,19 @@ module summon_grad_evaluation
   private
 
   real, dimension(6)               :: T
+  !< Temperaure array for six neighbours
   real                             :: cell_T
+  !< Temperature at cell center
   integer :: i,j,k
+  !< integer for DO loop
   public :: evaluate_all_gradients
 
   contains
 
     subroutine evaluate_all_gradients()
+      !< Call to all the required gradients and 
+      !< apply boundary condition for ghost cell
+      !< gradients
 
       implicit none
 
@@ -175,7 +183,7 @@ module summon_grad_evaluation
           call compute_gradient_G(gradtgm_z, tgm, 'z')
           end if
 
-        case('j10', 'bc', 'none')
+        case('bc', 'none')
           !do nothing
           continue
 
@@ -193,10 +201,14 @@ module summon_grad_evaluation
 
 
     subroutine compute_gradient_G(grad, var, dir)
+      !<  Compute gradient of any input scalar
       implicit none
       real, dimension( 0:imx  , 0:jmx  , 0:kmx  ), intent(out) :: grad
+      !< Output variable storing the graident of var
       real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(in) :: var
+      !< Input variable of which graident is required
       character(len=*)                           , intent(in) :: dir
+      !< Direction with respect to which gradients are calculated
       
       real, dimension(:,:,:), pointer  :: nx
       real, dimension(:,:,:), pointer  :: ny
@@ -247,10 +259,13 @@ module summon_grad_evaluation
     end subroutine compute_gradient_G
 
     subroutine compute_gradient_T(grad, dir)
+      !< Calculate gradient of temperature
 
       implicit none
       real, dimension( 0:imx  , 0:jmx  , 0:kmx  ), intent(out) :: grad
+      !< Output gradient of termperature
       character(len=*)                           , intent(in) :: dir
+      !< Direction with respect to which gradients are calculated
       
       real, dimension(6)               :: T
       real                             :: cell_T

@@ -1,8 +1,12 @@
+  !< Setup and nullify pointers for LCTM2015 transition 
+  !<model to the main array which stores gradient of all variables
 module lctm2015_gradients
+  !< Setup and nullify pointers for LCTM2015 transition 
+  !<model to the main array which stores gradient of all variables
   !---------------------------------------------------------------
   ! 1705009  Jatinder Pal Singh Sandhu
   !          - first build
-  ! aim : link sst pointer to allocated memory for gradients
+  ! aim : link LCTM2015 pointer to allocated memory for gradients
   !---------------------------------------------------------------
 
 #include "../debug.h"
@@ -32,6 +36,8 @@ module lctm2015_gradients
   contains
 
     subroutine setup_lctm2015_grad()
+      !< setup Pointer to the main array which stores gradient 
+      !< all variables with x, y, z
 
       implicit none
 
@@ -44,7 +50,7 @@ module lctm2015_gradients
           gradtgm_y(0:imx, 0:jmx, 0:kmx) => gradqp_y(:, :, :, n_grad)
           gradtgm_z(0:imx, 0:jmx, 0:kmx) => gradqp_z(:, :, :, n_grad)
 
-        case('j10', 'bc', 'none')
+        case( 'bc', 'none')
           !do nothing
           continue
 
@@ -57,6 +63,7 @@ module lctm2015_gradients
 
 
     subroutine destroy_lctm2015_grad()
+      !< nullify all the gradient pointer setup for k-kL model
       implicit none
 
       DebugCall('destroy_sst_grad')
@@ -68,7 +75,7 @@ module lctm2015_gradients
           nullify(gradtgm_y)
           nullify(gradtgm_z)
 
-        case('j10', 'bc', 'none')
+        case('bc', 'none')
           !do nothing
           continue
 

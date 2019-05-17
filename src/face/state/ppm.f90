@@ -1,8 +1,8 @@
+    !< Higher order face state reconstruction method:PPM
 module ppm
-    !-------------------------------------------------------------------
-    ! PPM (Piecewise Parabolic Method) is an interpolation technique
-    ! which can be used to create higher order extensions of schemes
-    ! like the Van-Leer and LDFSS schemes.
+    !< PPM (Piecewise Parabolic Method) is an interpolation technique
+    !< which can be used to create higher order extensions of schemes
+    !< like the Van-Leer and LDFSS schemes.
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
@@ -30,14 +30,31 @@ module ppm
     private
 
     real, dimension(:, :, :, :), allocatable, target :: x_qp_face_estimate
+    !< Store the I face estimate from 4th order reconstruction
     real, dimension(:, :, :, :), allocatable, target :: y_qp_face_estimate
+    !< Store the J face estimate from 4th order reconstruction
     real, dimension(:, :, :, :), allocatable, target :: z_qp_face_estimate
-    real, dimension(:, :, :, :), allocatable, target :: x_qp_left, x_qp_right
-    real, dimension(:, :, :, :), allocatable, target :: y_qp_left, y_qp_right
-    real, dimension(:, :, :, :), allocatable, target :: z_qp_left, z_qp_right
-    real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
+    !< Store the K face estimate from 4th order reconstruction
+    real, dimension(:, :, :, :), allocatable, target :: x_qp_left
+      !< Store primitive state at the I-face left side
+    real, dimension(:, :, :, :), allocatable, target :: x_qp_right
+      !< Store primitive state at the I-face right side
+    real, dimension(:, :, :, :), allocatable, target :: y_qp_left
+      !< Store primitive state at the J-face left side
+    real, dimension(:, :, :, :), allocatable, target :: y_qp_right
+      !< Store primitive state at the J-face right side
+    real, dimension(:, :, :, :), allocatable, target :: z_qp_left
+      !< Store primitive state at the K-face left side
+    real, dimension(:, :, :, :), allocatable, target :: z_qp_right
+      !< Store primitive state at the K-face right side
+    real, dimension(:, :, :, :), pointer :: f_qp_left
+    !< Generalized pointer for any I-J-K direction> f_qp_left can 
+    !< either point to x_qp_left, y_qp_left or z_qp_left
+    real, dimension(:, :, :, :), pointer :: f_qp_right
+    !< Generalized pointer for any I-J-K direction> f_qp_right can 
+    !< either point to x_qp_right, y_qp_right or z_qp_right
     real, dimension(:, :, :), allocatable :: pdif
-    integer :: iter_no
+    !< Used for pressure based witch
 
     ! Public members
     public :: setup_scheme
@@ -51,11 +68,12 @@ module ppm
     contains
 
         subroutine setup_scheme()
+          !< Allocate memoery to all array which store state
+          !< the face.
 
             implicit none
 
             call dmsg(1, 'ppm', 'setup_ppm')
-            iter_no = 0
 
             call alloc(x_qp_face_estimate, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
@@ -91,6 +109,7 @@ module ppm
         end subroutine setup_scheme
 
         subroutine destroy_scheme()
+          !< Deallocate all the array used 
 
             implicit none
 
@@ -110,6 +129,7 @@ module ppm
         end subroutine destroy_scheme
 
         subroutine compute_face_estimates(f_dir)
+          !< Subroutine to calculate state at the face, generalized for
 
             implicit none
             character, intent(in) :: f_dir
@@ -153,51 +173,11 @@ module ppm
              end do
             end do
 
-        !   ! Boundary of physical domain
-        !   f_qp_estimate((1-i_f)+i_f*1 : (1-i_f)*(imx-1)+i_f*1, &
-        !                 (1-j_f)+j_f*1 : (1-j_f)*(jmx-1)+j_f*1, &
-        !                 (1-k_f)+k_f*1 : (1-k_f)*(kmx-1)+k_f*1, :) = &
-        !    (qp((1-i_f)+i_f*0 : (1-i_f)*(imx-1)+i_f*0, &
-        !        (1-j_f)+j_f*0 : (1-j_f)*(jmx-1)+j_f*0, &
-        !        (1-k_f)+k_f*0 : (1-k_f)*(kmx-1)+k_f*0, :) + &
-        !     qp((1-i_f)+i_f*1 : (1-i_f)*(imx-1)+i_f*1, &
-        !        (1-j_f)+j_f*1 : (1-j_f)*(jmx-1)+j_f*1, &
-        !        (1-k_f)+k_f*1 : (1-k_f)*(kmx-1)+k_f*1, :)) /2. 
-        !   
-        !   f_qp_estimate((1-i_f)+i_f*imx : (1-i_f)*(imx-1)+i_f*imx, &
-        !                 (1-j_f)+j_f*jmx : (1-j_f)*(jmx-1)+j_f*jmx, &
-        !                 (1-k_f)+k_f*kmx : (1-k_f)*(kmx-1)+k_f*kmx, :) = &
-        !    (qp((1-i_f)+i_f*imx : (1-i_f)*(imx-1)+i_f*imx, &
-        !        (1-j_f)+j_f*jmx : (1-j_f)*(jmx-1)+j_f*jmx, &
-        !        (1-k_f)+k_f*kmx : (1-k_f)*(kmx-1)+k_f*kmx, :) + &
-        !     qp((1-i_f)+i_f*(imx-1) : (1-i_f)*(imx-1)+i_f*(imx-1), &
-        !        (1-j_f)+j_f*(jmx-1) : (1-j_f)*(jmx-1)+j_f*(jmx-1), &
-        !        (1-k_f)+k_f*(kmx-1) : (1-k_f)*(kmx-1)+k_f*(kmx-1), :)) / 2.
-
-        !   ! Boundary of ghost cells
-        !   f_qp_estimate((1-i_f)+i_f*0 : (1-i_f)*(imx-1)+i_f*0, &
-        !                 (1-j_f)+j_f*0 : (1-j_f)*(jmx-1)+j_f*0, &
-        !                 (1-k_f)+k_f*0 : (1-k_f)*(kmx-1)+k_f*0, :) = &
-        !    (4.*qp((1-i_f)+i_f*0 : (1-i_f)*(imx-1)+i_f*0, &
-        !           (1-j_f)+j_f*0 : (1-j_f)*(jmx-1)+j_f*0, &
-        !           (1-k_f)+k_f*0 : (1-k_f)*(kmx-1)+k_f*0, :) - &
-        !        qp((1-i_f)+i_f*1 : (1-i_f)*(imx-1)+i_f*1, &
-        !           (1-j_f)+j_f*1 : (1-j_f)*(jmx-1)+j_f*1, &
-        !           (1-k_f)+k_f*1 : (1-k_f)*(kmx-1)+k_f*1, :)) /3. 
-        !   
-        !   f_qp_estimate((1-i_f)+i_f*(imx+1) : (1-i_f)*(imx-1)+i_f*(imx+1), &
-        !                 (1-j_f)+j_f*(jmx+1) : (1-j_f)*(jmx-1)+j_f*(jmx+1), &
-        !                 (1-k_f)+k_f*(kmx+1) : (1-k_f)*(kmx-1)+k_f*(kmx+1), :) = &
-        !    (4.*qp((1-i_f)+i_f*imx : (1-i_f)*(imx-1)+i_f*imx, &
-        !           (1-j_f)+j_f*jmx : (1-j_f)*(jmx-1)+j_f*jmx, &
-        !           (1-k_f)+k_f*kmx : (1-k_f)*(kmx-1)+k_f*kmx, :) - &
-        !        qp((1-i_f)+i_f*(imx-1) : (1-i_f)*(imx-1)+i_f*(imx-1), &
-        !           (1-j_f)+j_f*(jmx-1) : (1-j_f)*(jmx-1)+j_f*(jmx-1), &
-        !           (1-k_f)+k_f*(kmx-1) : (1-k_f)*(kmx-1)+k_f*(kmx-1), :)) / 3.
-        
         end subroutine compute_face_estimates
 
         subroutine remove_extrema(f_dir)
+          !< Remove extrema for the state estimated
+          !< Limiting the value in case of PPM
 
             implicit none
             character, intent(in) :: f_dir
@@ -262,6 +242,9 @@ module ppm
         end subroutine remove_extrema
 
         subroutine pressure_based_switching(f_dir)
+          !< Pressure based switching. 
+          !< User x,y, or z for I,J,or K face respectively
+          !----------------------------------------------
 
             implicit none
             ! Character can be x or y or z
@@ -353,6 +336,7 @@ module ppm
         end subroutine pressure_based_switching
         
         subroutine init_left_and_right_xi_estimates()
+          !< Initialize the left and right state at I direction face
 
             implicit none
 
@@ -363,6 +347,7 @@ module ppm
         end subroutine init_left_and_right_xi_estimates
 
         subroutine init_left_and_right_eta_estimates()
+          !< Initialize the left and right state at J direction face
             
             implicit none
 
@@ -373,6 +358,7 @@ module ppm
         end subroutine init_left_and_right_eta_estimates
 
         subroutine init_left_and_right_zeta_estimates()
+          !< Initialize the left and right state at K direction face
             
             implicit none
 
@@ -383,10 +369,12 @@ module ppm
         end subroutine init_left_and_right_zeta_estimates
      
         subroutine compute_ppm_states()
+          !< Call PPM face-state reconstruction for each face
+          !< with optional call for remove extrema based on
+          !< input limter switch and call pressure based switching
+          !< based on input pressure based switch
 
             implicit none
-
-            iter_no = iter_no + 1
 
             call compute_face_estimates('x')
             call init_left_and_right_xi_estimates()
@@ -396,13 +384,6 @@ module ppm
             if (iPB_switch==1)then
               call pressure_based_switching('x')
             end if
-
-    !       if (iter_no == 5000) then 
-    !           call write_line_data_x('qp-before.txt')
-    !       end if
-    !       if (iter_no == 5000) then 
-    !           call write_line_data_x('qp-after.txt')
-    !       end if
 
             call compute_face_estimates('y')
             call init_left_and_right_eta_estimates()
@@ -424,223 +405,5 @@ module ppm
 
         end subroutine compute_ppm_states
 
-        function lin_interp(lambda, x1, x2)
-
-            implicit none
-            real, intent(in) :: lambda, x1, x2
-            real :: lin_interp
-            lin_interp = (1 - lambda)*x1 + (lambda*x2)
-
-        end function lin_interp
-
- !      subroutine write_line_data_x(filename)
-
- !          implicit none
-
- !          integer :: i, j, k
- !          character(len=*), intent(in) :: filename
- !          real :: x1, x2
-
- !          ! Writing out a row of data
- !          j = 5
- !          
- !          ! Writing out Pressure
- !          k = 4
-
- !          open(71, file=filename)
- !          ! Writing it as cell based
- !          do i = 1, imx-1
- !              x1 = grid_x(i, j)
- !              x2 = grid_x(i+1, j)
- !              write(71, *) lin_interp(0.02, x1, x2), x_qp_right(i, j, k), &
- !                           lin_interp(0.5, x1, x2), qp(i, j, k), &
- !                           lin_interp(0.98, x1, x2), x_qp_left(i+1, j, k)
- !          end do
- !          close(71)
-
- !      end subroutine write_line_data_x
-
-     !  subroutine write_line_data()
-
-     !      implicit none
-
-     !      integer :: i, j, k
-     !      character(len=20) :: f1, f2, f3
-
-     !      ! Writing out a row of data
-     !      j = 1
-     !      
-     !      ! Writing out Pressure
-     !      k = 4
-     !      i = 100
-
-     !      f1 = 'qp_left_after'
-     !      f2 = 'qp_after'
-     !      f3 = 'qp_right_after'
-
-     !      open(71, file=f1)
-     !      do i = 1, imx-1
-     !          write(71, *) grid_x(i, j), x_qp_right(i, j, k)
-     !      end do
-     !      close(71)
-
-     !      open(71, file=f2)
-     !      do i = 1, imx-1
-     !          write(71, *) 0.5 * (grid_x(i, j) + grid_x(i+1, j)), qp(i, j, k)
-     !      end do
-     !      close(71)
-
-     !      open(71, file=f3)
-     !      do i = 2, imx
-     !          write(71, *) grid_x(i, j), x_qp_left(i, j, k)
-     !      end do
-     !      close(71)
-
-     !  end subroutine write_line_data
-
-!       subroutine write_line_data_y()
-
-!           implicit none
-
-!           integer :: i, j, k
-!           character(len=20) :: f1, f2, f3
-
-!           ! Writing out a row of data
-!           i = 49
-!           
-!           ! Writing out Pressure
-!           k = 4
-
-!           f1 = 'y_qp_left_after'
-!           f2 = 'y_qp_after'
-!           f3 = 'y_qp_right_after'
-
-!           open(71, file=f1)
-!           do j = 1, jmx-1
-!               write(71, *) grid_y(i, j), y_qp_right(i, j, k)
-!           end do
-!           close(71)
-
-!           open(71, file=f2)
-!           do j = 1, jmx-1
-!               write(71, *) 0.5 * (grid_y(i, j) + grid_y(i, j+1)), qp(i, j, k)
-!           end do
-!           close(71)
-
-!           open(71, file=f3)
-!           do j = 2, jmx
-!               write(71, *) grid_y(i, j), y_qp_left(i, j, k)
-!           end do
-!           close(71)
-
-!       end subroutine write_line_data_y
-
-!       subroutine output_data(filename)
-!           implicit none
-!           character(len=*), intent(in) :: filename
-!           integer :: i, j
-!           open(71, file=filename)
-!           write(71, *) 'density'
-!           write(71, *) 'xi_left'
-!           do j = 1, jmx-1
-!               do i = 0, imx+1
-!                   write(71, *) x_qp_left(i, j, 1)
-!               end do
-!           end do
-!           write(71, *) 'xi_right'
-!           do j = 1, jmx-1
-!               do i = 0, imx+1
-!                   write(71, *) x_qp_right(i, j, 1)
-!               end do
-!           end do
-!           write(71, *) 'eta_left'
-!           do j = 0, jmx+1
-!               do i = 1, imx-1
-!                   write(71, *) y_qp_left(i, j, 1)
-!               end do
-!           end do
-!           write(71, *) 'eta_right'
-!           do j = 0, jmx+1
-!               do i = 1, imx-1
-!                   write(71, *) y_qp_right(i, j, 1)
-!               end do
-!           end do
-!           write(71, *) 'x_speed'
-!           write(71, *) 'xi_left'
-!           do j = 1, jmx-1
-!               do i = 0, imx+1
-!                   write(71, *) x_qp_left(i, j, 2)
-!               end do
-!           end do
-!           write(71, *) 'xi_right'
-!           do j = 1, jmx-1
-!               do i = 0, imx+1
-!                   write(71, *) x_qp_right(i, j, 2)
-!               end do
-!           end do
-!           write(71, *) 'eta_left'
-!           do j = 0, jmx+1
-!               do i = 1, imx-1
-!                   write(71, *) y_qp_left(i, j, 2)
-!               end do
-!           end do
-!           write(71, *) 'eta_right'
-!           do j = 0, jmx+1
-!               do i = 1, imx-1
-!                   write(71, *) y_qp_right(i, j, 2)
-!               end do
-!           end do
-!           write(71, *) 'y_speed'
-!           write(71, *) 'xi_left'
-!           do j = 1, jmx-1
-!               do i = 0, imx+1
-!                   write(71, *) x_qp_left(i, j, 3)
-!               end do
-!           end do
-!           write(71, *) 'xi_right'
-!           do j = 1, jmx-1
-!               do i = 0, imx+1
-!                   write(71, *) x_qp_right(i, j, 3)
-!               end do
-!           end do
-!           write(71, *) 'eta_left'
-!           do j = 0, jmx+1
-!               do i = 1, imx-1
-!                   write(71, *) y_qp_left(i, j, 3)
-!               end do
-!           end do
-!           write(71, *) 'eta_right'
-!           do j = 0, jmx+1
-!               do i = 1, imx-1
-!                   write(71, *) y_qp_right(i, j, 3)
-!               end do
-!           end do
-!           write(71, *) 'pressure'
-!           write(71, *) 'xi_left'
-!           do j = 1, jmx-1
-!               do i = 0, imx+1
-!                   write(71, *) x_qp_left(i, j, 4)
-!               end do
-!           end do
-!           write(71, *) 'xi_right'
-!           do j = 1, jmx-1
-!               do i = 0, imx+1
-!                   write(71, *) x_qp_right(i, j, 4)
-!               end do
-!           end do
-!           write(71, *) 'eta_left'
-!           do j = 0, jmx+1
-!               do i = 1, imx-1
-!                   write(71, *) y_qp_left(i, j, 4)
-!               end do
-!           end do
-!           write(71, *) 'eta_right'
-!           do j = 0, jmx+1
-!               do i = 1, imx-1
-!                   write(71, *) y_qp_right(i, j, 4)
-!               end do
-!           end do
-!           close(71)
-!       end subroutine output_data
 
 end module ppm

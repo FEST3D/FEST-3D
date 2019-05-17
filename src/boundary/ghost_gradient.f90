@@ -1,4 +1,6 @@
+  !< Set value gradients in the ghost cells
 module ghost_gradients
+  !< Set value gradients in the ghost cells
   ! ---------------------------------------------------------
   !   # 170508 - Jatinder Pal Singh Sandhu
   !---------------------------------------------------------
@@ -41,7 +43,8 @@ module ghost_gradients
 
   contains
 
-    subroutine apply_gradient_bc
+    subroutine apply_gradient_bc()
+      !< call same subroutine for all the face
       implicit none
 
       call dmsg(1,'ghost_gradients', 'apply_gradient_bc')
@@ -70,6 +73,10 @@ module ghost_gradients
 
 
     subroutine apply(face)
+      !< Apply/set value of all gradient in the ghost cells
+      !< gradqp_G = (qp_I - qp_G)*Area_W*unit_normal_G/(volume_G)
+      !< volume_G = volume_I
+      !-----------------------------------------------------------
       implicit none
       character(len=*) :: face
       real, dimension(n_grad) :: qp_I

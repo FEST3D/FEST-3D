@@ -1,4 +1,6 @@
+  !< Apply flow tangency boundary condition
 module FT_bc
+  !< Apply flow tangency boundary condition
   !--------------------------------------------
   ! 170509  Jatinder Pal Singh Sandhu
   ! Aim : applying Flow tangency boundary condition
@@ -24,8 +26,10 @@ module FT_bc
   contains
 
     subroutine flow_tangency(face)
+      !< Apply flow tangency boundary condition
       implicit none
       character(len=*), intent(in) :: face
+      !< face over which flow tangency condition has to be applied
       real :: dot1
       real :: dot2
       real :: dot3

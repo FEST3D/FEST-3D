@@ -1,4 +1,6 @@
+  !< Check for the input from the output_control.md file
 module check_output_control
+  !< Check for the input from the output_control.md file
 ! ---------------------------------------------
 ! 170619 -jatinder pal singh sandhu
 ! Aim: to check wheter input are correct or not
@@ -20,6 +22,8 @@ module check_output_control
   contains
 
     subroutine verify_write_control()
+      !< Verify all the variable being asked to write in the output file.
+      !< This is a fail-safe subroutine which do not allow to write the incorrect input variable
       implicit none
       integer :: n
       character(len=*), parameter :: err="Control Error: can't write variable - "
@@ -342,6 +346,9 @@ module check_output_control
     end subroutine verify_write_control
 
     subroutine verify_read_control()
+      !< Verify all the variable being asked to read in the output file.
+      !< This is a fail-safe subroutine which do not allow to read the incorrect input variable
+      !< Based on previous flow type some varible might be skipped.
       implicit none
       integer :: n
       character(len=*), parameter :: err="Control Error: can't read variable - "

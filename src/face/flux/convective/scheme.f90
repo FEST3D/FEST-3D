@@ -121,7 +121,28 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 5)
-                    include "turbulence_models/include/scheme/van_leer_setup.inc" 
+                    select case (turbulence)
+
+                        case ("none")
+                            !include nothing
+                            continue
+                        case ("sst", "sst2003", "kw" , "des-sst")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 6)
+                        omega_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 7)
+                        case ("kkl")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 6)
+                           KL_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 7)
+                        case ("sa", "saBC")
+                          tv_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 6)
+                        case ("ke")
+                                  TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 6)
+                          dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 7)
+                        case DEFAULT
+                            call dmsg(5, "scheme", "van_leer_setup", &
+                                      "ERROR: Turbulence model not recognised")
+                            STOP
+
+                    end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_van_leer(:,:,:,:)
                 case ("ausm")
                     call setup_scheme_ausm()
@@ -133,7 +154,26 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 5)
-                    include "turbulence_models/include/scheme/ausm_setup.inc" 
+                    select case (turbulence)
+                        case ("none")
+                            !include nothing
+                            continue
+                        case ("sst", "sst2003", "kw" , "des-sst")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 6)
+                        omega_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 7)
+                        case ("kkl")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 6)
+                           KL_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 7)
+                        case ("sa", "saBC")
+                           tv_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 6)
+                        case ("ke")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 6)
+                  dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 7)
+                        case DEFAULT
+                            call dmsg(5, "scheme", "AUSM_setup", &
+                                      "ERROR: Turbulence model not recognised")
+                            STOP
+                    end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausm(:,:,:,:)
                 case ("ausmP")
                     call setup_scheme_ausmP()
@@ -145,7 +185,26 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 5)
-                    include "turbulence_models/include/scheme/ausmP_setup.inc" 
+                    select case (turbulence)
+                        case ("none")
+                            !include nothing
+                            continue
+                        case ("sst", "sst2003", "kw" , "des-sst")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 6)
+                        omega_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 7)
+                        case ("kkl")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 6)
+                           KL_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 7)
+                        case ("sa", "saBC")
+                           tv_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 6)
+                        case ("ke")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 6)
+                  dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 7)
+                        case DEFAULT
+                            call dmsg(5, "scheme", "AUSM+_setup", &
+                                      "ERROR: Turbulence model not recognised")
+                            STOP
+                    end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausmP(:,:,:,:)
                 case ("ausmUP")
                     call setup_scheme_ausmUP()
@@ -157,7 +216,26 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 5)
-                    include "turbulence_models/include/scheme/ausmUP_setup.inc" 
+                    select case (turbulence)
+                        case ("none")
+                            !include nothing
+                            continue
+                        case ("sst", "sst2003", "kw" , "des-sst")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 6)
+                        omega_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 7)
+                        case ("kkl")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 6)
+                           KL_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 7)
+                        case ("sa", "saBC")
+                           tv_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 6)
+                        case ("ke")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 6)
+                  dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 7)
+                        case DEFAULT
+                            call dmsg(5, "scheme", "AUSMUP_setup", &
+                                      "ERROR: Turbulence model not recognised")
+                            STOP
+                    end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausmUP(:,:,:,:)
                 case ("slau")
                     call setup_scheme_slau()
@@ -169,7 +247,26 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 5)
-                    include "turbulence_models/include/scheme/slau_setup.inc" 
+                    select case (turbulence)
+                        case ("none")
+                            !include nothing
+                            continue
+                        case ("sst", "sst2003", "kw" , "des-sst")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 6)
+                        omega_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 7)
+                        case ("kkl")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 6)
+                           KL_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 7)
+                        case ("sa", "saBC")
+                           tv_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 6)
+                        case ("ke")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 6)
+                  dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 7)
+                        case DEFAULT
+                            call dmsg(5, "scheme", "SLAU_setup", &
+                                      "ERROR: Turbulence model not recognised")
+                            STOP
+                    end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_slau(:,:,:,:)
                 case ("ldfss0")
                     call setup_scheme_ldfss0()
@@ -181,7 +278,26 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 5)
-                    include "turbulence_models/include/scheme/ldfss0_setup.inc" 
+                    select case (turbulence)
+                        case ("none")
+                            !include nothing
+                            continue
+                        case ("sst", "sst2003", "kw" , "des-sst")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 6)
+                        omega_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 7)
+                        case ("kkl")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 6)
+                           KL_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 7)
+                        case ("sa", "saBC")
+                           tv_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 6)
+                        case ("ke")
+                          TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 6)
+                  dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 7)
+                        case DEFAULT
+                            call dmsg(5, "scheme", "LDFSS_setup", &
+                                      "ERROR: Turbulence model not recognised")
+                            STOP
+                    end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ldfss0(:,:,:,:)
 !               case ("hlle")
 !                   call setup_scheme_hlle()
@@ -206,7 +322,11 @@ module scheme
             nullify(z_mom_residue)
             nullify(energy_residue)
             nullify(residue)
-            include "turbulence_models/include/scheme/deallocate_memory.inc" 
+            nullify(TKE_residue)
+            nullify(omega_residue)
+            nullify(KL_residue)
+            nullify(tv_residue)
+            nullify(dissipation_residue)
 
         end subroutine deallocate_memory
 

@@ -1,4 +1,6 @@
+  !< read the restart file in the tecplot format
 module read_output_tec
+  !< read the restart file in the tecplot format
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
@@ -87,6 +89,7 @@ module read_output_tec
   contains
 
     subroutine read_file()
+      !< read all the variable for the tecplot restart file
       implicit none
       integer :: n
 
@@ -139,6 +142,7 @@ module read_output_tec
 
 
     subroutine read_header()
+      !< skip read the header in the tecplot file
       implicit none
       integer :: n
 
@@ -159,6 +163,7 @@ module read_output_tec
 
 
     subroutine read_grid()
+      !< skip the grid read in the restart file
       implicit none
       real :: dummy
 
@@ -171,6 +176,7 @@ module read_output_tec
     end subroutine read_grid
 
     subroutine read_scalar(var, name, index)
+      !< Read scalar from the tecplot file
       implicit none
       integer, intent(in) :: index
       real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
@@ -182,6 +188,7 @@ module read_output_tec
     end subroutine read_scalar
 
     subroutine skip_scalar()
+      !< skip read scalar from the tecplot file
       implicit none
       real :: dummy
 

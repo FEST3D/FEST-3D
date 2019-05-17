@@ -1,4 +1,6 @@
+  !< Close all the opened files
 module fclose
+  !< Close all the opened files
   !---------------------------------------------
   ! 170513  Jatinder Pal Singh Sandhu
   !  Aim : close all opened file.
@@ -33,6 +35,7 @@ module fclose
   contains
 
     subroutine close_all_files
+      !< Call to close all files
       implicit none
       call close_file(      CONFIG_FILE_UNIT)
       call close_file(        GRID_FILE_UNIT)
@@ -56,6 +59,7 @@ module fclose
     end subroutine close_all_files
 
     subroutine close_file(handler)
+      !Generalized subroutine to close single file
       implicit none
       integer, intent(in) :: handler
       logical :: ok

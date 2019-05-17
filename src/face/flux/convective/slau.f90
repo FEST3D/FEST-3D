@@ -1,6 +1,8 @@
+    !< Flux splitting scheme: SLAU
 module slau
-    !-------------------------------------------------------------------
-    ! The slau scheme is a type of flux-splitting scheme
+    !< 1 Shima, E., and Kitamura, K., “Parameter-Free Simple
+    !<  Low-Dissipation AUSM-Family Scheme for All Speeds,” 
+    !< AIAA Journal, vol. 49, Aug. 2011, pp. 1693–1709.
     !-------------------------------------------------------------------
     
     use global_vars, only : imx
@@ -30,8 +32,16 @@ module slau
     implicit none
     private
 
-    real, public, dimension(:, :, :, :), allocatable, target :: F, G, H, residue
+    real, public, dimension(:, :, :, :), allocatable, target :: F
+    !< Store fluxes throught the I faces
+    real, public, dimension(:, :, :, :), allocatable, target :: G
+    !< Store fluxes throught the J faces
+    real, public, dimension(:, :, :, :), allocatable, target :: H
+    !< Store fluxes throught the K faces
+    real, public, dimension(:, :, :, :), allocatable, target :: residue
+    !< Store residue at each cell-center
     real, dimension(:, :, :, :), pointer :: flux_p
+    !< pointer/alias for the either F, G, or H
 
     ! Public members
     public :: setup_scheme
@@ -42,6 +52,7 @@ module slau
     contains
 
         subroutine setup_scheme()
+          !< Allocate memory to the flux variables
 
             implicit none
 
@@ -63,6 +74,7 @@ module slau
         end subroutine setup_scheme
 
         subroutine destroy_scheme()
+          !< Deallocate memory
 
             implicit none
 
@@ -75,14 +87,25 @@ module slau
         end subroutine destroy_scheme
 
         subroutine compute_flux(f_dir)
+          !< A generalized subroutine to calculate
+          !< flux through the input direction, :x,y, or z
+          !< which corresponds to the I,J, or K direction respectively
+          !------------------------------------------------------------
 
             implicit none
             character, intent(in) :: f_dir
+            !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
-            integer :: i_f, j_f, k_f ! Flags to determine face direction
+            !< integer for DO loop
+            integer :: i_f, j_f, k_f 
+            !< Flags to determine face direction
             real, dimension(:, :, :), pointer :: fA, nx, ny, nz
+            !< Pointer to the face area and normal
             real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
-            real, dimension(1:n_var) :: F_plus, F_minus
+            real, dimension(1:n_var) :: F_plus
+            !< Right flux through the face
+            real, dimension(1:n_var) ::F_minus
+            !< Left flux through  the face
             real :: xi
             real :: vnabs
             real :: delp
@@ -92,16 +115,26 @@ module slau
             real :: Mcap
             real :: vtface
             real :: mass
-            real :: HL, HR !enthalpy
+            real :: HL, HR 
+            !< enthalpy
             real :: uL, uR
+            !< X-component of velocity
             real :: vL, vR
+            !< Y-component of velocity
             real :: wL, wR
+            !< Z-component of velocity
             real :: pL, pR
+            !< pressure
             real :: rL, rR
+            !< Density
             real :: cL, cR
+            !< speed sound left/right
             real :: C
+            !< speed of sound at face
             real :: ML, MR
+            !< Mach number left/right
             real :: VnL, VnR
+            !< Face normal velocity left/right
             real :: betaL, betaR
             real :: alphaL, alphaR
             real :: VnabsL, VnabsR
@@ -272,6 +305,8 @@ module slau
         end subroutine compute_flux
 
         subroutine compute_fluxes()
+          !< Call to compute fluxes throught faces in each direction
+
             
             implicit none
             
@@ -302,8 +337,7 @@ module slau
         end subroutine compute_fluxes
 
         subroutine get_residue()
-            !-----------------------------------------------------------
-            ! Compute the residue for the slau scheme
+            !< Compute the residue for the slau scheme
             !-----------------------------------------------------------
 
             implicit none

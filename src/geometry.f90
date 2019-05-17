@@ -1,10 +1,8 @@
+    !< The geometry module contains various geometrical quantities like 
+    !< normals, areas and volumes to be used in computations. 
 module geometry
-    !-------------------------------------------------------------------
-    ! The geometry module contains various geometrical quantities like 
-    ! normals, areas and volumes to be used in computations. 
-    !
-    ! This version of the geometry module assumes the grid is atmost
-    ! 2-dimensional. 
+    !< The geometry module contains various geometrical quantities like 
+    !< normals, areas and volumes to be used in computations. 
     !-------------------------------------------------------------------
 #include "error.inc"
     use global_vars, only : imx
@@ -42,6 +40,7 @@ module geometry
     private
 
     real, dimension(:,:,:,:), allocatable, public:: CellCenter
+    !< Store Cell-center location 
 
     ! Public methods
     public :: setup_geometry
@@ -50,8 +49,7 @@ module geometry
     contains
 
         subroutine allocate_memory_volumes()
-            !-----------------------------------------------------------
-            ! Allocate memory for the volume variables.
+            !< Allocate memory for the volume variables.
             !-----------------------------------------------------------
             
             implicit none
@@ -62,8 +60,7 @@ module geometry
         end subroutine allocate_memory_volumes
 
         subroutine allocate_memory_areas()
-            !-----------------------------------------------------------
-            ! Allocate memory for the area variables.
+            !< Allocate memory for the area variables.
             !-----------------------------------------------------------
             
             implicit none
@@ -78,8 +75,7 @@ module geometry
         end subroutine allocate_memory_areas
 
         subroutine allocate_memory_normals()
-            !-----------------------------------------------------------
-            ! Allocate memory for the normal variables.
+            !< Allocate memory for the normal variables.
             !-----------------------------------------------------------
                         
             implicit none
@@ -106,8 +102,7 @@ module geometry
         end subroutine allocate_memory_normals
 
         subroutine allocate_memory_ghost_centroids()
-            !-----------------------------------------------------------
-            ! Allocate memory for centroids of ghost cells
+            !< Allocate memory for centroids of ghost cells
             !-----------------------------------------------------------
             
             implicit none
@@ -132,8 +127,7 @@ module geometry
         end subroutine allocate_memory_ghost_centroids
 
         subroutine allocate_memory()
-            !-----------------------------------------------------------
-            ! Allocate memory for the required variables.
+            !< Allocate memory for the required variables.
             !-----------------------------------------------------------
             
             implicit none
@@ -148,6 +142,7 @@ module geometry
         end subroutine allocate_memory
 
         subroutine deallocate_memory()
+          !< Deallocate the memoery used by the geometry variables
 
             implicit none
 
@@ -171,9 +166,8 @@ module geometry
         end subroutine deallocate_memory
 
         subroutine normalize_face_normals()
-            !-----------------------------------------------------------
-            ! Normalize the face normal vectors computed to get unit
-            ! vectors
+            !< Normalize the face normal vectors computed to get unit
+            !< vectors
             !-----------------------------------------------------------
             
             implicit none
@@ -262,16 +256,15 @@ module geometry
         end subroutine normalize_face_normals
 
         subroutine compute_face_areas()
-            !-----------------------------------------------------------
-            ! Compute face areas based on area vectors
-            !
-            ! The face areas are computed using the face area vectors. 
-            ! Prior to using this subroutine, the face area vectors must
-            ! computed and placed in the face normal variables. 
-            !
-            ! Since the area is given by abs(d1 x d2), the areas are
-            ! calculated using the normal vectors calculated in 
-            ! compute_face_area_vectors, but before normalising them
+            !< Compute face areas based on area vectors
+            !<
+            !< The face areas are computed using the face area vectors. 
+            !< Prior to using this subroutine, the face area vectors must
+            !< computed and placed in the face normal variables. 
+            !<
+            !< Since the area is given by abs(d1 x d2), the areas are
+            !< calculated using the normal vectors calculated in 
+            !< compute_face_area_vectors, but before normalising them
             !-----------------------------------------------------------
             
             implicit none
@@ -297,15 +290,14 @@ module geometry
         end subroutine compute_face_areas
 
         subroutine compute_face_area_vectors()
-            !-----------------------------------------------------------
-            ! Compute face area vectors
-            !
-            ! The face area vectors denote the face area both in 
-            ! magnitude and direction. They are placed in the face 
-            ! normal variables for further calculation.
-            !
-            ! The face normal is given by d1 x d2, where d1 and d2 are
-            ! the diagonals of a face
+            !< Compute face area vectors
+            !<
+            !< The face area vectors denote the face area both in 
+            !< magnitude and direction. They are placed in the face 
+            !< normal variables for further calculation.
+            !<
+            !< The face normal is given by d1 x d2, where d1 and d2 are
+            !< the diagonals of a face
             !-----------------------------------------------------------
             
             implicit none
@@ -370,11 +362,10 @@ module geometry
         end subroutine compute_face_area_vectors
 
         subroutine compute_face_areas_and_normals()
-            !-----------------------------------------------------------
-            ! Compute the face areas and normals
-            !
-            ! This is the 2-dimensional version. In this case, the face 
-            ! areas default to edge lengths.
+            !< Compute the face areas and normals
+            !<
+            !< This is the 2-dimensional version. In this case, the face 
+            !< areas default to edge lengths.
             !-----------------------------------------------------------
 
             implicit none
@@ -386,11 +377,10 @@ module geometry
         end subroutine compute_face_areas_and_normals
        
         function vol_tetrahedron(p1, p2, p3, p4)
-            !-----------------------------------------------------------
-            ! Compute the volume of a tetrahedron, given 4 points which
-            ! are 1-D arrays
-            ! Since we know that the determinant is to be evaluated of 
-            ! a 3x3 matrix, we write the expression itself
+            !< Compute the volume of a tetrahedron, given 4 points which
+            !< are 1-D arrays
+            !< Since we know that the determinant is to be evaluated of 
+            !< a 3x3 matrix, we write the expression itself
             !-----------------------------------------------------------
 
             implicit none
@@ -413,8 +403,7 @@ module geometry
         end function vol_tetrahedron
         
         function vol_hexahedron(p_list)
-            !-----------------------------------------------------------
-            ! Compute the volume of a hexahedron, given a list of points
+            !< Compute the volume of a hexahedron, given a list of points
             ! The points are arranged in a specific order. For the 
             ! element i,j,k, the order of nodes required are:
             ! i,j,k
@@ -495,10 +484,9 @@ module geometry
         end function vol_hexahedron
         
         subroutine compute_volumes()
-            !-----------------------------------------------------------
-            ! Compute the grid cell volumes
-            ! Each grid is a hexahedron, whose volume is calculated by
-            ! splitting it into 5 tetrahedrons, whose volume is known
+            !< Compute the grid cell volumes
+            !< Each grid is a hexahedron, whose volume is calculated by
+            !< splitting it into 5 tetrahedrons, whose volume is known
             !-----------------------------------------------------------
 
             implicit none
@@ -520,10 +508,14 @@ module geometry
                         p_list(:, 8) = (/ grid_x(i,j+1,k+1), grid_y(i,j+1,k+1), grid_z(i,j+1,k+1) /)
                         volume(i, j, k) = (vol_hexahedron(p_list))
                         if(volume(i,j,k)<=0.0) then
-                          print*, process_id, i,j,k
-                          if(i==0 .or. i==imx .or. j==0 .or. j==jmx .or. k==0 .or. k==kmx) print*, "Ghost Cell volume negative"
-                          print*, "volume :", (vol_hexahedron(p_list))
-                          STOP
+                          if(i==0 .or. i==imx .or. j==0 .or. j==jmx .or. k==0 .or. k==kmx) then
+                            !print*, "Ghost Cell volume negative"
+                            volume(i, j, k) = abs(vol_hexahedron(p_list))
+                          else
+                            print*, process_id, i,j,k
+                            print*, "negative volume :", (vol_hexahedron(p_list))
+                            STOP
+                          end if
                         end if
                     end do
                 end do
@@ -538,11 +530,10 @@ module geometry
         end subroutine compute_volumes
 
         subroutine compute_geometric_parameters()
-            !-----------------------------------------------------------
-            ! Compute the geometric parameters based on the grid points
-            !
-            ! The geometric parameters include the face normals and 
-            ! areas and the cell volumes.
+            !< Compute the geometric parameters based on the grid points
+            !<
+            !< The geometric parameters include the face normals and 
+            !< areas and the cell volumes.
             !-----------------------------------------------------------
             
             implicit none
@@ -555,11 +546,9 @@ module geometry
         end subroutine compute_geometric_parameters
 
         subroutine compute_ghost_cell_centroid()
+          !< compute cell center of all cell including ghost cells
           implicit none
           integer :: i,j,k
-          !-----------------------------------
-          ! compute cell center of all cell including ghost cells
-          !------------------------------------------------------
 
           do k = -2, kmx+2
             do j = -2, jmx+2
@@ -597,341 +586,12 @@ module geometry
             end do
           end do
 
-!            !-----------------------------------------------------------
-!            ! Computes the centroid of the ghost cell. To be used in
-!            ! viscous module
-!            !
-!            ! The ghost cell centroid is found as follows:
-!            ! The face plane is idealised as a plane passing through the
-!            ! centroid of the face (average of 4 points of a face) and 
-!            ! the face normal. 
-!            !
-!            ! The required centroid is then found as the mirror of the
-!            ! centroid of the entire element with respect to the above
-!            ! defined plane
-!            !-----------------------------------------------------------
-!
-!            ! a is the vector from the face centroid to the centroid of
-!            ! the element
-!            ! The vector r_ghost_centroid - r_face_centroid = r (say)
-!            ! is given by the equation:
-!            ! r = a - 2(a.n)n
-!            ! Hence, r_ghost_centroid = r_face_centoid + a - 2(a.n)n
-!            ! n is the face normals, which are calculated in previous
-!            ! subroutines
-!            ! Note that the formula is invariant of the direction of n
-!            real, dimension(3) :: a
-!            real, dimension(3) :: face_centroid, centroid
-!            integer :: i, j, k
-!            
-!            ! left face ghost cell centroids. i = 1
-!            do k = 1, kmx - 1
-!             do j = 1, jmx - 1
-!                centroid(1) = (grid_x(1, j, k) + grid_x(2, j, k) + &
-!                        grid_x(2, j+1, k) + grid_x(1, j+1, k) + &
-!                        grid_x(1, j, k+1) + grid_x(2, j, k+1) + &
-!                        grid_x(2, j+1, k+1) + grid_x(1, j+1, k+1) &
-!                        ) * 0.125
-!                centroid(2) = (grid_y(1, j, k) + grid_y(2, j, k) + &
-!                        grid_y(2, j+1, k) + grid_y(1, j+1, k) + &
-!                        grid_y(1, j, k+1) + grid_y(2, j, k+1) + &
-!                        grid_y(2, j+1, k+1) + grid_y(1, j+1, k+1) &
-!                        ) * 0.125
-!                centroid(3) = (grid_z(1, j, k) + grid_z(2, j, k) + &
-!                        grid_z(2, j+1, k) + grid_z(1, j+1, k) + &
-!                        grid_z(1, j, k+1) + grid_z(2, j, k+1) + &
-!                        grid_z(2, j+1, k+1) + grid_z(1, j+1, k+1) &
-!                        ) * 0.125
-!
-!                face_centroid(1) = (grid_x(1, j, k) + grid_x(1, j+1, k) + &
-!                        grid_x(1, j, k+1) + grid_x(1, j+1, k+1) &
-!                        ) * 0.25
-!                face_centroid(2) = (grid_y(1, j, k) + grid_y(1, j+1, k) + &
-!                        grid_y(1, j, k+1) + grid_y(1, j+1, k+1) &
-!                        ) * 0.25
-!                face_centroid(3) = (grid_z(1, j, k) + grid_z(1, j+1, k) + &
-!                        grid_z(1, j, k+1) + grid_z(1, j+1, k+1) &
-!                        ) * 0.25
-!
-!                a(1) = centroid(1) - face_centroid(1)
-!                a(2) = centroid(2) - face_centroid(2)
-!                a(3) = centroid(3) - face_centroid(3)
-!
-!                left_ghost_centroid(j, k, 1) = face_centroid(1) + a(1) - &
-!                                    (2*(a(1)*xnx(1, j, k) + a(2)*xny(1, j, k) + &
-!                                        a(3)*xnz(1, j, k))*(xnx(1, j, k)) )
-!                left_ghost_centroid(j, k, 2) = face_centroid(2) + a(2) - &
-!                                    (2*(a(1)*xnx(1, j, k) + a(2)*xny(1, j, k) + &
-!                                        a(3)*xnz(1, j, k))*(xny(1, j, k)) )
-!                left_ghost_centroid(j, k, 3) = face_centroid(3) + a(3) - &
-!                                    (2*(a(1)*xnx(1, j, k) + a(2)*xny(1, j, k) + &
-!                                        a(3)*xnz(1, j, k))*(xnz(1, j, k)) )               
-!             end do
-!            end do
-!
-!            ! right face ghost cell centroids. i = imx
-!            do k = 1, kmx - 1
-!             do j = 1, jmx - 1
-!                centroid(1) = (grid_x(imx-1, j, k) + grid_x(imx, j, k) + &
-!                        grid_x(imx, j+1, k) + grid_x(imx-1, j+1, k) + &
-!                        grid_x(imx-1, j, k+1) + grid_x(imx, j, k+1) + &
-!                        grid_x(imx, j+1, k+1) + grid_x(imx-1, j+1, k+1) &
-!                        ) * 0.125
-!                centroid(2) = (grid_y(imx-1, j, k) + grid_y(imx, j, k) + &
-!                        grid_y(imx, j+1, k) + grid_y(imx-1, j+1, k) + &
-!                        grid_y(imx-1, j, k+1) + grid_y(imx, j, k+1) + &
-!                        grid_y(imx, j+1, k+1) + grid_y(imx-1, j+1, k+1) &
-!                        ) * 0.125
-!                centroid(3) = (grid_z(imx-1, j, k) + grid_z(imx, j, k) + &
-!                        grid_z(imx, j+1, k) + grid_z(imx-1, j+1, k) + &
-!                        grid_z(imx-1, j, k+1) + grid_z(imx, j, k+1) + &
-!                        grid_z(imx, j+1, k+1) + grid_z(imx-1, j+1, k+1) &
-!                        ) * 0.125
-!
-!                face_centroid(1) = (grid_x(imx, j, k) + grid_x(imx, j+1, k) + &
-!                        grid_x(imx, j, k+1) + grid_x(imx, j+1, k+1) &
-!                        ) * 0.25
-!                face_centroid(2) = (grid_y(imx, j, k) + grid_y(imx, j+1, k) + &
-!                        grid_y(imx, j, k+1) + grid_y(imx, j+1, k+1) &
-!                        ) * 0.25
-!                face_centroid(3) = (grid_z(imx, j, k) + grid_z(imx, j+1, k) + &
-!                        grid_z(imx, j, k+1) + grid_z(imx, j+1, k+1) &
-!                        ) * 0.25
-!
-!                a(1) = centroid(1) - face_centroid(1)
-!                a(2) = centroid(2) - face_centroid(2)
-!                a(3) = centroid(3) - face_centroid(3)
-!
-!                right_ghost_centroid(j, k, 1) = face_centroid(1) + a(1) - &
-!                                    (2*(a(1)*xnx(imx, j, k) + a(2)*xny(imx, j, k) + &
-!                                        a(3)*xnz(imx, j, k))*(xnx(imx, j, k)) )
-!                right_ghost_centroid(j, k, 2) = face_centroid(2) + a(2) - &
-!                                    (2*(a(1)*xnx(imx, j, k) + a(2)*xny(imx, j, k) + &
-!                                        a(3)*xnz(imx, j, k))*(xny(imx, j, k)) )
-!                right_ghost_centroid(j, k, 3) = face_centroid(3) + a(3) - &
-!                                    (2*(a(1)*xnx(imx, j, k) + a(2)*xny(imx, j, k) + &
-!                                        a(3)*xnz(imx, j, k))*(xnz(imx, j, k)) )                
-!             end do
-!            end do
-!
-!            ! front face ghost cell centroids. j = 1
-!            do k = 1, kmx - 1
-!             do i = 1, imx - 1
-!                centroid(1) = (grid_x(i, 1, k) + grid_x(i+1, 1, k) + &
-!                        grid_x(i+1, 2, k) + grid_x(i, 2, k) + &
-!                        grid_x(i, 1, k+1) + grid_x(i+1, 1, k+1) + &
-!                        grid_x(i+1, 2, k+1) + grid_x(i, 2, k+1) &
-!                        ) * 0.125
-!                centroid(2) = (grid_y(i, 1, k) + grid_y(i+1, 1, k) + &
-!                        grid_y(i+1, 2, k) + grid_y(i, 2, k) + &
-!                        grid_y(i, 1, k+1) + grid_y(i+1, 1, k+1) + &
-!                        grid_y(i+1, 2, k+1) + grid_y(i, 2, k+1) &
-!                        ) * 0.125
-!                centroid(3) = (grid_z(i, 1, k) + grid_z(i+1, 1, k) + &
-!                        grid_z(i+1, 2, k) + grid_z(i, 2, k) + &
-!                        grid_z(i, 1, k+1) + grid_z(i+1, 1, k+1) + &
-!                        grid_z(i+1, 2, k+1) + grid_z(i, 2, k+1) &
-!                        ) * 0.125
-!
-!                face_centroid(1) = (grid_x(i, 1, k) + grid_x(i+1, 1, k) + &
-!                        grid_x(i+1, 1, k+1) + grid_x(i, 1, k+1) &
-!                        ) * 0.25
-!                face_centroid(2) = (grid_y(i, 1, k) + grid_y(i+1, 1, k) + &
-!                        grid_y(i+1, 1, k+1) + grid_y(i, 1, k+1) &
-!                        ) * 0.25
-!                face_centroid(3) = (grid_z(i, 1, k) + grid_z(i+1, 1, k) + &
-!                        grid_z(i+1, 1, k+1) + grid_z(i, 1, k+1) &
-!                        ) * 0.25
-!
-!                a(1) = centroid(1) - face_centroid(1)
-!                a(2) = centroid(2) - face_centroid(2)
-!                a(3) = centroid(3) - face_centroid(3)
-!
-!                front_ghost_centroid(i, k, 1) = face_centroid(1) + a(1) - &
-!                                    (2*(a(1)*ynx(i, 1, k) + a(2)*yny(i, 1, k) + &
-!                                        a(3)*ynz(i, 1, k))*(ynx(i, 1, k)) )
-!                front_ghost_centroid(i, k, 2) = face_centroid(2) + a(2) - &
-!                                    (2*(a(1)*ynx(i, 1, k) + a(2)*yny(i, 1, k) + &
-!                                        a(3)*ynz(i, 1, k))*(yny(i, 1, k)) )
-!                front_ghost_centroid(i, k, 3) = face_centroid(3) + a(3) - &
-!                                    (2*(a(1)*ynx(i, 1, k) + a(2)*yny(i, 1, k) + &
-!                                        a(3)*ynz(i, 1, k))*(ynz(i, 1, k)) )                
-!             end do
-!            end do
-!
-!            ! back face ghost cell centroids. j = jmx
-!            do k = 1, kmx - 1
-!             do i = 1, imx - 1
-!                centroid(1) = (grid_x(i, jmx-1, k) + grid_x(i+1, jmx-1, k) + &
-!                        grid_x(i+1, jmx, k) + grid_x(i, jmx, k) + &
-!                        grid_x(i, jmx-1, k+1) + grid_x(i+1, jmx-1, k+1) + &
-!                        grid_x(i+1, jmx, k+1) + grid_x(i, jmx, k+1) &
-!                        ) * 0.125
-!                centroid(2) = (grid_y(i, jmx-1, k) + grid_y(i+1, jmx-1, k) + &
-!                        grid_y(i+1, jmx, k) + grid_y(i, jmx, k) + &
-!                        grid_y(i, jmx-1, k+1) + grid_y(i+1, jmx-1, k+1) + &
-!                        grid_y(i+1, jmx, k+1) + grid_y(i, jmx, k+1) &
-!                        ) * 0.125
-!                centroid(3) = (grid_z(i, jmx-1, k) + grid_z(i+1, jmx-1, k) + &
-!                        grid_z(i+1, jmx, k) + grid_z(i, jmx, k) + &
-!                        grid_z(i, jmx-1, k+1) + grid_z(i+1, jmx-1, k+1) + &
-!                        grid_z(i+1, jmx, k+1) + grid_z(i, jmx, k+1) &
-!                        ) * 0.125
-!
-!                face_centroid(1) = (grid_x(i, jmx, k) + grid_x(i+1, jmx, k) + &
-!                        grid_x(i+1, jmx, k+1) + grid_x(i, jmx, k+1) &
-!                        ) * 0.25
-!                face_centroid(2) = (grid_y(i, jmx, k) + grid_y(i+1, jmx, k) + &
-!                        grid_y(i+1, jmx, k+1) + grid_y(i, jmx, k+1) &
-!                        ) * 0.25
-!                face_centroid(3) = (grid_z(i, jmx, k) + grid_z(i+1, jmx, k) + &
-!                        grid_z(i+1, jmx, k+1) + grid_z(i, jmx, k+1) &
-!                        ) * 0.25
-!
-!                a(1) = centroid(1) - face_centroid(1)
-!                a(2) = centroid(2) - face_centroid(2)
-!                a(3) = centroid(3) - face_centroid(3)
-!
-!                back_ghost_centroid(i, k, 1) = face_centroid(1) + a(1) - &
-!                                    (2*(a(1)*ynx(i, jmx, k) + a(2)*yny(i, jmx, k) + &
-!                                        a(3)*ynz(i, jmx, k))*(ynx(i, jmx, k)) )
-!                back_ghost_centroid(i, k, 2) = face_centroid(2) + a(2) - &
-!                                    (2*(a(1)*ynx(i, jmx, k) + a(2)*yny(i, jmx, k) + &
-!                                        a(3)*ynz(i, jmx, k))*(yny(i, jmx, k)) )
-!                back_ghost_centroid(i, k, 3) = face_centroid(3) + a(3) - &
-!                                    (2*(a(1)*ynx(i, jmx, k) + a(2)*yny(i, jmx, k) + &
-!                                        a(3)*ynz(i, jmx, k))*(ynz(i, jmx, k)) )                
-!             end do
-!            end do
-!
-!            ! bottom face ghost cell centroids. k = 1
-!            do j = 1, jmx - 1
-!             do i = 1, imx - 1
-!                centroid(1) = (grid_x(i, j, 1) + grid_x(i+1, j, 1) + &
-!                        grid_x(i+1, j+1, 1) + grid_x(i, j, 1) + &
-!                        grid_x(i, j, 2) + grid_x(i+1, j, 2) + &
-!                        grid_x(i+1, j+1, 2) + grid_x(i, j+1, 2) &
-!                        ) * 0.125
-!                centroid(2) = (grid_y(i, j, 1) + grid_y(i+1, j, 1) + &
-!                        grid_y(i+1, j+1, 1) + grid_y(i, j, 1) + &
-!                        grid_y(i, j, 2) + grid_y(i+1, j, 2) + &
-!                        grid_y(i+1, j+1, 2) + grid_y(i, j+1, 2) &
-!                        ) * 0.125
-!                centroid(3) = (grid_z(i, j, 1) + grid_z(i+1, j, 1) + &
-!                        grid_z(i+1, j+1, 1) + grid_z(i, j, 1) + &
-!                        grid_z(i, j, 2) + grid_z(i+1, j, 2) + &
-!                        grid_z(i+1, j+1, 2) + grid_z(i, j+1, 2) &
-!                        ) * 0.125
-!
-!                face_centroid(1) = (grid_x(i, j, 1) + grid_x(i+1, j, 1) + &
-!                        grid_x(i+1, j+1, 1) + grid_x(i, j+1, 1) &
-!                        ) * 0.25
-!                face_centroid(2) = (grid_y(i, j, 1) + grid_y(i+1, j, 1) + &
-!                        grid_y(i+1, j+1, 1) + grid_y(i, j+1, 1) &
-!                        ) * 0.25
-!                face_centroid(3) = (grid_z(i, j, 1) + grid_z(i+1, j, 1) + &
-!                        grid_z(i+1, j+1, 1) + grid_z(i, j+1, 1) &
-!                        ) * 0.25
-!
-!                a(1) = centroid(1) - face_centroid(1)
-!                a(2) = centroid(2) - face_centroid(2)
-!                a(3) = centroid(3) - face_centroid(3)
-!
-!                bottom_ghost_centroid(i, j, 1) = face_centroid(1) + a(1) - &
-!                                    (2*(a(1)*znx(i, j, 1) + a(2)*zny(i, j, 1) + &
-!                                        a(3)*znz(i, j, 1))*(znx(i, j, 1)) )
-!                bottom_ghost_centroid(i, j, 2) = face_centroid(2) + a(2) - &
-!                                    (2*(a(1)*znx(i, j, 1) + a(2)*zny(i, j, 1) + &
-!                                        a(3)*znz(i, j, 1))*(zny(i, j, 1)) )
-!                bottom_ghost_centroid(i, j, 3) = face_centroid(3) + a(3) - &
-!                                    (2*(a(1)*znx(i, j, 1) + a(2)*zny(i, j, 1) + &
-!                                        a(3)*znz(i, j, 1))*(znz(i, j, 1)) )          
-!             end do
-!            end do
-!
-!            ! top face ghost cell centroids. k = kmx
-!            do j = 1, jmx - 1
-!             do i = 1, imx - 1
-!                centroid(1) = (grid_x(i, j, kmx-1) + grid_x(i+1, j, kmx-1) + &
-!                        grid_x(i+1, j+1, kmx-1) + grid_x(i, j, kmx-1) + &
-!                        grid_x(i, j, kmx) + grid_x(i+1, j, kmx) + &
-!                        grid_x(i+1, j+1, kmx) + grid_x(i, j+1, kmx) &
-!                        ) * 0.125
-!                centroid(2) = (grid_y(i, j, kmx-1) + grid_y(i+1, j, kmx-1) + &
-!                        grid_y(i+1, j+1, kmx-1) + grid_y(i, j, kmx-1) + &
-!                        grid_y(i, j, kmx) + grid_y(i+1, j, kmx) + &
-!                        grid_y(i+1, j+1, kmx) + grid_y(i, j+1, kmx) &
-!                        ) * 0.125
-!                centroid(3) = (grid_z(i, j, kmx-1) + grid_z(i+1, j, kmx-1) + &
-!                        grid_z(i+1, j+1, kmx-1) + grid_z(i, j, kmx-1) + &
-!                        grid_z(i, j, kmx) + grid_z(i+1, j, kmx) + &
-!                        grid_z(i+1, j+1, kmx) + grid_z(i, j+1, kmx) &
-!                        ) * 0.125
-!
-!                face_centroid(1) = (grid_x(i, j, kmx) + grid_x(i+1, j, kmx) + &
-!                        grid_x(i+1, j+1, kmx) + grid_x(i, j+1, kmx) &
-!                        ) * 0.25
-!                face_centroid(2) = (grid_y(i, j, kmx) + grid_y(i+1, j, kmx) + &
-!                        grid_y(i+1, j+1, kmx) + grid_y(i, j+1, kmx) &
-!                        ) * 0.25
-!                face_centroid(3) = (grid_z(i, j, kmx) + grid_z(i+1, j, kmx) + &
-!                        grid_z(i+1, j+1, kmx) + grid_z(i, j+1, kmx) &
-!                        ) * 0.25
-!
-!                a(1) = centroid(1) - face_centroid(1)
-!                a(2) = centroid(2) - face_centroid(2)
-!                a(3) = centroid(3) - face_centroid(3)
-!
-!                top_ghost_centroid(i, j, 1) = face_centroid(1) + a(1) - &
-!                                    (2*(a(1)*znx(i, j, kmx) + a(2)*zny(i, j, kmx) + &
-!                                        a(3)*znz(i, j, kmx))*(znx(i, j, kmx)) )
-!                top_ghost_centroid(i, j, 2) = face_centroid(2) + a(2) - &
-!                                    (2*(a(1)*znx(i, j, kmx) + a(2)*zny(i, j, kmx) + &
-!                                        a(3)*znz(i, j, kmx))*(zny(i, j, kmx)) )
-!                top_ghost_centroid(i, j, 3) = face_centroid(3) + a(3) - &
-!                                    (2*(a(1)*znx(i, j, kmx) + a(2)*zny(i, j, kmx) + &
-!                                        a(3)*znz(i, j, kmx))*(znz(i, j, kmx)) )              
-!             end do
-!            end do
-
-!           open(24, file='left_ghost.txt')
-
-!           do k = 1, kmx-1
-!            do j = 1, jmx-1
-!               write (24, *) left_ghost_centroid(j, k, 1), left_ghost_centroid(j, k, 2), &
-!                             left_ghost_centroid(j, k, 3)
-!               write (24, *) right_ghost_centroid(j, k, 1), right_ghost_centroid(j, k, 2), &
-!                             right_ghost_centroid(j, k, 3)
-!            end do
-!           end do
-!           
-!           do k = 1, kmx-1
-!            do i = 1, imx-1
-!               write (24, *) front_ghost_centroid(i, k, 1), front_ghost_centroid(i, k, 2), &
-!                             front_ghost_centroid(i, k, 3)
-!               write (24, *) back_ghost_centroid(i, k, 1), back_ghost_centroid(i, k, 2), &
-!                             back_ghost_centroid(i, k, 3)
-!            end do
-!           end do
-
-!           do j = 1, jmx-1
-!            do i = 1, imx-1
-!               write (24, *) top_ghost_centroid(i, j, 1), top_ghost_centroid(i, j, 2), &
-!                             top_ghost_centroid(i, j, 3)
-!               write (24, *) bottom_ghost_centroid(i, j, 1), bottom_ghost_centroid(i, j, 2), &
-!                             bottom_ghost_centroid(i, j, 3)
-!            end do
-!           end do
-
-!           close(24)
-
         end subroutine compute_ghost_cell_centroid
 
         subroutine setup_geometry()
-            !-----------------------------------------------------------
-            ! Make the geometry module useful
-            !
-            ! Allocates memory to the variables and initializes them.
+            !< Make the geometry module useful
+            !<
+            !< Allocates memory to the variables and initializes them.
             !-----------------------------------------------------------
 
             implicit none
@@ -945,6 +605,7 @@ module geometry
         end subroutine setup_geometry
 
         subroutine destroy_geometry()
+          !< nullify all the face normal pionter 
 
             implicit none
             

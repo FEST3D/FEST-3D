@@ -1,36 +1,43 @@
-cfd-iitm
+FEST-3D
 ========
 
-Computational Fluid Dynamics, Indian Institute of Technology Madras
+FEST3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid dynamic code written in Fortran 90 for solving Navier-Stokes equations on a structured grid using state of the art finite-volume numerical methods. It is a modular, multiblock finite-volume code developed to solve compressible flow problems encountered in the field of aerodynamics.
 
-This repository is used to develop a basic solver. This solver is to be used
-in various academic projects by the CFD group at IIT-M.
+## Installation
+For installation instruction check out [Documentation](https://fest3d.github.io/page/01_install.html) guide.
 
-The documentation for the project is provided in the docs directory. 
+## Tutorials
+For tutorials check out description of [test cases](https://fest3d.github.io/page/05_tutorials/index.html).
 
 
-People involved
+
+## FEST-3D Team
 ---------------
 
 ### Advisors:
 - Dr. Santanu Ghosh  
   Assistant Professor  
-  Aerospace Department  
+  Department of Aerospace Engineering
   Indian Institute of Technology Madras
 
 ### Code contributors:
+- Jatinder Pal Singh Sandhu
+  Ph.D. Student (Current)
+  Department of Aerospace Engineering
+  Indian Institute of Technology Madras
+
 - Anant Girdhar  
-  Student (Senior Year)  
-  Aerospace Engineering (B.Tech.)  
-  anant.girdhar@gmail.com
+  B.Tech Student (2015)  
+  Department of Aerospace Engineering
+  Indian Institute of Technology Madras
 
 - Rakesh Ramakrishnan  
-  Student (Senior Year)  
-  Aerospace Engineering (Dual Degree)  
-  rakeshramakrishnan92@gmail.com
+  Dual Degree Student (2016)  
+  Department of Aerospace Engineering
+  Indian Institute of Technology Madras
 
 - R D Teja
-  Student (Senior Year)  
-  Aerospace Engineering (B. Tech.)  
-  rdarmateja@gmail.com
+  B.Tech Student (2016)  
+  Department of Aerospace Engineering
+  Indian Institute of Technology Madras
 

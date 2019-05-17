@@ -1,9 +1,11 @@
+  !< allocate memory to laminar gradients if flow is viscous and
+  !< allocate memory to tubulence gradients base upon the model being used
 module gradients
+  !< allocate memory to laminar gradients if flow is viscous and
+  !< allocate memory to tubulence gradients base upon the model being used
   !------------------------------------------------------------------
   ! 170509  Jatinder Pal Singh Sandhu
   !         - first build
-  !aim : 1) allocate memory to laminar gradients if flow is viscous
-  !      2) allocate memory to tubulence gradients base on model used
   !-------------------------------------------------------------------
 #include "../error.h"
 #include "../debug.h"
@@ -48,6 +50,9 @@ module gradients
 
 
     subroutine setup_gradients
+      !< Memoery allocation to the gradient variables and 
+      !< setup pointer to the slice to the main gradient variable
+      !< based on the various models being used.
 
       implicit none
 
@@ -89,7 +94,7 @@ module gradients
           case('lctm2015')
             call setup_lctm2015_grad()
 
-          case('j10','none','bc')
+          case('none','bc')
             !do nothing
             continue
 
@@ -104,6 +109,8 @@ module gradients
 
 
     subroutine destroy_gradients
+      !< Deallocate memoery and nullify pointers
+      !< to the gradient variables.
       
       implicit none
 
@@ -144,7 +151,7 @@ module gradients
           case('lctm2015')
             call destroy_lctm2015_grad()
 
-          case('j10','none','bc')
+          case('none','bc')
             !do nothing
             continue
 
@@ -160,6 +167,9 @@ module gradients
 
 
     subroutine get_n_grad()
+      !< Set number of variables for which
+      !< gradient is required based on the
+      !< being used
 
       implicit none
 
@@ -193,7 +203,7 @@ module gradients
         case('lctm2015')
           n_grad = n_grad + 1
 
-        case('j10','none','bc')
+        case('none','bc')
           n_grad = n_grad + 0
 
         case DEFAULT
@@ -206,6 +216,7 @@ module gradients
 
 
     subroutine allocate_memory()
+      !< allocating memory to the gradient variable being used
 
       implicit none
 
@@ -220,6 +231,7 @@ module gradients
 
 
     subroutine destroy_memory()
+      !< deallocate memeory from the gradient variables
 
       implicit none
 

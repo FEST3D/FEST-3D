@@ -1,4 +1,6 @@
+!< This module handles the MPI Communication calls for interface boundary conditions
 module interface1
+  !< This module handles the MPI Communication calls for interface boundary conditions
   use global_vars, only: imx
   use global_vars, only: jmx
   use global_vars, only: kmx
@@ -35,20 +37,35 @@ module interface1
 #include "mpi.inc"
   private
   integer :: ibuf_size
+  !< size of the buffer for I face interface
   integer :: jbuf_size
+  !< size of the buffer for J face interface
   integer :: kbuf_size
+  !< size of the buffer for K face interface
   real, dimension(:), allocatable :: imin_send_buf
+  !< Array to store data to send data for Imin face
   real, dimension(:), allocatable :: jmin_send_buf
+  !< Array to store data to send data for Jmin face
   real, dimension(:), allocatable :: kmin_send_buf
+  !< Array to store data to send data for Kmin face
   real, dimension(:), allocatable :: imin_recv_buf
+  !< Array to store data to receive data for Imin face
   real, dimension(:), allocatable :: jmin_recv_buf
+  !< Array to store data to receive data for Jmin face
   real, dimension(:), allocatable :: kmin_recv_buf
+  !< Array to store data to receive data for Kmin face
   real, dimension(:), allocatable :: imax_send_buf
+  !< Array to store data to send data for Imax face
   real, dimension(:), allocatable :: jmax_send_buf
+  !< Array to store data to send data for Jmax face
   real, dimension(:), allocatable :: kmax_send_buf
+  !< Array to store data to send data for Kmax face
   real, dimension(:), allocatable :: imax_recv_buf
+  !< Array to store data to receive data for Imax face
   real, dimension(:), allocatable :: jmax_recv_buf
+  !< Array to store data to receive data for Jmax face
   real, dimension(:), allocatable :: kmax_recv_buf
+  !< Array to store data to receive data for Kmax face
 
   public :: setup_interface
   public :: destroy_interface
@@ -57,6 +74,7 @@ module interface1
   contains
 
     subroutine setup_interface()
+      !< allocate memory for the data communication between processors
       implicit none
       character(len=*), parameter :: &
         errmsg="module: interface, subrouinte setup"
@@ -79,6 +97,7 @@ module interface1
 
 
     subroutine destroy_interface()
+      !< deallocate all the memory being used  for data communication between processors
       implicit none
       call dealloc(imin_send_buf)
       call dealloc(jmin_send_buf)
@@ -96,6 +115,8 @@ module interface1
 
 
     subroutine apply_interface()
+      !< MPISEND_RECV call to exchange interface infromation between
+      !< connected blocks.
       implicit none
       integer:: i,j,k,n,l
       integer:: status(MPI_STATUS_SIZE)
@@ -553,6 +574,8 @@ module interface1
 
 
     subroutine apply_periodic_bc()
+      !<If a block is connected to another block in perodic
+      !<fashion, this subroutine will take care of that boundary condition.
       implicit none
       integer:: i,j,k,n,l
       integer:: status(MPI_STATUS_SIZE)

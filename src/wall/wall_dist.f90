@@ -1,4 +1,8 @@
+  !< Calculate the distance from the wall 
+  !< for each cell-center in the domain.
 module wall_dist
+  !< Calculate the distance from the wall 
+  !< for each cell-center in the domain.
   use global,  only: NODESURF_FILE_UNIT
   use global,  only: WALL_DIST_FILE_UNIT
   use global,  only: wall_dist_file
@@ -19,8 +23,14 @@ module wall_dist
   private
 
   integer                                     :: n_surfnodes
+  !< Number of surfce node points
 !  real, public, dimension(:,:,:), allocatable :: dist
-  real, private,dimension(:)    , allocatable :: wall_x, wall_y, wall_z
+  real, private,dimension(:)    , allocatable :: wall_x
+  !< x component of wall surface node point
+  real, private,dimension(:)    , allocatable :: wall_y
+  !< y component of wall surface node point
+  real, private,dimension(:)    , allocatable :: wall_z
+  !< z component of wall surface node point
 
   public :: setup_wall_dist
   public :: destroy_wall_dist
@@ -29,6 +39,8 @@ module wall_dist
   contains
 
     subroutine setup_wall_dist()
+      !< Allocate memory to the wall_distance variables
+      !< and read the surface node file
 
       implicit none
 
@@ -49,6 +61,8 @@ module wall_dist
 
 
     subroutine destroy_wall_dist()
+      !< Deallocate the memory of wall_distance variable,
+      !< wall_x, wall_y, and wall_z
 
       implicit none
 
@@ -62,6 +76,7 @@ module wall_dist
 
 
     subroutine setup_nodefile()
+      !< open and read first line of surface_node_point file
       implicit none
       integer :: ios
       open(NODESURF_FILE_UNIT, file=surface_node_points, status='old', IOSTAT=ios)
@@ -75,6 +90,7 @@ module wall_dist
 
 
     subroutine read_destroy_nodefile()
+      !< read, and close surface_node_point file
       implicit none
       integer :: i
       do i = 1, n_surfnodes
@@ -84,6 +100,7 @@ module wall_dist
     end subroutine read_destroy_nodefile
 
     subroutine find_wall_dist()
+      !< Determine the minimum wall distance from the wall surface node points
 
       implicit none
 

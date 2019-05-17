@@ -1,4 +1,6 @@
+  !< All the bitwise operation
 module bitwise
+  !< To apply bitwise (and) and (or) to integer which represents the binary or oct number
 
     implicit none
     
@@ -29,6 +31,7 @@ module bitwise
     contains
 
         function int4_and_int4(a, b) result(r)
+          !< bitwise 'AND' over two integer of kind 4
             implicit none
             integer(kind=4), intent(in) :: a
             integer(kind=4), intent(in) :: b
@@ -37,6 +40,7 @@ module bitwise
         end function int4_and_int4
 
         function int8_and_int8(a, b) result(r)
+          !< bitwise 'AND' over two integer of kind 8
             implicit none
             integer(kind=8), intent(in) :: a
             integer(kind=8), intent(in) :: b
@@ -45,6 +49,7 @@ module bitwise
         end function int8_and_int8
 
         function int4_or_int4(a, b) result(r)
+          !< bitwise 'OR' over two integer of kind 4
             implicit none
             integer(kind=4), intent(in) :: a
             integer(kind=4), intent(in) :: b
@@ -53,6 +58,7 @@ module bitwise
         end function int4_or_int4
 
         function int4_1D_or_int4_1D(a, b) result(r)
+          !< bitwise 'OR' over two 1D integer array of kind 4
             implicit none
             integer(kind=4), dimension(:), intent(in) :: a
             integer(kind=4), dimension(:), intent(in) :: b
@@ -65,6 +71,7 @@ module bitwise
         end function int4_1D_or_int4_1D
 
         function int4_1D_or_int4(a, b) result(r)
+          !< bitwise 'OR' over one 1D integer array and integer of kind 4
             implicit none
             integer(kind=4), dimension(:), intent(in) :: a
             integer(kind=4), intent(in) :: b
@@ -78,6 +85,7 @@ module bitwise
         end function int4_1D_or_int4
 
         function int4_2D_or_int4_2D(a, b) result(r)
+          !< bitwise 'OR' over two 2D integer array of kind 4
             implicit none
             integer(kind=4), dimension(:, :), intent(in) :: a
             integer(kind=4), dimension(:, :), intent(in) :: b
@@ -94,6 +102,7 @@ module bitwise
         end function int4_2D_or_int4_2D
 
         function int4_2D_or_int4(a, b) result(r)
+          !< bitwise 'OR' over one 2D integer array and integer of kind 4
             implicit none
             integer(kind=4), dimension(:, :), intent(in) :: a
             integer(kind=4), intent(in) :: b
@@ -110,6 +119,7 @@ module bitwise
         end function int4_2D_or_int4
 
         function int8_or_int8(a, b) result(r)
+          !< bitwise 'OR' over two integer of kind 8
             implicit none
             integer(kind=8), intent(in) :: a
             integer(kind=8), intent(in) :: b
@@ -118,6 +128,7 @@ module bitwise
         end function int8_or_int8
 
         subroutine bin_to_int4(r, binstr)
+          !< String of binary number converted to integer of kind 4
             implicit none
             character(len=*) :: binstr
             integer(kind=4), intent(out) :: r
@@ -133,6 +144,7 @@ module bitwise
         end subroutine bin_to_int4
                 
         subroutine bin_to_int8(r, binstr)
+          !< String of binary number converted to integer of kind 8
             implicit none
             character(len=*) :: binstr
             integer(kind=8), intent(out) :: r
@@ -148,6 +160,7 @@ module bitwise
         end subroutine bin_to_int8
                 
         subroutine oct_to_int4(r, octstr)
+          !< String of octal number converted to integer of kind 4
             implicit none
             character(len=*) :: octstr
             integer(kind=4), intent(out) :: r
@@ -163,6 +176,7 @@ module bitwise
         end subroutine oct_to_int4
 
         subroutine oct_to_int8(r, octstr)
+          !< String of octal number converted to integer of kind 8
             implicit none
             character(len=*) :: octstr
             integer(kind=8), intent(out) :: r
@@ -178,6 +192,7 @@ module bitwise
         end subroutine oct_to_int8
 
         subroutine int4_from_string(lhs, rhs)
+          !< Get integer of kind 4 from the string which might contain either octal or binary number
             implicit none
             integer(kind=4), intent(out) :: lhs
             character(len=*), intent(in) :: rhs
@@ -191,6 +206,7 @@ module bitwise
         end subroutine int4_from_string
 
         subroutine int8_from_string(lhs, rhs)
+          !< Get integer of kind 8 from the string which might contain either octal or binary number
             implicit none
             integer(kind=8), intent(out) :: lhs
             character(len=*), intent(in) :: rhs

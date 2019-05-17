@@ -1,6 +1,8 @@
+    !< Flux splitting scheme: AUSM+-UP
 module ausmUP
-    !-------------------------------------------------------------------
-    ! The slau scheme is a type of flux-splitting scheme
+    !< Reference: Liou, M. S., “A sequel to AUSM, Part II: 
+    !< AUSM+-up for all speeds,” Journal of Computational Physics, 
+    !< vol. 214, 2006, pp. 137–170.
     !-------------------------------------------------------------------
     
     use global_vars, only : imx
@@ -32,8 +34,16 @@ module ausmUP
     implicit none
     private
 
-    real, public, dimension(:, :, :, :), allocatable, target :: F, G, H, residue
+    real, public, dimension(:, :, :, :), allocatable, target :: F
+    !< Store fluxes throught the I faces
+    real, public, dimension(:, :, :, :), allocatable, target :: G
+    !< Store fluxes throught the J faces
+    real, public, dimension(:, :, :, :), allocatable, target :: H
+    !< Store fluxes throught the K faces
+    real, public, dimension(:, :, :, :), allocatable, target :: residue
+    !< Store residue at each cell-center
     real, dimension(:, :, :, :), pointer :: flux_p
+    !< pointer/alias for the either F, G, or H
 
     ! Public members
     public :: setup_scheme
@@ -44,31 +54,33 @@ module ausmUP
     contains
 
         subroutine setup_scheme()
+          !< Allocate memory to the flux variables
 
             implicit none
 
-            call dmsg(1, 'slau', 'setup_scheme')
+            call dmsg(1, 'AUSM+-UP', 'setup_scheme')
 
             call alloc(F, 1, imx, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'F - slau.')
+                        'F - AUSM+-UP.')
             call alloc(G, 1, imx-1, 1, jmx, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'G - slau.')
+                        'G - AUSM+-UP.')
             call alloc(H, 1, imx-1, 1, jmx-1, 1, kmx, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'H - slau.')
+                        'H - AUSM+-UP.')
             call alloc(residue, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
-                        'residue - slau.')
+                        'residue - AUSM+-UP.')
 
         end subroutine setup_scheme
 
         subroutine destroy_scheme()
+          !< Deallocate memory
 
             implicit none
 
-            call dmsg(1, 'slau', 'destroy_scheme')
+            call dmsg(1, 'AUSM+-UP', 'destroy_scheme')
             
             call dealloc(F)
             call dealloc(G)
@@ -77,26 +89,47 @@ module ausmUP
         end subroutine destroy_scheme
 
         subroutine compute_flux(f_dir)
+          !< A generalized subroutine to calculate
+          !< flux through the input direction, :x,y, or z
+          !< which corresponds to the I,J, or K direction respectively
+          !------------------------------------------------------------
 
             implicit none
             character, intent(in) :: f_dir
+            !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
-            integer :: i_f, j_f, k_f ! Flags to determine face direction
+            !< integer for DO loop
+            integer :: i_f, j_f, k_f
+            !< Flags to determine face direction
             real, dimension(:, :, :), pointer :: fA, nx, ny, nz
+            !< Pointer to the face area and normal
             real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
-            real, dimension(1:n_var) :: F_plus, F_minus
+            real, dimension(1:n_var) :: F_plus
+            !< Right flux through the face
+            real, dimension(1:n_var) ::F_minus
+            !< Left flux through  the face
             real :: pbar
             real :: mass
-            real :: HL, HR !enthalpy
+            real :: HL, HR 
+            !< enthalpy
             real :: uL, uR
+            !< X-component of velocity
             real :: vL, vR
+            !< Y-component of velocity
             real :: wL, wR
+            !< Z-component of velocity
             real :: pL, pR
+            !< pressure
             real :: rL, rR
+            !< Density
             real :: cL, cR
+            !< speed sound left/right
             real :: C
+            !< speed of sound at face
             real :: ML, MR
+            !< Mach number left/right
             real :: VnL, VnR
+            !< Face normal velocity left/right
             real :: betaL, betaR
             real :: alphaL, alphaR
             real :: FmL, FmR
@@ -112,7 +145,7 @@ module ausmUP
             real, parameter :: Ku = 0.75
             real, parameter :: sigma = 1.0
 
-            call dmsg(1, 'slau', 'compute_flux '//trim(f_dir))
+            call dmsg(1, 'ausm+-UP', 'compute_flux '//trim(f_dir))
             
             select case (f_dir)
                 case ('x')
@@ -149,7 +182,7 @@ module ausmUP
                     f_qp_left => z_qp_left
                     f_qp_right => z_qp_right
                 case default
-                    call dmsg(5, 'slau', 'compute_flux', &
+                    call dmsg(5, 'AUSM+-UP', 'compute_flux', &
                             'Direction not recognised')
                     stop
             end select
@@ -286,10 +319,11 @@ module ausmUP
         end subroutine compute_flux
 
         subroutine compute_fluxes()
+          !< Call to compute fluxes throught faces in each direction
             
             implicit none
             
-            call dmsg(1, 'slau', 'compute_fluxes')
+            call dmsg(1, 'AUSM+-UP', 'compute_fluxes')
 
             call compute_flux('x')
             if (any(isnan(F))) then
@@ -316,15 +350,14 @@ module ausmUP
         end subroutine compute_fluxes
 
         subroutine get_residue()
-            !-----------------------------------------------------------
-            ! Compute the residue for the slau scheme
+            !< Compute the residue for the ausm+-UP scheme
             !-----------------------------------------------------------
 
             implicit none
             
             integer :: i, j, k, l
 
-            call dmsg(1, 'slau', 'compute_residue')
+            call dmsg(1, 'AUSM+-UP', 'compute_residue')
 
             do l = 1, n_var
              do k = 1, kmx - 1

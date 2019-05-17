@@ -1,4 +1,6 @@
+  !< Setup the indicies map at interface between two blocks
 module mapping
+  !< Setup the indicies map at interface between two blocks
 
   use global, only: MAP_FILE_UNIT
   use global, only: mapfile
@@ -30,37 +32,63 @@ module mapping
   implicit none
   private
   integer, dimension(6), private :: ilo
+  !< Read Lowest index of I direction
   integer, dimension(6), private :: jlo
+  !< Read Lowest index of J direction
   integer, dimension(6), private :: klo
+  !< Read Lowest index of K direction
   integer, dimension(6), private :: ihi
+  !< Read Highest index of I direction
   integer, dimension(6), private :: jhi
+  !< Read Highest index of J direction
   integer, dimension(6), private :: khi
+  !< Read Highest index of K direction
 
   integer, dimension(6), public :: Pilo
+  !< Modified lowest index of I direction
   integer, dimension(6), public :: Pjlo
+  !< Modified lowest index of J direction
   integer, dimension(6), public :: Pklo
+  !< Modified lowest index of K direction
   integer, dimension(6), public :: Pihi
+  !< Modified Highest index of I direction
   integer, dimension(6), public :: Pjhi
+  !< Modified Highest index of J direction
   integer, dimension(6), public :: Pkhi
+  !< Modified Highest index of K direction
 
   integer, dimension(6), public :: PiDir
+  !< Switch for communication direction from 
+  !< (low-high) to (hight-low) for I direction
   integer, dimension(6), public :: PjDir
+  !< Switch for communication direction from 
+  !< (low-high) to (hight-low) for J direction
   integer, dimension(6), public :: PkDir
+  !< Switch for communication direction from 
+  !< (low-high) to (hight-low) for K direction
 
   integer, dimension(6), public :: Gilo
+  !< Modified lowest index of I direction for Grid data exchange
   integer, dimension(6), public :: Gjlo
+  !< Modified lowest index of J direction for Grid data exchange
   integer, dimension(6), public :: Gklo
+  !< Modified lowest index of K direction for Grid data exchange
   integer, dimension(6), public :: Gihi
+  !< Modified highest index of I direction for Grid data exchange
   integer, dimension(6), public :: Gjhi
+  !< Modified highest index of J direction for Grid data exchange
   integer, dimension(6), public :: Gkhi
+  !< Modified highest index of K direction for Grid data exchange
   
   integer, dimension(6), public :: mpi_class=-1
+  !< Class flag for master or slave
 
   public :: read_interface_map
 
     contains
 
       subroutine read_interface_map()
+        !< Read mapping file in the system/mesh/layout/mapping.txt
         implicit none
         integer :: ios
         integer :: max_call
@@ -173,6 +201,7 @@ module mapping
       end subroutine read_interface_map
 
       subroutine change_map_to_particular_range()
+        !< Modified the indicies for MPI communication
         !-------------------------------------
         !eg: 1-kmx to 0 to kmx for data transfer
         !--------------------------------------
@@ -248,6 +277,7 @@ module mapping
           
 
       subroutine read_periodic_bc_file()
+        !< Read periodic.md file in the system/mesh/layout/periodic.md
         implicit none
         integer :: ios
         integer :: max_call

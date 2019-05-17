@@ -1,4 +1,6 @@
+  !< Get all the fixed values from the bc_**.md file 
 module read_bc
+  !< Get all the fixed values from the bc_**.md file 
   !-----------------------------------------------------
   ! 170516  Jatinder Pal Singh Sandhu
   ! Aim : get all the fixed valed from bc_**.md file
@@ -37,12 +39,14 @@ module read_bc
   private
 
   character(len=STRING_BUFFER_LENGTH) :: buf
+  !< String to extract single line from the file
   public :: read_fixed_values
 
 
   contains
 
-    subroutine read_fixed_values
+    subroutine read_fixed_values()
+      !< Read fixed values for each block face
       implicit none
       integer :: count=0
 
@@ -64,6 +68,7 @@ module read_bc
     end subroutine read_fixed_values
 
     subroutine get_fixed_values(count)
+      !< Extract fixed value from the bc_**.md file
       implicit none
       integer, intent(in) :: count
       real :: fix_val
@@ -147,6 +152,8 @@ module read_bc
 
     
     subroutine fill_fixed_values()
+      !< fill the Fixed_var array with with free-stream value
+      !< or default values.
       implicit none
       integer :: count
       integer :: ios=-1
@@ -210,6 +217,7 @@ module read_bc
 
 
     subroutine set_value(fixed_var, fix_val, inf_val, count, ios)
+      !< Set particular value to the Fixed_var variable
       implicit none
       integer, intent(in) :: ios
       integer, intent(in) :: count

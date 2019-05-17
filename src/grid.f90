@@ -1,10 +1,7 @@
+    !< The grid module read grid file and allocate memory to storing variables
 module grid
-    !-------------------------------------------------------------------
-    ! The grid module contains the grid definition (locations of the 
-    ! grid points) as well as procedures to load these from a file.
-    !
-    ! This version of the grid module only allows for a 1-dimensional
-    ! or 2-dimensional grid.
+    !< The grid module contains the grid definition (locations of the 
+    !< grid points) as well as procedures to load these from a file.
     !-------------------------------------------------------------------
     
     use global, only: STRING_BUFFER_LENGTH, GRID_FILE_UNIT
@@ -44,8 +41,7 @@ module grid
     contains
     
         subroutine allocate_memory()
-            !-----------------------------------------------------------
-            ! Allocate memory to store the grid
+            !< Allocate memory to store the grid
             !-----------------------------------------------------------
 
             implicit none
@@ -69,8 +65,7 @@ module grid
         end subroutine allocate_memory
 
         subroutine destroy_grid()
-            !-----------------------------------------------------------
-            ! Deallocate the memory allocated for the grid.
+            !< Deallocate the memory allocated for the grid.
             !-----------------------------------------------------------
 
             implicit none
@@ -86,8 +81,7 @@ module grid
         end subroutine destroy_grid
 
         subroutine setup_grid(gridfile)
-            !-----------------------------------------------------------
-            ! Read the grid file and initialize the grid
+            !< Read the grid file and initialize the grid
             !-----------------------------------------------------------
 
             implicit none
@@ -122,8 +116,7 @@ module grid
         end subroutine setup_grid
         
         subroutine extract_grid_size()
-            !-----------------------------------------------------------
-            ! Extract the grid size from the grid file header
+            !< Extract the grid size from the grid file header
             !
             ! We assume that the grid could be in 1 or 2 dimensions. If
             ! the grid is in 1 dimension, jmx will be set to 1.
@@ -168,34 +161,9 @@ module grid
 
         end subroutine extract_grid_size
 
-!       subroutine extract_sphere_indices_size
-!       
-!           implicit none
-!           integer :: ios
-!           character(len=STRING_BUFFER_LENGTH) :: header
-!           
-!           call dmsg(1, 'grid', 'extract_sphere_indices_size')
-!           
-!     
-!           read(SPHERE_INDICES_FILE_UNIT, '(A)', iostat=ios) header
-!           if (ios /= 0) then
-!               ! We have an error
-!               print *, 'Error reading sphere indices file. Aborting..'
-!               stop
-!           end if
-
-!           read(header, *, iostat=ios) n_sph_ind
-!           if (ios /= 0) then
-!               ! We have an error
-!               print *, 'Error reading number of sphere indices. Aborting..'
-!               stop
-!           end if
-
-!       end subroutine extract_sphere_indices_size
 
         subroutine extract_grid_point(line, i, j, k)
-            !-----------------------------------------------------------
-            ! Extract a grid point from a line of the grid file. 
+            !< Extract a grid point from a line of the grid file. 
             !-----------------------------------------------------------
 
             implicit none
@@ -218,8 +186,7 @@ module grid
         end subroutine extract_grid_point
 
         subroutine populate_grid_points()
-            !-----------------------------------------------------------
-            ! Use the grid file to populate the grid points.
+            !< Use the grid file to populate the grid points.
             !-----------------------------------------------------------
 
             implicit none
@@ -251,6 +218,7 @@ module grid
         end subroutine populate_grid_points
 
         subroutine ghost_grid()
+          !< generate ghost grid for the various operations later.
           implicit none
           integer :: count=0
           integer :: i,j,k,l
@@ -1274,28 +1242,4 @@ module grid
           call mpi_barrier(MPI_COMM_WORLD,ierr)
           call dmsg(1, 'grid', 'done with ghost_grid')
         end subroutine ghost_grid
-!       subroutine populate_sphere_indices()
-!       
-!           implicit none
-!           integer :: i
-!           integer :: ios
-!           character(len=STRING_BUFFER_LENGTH) :: line
-!           
-!           call dmsg(1, 'grid', 'populate_sphere_indices')
-
-!        !  print *, 'Number sphere_indices: ', n_sph_ind
-
-!           do i = 1, n_sph_ind
-!               read(SPHERE_INDICES_FILE_UNIT, '(A)', iostat=ios) line
-!               read(line, *) sphere_indices(1, i), sphere_indices(2, i), &
-!                             sphere_indices(3, i)
-!               if (ios /= 0) then
-!                   print *, 'Error while reading line'
-!                   print *, 'Line number: ', i
-!                   stop
-!               end if
-!           end do
-!       
-!       end subroutine populate_sphere_indices
-
 end module grid

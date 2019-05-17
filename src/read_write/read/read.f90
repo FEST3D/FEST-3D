@@ -1,11 +1,16 @@
+  !< This module read input control files which include:
+  !<   1. control.md
+  !<   2. fvscheme.md
+  !<   3. flow.md
+  !<   4. res_control.md
+  !<   5. state_read_write_control.md
 module read
-  !-------------------------------------------------------
-  ! This module read input control files which include:
-  !   1. control.md
-  !   2. fvscheme.md
-  !   3. flow.md
-  !   4. res_control.md
-  !   5. state_read_write_control.md
+  !< This module read input control files which include:
+  !<   1. control.md
+  !<   2. fvscheme.md
+  !<   3. flow.md
+  !<   4. res_control.md
+  !<   5. state_read_write_control.md
   !------------------------------------------------------
 
 #include "../../debug.h"
@@ -93,6 +98,7 @@ module read
     contains
 
       subroutine read_input_and_controls()
+        !< Read all the input control files
         implicit none
         call read_controls()
         call read_scheme()
@@ -103,14 +109,13 @@ module read
 
 
       subroutine get_next_token(token_file_unit, buf)
-        !-----------------------------------------------------------
-        ! Extract the next token from the config file
-        !
-        ! Each token is on a separate line.
-        ! There may be multiple comments (lines beginning with #) 
-        ! and blank lines in between.
-        ! The purpose of this subroutine is to ignore all these 
-        ! lines and return the next "useful" line.
+        !< Extract the next token from the config file
+        !<
+        !< Each token is on a separate line.
+        !< There may be multiple comments (lines beginning with #) 
+        !< and blank lines in between.
+        !< The purpose of this subroutine is to ignore all these 
+        !< lines and return the next "useful" line.
         !-----------------------------------------------------------
 
         implicit none
@@ -147,8 +152,7 @@ module read
 
 
       subroutine read_controls()
-        !---------------------------------------------
-        ! read control.md file
+        !< read control.md file
         !---------------------------------------------
         implicit none
         character(len=STRING_BUFFER_LENGTH) :: buf
@@ -233,8 +237,7 @@ module read
 
 
       subroutine read_scheme()
-        !---------------------------------------------
-        ! read fvscheme.md control file
+        !< read fvscheme.md control file
         !--------------------------------------------
         implicit none
         character(len=STRING_BUFFER_LENGTH) :: buf
@@ -312,8 +315,7 @@ module read
       end subroutine read_scheme
 
       subroutine read_flow()
-        !---------------------------------------------
-        ! read flow.md control file
+        !< read flow.md control file
         !--------------------------------------------
         implicit none
 
@@ -416,6 +418,7 @@ module read
         
 
       subroutine read_output_control()
+        !< read output_contorl.md file
         implicit none
         integer           :: i
         character(len=64) :: buf
@@ -453,6 +456,7 @@ module read
       end subroutine read_output_control
 
       subroutine get_rw_count()
+        !< Get read/write count
         implicit none
         integer :: ios
         character(len=64) :: buf
@@ -511,9 +515,12 @@ module read
 
 
       subroutine get_count_within_braces(handler, count)
+        !< Get number of variables between two curly braces
         implicit none
         integer, intent(in) :: handler
+        !< file handler from which list number is extracted
         integer, intent(out) :: count
+        !< Extracted count
         integer :: skip
 
         ! skipping lines outside braces
@@ -525,6 +532,7 @@ module read
 
 
       function get_number_of_line(till, infile) result(number)
+        !< Get number of lines till some character like "#"
         implicit none
         integer          ,intent(in) :: infile
         character(len= 1),intent(in) :: till
@@ -542,6 +550,7 @@ module read
 
 
       subroutine read_Res_list()
+        !< Read Residual file: res_control.md
         implicit none
         integer           :: i
         integer           :: skip

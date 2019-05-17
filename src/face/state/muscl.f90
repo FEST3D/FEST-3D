@@ -1,10 +1,10 @@
+    !< Higher order face state reconstruction method: MUSCL. 
 module muscl
-    !-----------------------------------------------------------------
-    ! MUSCL (Monotone Upwing Schemes for Scalar Conservation Laws is
-    ! a scheme which replaces the piecewise constant approximation by
-    ! reconstructing the states at the left and right side of each face.
-    ! This is a one parameter upwind scheme which results in at most 3rd
-    ! order accuracy.
+    !< MUSCL (Monotone Upwing Schemes for Scalar Conservation Laws is
+    !< a scheme which replaces the piecewise constant approximation by
+    !< reconstructing the states at the left and right side of each face.
+    !< This is a one parameter upwind scheme which results in at most 3rd
+    !< order accuracy.
     !
     ! The MUSCL scheme alone creates non-physical oscillations near 
     ! discontinuities like shocks. Hence, MUSCL is combined with
@@ -40,15 +40,30 @@ module muscl
     private
 
     ! Private variables
-    real, dimension(:, :, :, :), allocatable, target :: x_qp_left, &
-        x_qp_right, y_qp_left, y_qp_right, z_qp_left, z_qp_right
+    real, dimension(:, :, :, :), allocatable, target :: x_qp_left
+      !< Store primitive state at the I-face left side
+    real, dimension(:, :, :, :), allocatable, target :: x_qp_right
+      !< Store primitive state at the I-face right side
+    real, dimension(:, :, :, :), allocatable, target :: y_qp_left
+      !< Store primitive state at the J-face left side
+    real, dimension(:, :, :, :), allocatable, target :: y_qp_right
+      !< Store primitive state at the J-face right side
+    real, dimension(:, :, :, :), allocatable, target :: z_qp_left
+      !< Store primitive state at the K-face left side
+    real, dimension(:, :, :, :), allocatable, target :: z_qp_right
+      !< Store primitive state at the K-face right side
     real :: phi, kappa
-    real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
+    
+    real, dimension(:, :, :, :), pointer :: f_qp_left
+    !< Generalized pointer for any I-J-K direction> f_qp_left can 
+    !< either point to x_qp_left, y_qp_left or z_qp_left
+    real, dimension(:, :, :, :), pointer :: f_qp_right
+    !< Generalized pointer for any I-J-K direction> f_qp_right can 
+    !< either point to x_qp_right, y_qp_right or z_qp_right
     real, dimension(:, :, :), allocatable :: pdif
+    !< Used for pressure based witch
     integer :: switch_L=1
-    !TODO: Convert to system of flags to write all 3 directions in a single subroutine
-
-!   character(len=30) :: TVD_scheme
+    !< Limiter switch 
 
     ! Public members
     public :: setup_scheme
@@ -63,6 +78,8 @@ module muscl
     contains
         
         subroutine setup_scheme()
+          !< Allocate memoery to all array which store state
+          !< the face.
 
         implicit none
 
@@ -101,6 +118,7 @@ module muscl
 
 
         subroutine destroy_scheme()
+          !< Deallocate all the array used 
 
             implicit none
 
@@ -117,206 +135,14 @@ module muscl
         end subroutine destroy_scheme
 
 
-!       function min_mod(r)
-!           
-!           implicit none
-
-!           real, intent(in) :: r
-!           real :: min_mod
-!           min_mod = min(1., (3 - kappa) * r / (1 - kappa))
-!       
-!       end function min_mod
-
-!       function koren(r)
-
-!           implicit none
-!           
-!           real, intent(in) :: r
-!           real :: koren
-!           koren = max(0., min(2*r, (2 + r)/3., 2.))
-
-!       end function koren(r)
-
-
-        subroutine compute_xi_face_states()
-
-            implicit none
-
-            integer :: i, j, k, l
-            real :: psi1, psi2, fd, bd, r
-
-            phi = 1.0
-            kappa = 1./3.
-            switch_L=ilimiter_switch
-
-            do l = 1, n_var
-              if(l>=6)then
-                switch_L=itlimiter_switch
-              end if
-             do k = 1, kmx - 1
-              do j = 1, jmx - 1
-               do i = 0, imx 
-                ! Cell based
-                ! All faces interior only (even at boundaries)
-                ! Hence (i=1, left) and (i=imx, right) will be dealt separately
-                ! Koren limiter for now
-                ! From paper: delta: forward difference 'fd'
-                !             nabla: backward difference 'bd'
-                fd = qp(i+1, j, k, l) - qp(i, j, k, l)
-                bd = qp(i, j, k, l) - qp(i-1, j, k, l)
-                r = fd / bd
-!                psi1 = min(1., (3 - kappa) * r / (1 - kappa)) !minmod
-                psi1 = max(0., min(2*r, (2 + r)/3., 2.))  !koren limiter
-!                psi1 = max(0., min(2*r,1.), min(r,2.))    ! superbee
-                r = bd / fd
-!                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
-                psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-!                psi2 = max(0., min(2*r,1.), min(r,2.))
-                psi1 = (1 - (1 - psi1)*switch_L )
-                psi2 = (1 - (1 - psi2)*switch_L )
-
-                x_qp_left(i+1, j, k, l) = qp(i, j, k, l) + 0.25*phi* &
-                    (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
-                x_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
-                    (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
-                !check for turbulent variables
-               end do
-              end do
-             end do
-            end do
-
-        !   do k = 1, kmx - 1
-        !    do j = 1, jmx - 1
-        !       ! Exterior boundaries
-        !       x_qp_left(1, j, k, :) = 0.5 * (qp(0, j, k, :) + qp(1, j, k, :))
-        !       x_qp_right(imx, j, k, :) = 0.5 * (qp(imx-1, j, k, :) + qp(imx, j, k, :))
-        !    end do
-        !   end do
-
-        end subroutine compute_xi_face_states
-
-
-        subroutine compute_eta_face_states()
-
-            implicit none
-
-            integer :: i, j, k, l
-            real :: psi1, psi2, fd, bd, r
-            switch_L=jlimiter_switch
-
-            do l = 1, n_var
-              if(l>=6)then
-                switch_L=jtlimiter_switch
-              end if
-             do k = 1, kmx - 1
-              do j = 0, jmx 
-               do i = 1, imx - 1
-                ! Cell based
-                ! All faces interior only (even at boundaries)
-                ! Hence (j=1, left) and (j=jmx, right) will be dealt separately
-                ! Koren limiter for now
-                ! From paper: delta: forward difference 'fd'
-                !             nabla: backward difference 'bd'
-                fd = qp(i, j+1, k, l) - qp(i, j, k, l)
-                bd = qp(i, j, k, l) - qp(i, j-1, k, l)
-                r = fd / bd
-                psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-!                psi1 = max(0., min(2*r,1.), min(r,2.))
-!                psi1 = min(1., (3 - kappa) * r / (1 - kappa))
-                !psi1 = (1 - (1 - psi1)*ilimiter_switch )
-                r = bd / fd
-                psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-!                psi2 = max(0., min(2*r,1.), min(r,2.))
-!                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
-                !psi2 = (1 - (1 - psi2)*ilimiter_switch )
-                !check for turbulent variables
-                psi1 = (1 - (1 - psi1)*switch_L )
-                psi2 = (1 - (1 - psi2)*switch_L )
-
-                y_qp_left(i, j+1, k, l) = qp(i, j, k, l) + 0.25*phi* &
-                    (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
-                y_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
-                    (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
-               end do
-              end do
-             end do
-            end do
-
-!           do k = 1, kmx - 1
-!            do i = 1, imx - 1
-!               ! Exterior boundaries
-!               y_qp_left(i, 1, k, :) = 0.5 * (qp(i, 0, k, :) + qp(i, 1, k, :))
-!               y_qp_right(i, jmx, k, :) = 0.5 * (qp(i, jmx-1, k, :) + qp(i, jmx, k, :))
-!            end do
-!           end do
-
-        end subroutine compute_eta_face_states
-
-
-        subroutine compute_zeta_face_states()
-
-            implicit none
-
-            real :: psi1, psi2, fd, bd, r
-            integer :: i, j, k, l
-            switch_L=klimiter_switch
-            !TODO: Figure out why in muscl, compute_zeta_face_states(), the order of looping matters
-
-            do l = 1, n_var
-             if(l>5)then
-               switch_L=ktlimiter_switch
-             else
-               switch_L=klimiter_switch
-             end if
-             do k = 0, kmx
-              do j = 1, jmx - 1
-               do i = 1, imx - 1
-                ! Cell based
-                ! All faces interior only (even at boundaries)
-                ! Hence (k=1, left) and (k=kmx, right) will be dealt separately
-                ! Koren limiter for now
-                ! From paper: delta: forward difference 'fd'
-                !             nabla: backward difference 'bd'
-                fd = qp(i, j, k+1, l) - qp(i, j, k, l)
-                bd = qp(i, j, k, l) - qp(i, j, k-1, l)
-                r = fd / bd
-                psi1 = max(0., min(2*r, (2 + r)/3., 2.))
-!                psi1 = max(0., min(2*r,1.), min(r,2.))
-!                psi1 = min(1., (3 - kappa) * r / (1 - kappa))
-                !psi1 = (1 - (1 - psi1)*ilimiter_switch )
-                r = bd / fd
-                psi2 = max(0., min(2*r, (2 + r)/3., 2.))
-!                psi2 = max(0., min(2*r,1.), min(r,2.))
-!                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
-                !psi2 = (1 - (1 - psi2)*ilimiter_switch )
-                !check for turbulent variables
-                psi1 = (1 - (1 - psi1)*switch_L )
-                psi2 = (1 - (1 - psi2)*switch_L )
-
-                z_qp_left(i, j, k+1, l) = qp(i, j, k, l) + 0.25*phi* &
-                    (((1-kappa) * psi1 * bd) + ((1+kappa) * psi2 * fd))
-                z_qp_right(i, j, k, l) = qp(i, j, k, l) - 0.25*phi* &
-                    (((1+kappa) * psi1 * bd) + ((1-kappa) * psi2 * fd))
-               end do
-              end do
-             end do
-            end do
-
-!           do j = 1, jmx - 1
-!            do i = 1, imx - 1
-!               ! Exterior boundaries
-!               z_qp_left(i, j, 1, :) = 0.5 * (qp(i, k, 0, :) + qp(i, j, 1, :))
-!               z_qp_right(i, j, kmx, :) = 0.5 * (qp(i, j, kmx-1, :) + qp(i, j, kmx, :))
-!            end do
-!           end do
-
-        end subroutine compute_zeta_face_states
-
         subroutine pressure_based_switching(f_dir)
+          !< Pressure based switching. 
+          !< User x,y, or z for I,J,or K face respectively
+          !----------------------------------------------
 
             implicit none
-            ! Character can be x or y or z
             character, intent(in) :: f_dir
+            !< Character can be x or y or z
             integer :: i, j, k, i_end, j_end, k_end
             integer :: i_f, j_f, k_f  ! Flags to determine face direction
             real :: pd2
@@ -404,15 +230,34 @@ module muscl
 
 
         subroutine compute_face_state(f_dir, lam_switch, turb_switch)
+          !< Subroutine to calculate state at the face, generalized for
+          !< all direction : I,J, and K.
             implicit none
             ! Character can be x or y or z
             character, intent(in) :: f_dir
+            !< Input direction x,y,or, z for which subroutine is called
             integer, intent(in) :: lam_switch
+            !< Limiter switch for laminar variables
             integer, intent(in) :: turb_switch
+            !< Limiter switch for turbulent variables
             integer :: i, j, k, l
-            integer :: ii, jj, kk  ! Flags to determine face direction
-            real :: psi1, psi2, fd, bd, r
-            real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
+            !< integer used for DO loop
+            integer :: ii, jj, kk
+            !< Flags to determine face direction
+            real :: psi1, psi2
+            !< limiters
+            real :: fd
+            !< forward difference
+            real :: bd
+            !< backward difference
+            real :: r
+            !< ratio of differences
+            real, dimension(:, :, :, :), pointer :: f_qp_left
+            !< Generalized pointer for any I-J-K direction> f_qp_left can 
+            !< either point to x_qp_left, y_qp_left or z_qp_left
+            real, dimension(:, :, :, :), pointer :: f_qp_right
+            !< Generalized pointer for any I-J-K direction> f_qp_right can 
+            !< either point to x_qp_right, y_qp_right or z_qp_right
 
             call dmsg(1, 'muscl', 'compute_face_state')
 
@@ -484,10 +329,9 @@ module muscl
         
         
         subroutine compute_muscl_states()
-            !---------------------------------------------------------
-            ! Implement MUSCL scheme to get left and right states at
-            ! each face. The computation is done through all cells
-            ! and first level ghost cells
+            !< Implement MUSCL scheme to get left and right states at
+            !< each face. The computation is done through all cells
+            !< and first level ghost cells
             !---------------------------------------------------------
             
             !call compute_xi_face_states()

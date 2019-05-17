@@ -1,4 +1,10 @@
+  !< Reconstruct the boundary face in case of 4th and 5th order methods
 module boundary_state_reconstruction
+  !< Reconstruct the boundary face in case of 4th and 5th order higher order
+  !< face state reconstruction method. Since the limited information
+  !< is available at the boundaries, the boundary face is limiter to 
+  !< 3rd order accurate and is reconstructed using MUSCL Scheme even when
+  !< rest of the domain is using WENO or PPM.
   use utils,                only: dmsg
 !  use grid,                 only: imx, jmx, kmx
   use global_vars,          only: imx
@@ -28,12 +34,15 @@ module boundary_state_reconstruction
   private
 
   integer :: ppm_flag=0
+  !< flag to check if reconstruction is required
   integer :: switch_L=1
+  !< Limiter switch
   public :: reconstruct_boundary_state
 
   contains
 
     subroutine reconstruct_boundary_state(interpolant)
+      !< call reconstruction based on the flag and boundary condition.
 
       implicit none
       character(len=*), intent(in)  :: interpolant
@@ -72,6 +81,7 @@ module boundary_state_reconstruction
 
 
     subroutine reconstruct_imin()
+      !< Reconstruct state at the IMIN boundary face with MUSCL scheme
 
       implicit none
       integer :: i, j, k, l
@@ -126,6 +136,7 @@ module boundary_state_reconstruction
 
 
     subroutine reconstruct_imax()
+      !< Reconstruct state at the IMAX boundary face with MUSCL scheme
 
       implicit none
       integer :: i, j, k, l
@@ -177,6 +188,7 @@ module boundary_state_reconstruction
 
 
     subroutine reconstruct_jmin()
+      !< Reconstruct state at the JMIN boundary face with MUSCL scheme
 
       implicit none
       integer :: i, j, k, l
@@ -228,6 +240,7 @@ module boundary_state_reconstruction
 
 
     subroutine reconstruct_jmax()
+      !< Reconstruct state at the JMAX boundary face with MUSCL scheme
 
       implicit none
       integer :: i, j, k, l
@@ -278,6 +291,7 @@ module boundary_state_reconstruction
 
 
     subroutine reconstruct_kmin()
+      !< Reconstruct state at the KMIN boundary face with MUSCL scheme
 
       implicit none
       real :: psi1, psi2, fd, bd, r
@@ -330,6 +344,7 @@ module boundary_state_reconstruction
 
 
     subroutine reconstruct_kmax()
+      !< Reconstruct state at the KMAX boundary face with MUSCL scheme
 
       implicit none
       real :: psi1, psi2, fd, bd, r

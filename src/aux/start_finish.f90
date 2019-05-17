@@ -1,4 +1,6 @@
+  !< Start and stop the solver
 module start_finish
+  !< Start and stop the solver
   use fclose, only: close_all_files
   use solver, only: destroy_solver
   use solver, only: setup_solver
@@ -12,6 +14,7 @@ module start_finish
   contains
 
     subroutine abort_run()
+      !< Aborting the solver
       implicit none
       integer :: ierr
 
@@ -23,6 +26,7 @@ module start_finish
     end subroutine abort_run
 
     subroutine finish_run()
+      !< Finishing the solution computation
       implicit none
       integer :: ierr
 
@@ -33,6 +37,7 @@ module start_finish
     end subroutine finish_run
 
     subroutine start_run()
+      !< Starting the solver setup
       implicit none
       integer :: ierr
 

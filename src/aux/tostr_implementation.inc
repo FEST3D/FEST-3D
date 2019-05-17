@@ -1,4 +1,5 @@
 function int_to_str(i) result(a)
+  !< convert integer to string
 
     implicit none
     integer, intent(in) :: i
@@ -9,7 +10,7 @@ function int_to_str(i) result(a)
 end function int_to_str
 
 function real_to_str(r) result(a)
-
+  !convert real number to string
     implicit none
     real, intent(in) :: r
     character(len=MAX_STRING_LEN) :: a
@@ -42,7 +43,7 @@ function real_to_str(r) result(a)
 end function real_to_str
 
 function bool_to_str(b) result(a)
-
+  !< convert boolean variable to string
     implicit none
     logical, intent(in) :: b
     character(len=MAX_STRING_LEN) :: a

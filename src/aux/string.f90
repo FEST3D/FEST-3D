@@ -1,4 +1,7 @@
+   !< Different opration on and to string
 module string
+   !< Module to convert int, real, or bool to string
+   !< and concatenate int, real, bool, and string itself to string
     !-------------------------------------------------------------------
     ! String manipulation
     !
@@ -106,8 +109,7 @@ module string
         end subroutine chfmt
 
         subroutine disp(s)
-            !-----------------------------------------------------------
-            ! Display the contents of the string
+            !< Display the contents of the string
             !
             ! This function trims the string before printing it.
             !-----------------------------------------------------------

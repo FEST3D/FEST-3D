@@ -1,6 +1,6 @@
+    !< flux-splitting scheme: LDFSS
 module ldfss0
-    !-------------------------------------------------------------------
-    ! The ausm scheme is a type of flux-splitting scheme
+    !< Flux-splitting scheme: LDFSS
     !-------------------------------------------------------------------
 
     use global_vars, only : imx
@@ -20,28 +20,23 @@ module ldfss0
     use global_vars, only : make_H_flux_zero
 
     use utils, only: alloc, dealloc, dmsg
-    use face_interpolant, only: x_qp_left, x_qp_right, y_qp_left, y_qp_right, &
-                z_qp_left, z_qp_right, &
-            x_density_left, x_x_speed_left, x_y_speed_left, x_z_speed_left, &
-                x_pressure_left, &
-            x_density_right, x_x_speed_right, x_y_speed_right, x_z_speed_right, &
-                x_pressure_right, &
-            y_density_left, y_x_speed_left, y_y_speed_left, y_z_speed_left, &
-                y_pressure_left, &
-            y_density_right, y_x_speed_right, y_y_speed_right, y_z_speed_right, &
-                y_pressure_right, &
-            z_density_left, z_x_speed_left, z_y_speed_left, z_z_speed_left, &
-                z_pressure_left, &
-            z_density_right, z_x_speed_right, z_y_speed_right, z_z_speed_right, &
-                z_pressure_right
-    ! turbulenc avriables from face_interolant
-    include "turbulence_models/include/ldfss0/import_module.inc" 
+    use face_interpolant, only: x_qp_left, x_qp_right 
+    use face_interpolant, only: y_qp_left, y_qp_right
+    use face_interpolant, only:  z_qp_left, z_qp_right
 
     implicit none
     private
 
-    real, public, dimension(:, :, :, :), allocatable, target :: F, G, H, residue
+    real, public, dimension(:, :, :, :), allocatable, target :: F
+    !< Store fluxes throught the I faces
+    real, public, dimension(:, :, :, :), allocatable, target :: G
+    !< Store fluxes throught the J faces
+    real, public, dimension(:, :, :, :), allocatable, target :: H
+    !< Store fluxes throught the K faces
+    real, public, dimension(:, :, :, :), allocatable, target :: residue
+    !< Store residue at each cell-center
     real, dimension(:, :, :, :), pointer :: flux_p
+    !< pointer/alias for the either F, G, or H
 
     ! Public members
     public :: setup_scheme
@@ -52,6 +47,7 @@ module ldfss0
     contains
 
         subroutine setup_scheme()
+          !< Allocate memory to the flux variables
 
             implicit none
 
@@ -73,6 +69,7 @@ module ldfss0
         end subroutine setup_scheme
 
         subroutine destroy_scheme()
+          !< Deallocate memory
 
             implicit none
 
@@ -85,17 +82,18 @@ module ldfss0
         end subroutine destroy_scheme
 
         subroutine compute_flux(f_dir)
+          !< A generalized subroutine to calculate
+          !< flux through the input direction, :x,y, or z
+          !< which corresponds to the I,J, or K direction respectively
+          !------------------------------------------------------------
 
             implicit none
             character, intent(in) :: f_dir
+            !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
             integer :: i_f, j_f, k_f ! Flags to determine face direction
-            real, dimension(:, :, :), pointer :: fA, nx, ny, nz, &
-                f_x_speed_left, f_x_speed_right, &
-                f_y_speed_left, f_y_speed_right, &
-                f_z_speed_left, f_z_speed_right, &
-                f_density_left, f_density_right, &
-                f_pressure_left, f_pressure_right
+            real, dimension(:, :, :), pointer :: fA, nx, ny, nz
+            real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
             real, dimension(1:n_var) :: F_plus, F_minus
             real :: M_perp_left, M_perp_right
             real :: alpha_plus, alpha_minus
@@ -106,11 +104,6 @@ module ldfss0
             real :: scrD_plus, scrD_minus
             real :: sound_speed_avg, face_normal_speeds
             real :: M_ldfss, M_plus_ldfss, M_minus_ldfss
-            !include compute_flux_variable_and_select.inc before select         
-            !as it contains variables deceleration                              
-            include "turbulence_models/include/ldfss0/compute_flux_var.inc"
-            include "turbulence_models/include/ldfss0/compute_flux_select.inc"
-            
 
             call dmsg(1, 'ldfss0', 'compute_flux')
             
@@ -124,16 +117,8 @@ module ldfss0
                     nx => xnx
                     ny => xny
                     nz => xnz
-                    f_x_speed_left => x_x_speed_left
-                    f_x_speed_right => x_x_speed_right
-                    f_y_speed_left => x_y_speed_left
-                    f_y_speed_right => x_y_speed_right
-                    f_z_speed_left => x_z_speed_left
-                    f_z_speed_right => x_z_speed_right
-                    f_density_left => x_density_left
-                    f_density_right => x_density_right
-                    f_pressure_left => x_pressure_left
-                    f_pressure_right => x_pressure_right
+                    f_qp_left => x_qp_left
+                    f_qp_right => x_qp_right
                 case ('y')
                     i_f = 0
                     j_f = 1
@@ -143,16 +128,8 @@ module ldfss0
                     nx => ynx
                     ny => yny
                     nz => ynz
-                    f_x_speed_left => y_x_speed_left
-                    f_x_speed_right => y_x_speed_right
-                    f_y_speed_left => y_y_speed_left
-                    f_y_speed_right => y_y_speed_right
-                    f_z_speed_left => y_z_speed_left
-                    f_z_speed_right => y_z_speed_right
-                    f_density_left => y_density_left
-                    f_density_right => y_density_right
-                    f_pressure_left => y_pressure_left
-                    f_pressure_right => y_pressure_right
+                    f_qp_left => y_qp_left
+                    f_qp_right => y_qp_right
                 case ('z')
                     i_f = 0
                     j_f = 0
@@ -162,16 +139,8 @@ module ldfss0
                     nx => znx
                     ny => zny
                     nz => znz
-                    f_x_speed_left => z_x_speed_left
-                    f_x_speed_right => z_x_speed_right
-                    f_y_speed_left => z_y_speed_left
-                    f_y_speed_right => z_y_speed_right
-                    f_z_speed_left => z_z_speed_left
-                    f_z_speed_right => z_z_speed_right
-                    f_density_left => z_density_left
-                    f_density_right => z_density_right
-                    f_pressure_left => z_pressure_left
-                    f_pressure_right => z_pressure_right
+                    f_qp_left => z_qp_left
+                    f_qp_right => z_qp_right
                 case default
                     call dmsg(5, 'ldfss0', 'compute_flux', &
                             'Direction not recognised')
@@ -181,15 +150,15 @@ module ldfss0
             do k = 1, kmx - 1 + k_f
              do j = 1, jmx - 1 + j_f 
               do i = 1, imx - 1 + i_f
-                sound_speed_avg = 0.5 * (sqrt(gm * f_pressure_left(i, j, k) / &
-                                            f_density_left(i, j, k) ) + &
-                                          sqrt(gm * f_pressure_right(i, j, k) / &
-                                            f_density_right(i, j, k) ) )
+                sound_speed_avg = 0.5 * (sqrt(gm * f_qp_left(i, j, k,5) / &
+                                            f_qp_left(i, j, k,1) ) + &
+                                          sqrt(gm * f_qp_right(i, j, k,5) / &
+                                            f_qp_right(i, j, k,1) ) )
                 
                 ! Compute '+' direction quantities
-                face_normal_speeds = f_x_speed_left(i, j, k) * nx(i, j, k) + &
-                                     f_y_speed_left(i, j, k) * ny(i, j, k) + &
-                                     f_z_speed_left(i, j, k) * nz(i, j, k)
+                face_normal_speeds = f_qp_left(i, j, k,2) * nx(i, j, k) + &
+                                     f_qp_left(i, j, k,3) * ny(i, j, k) + &
+                                     f_qp_left(i, j, k,4) * nz(i, j, k)
                 M_perp_left = face_normal_speeds / sound_speed_avg
                 alpha_plus = 0.5 * (1.0 + sign(1.0, M_perp_left))
                 beta_left = -max(0, 1 - floor(abs(M_perp_left)))
@@ -201,9 +170,9 @@ module ldfss0
                         (beta_left * D_plus)
 
                 ! Compute '-' direction quantities
-                face_normal_speeds = f_x_speed_right(i, j, k) * nx(i, j, k) + &
-                                     f_y_speed_right(i, j, k) * ny(i, j, k) + &
-                                     f_z_speed_right(i, j, k) * nz(i, j, k)
+                face_normal_speeds = f_qp_right(i, j, k, 2) * nx(i, j, k) + &
+                                     f_qp_right(i, j, k, 3) * ny(i, j, k) + &
+                                     f_qp_right(i, j, k, 4) * nz(i, j, k)
                 M_perp_right = face_normal_speeds / sound_speed_avg
                 alpha_minus = 0.5 * (1.0 - sign(1.0, M_perp_right))
                 beta_right = -max(0, 1 - floor(abs(M_perp_right)))
@@ -219,18 +188,18 @@ module ldfss0
                     (sqrt((M_perp_left ** 2 + M_perp_right ** 2) * 0.5) &
                      - 1) ** 2
                 M_plus_ldfss = M_ldfss * &
-                        (1 - (f_pressure_left(i, j, k) - f_pressure_right(i, j, k)) / &
-                            (2 * f_density_left(i, j, k) * (sound_speed_avg ** 2)))
+                        (1 - (f_qp_left(i, j, k,5) - f_qp_right(i, j, k,5)) / &
+                            (2 * f_qp_left(i, j, k,1) * (sound_speed_avg ** 2)))
                 M_minus_ldfss = M_ldfss * &
-                        (1 - (f_pressure_left(i, j, k) - f_pressure_right(i, j, k)) / &
-                            (2 * f_density_right(i, j, k) * (sound_speed_avg ** 2)))
+                        (1 - (f_qp_left(i, j, k,5) - f_qp_right(i, j, k,5)) / &
+                            (2 * f_qp_right(i, j, k,1) * (sound_speed_avg ** 2)))
                 c_plus = c_plus - M_plus_ldfss
                 c_minus = c_minus + M_minus_ldfss
 
                 ! F plus mass flux
-                F_plus(1) = f_density_left(i, j, k) * sound_speed_avg * c_plus
+                F_plus(1) = f_qp_left(i, j, k,1) * sound_speed_avg * c_plus
                 ! F minus mass flux
-                F_minus(1) = f_density_right(i, j, k) * sound_speed_avg * c_minus
+                F_minus(1) = f_qp_right(i, j, k,1) * sound_speed_avg * c_minus
                 F_plus(1)  = F_plus(1) *(i_f*make_F_flux_zero(i) &
                                        + j_f*make_G_flux_zero(j) &
                                        + k_f*make_H_flux_zero(k))
@@ -240,37 +209,40 @@ module ldfss0
 
 
                 ! Construct other fluxes in terms of the F mass flux
-                F_plus(2) = (F_plus(1) * f_x_speed_left(i, j, k)) + &
-                            (scrD_plus * f_pressure_left(i, j, k) * nx(i, j, k))
-                F_plus(3) = (F_plus(1) * f_y_speed_left(i, j, k)) + &
-                            (scrD_plus * f_pressure_left(i, j, k) * ny(i, j, k))
-                F_plus(4) = (F_plus(1) * f_z_speed_left(i, j, k)) + &
-                            (scrD_plus * f_pressure_left(i, j, k) * nz(i, j, k))
+                F_plus(2) = (F_plus(1) * f_qp_left(i, j, k,2)) + &
+                            (scrD_plus * f_qp_left(i, j, k,5) * nx(i, j, k))
+                F_plus(3) = (F_plus(1) * f_qp_left(i, j, k,3)) + &
+                            (scrD_plus * f_qp_left(i, j, k,5) * ny(i, j, k))
+                F_plus(4) = (F_plus(1) * f_qp_left(i, j, k,4)) + &
+                            (scrD_plus * f_qp_left(i, j, k,5) * nz(i, j, k))
                 F_plus(5) = F_plus(1) * &
-                            ((0.5 * (f_x_speed_left(i, j, k) ** 2. + &
-                                     f_y_speed_left(i, j, k) ** 2. + &
-                                     f_z_speed_left(i, j, k) ** 2.)) + &
-                            ((gm / (gm - 1.)) * f_pressure_left(i, j, k) / &
-                             f_density_left(i, j, k)))
+                            ((0.5 * (f_qp_left(i, j, k,2) ** 2. + &
+                                     f_qp_left(i, j, k,3) ** 2. + &
+                                     f_qp_left(i, j, k,4) ** 2.)) + &
+                            ((gm / (gm - 1.)) * f_qp_left(i, j, k,5) / &
+                             f_qp_left(i, j, k,1)))
 
 
                 
                 ! Construct other fluxes in terms of the F mass flux
-                F_minus(2) = (F_minus(1) * f_x_speed_right(i, j, k)) + &
-                             (scrD_minus * f_pressure_right(i, j, k) * nx(i, j, k))
-                F_minus(3) = (F_minus(1) * f_y_speed_right(i, j, k)) + &
-                             (scrD_minus * f_pressure_right(i, j, k) * ny(i, j, k))
-                F_minus(4) = (F_minus(1) * f_z_speed_right(i, j, k)) + &
-                             (scrD_minus * f_pressure_right(i, j, k) * nz(i, j, k))
+                F_minus(2) = (F_minus(1) * f_qp_right(i, j, k,2)) + &
+                             (scrD_minus * f_qp_right(i, j, k,5) * nx(i, j, k))
+                F_minus(3) = (F_minus(1) * f_qp_right(i, j, k,3)) + &
+                             (scrD_minus * f_qp_right(i, j, k,5) * ny(i, j, k))
+                F_minus(4) = (F_minus(1) * f_qp_right(i, j, k,4)) + &
+                             (scrD_minus * f_qp_right(i, j, k,5) * nz(i, j, k))
                 F_minus(5) = F_minus(1) * &
-                            ((0.5 * (f_x_speed_right(i, j, k) ** 2. + &
-                                     f_y_speed_right(i, j, k) ** 2. + &
-                                     f_z_speed_right(i, j, k) ** 2.)) + &
-                            ((gm / (gm - 1.)) * f_pressure_right(i, j, k) / &
-                             f_density_right(i, j, k)))
+                            ((0.5 * (f_qp_right(i, j, k,2) ** 2. + &
+                                     f_qp_right(i, j, k,3) ** 2. + &
+                                     f_qp_right(i, j, k,4) ** 2.)) + &
+                            ((gm / (gm - 1.)) * f_qp_right(i, j, k,5) / &
+                             f_qp_right(i, j, k,1)))
          
-                !turbulent fluxes                                               
-                include "turbulence_models/include/ldfss0/Fcompute_flux.inc"  
+                !turbulent fluxes
+                if(n_var>5) then
+                  F_plus(6:)  = F_Plus(1)  * f_qp_left(i,j,k,6:)
+                  F_minus(6:) = F_minus(1) * f_qp_right(i,j,k,6:)
+                end if
 
                 ! Multiply in the face areas
                 F_plus(:) = F_plus(:) * fA(i, j, k)
@@ -285,6 +257,7 @@ module ldfss0
         end subroutine compute_flux
 
         subroutine compute_fluxes()
+          !< Call to compute fluxes throught faces in each direction
             
             implicit none
             
@@ -311,8 +284,7 @@ module ldfss0
         end subroutine compute_fluxes
 
         subroutine get_residue()
-            !-----------------------------------------------------------
-            ! Compute the residue for the ldfss0 scheme
+            !< Compute the residue for the ldfss0 scheme
             !-----------------------------------------------------------
 
             implicit none

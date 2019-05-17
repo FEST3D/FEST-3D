@@ -1,4 +1,8 @@
+  !< Writing solution in the output file in tecplot format with
+  !< node data instead of cell-center data.
 module write_output_tec_node
+  !< Writing solution in the output file in tecplot format with
+  !< node data instead of cell-center data.
   !---------------------------------------------------------
   ! This module write state + other variable in output file
   !---------------------------------------------------------
@@ -92,6 +96,7 @@ module write_output_tec_node
   contains
 
     subroutine write_file()
+      !< write output file in the tecplot format with node data
       implicit none
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
@@ -225,6 +230,7 @@ module write_output_tec_node
 
 
     subroutine write_header()
+      !< write the header in the output file
       implicit none
       integer :: n
       integer :: total
@@ -263,6 +269,7 @@ module write_output_tec_node
     end subroutine write_header
 
     subroutine write_grid()
+      !< write grid information in the output file
       implicit none
 
       ! write grid point coordinates
@@ -274,6 +281,7 @@ module write_output_tec_node
     end subroutine write_grid
 
     subroutine write_scalar(var, name, index)
+      !< write scalar variable in the output file
       implicit none
       integer, intent(in) :: index
       real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var

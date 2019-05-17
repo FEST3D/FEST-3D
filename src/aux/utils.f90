@@ -1,9 +1,14 @@
+  !< Utility module to allocate, deallocate and debug message
 module utils
+  !< Utility module to allocate, deallocate and debug message
 
     use global_vars, only : process_id
     implicit none
     private
     integer, public :: DEBUG_LEVEL = 1
+    !< Debug level is an input from the control file.
+    !< 5-> important calls only, and, 
+    !< 1-> all the calls
 
     public :: alloc
     interface alloc
@@ -40,6 +45,11 @@ module utils
         include "deallocate_memory_implementation.inc"
 
         subroutine dmsg(level, prog, method, msg)
+          !< Based on the debug level input this
+          !< soubroutine will output/print or skip the debug
+          !< message. This subroutine is called in the
+          !< starting of every other subrotune for debuging.
+          !< This will be depricated in the later version.
             !---------------------------------------------------------------
             ! Print a DEBUG message
             !
@@ -56,10 +66,14 @@ module utils
 
             implicit none
             character(len=*), optional :: prog
+            !< Module or program name
             character(len=*), optional :: method
+            !< Subroutine or function name
             character(len=*), optional :: msg
+            !< message to print
             character(len=256)         :: ifmsg   
             integer :: level
+            !< the message's debug level
            
 !            if (process_id == 0) then
             if (level < DEBUG_LEVEL) then

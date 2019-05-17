@@ -2,11 +2,6 @@ Set(Source
 main.f90
 lusgs.f90 
 plusgs.f90 
-SGSR.f90 
-DP_LUSGS.f90
-HLU_SGS.f90
-gmres.f90
-solvergmres.f90
 layout.f90 
 resnorm.f90 
 interface1.f90 
@@ -42,7 +37,6 @@ boundary/ghost_gradient.f90
 boundary/bc_primitive.f90 
 boundary/bc.f90 
 read_write/read/read_output_tec.f90 
-read_write/read/read_multi_level_vtk.f90 
 read_write/read/read_output_vtk.f90 
 read_write/read/read_output.f90 
 read_write/read/read.f90 

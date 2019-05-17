@@ -1,4 +1,6 @@
+  !< Setup and nullify pointers for k-kL model to the main array which stores gradient of all variables
 module kkl_gradients
+  !< Setup and nullify pointers for k-kL model to the main array which stores gradient of all variables
   !---------------------------------------------------------------
   ! 1705009  Jatinder Pal Singh Sandhu
   !          - first build
@@ -31,6 +33,8 @@ module kkl_gradients
   contains
 
     subroutine setup_kkl_grad()
+      !< setup Pointer to the main array which stores gradient 
+      !< all variables with x, y, z
 
       implicit none
 
@@ -49,6 +53,7 @@ module kkl_gradients
 
 
     subroutine destroy_kkl_grad()
+      !< nullify all the gradient pointer setup for k-kL model
 
       implicit none
 

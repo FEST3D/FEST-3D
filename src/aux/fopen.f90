@@ -1,4 +1,6 @@
+  !< Open all files required 
 module fopen
+  !< Open all files required by the solver. Input and auxillary file. 
   !---------------------------------------------
   ! 17082  Jatinder Pal Singh Sandhu
   !  Aim : efficient open of files only with handler
@@ -28,12 +30,13 @@ module fopen
   implicit none
   private
 
-  public :: close_all_files
-  public :: close_file
+!  public :: open_all_files
+  public :: open_file
 
   contains
 
     subroutine open_file(handler)
+      !< Open single file
       implicit none
       integer, intent(in) :: handler
       select case(handler)

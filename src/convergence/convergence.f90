@@ -1,4 +1,6 @@
+  !< Check for solution's convergence
 module convergence
+  !< Check for solution's convergence
   !-------------------------------------
   ! 170803  -Jatinder Pal Singh Sandhu
   !           find if solution converged
@@ -16,11 +18,9 @@ module convergence
 
   contains
     function converged() result(c)
-        !-----------------------------------------------------------
-        ! Check if the solution seems to have converged
-        !
-        ! The solution is said to have converged if the change in 
-        ! the residue norm is "negligible".
+        !< Check if the solution seems to have converged
+        !< The solution is said to have converged if the change in 
+        !< the residue norm is "negligible".
         !-----------------------------------------------------------
 
         implicit none

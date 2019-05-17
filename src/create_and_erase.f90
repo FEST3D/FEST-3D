@@ -1,4 +1,6 @@
+  !< Create and destroy the solver setup
 module create_and_erase
+  !< Create and destroy the solver setup
   !-----------------------------------------------------------
   ! 170609  -Jatinder Pal Singh Sandhu
   ! AIM : 1)to setup, create, allocate memory, link pointer
@@ -95,6 +97,8 @@ module create_and_erase
   contains
 
       subroutine setup_all()
+        !< To setup, create, allocate memory, link pointer
+        !<    (everything that is required before first iteration
           implicit none
 
           call dmsg(1, 'create_erase', 'setup_all')
@@ -129,6 +133,7 @@ module create_and_erase
 
 
       subroutine destroy_all()
+          !< free memory and free pointers
           implicit none
           
           call dmsg(1, 'create_erase', 'destroy_all')

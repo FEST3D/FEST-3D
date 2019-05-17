@@ -1,4 +1,8 @@
+  !< Open/close and call other modules for writing solution
 module write_output
+  !< Open/close and call other modules for writing solution
+  !< based on the input: type of file, either vtk or tecplot
+  !< modules are called.
   use global                 ,only : OUT_FILE_UNIT
   use global_vars            ,only : outfile
   use global_vars            ,only : outfile
@@ -20,6 +24,7 @@ module write_output
   contains
 
     subroutine setup_file()
+      !< Setup the file type based on the input
       implicit none
       call dmsg(1, 'write_output_vtk', 'setup_file')
       if (write_file_format == "vtk") then
@@ -43,6 +48,7 @@ module write_output
     end subroutine setup_file
 
     subroutine open_file(filename)
+      !< open the file to write the solution
       implicit none
       character(len=*), intent(in) :: filename 
       call dmsg(1, 'write_output_vtk', 'open_file')
@@ -52,6 +58,7 @@ module write_output
     end subroutine open_file
 
     subroutine close_file(filename)
+      !< close the file after writing solution.
       implicit none
 
       character(len=*), intent(in) :: filename 
@@ -61,6 +68,7 @@ module write_output
     end subroutine close_file
 
     subroutine write_file()
+      !< Writing output in the file according to the input file type
       implicit none
 
       call setup_file()

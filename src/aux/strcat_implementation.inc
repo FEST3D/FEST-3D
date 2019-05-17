@@ -3,6 +3,7 @@
 !-----------------------------------------------------------------------
 
 function str_cat_str(s1, s2) result(a)
+  !< Join two string into one string
 
     implicit none
     character(len=*), intent(in) :: s1
@@ -14,7 +15,7 @@ function str_cat_str(s1, s2) result(a)
 end function str_cat_str
 
 function str_cat_int(s, i) result(a)
-
+  !< Join a string to a integer and gives result as a string
     implicit none
     character(len=*), intent(in) :: s
     integer, intent(in) :: i
@@ -25,7 +26,7 @@ function str_cat_int(s, i) result(a)
 end function str_cat_int
 
 function int_cat_str(i, s) result(a)
-
+  !< Join a integer to a string and gives result as a string
     implicit none
     character(len=*), intent(in) :: s
     integer, intent(in) :: i
@@ -36,7 +37,7 @@ function int_cat_str(i, s) result(a)
 end function int_cat_str
 
 function str_cat_real(s, r) result(a)
-
+  !< Join a string to a real number and gives result as a string
     implicit none
     character(len=*), intent(in) :: s
     real, intent(in) :: r
@@ -47,7 +48,7 @@ function str_cat_real(s, r) result(a)
 end function str_cat_real
 
 function real_cat_str(r, s) result(a)
-
+  !< Join a real number to a string and gives result as a string
     implicit none
     character(len=*), intent(in) :: s
     real, intent(in) :: r
@@ -58,7 +59,7 @@ function real_cat_str(r, s) result(a)
 end function real_cat_str
 
 function str_cat_bool(s, b) result(a)
-
+  !< Join a string to a boolean and gives result as a string
     implicit none
     character(len=*), intent(in) :: s
     logical, intent(in) :: b
@@ -69,7 +70,7 @@ function str_cat_bool(s, b) result(a)
 end function str_cat_bool
 
 function bool_cat_str(b, s) result(a)
-
+  !< Join a boolean to a string and gives result as a string
     implicit none
     character(len=*), intent(in) :: s
     logical, intent(in) :: b

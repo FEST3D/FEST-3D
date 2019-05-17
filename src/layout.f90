@@ -1,7 +1,8 @@
+  !< contains routine to load layout file and sets the layout variables
+  !< gets process id and total process 
 module layout
-  !-----------------------------------------
-  ! contains routine to load layout file and sets the layout variables
-  ! gets process id and total process 
+  !< contains routine to load layout file and sets the layout variables
+  !< gets process id and total process 
   !------------------------------
   use global, only: CONFIG_FILE_UNIT, RESNORM_FILE_UNIT, FILE_NAME_LENGTH, &
        STRING_BUFFER_LENGTH, INTERPOLANT_NAME_LENGTH
@@ -24,7 +25,9 @@ module layout
   
   ! process layout
   character(len=FILE_NAME_LENGTH) :: grid_file_buf
+  !< name of the gridfile to load
   character(len=FILE_NAME_LENGTH) :: bc_file
+  !< Name of the boundary condition file to load.
   public :: get_next_token_parallel
   public :: read_layout_file
   public :: get_process_data
@@ -33,6 +36,7 @@ contains
 
 
   subroutine get_process_data()
+    !<Get Processor Id and total number of processors
   implicit none
     ! finds and sets process data
     integer :: ierr
@@ -42,14 +46,13 @@ contains
   end subroutine get_process_data
 
   subroutine get_next_token_parallel(buf)
-    !-----------------------------------------------------------
-    ! Extract the next token from the layout file
-    !
-    ! Each token is on a separate line.
-    ! There may be multiple comments (lines beginning with #) 
-    ! and blank lines in between.
-    ! The purpose of this subroutine is to ignore all these 
-    ! lines and return the next "useful" line.
+    !< Extract the next token from the layout file
+    !<
+    !< Each token is on a separate line.
+    !< There may be multiple comments (lines beginning with #) 
+    !< and blank lines in between.
+    !< The purpose of this subroutine is to ignore all these 
+    !< lines and return the next "useful" line.
     !-----------------------------------------------------------
 
     implicit none
@@ -84,9 +87,11 @@ contains
 
 
   subroutine read_layout_file(process_id)
+    !< read the layout file for particular processor
     implicit none
     character(len=STRING_BUFFER_LENGTH) :: buf
     integer,intent(in)::process_id
+    !< Processor id for current block
     integer :: i,buf_id 
     call dmsg(1, 'layout', 'read_layout_file')
 

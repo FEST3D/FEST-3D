@@ -1,12 +1,18 @@
+  !< this module contains subroutine that 
+  !< 1. check if time for resnorm dump is arrived
+  !< 2. calculate resnorm
+  !< 3. send those resnorm to processor number 0
+  !< 4. Recalulate resnorm based on information 
+  !<    availble from all processors
+  !< 5. Append the data to resnorm file
 module resnorm
-  !----------------------------------------------------
-  ! this module contains subroutine that 
-  ! 1. check if time for resnorm dump is arrived
-  ! 2. calculate resnorm
-  ! 3. send those resnorm to processor number 0
-  ! 4. Recalulate resnorm based on information 
-  !    availble from all processors
-  ! 5. Append the data to resnorm file
+  !< this module contains subroutine that 
+  !< 1. check if time for resnorm dump is arrived
+  !< 2. calculate resnorm
+  !< 3. send those resnorm to processor number 0
+  !< 4. Recalulate resnorm based on information 
+  !<    availble from all processors
+  !< 5. Append the data to resnorm file
   !----------------------------------------------------
 
   use global,      only: RESNORM_FILE_UNIT
@@ -65,6 +71,7 @@ module resnorm
   contains
 
     subroutine setup_resnorm()
+      !< allocate memory, setup scale and file to write
       implicit none
       call allocate_memory()
       call setup_scale()
@@ -72,6 +79,7 @@ module resnorm
     end subroutine setup_resnorm
 
     subroutine find_resnorm()
+      !< Find the normalized residual for each processor
       implicit none
       call get_absolute_resnorm()
       call collect_resnorm_from_all_blocks()
@@ -86,12 +94,14 @@ module resnorm
     end subroutine find_resnorm
 
     subroutine destroy_resnorm()
+      !< deallocate memory and close residual file
       implicit none
       call deallocate_memory()
       call close_file(RESNORM_FILE_UNIT)
     end subroutine destroy_resnorm
 
     subroutine setup_file()
+      !< open the residual file to write
       implicit none
       integer :: i
       if(process_id==0)then
@@ -109,6 +119,7 @@ module resnorm
     end subroutine setup_file
 
     subroutine allocate_memory()
+      !< allocate memory to MPI Communication
       implicit none
       call alloc(Res_abs  , 0,n_var)
       call alloc(Res_rel  , 0,n_var)
@@ -118,6 +129,7 @@ module resnorm
     end subroutine allocate_memory
 
     subroutine deallocate_memory()
+      !< Deallocate memory required for MPI Communication
       implicit none
       call dealloc(Res_abs)
       call dealloc(Res_rel)
@@ -128,6 +140,8 @@ module resnorm
     end subroutine deallocate_memory
 
     subroutine setup_scale()
+      !< Setup scale required for relative and absolute
+      !< residual for writing in the file.
       implicit none
       Res_scale(0) = 1.
       Res_scale(1) = density_inf*vel_mag
@@ -165,6 +179,7 @@ module resnorm
     end subroutine setup_scale
 
     subroutine get_absolute_resnorm()
+      !< Get absolute residual for current process
       implicit none
       integer :: i
       do i=1,n_var
@@ -182,6 +197,7 @@ module resnorm
     end subroutine get_absolute_resnorm
 
     subroutine collect_resnorm_from_all_blocks()
+      !< MPI Communication to gather residual from all processes
       implicit none
       integer :: ierr
       call MPI_ALLGATHER(Res_abs, n_var+1, MPI_DOUBLE_PRECISION, &
@@ -189,6 +205,7 @@ module resnorm
     end subroutine collect_resnorm_from_all_blocks
 
     subroutine assemble_resnom_at_each_process()
+      !< Sum residual obtained from all the processes after MPI_Communication
       implicit none
       integer :: i,j
       Res_abs=0.
@@ -202,12 +219,14 @@ module resnorm
     end subroutine assemble_resnom_at_each_process
 
     subroutine get_relative_resnorm()
+      !< Get relative residual with respect to first iteration residual
       implicit none
       if(current_iter<=Res_itr) Res_save=Res_abs
       Res_rel = Res_abs/Res_save
     end subroutine get_relative_resnorm
 
     subroutine write_resnorm()
+      !< writing the residual in the file to save.
       implicit none
       integer :: i
       integer :: n=6

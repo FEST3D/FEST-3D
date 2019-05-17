@@ -1,5 +1,11 @@
+    !< Higher face state reconstuction method: WENO
 module weno
-    !-----------------------------------------------------------------
+    !< Reference: 1 Shu, C.-W., “High-order Finite Difference and Finite Volume 
+    !< WENO Schemes and Discontinuous Galerkin Methods for CFD,” 
+    !< International Journal of Computational Fluid Dynamics, vol. 17, 2003, pp. 107–118.
+    !< Reference: 2 Huang, W. F., Ren, Y. X., and Jiang, X., 
+    !<“A simple algorithm to improve the performance of the WENO scheme on non-uniform grids,” 
+    !<Acta Mechanica Sinica/Lixue Xuebao, 2017, pp. 1–11.
     !-----------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
@@ -22,14 +28,25 @@ module weno
     private
 
     ! Private variables
-    real, dimension(:, :, :, :), allocatable, target :: x_qp_left, &
-        x_qp_right, y_qp_left, y_qp_right, z_qp_left, z_qp_right
-    real :: phi, kappa
-    real, dimension(:, :, :, :), pointer :: f_qp_left, f_qp_right
-    real, dimension(:, :, :), allocatable :: pdif
-    !TODO: Convert to system of flags to write all 3 directions in a single subroutine
-
-!   character(len=30) :: TVD_scheme
+    real, dimension(:, :, :, :), allocatable, target :: x_qp_left
+      !< Store primitive state at the I-face left side
+    real, dimension(:, :, :, :), allocatable, target :: x_qp_right
+      !< Store primitive state at the I-face right side
+    real, dimension(:, :, :, :), allocatable, target :: y_qp_left
+      !< Store primitive state at the J-face left side
+    real, dimension(:, :, :, :), allocatable, target :: y_qp_right
+      !< Store primitive state at the J-face right side
+    real, dimension(:, :, :, :), allocatable, target :: z_qp_left
+      !< Store primitive state at the K-face left side
+    real, dimension(:, :, :, :), allocatable, target :: z_qp_right
+      !< Store primitive state at the K-face right side
+    
+    real, dimension(:, :, :, :), pointer :: f_qp_left
+    !< Generalized pointer for any I-J-K direction> f_qp_left can 
+    !< either point to x_qp_left, y_qp_left or z_qp_left
+    real, dimension(:, :, :, :), pointer :: f_qp_right
+    !< Generalized pointer for any I-J-K direction> f_qp_right can 
+    !< either point to x_qp_right, y_qp_right or z_qp_right
 
     ! Public members
     public :: setup_scheme
@@ -39,19 +56,15 @@ module weno
     public :: y_qp_left, y_qp_right
     public :: z_qp_left, z_qp_right
 
- !  TVD_scheme = trim('koren')
-
     contains
         
         subroutine setup_scheme()
+          !< Allocate memoery to all array which store state
+          !< the face.
 
         implicit none
 
         call dmsg(1, 'weno', 'setup_weno')
-
-        phi = 1.0
-
-        kappa = -1.0
 
         call alloc(x_qp_left, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
@@ -74,14 +87,12 @@ module weno
             errmsg='Error: Unable to allocate memory for ' // &
                 'z_qp_right.')
 
-        call alloc(pdif, 0, imx, 0, jmx, 0, kmx, &
-                errmsg='Error: Unable to allocate memory for' // &
-                    'pdif')
 
         end subroutine setup_scheme
 
 
         subroutine destroy_scheme()
+          !< Deallocate all the array used 
 
             implicit none
 
@@ -93,22 +104,23 @@ module weno
             call dealloc(y_qp_right)
             call dealloc(z_qp_left)
             call dealloc(z_qp_right)
-            call dealloc(pdif)
 
         end subroutine destroy_scheme
 
 
         subroutine compute_face_states(dir)
+          !< Subroutine to calculate state at the face, generalized for
+          !< all direction : I,J, and K.
             implicit none
 
             character(len=*), intent(in) :: dir
             integer :: i, j, k, l
             integer :: i_f=0, j_f=0, k_f=0
-            real, dimension(3) :: P ! polynomial approximation
-            real, dimension(3) :: B ! smoothness factor
-            real, dimension(3) :: w ! wieght
-            real, dimension(3) :: g ! linear wieght
-            real, dimension(-2:2) :: u !state_variable
+            real, dimension(3) :: P !< polynomial approximation
+            real, dimension(3) :: B !< smoothness factor
+            real, dimension(3) :: w !< wieght
+            real, dimension(3) :: g !< linear wieght
+            real, dimension(-2:2) :: u !< state_variable
             real               :: eps=1e-6
 
             g(1) = 1.0/10.0
@@ -178,6 +190,7 @@ module weno
 
 
         subroutine compute_weno_states()
+          !< Call Weno scheme for all the three direction I,J, and K
 
             call compute_face_states('x')
             call compute_face_states('y')

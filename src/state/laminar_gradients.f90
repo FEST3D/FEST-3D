@@ -1,4 +1,6 @@
+  !< Link/Pointer to the gradient of u,v,w, and Temperature
 module laminar_gradients
+  !< Link/Pointer to the gradient of u,v,w, and Temperature
   !---------------------------------------------------------------
   ! 1705009  Jatinder Pal Singh Sandhu
   !          - first build
@@ -36,6 +38,8 @@ module laminar_gradients
   contains
 
     subroutine setup_laminar_grad()
+      !< Setup pointer to the gradient of U, v, w, Temperature
+      !< with respect to x, y, and z
 
       implicit none
 

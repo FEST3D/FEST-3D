@@ -1,4 +1,6 @@
+  !< Setup and nullify pointers for SST model to the main array which stores gradient of all variables
 module sst_gradients
+  !< Setup and nullify pointers for SST model to the main array which stores gradient of all variables
   !---------------------------------------------------------------
   ! 1705009  Jatinder Pal Singh Sandhu
   !          - first build
@@ -42,6 +44,8 @@ module sst_gradients
   contains
 
     subroutine setup_sst_grad()
+      !< setup Pointer to the main array which stores gradient 
+      !< all variables with x, y, z
 
       implicit none
 
@@ -60,6 +64,7 @@ module sst_gradients
 
 
     subroutine destroy_sst_grad()
+      !< nullify all the gradient pointer setup for k-kL model
       implicit none
 
       DebugCall('destroy_sst_grad')

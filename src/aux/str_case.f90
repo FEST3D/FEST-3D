@@ -1,4 +1,6 @@
+  !< Change the full string to particular case: upper or lower.
 module str_case
+  !< Change the full string to particular case: upper or lower.
   use global, only: STRING_BUFFER_LENGTH
   implicit none
   private
@@ -10,8 +12,11 @@ module str_case
   contains
 
     function ucase(text) result(res)
+      !< make the whole string to upper case
       CHARACTER(len=*), intent(in)        :: text
+      !< Input string of any case
       character(len=STRING_BUFFER_LENGTH) :: res
+      !< output string of upper case
       integer ::  I,C
   
       res=text
@@ -23,8 +28,11 @@ module str_case
     end function ucase
 
     function lcase(text) result(res)
+      !< make the whole string to lower case
       CHARACTER(len=*), intent(in)         :: text
+      !< Input string of any case
       character(len=STRING_BUFFER_LENGTH) :: res
+      !< output string of lower case
       integer ::  I,C
   
       res=text

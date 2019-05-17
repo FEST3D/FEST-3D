@@ -1,4 +1,9 @@
+  !< Calculate Cell-center and normal through them for transition model
 module CC
+  !< In order to calculate pressure gradient in the transition model, two
+  !< quantities are required, the distance of the cell-center from the wall 
+  !< the normal made the distance vector (from wall to cell-center).
+  !< This module calucate both with gradient of V.n also.
 
 #include "debug.h"
 #include "error.h"
@@ -39,11 +44,12 @@ module CC
   contains
 
     subroutine setupCC()
+      !< Allocate memory for the cell center variable only in case of transition model
       implicit none
 
       DebugCall("Setup CC")
 
-      if((transition=='j10' .or. transition=='lctm2015') .and. turbulence/='none')then
+      if((transition=='lctm2015') .and. turbulence/='none')then
         call alloc(CCnormalX, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("CCnormalX"))
         call alloc(CCnormalY, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("CCnormalY"))
         call alloc(CCnormalZ, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("CCnormalZ"))
@@ -58,6 +64,7 @@ module CC
 
 
     subroutine destroyCC()
+      !< Deallocate memory from the cell-center variables.
       implicit none
 
       DebugCall("Destroy CC")
@@ -74,6 +81,7 @@ module CC
 
 
     subroutine find_CCnormal()
+      !< Find the cell-center unit normal
       implicit none
       call compute_gradient(CCnormalX, dist, 'x')
       call compute_gradient(CCnormalY, dist, 'y')
@@ -89,12 +97,14 @@ module CC
 
 
     subroutine find_CCVn()
+      !< Taking a dot product between Cell-center velocity and unit normal
       implicit none
       CCVn = CCnormalX*x_speed + CCnormalY*y_speed + CCnormalZ*z_speed
     end subroutine find_CCVn
 
 
     subroutine find_DCCVn()
+      !< Find gradient of the dot product between cell velocity and unit normal
       implicit none
       call find_CCVn()
       call compute_gradient(DCCVnX, dist, 'x')
@@ -104,6 +114,7 @@ module CC
 
 
     subroutine compute_gradient(grad, var, dir)
+      !< Generalized subroutine to calculate gradients
       implicit none
       real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(out) :: grad
       real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(in) :: var

@@ -1,4 +1,7 @@
+ !< Detect all the grid points on the wall boundary condition
 module wall
+ !< Detect all the grid points on the wall boundary condition
+ !< and store them in a single file
   use global     , only : surface_node_points
   use global     , only : NODESURF_FILE_UNIT
   use global_vars, only : imx
@@ -20,34 +23,52 @@ module wall
 
   private
   integer :: ierr
+  !< integer to store error 
   real :: buf
   integer :: BUFSIZE
+  !< Size of buffer for mpi
   integer :: new_type
+  !< create new type for MPI
   integer :: thisfile
+  !< file hadler
   integer, parameter :: maxlen=70
+  !< Maximum length for string
 
-  real, private, dimension(:, :), allocatable, target :: wallc ! centre of wall surface
-  real, private, dimension(:), pointer :: wall_x
-  real, private, dimension(:), pointer :: wall_y
-  real, private, dimension(:), pointer :: wall_z
-  integer, dimension(6) :: no_slip_flag=0
+  real, private, dimension(:, :), allocatable, target :: wallc 
+  !< centre of wall surface
+  real, private, dimension(:), pointer :: wall_x 
+  !< X coordiante of center of wall surface
+  real, private, dimension(:), pointer :: wall_y 
+  !< Y coordiante of center of wall surface
+  real, private, dimension(:), pointer :: wall_z 
+  !< Z coordiante of center of wall surface
+  integer, dimension(6) :: no_slip_flag=0 
+  !< flag to detect wall
   integer, public :: n_wall
+  !< number of points on the wall
   integer, public :: total_n_wall
+  !< total number of points on the block across all processes
   character(len=maxlen), dimension(:), allocatable :: str
+  !< Store all wall corridnate of current process in a string vector
   character(len=maxlen) :: line
+  !< line to write in output file
   character , parameter :: lf=Achar(10)
+  !< end of line character
   
 
   ! for gather all the data to process 0
   integer, dimension(:), allocatable :: n_wall_buf
+  ! < store n_wall points of all processors in a array form
   integer, dimension(:), allocatable :: write_flag
-  real, dimension(:), allocatable :: wall_buf
+  !<  check if current processor has any wall points to write
 
   public :: write_surfnode
 
   contains 
 
     subroutine write_surfnode()
+      !<  Extract and write the wall surface node points
+      !< in a file shared by all the MPI processes.
       implicit none
       integer :: count
       integer :: i
@@ -95,6 +116,7 @@ module wall
 
 
     subroutine allocate_memory()
+      !< allocate memory to str and wallc variable array
         implicit none
 
         call dmsg(1, 'wall_find', 'setup_surface')
@@ -120,6 +142,7 @@ module wall
 
 
     subroutine link_aliases()
+      !< Link pointers wall_x, wall_y, wall_z to wallc
 
       implicit none
 
@@ -133,6 +156,7 @@ module wall
 
 
     subroutine unlink_aliases()
+      !< Unlink all the pointer used in this module
 
       implicit none
 
@@ -146,6 +170,7 @@ module wall
 
 
     subroutine deallocate_memory()
+      !< deallocate memory from the Wallc array
 
       implicit none
 
@@ -157,6 +182,8 @@ module wall
     
 
     subroutine setup_surface()
+      !< Open MPI_shared write file, allocate memory and
+      !< setup pointers
 
       implicit none
       integer :: stat
@@ -179,6 +206,7 @@ module wall
 
 
     subroutine destroy_surface()
+      !< deallocate memory, unlink pointers, and close MPI_shared file
 
       implicit none
 
@@ -191,6 +219,7 @@ module wall
 
 
     subroutine find_wall()
+      !< setup wall flag for all six boundary of the block
 
       implicit none
       integer :: i
@@ -205,6 +234,8 @@ module wall
 
 
     subroutine surface_points()
+      !< Extract surface points and store them
+      !< in a string vector str(ind)
 
       implicit none
       integer :: OL

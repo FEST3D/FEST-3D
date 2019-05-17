@@ -1,4 +1,6 @@
+  !< Declare all the constants used by k-kL turbulence model
 module global_kkl
+  !< Declare all the constants used by k-kL turbulence model
 
   real, parameter  :: zeta1       = 1.2
   real, parameter  :: zeta2       = 0.97

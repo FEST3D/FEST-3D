@@ -5,6 +5,7 @@ bin/
 mod/
 obj/
 build/
+docs/html
 
 # module  dependency file
 makefile.dep

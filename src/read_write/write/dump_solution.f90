@@ -1,10 +1,10 @@
+!<  Check, create, and purge folder in the time_directory folder
 module dump_solution
-  !-------------------------------------------
-  ! This module contians subroutine that
-  !  1. check if point of dump is arrived.
-  !  2. create particular folder for dump.
-  !  3. dump data in that folder.
-  !  4. purge folders if required.
+  !< This module contians subroutine that
+  !<  1. check if point of dumping condition is arrived.
+  !<  2. create particular folder for dump.
+  !<  3. dump data in that folder.
+  !<  4. purge folders if required.
   !------------------------------------------
 
   use global,      only : FILE_NAME_LENGTH
@@ -37,15 +37,16 @@ module dump_solution
   implicit none
   private
   character(len=FILE_NAME_LENGTH) :: dump_dirname
+  !< name(check point number) of the directory to create
   character(len=FILE_NAME_LENGTH) :: purge_dirname
+  !< name(check point number) of the directory to remove
 
   public :: checkpoint
 
   contains
 
     subroutine checkpoint()
-      !-----------------------------------------------------------
-      ! Create a checkpoint dump file if the time has come
+      !< Create a checkpoint dump file if the time has come
       !-----------------------------------------------------------
 
       implicit none
@@ -68,6 +69,7 @@ module dump_solution
     end subroutine checkpoint
 
     subroutine create_directory(dirname)
+      !< Create a directory to keep the solution files from all the processor
       implicit none
       character(len=*), intent(in)    :: dirname
       character(len=FILE_NAME_LENGTH) :: mkdircmd
@@ -78,6 +80,7 @@ module dump_solution
     end subroutine create_directory
 
     subroutine remove_directory(dirname)
+      !< Remove a directory 
       implicit none
       character(len=*), intent(in)    :: dirname
       character(len=FILE_NAME_LENGTH) :: rmdircmd
@@ -88,6 +91,7 @@ module dump_solution
     end subroutine remove_directory
 
     subroutine purge_dump_dir()
+      !< Purge the directory based on the input
       implicit none
       integer                         :: purge_num
 
@@ -100,6 +104,7 @@ module dump_solution
     end subroutine purge_dump_dir
 
     subroutine make_dump_dir()
+      !< Solution directory and sub-directory in created with particular number 
       implicit none
 
       write(dump_dirname,'(A,I4.4)') 'time_directories/',checkpoint_iter_count
@@ -109,6 +114,7 @@ module dump_solution
     end subroutine make_dump_dir
 
     subroutine dump_data()
+      !< call to write save files in the directory
       implicit none
 !      character(len=FILE_NAME_LENGTH) :: filename
 
@@ -121,6 +127,8 @@ module dump_solution
     end subroutine dump_data
 
     subroutine write_restart_log()
+      !< call to write log file in the subdirectory "restart". 
+      !< It is useful information while restarting the solver. 
       implicit none
       open(RESTART_FILE_UNIT, file=restartfile)
       select case (turbulence)
@@ -139,6 +147,8 @@ module dump_solution
     end subroutine write_restart_log
 
     subroutine write_initial_resnorm()
+      !< writing Initial resnorom in the log file to 
+      !< maintian continuity of resnorm while restrarting
       implicit none
       write(RESTART_FILE_UNIT, '(I0)')    current_iter+last_iter
       write(RESTART_FILE_UNIT, '(f0.16)')        resnorm_0

@@ -1,4 +1,6 @@
+  !< Declare all the constants used by SST turbulence model
 module global_sst
+  !< Declare all the constants used by SST turbulence model
 
   real, parameter  :: sigma_k1   = 0.85
   real, parameter  :: sigma_k2   = 1.0

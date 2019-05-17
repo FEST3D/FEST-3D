@@ -1,11 +1,12 @@
+  !< Allocate memory to the state variables and initialize them
 module state
+  !< Allocate memory to the state variables and initialize them
+  !< The state of the system is defined using the density, velocity and
+  !< pressure (primitive variables qp), and trubulent and transition
+  !< variables at the cell-center points.
     !-------------------------------------------------------------------
     ! The state module contains the state variables and the methods that
     ! act on them. 
-    !
-    ! The state of the system is defined using the density, velocity and
-    ! pressure (primitive variables qp) at the grid points. This current
-    ! version assumes the grid is in atmost two dimensions. 
     !-------------------------------------------------------------------
     
 #include "../debug.h"
@@ -98,6 +99,7 @@ module state
 
 
         subroutine link_aliases()
+          !< Setup state variable pointers
 
             implicit none
 
@@ -160,7 +162,7 @@ module state
                 tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, n_var)
                 tgm_inf => qp_inf(n_var)
 
-              case('j10', 'bc', 'none')
+              case('bc', 'none')
                 !do nothing
                 continue
 
@@ -174,6 +176,7 @@ module state
 
 
         subroutine unlink_aliases()
+          !< Nullify the pointer link
 
             implicit none
 
@@ -235,7 +238,7 @@ module state
                 nullify(tgm)
                 nullify(tgm_inf)
 
-              case('j10', 'bc', 'none')
+              case('bc', 'none')
                 !do nothing
                 continue
 
@@ -250,8 +253,7 @@ module state
 
 
         subroutine allocate_memory()
-            !-----------------------------------------------------------
-            ! Allocate memory for the state variables
+            !< Allocate memory to the state variables
             !-----------------------------------------------------------
             implicit none
 
@@ -263,45 +265,29 @@ module state
             call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, AErrMsg("qp"))
             call alloc(qp_inf, 1, n_var, AErrMsg("qp_inf"))
 
-            if(trim(turbulence)=="saBC")then
-              call alloc(intermittency, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("intermittency"))
-            end if
-            call alloc(ExtraVar1, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar1"))
-            call alloc(ExtraVar2, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar2"))
-            call alloc(ExtraVar3, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar3"))
-            call alloc(ExtraVar4, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar4"))
-            call alloc(ExtraVar5, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("ExtraVar4"))
-            
         end subroutine allocate_memory
 
 
 
         subroutine deallocate_memory()
+          !< Deallocate memory from the state variable
 
             implicit none
 
             DebugCall("allocate_memory")
 
             call dealloc(qp)
-            call dealloc(intermittency)
-            call dealloc(ExtraVar1)
-            call dealloc(ExtraVar2)
-            call dealloc(ExtraVar3)
-            call dealloc(ExtraVar4)
-            call dealloc(ExtraVar5)
 
         end subroutine deallocate_memory
 
 
 
         subroutine setup_state()
-            !-----------------------------------------------------------
-            ! Setup the state module.
-            !
-            ! This subroutine should be run before the state variables
-            ! are initilized. This subroutine allocates the memory for 
-            ! state variables and sets up the aliases to refer to the 
-            ! components of the state.
+            !< Setup the state module.
+            !< This subroutine should be run before the state variables
+            !< are initilized. This subroutine allocates the memory for 
+            !< state variables and sets up the aliases to refer to the 
+            !< components of the state.
             !-----------------------------------------------------------
 
             implicit none
@@ -319,12 +305,10 @@ module state
 
 
         subroutine destroy_state()
-            !-----------------------------------------------------------
-            ! Destroy the state module.
-            !
-            ! This subroutine destroys the state module which includes
-            ! unlinking the aliases for the state components and 
-            ! deallocating the memory held by the state variables. 
+            !< Destroy the state module.
+            !< This subroutine destroys the state module which includes
+            !< unlinking the aliases for the state components and 
+            !< deallocating the memory held by the state variables. 
             !-----------------------------------------------------------
 
             implicit none
@@ -339,8 +323,7 @@ module state
 
 
         subroutine init_infinity_values()
-            !-----------------------------------------------------------
-            ! Set the values of the infinity variables
+            !< Set the values of the infinity variables "qp_inf"
             !-----------------------------------------------------------
 
             implicit none
@@ -404,7 +387,7 @@ module state
               case('lctm2015')
                 tgm_inf = free_stream_tgm
 
-              case('j10', 'bc', 'none')
+              case('bc', 'none')
                 !do nothing
                 continue
 
@@ -413,54 +396,12 @@ module state
 
             end Select
 
-            ! old version kept for compasion
-!            select case (trim(turbulence))
-!                
-!                case ("none")
-!                    continue
-!
-!                case ("sst", "sst2003", "bsl")
-!                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
-!                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
-!
-!                case ("kkl")
-!                    tk_inf = 9*(1e-9)*(sound_speed_inf()**2)
-!                    tkl_inf = 1.5589*(1e-6)*(mu_ref*sound_speed_inf())/density_inf
-!
-!                case ("sa")
-!                     tv_inf = 3*mu_ref/density_inf
-!
-!                case ("saBC")
-!                    tv_inf = 0.005*3*mu_ref/density_inf
-!
-!                case ("kw")
-!                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
-!                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
-!
-!                case ("ke")
-!                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
-!                    te_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
-!
-!                case ("des-sst")
-!                    tk_inf = 9*(1e-9)*sound_speed_inf()**2
-!                    tw_inf = 1*(1e-6)*density_inf*(sound_speed_inf()**2)/mu_ref
-!
-!                case ("les")
-!                  continue
-!                  ! todo
-!
-!                case DEFAULT
-!                  Fatal_error
-!
-!            end select
-
         end subroutine init_infinity_values
 
 
         
         function sound_speed_inf() result(a)
-            !-----------------------------------------------------------
-            ! Return the free stream speed of sound.
+            !< Return the free stream speed of sound.
             !-----------------------------------------------------------
 
             implicit none
@@ -473,12 +414,10 @@ module state
 
 
         subroutine initstate()
-            !-----------------------------------------------------------
-            ! Initialize the state
-            !
-            ! If state_file is a tilde (~), then the state should be 
-            ! set to the infinity values. Otherwise, read the state_file
-            ! to get the state values.
+            !< Initialize the state.
+            !< If load file(start_from) is 0, then the state should be 
+            !< set to the infinity values. Otherwise, read the state_file
+            !< to get the state values.
             !-----------------------------------------------------------
 
             implicit none
@@ -490,6 +429,10 @@ module state
             if (start_from .eq. 0) then
                 ! Set the state to the infinity values
                 call init_state_with_infinity_values()
+                !!----------------------------------------
+                !!following are added spefically for 
+                !! shock tube test case
+                !!---------------------------------------
                 !if(process_id<2) then
                 !  pressure = 1.0
                 !  density = 1.0
@@ -521,8 +464,7 @@ module state
 
 
         subroutine init_state_with_infinity_values()
-            !-----------------------------------------------------------
-            ! Initialize the state based on the infinity values.
+            !< Initialize the state based on the infinity values.
             !-----------------------------------------------------------
             
             implicit none
@@ -539,6 +481,8 @@ module state
 
 
         subroutine set_n_var_value()
+          !< Set number of variable to solver for based on
+          !< the tubulence and transition model being used.
           implicit none
 
           DebugCall("set_n_var_value")
@@ -564,7 +508,7 @@ module state
             case('lctm2015')
               n_var = n_var + 1
 
-            case('j10', 'bc', 'none')
+            case('bc', 'none')
               n_var = n_var + 0
 
             case DEFAULT
