@@ -1,6 +1,8 @@
 FEST-3D
 ========
 
+[![Join the chat at https://gitter.im/FEST-3D/community](https://badges.gitter.im/FEST-3D/community.svg)](https://gitter.im/FEST-3D/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ## AIM
 FEST3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid dynamic code written in Fortran 90 for solving Navier-Stokes equations on a structured grid using state of the art finite-volume numerical methods. It is a modular, multiblock finite-volume code developed to solve compressible flow problems encountered in the field of aerodynamics.
 
