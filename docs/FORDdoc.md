@@ -4,15 +4,15 @@ project_dir: ./
 src_dir: ../src/
 project_github: https://github.com/FEST3D/FEST-3D
 project_download: https://github.com/FEST3D/FEST-3D/archive/master.zip
+summary: <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items:center">
+    <img src="|media|/FEST3D.png" alt="FEST-3D" style="width:350px"></div>
 media_dir: ./media
 output_dir: ./html
 page_dir: ./user_guide
 tutorial_dir: ./Testcases
-summary: ![FEST3D](|media|/FEST3D.png)
-         {: style="text-align: center" }
-author: FEST3D Team
-author_description: Team consists of multiple students from the department of Aerospace engineering at Indian Institute of Technology Madras (IITM), Chennai (600036), India.
-github: https://github.com/jayten
+author: FEST-3D Team
+author_description: Group of students from the Department of Aerospace Engineering at Indian Institute of Technology Madras (IITM), Chennai (600036), India.
+github: https://github.com/FEST3D
 email: fest3diitm[@]gmail.com
 print_creation_date: true
 year: 2019
@@ -38,7 +38,7 @@ exclude: face_interpolant.f90
 md_extensions: markdown.extensions.toc
 ---
 
-FEST3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid dynamic code written in Fortran 90 for solving Navier-Stokes equations on a structured grid using state of the art finite-volume numerical methods. It is a modular, multiblock finite-volume code developed to solve compressible flow problems encountered in the field of aerodynamics.
+FEST-3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid dynamic code written in Fortran 90 for solving Navier-Stokes equations on a structured grid using state of the art finite-volume numerical methods. It is a modular, multiblock finite-volume code developed to solve compressible flow problems encountered in the field of aerodynamics.
 
 ## Installation
 For installation instruction check out [Documentation](./page/01_install.html) guide. 
@@ -46,21 +46,16 @@ For installation instruction check out [Documentation](./page/01_install.html) g
 ## Tutorials
 For tutorials check out [test_case](./page/05_tutorials/index.html) descriptions.
 
+## License
+FEST-3D is open-source software available under GNU General Public License v3.0
+
+## Reference and Citation
+Details about the algorithms used in the FEST-3D code can be found in the publication by Jatinder Pal Singh Sandhu et al. (_Singh Sandhu, J. P., Girdhar, A., Ramakrishnan, R., Teja, R. D., & Ghosh, S., **A convergence study of solutions using two two-equation RANS turbulence models on a finite volume solver for structured grids**, AIAA 2018-3859_). If you want to cite the FEST-3D code in you work, use the same reference.
+
+
 @Bug
  - Halt/Stop condition does not work on MPI
 @endbug
 
 @todo
 Add HLLC and Roe flux difference Schemes
-
-
-
-## FEST-3D Team:
-### Developers:
-    - Jatinder Pal Singh Sandhu
-    - Rakesh Ramakrishnan
-    - Anant Girdhar
-    - R. D. Teja
-
-### Advisor:
-    - Dr. Santanu Ghosh
