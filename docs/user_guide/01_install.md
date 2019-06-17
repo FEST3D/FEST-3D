@@ -36,7 +36,7 @@ To build the FEST-3D code, we first generate a new "build" directory/folder in t
 ```$FC=mpif90 cmake ..```<br>
 ```$make -j 4 ```<br>
 Here -j is a parallel building option which speeds up the building process. You can replace the number after "-j" with a number of processors you want to use for the building. 
-@note if you have installed OPENMPI also along with MPICH, then the mpif90 might be pointing to the `mpif90.openmpi` instead fo `mpif90.mpich`. In that case use following command<br>
+@note if you have installed OPENMPI also along with MPICH, then the mpif90 might be pointing to the `mpif90.openmpi` instead of `mpif90.mpich`. In that case use following command<br>
 ```$FC=mpif90.mpich cmake ..```<br>
 
 

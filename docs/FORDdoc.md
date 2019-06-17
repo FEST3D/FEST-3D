@@ -38,19 +38,28 @@ exclude: face_interpolant.f90
 md_extensions: markdown.extensions.toc
 ---
 
-FEST-3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid dynamic code written in Fortran 90 for solving Navier-Stokes equations on a structured grid using state of the art finite-volume numerical methods. It is a modular, multiblock finite-volume code developed to solve compressible flow problems encountered in the field of aerodynamics.
+FEST-3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid dynamic solver written in Fortran 90 for solving the Navier-Stokes equations on structured grid using state of the art finite-volume numerical methods. It is a modular, multiblock finite-volume code developed to solve flow problems encountered in the field of aerodynamics.
 
 ## Installation
-For installation instruction check out [Documentation](./page/01_install.html) guide. 
+For installation instruction check out the [Documentation](./page/01_install.html) guide. 
 
 ## Tutorials
-For tutorials check out [test_case](./page/05_tutorials/index.html) descriptions.
+For tutorials check out the [test_case](./page/05_tutorials/index.html) descriptions.
+
+@note
+There two separate GitHub repository:<br>
+1. <a href="https://github.com/FEST3D/FEST-3D" target="_blank">FEST-3D<a> directory which contains source code<br>
+2. <a href="https://github.com/FEST3D/run" target="_blank">Run</a> directory which contains tutorials<br>
+Run directory is submodule to the FEST-3D code.
+@endnote
 
 ## License
-FEST-3D is open-source software available under GNU General Public License v3.0
+FEST-3D is an open-source software available under GNU General Public License v3.0
 
 ## Reference and Citation
-Details about the algorithms used in the FEST-3D code can be found in the publication by Jatinder Pal Singh Sandhu et al. (_Singh Sandhu, J. P., Girdhar, A., Ramakrishnan, R., Teja, R. D., & Ghosh, S., **A convergence study of solutions using two two-equation RANS turbulence models on a finite volume solver for structured grids**, AIAA 2018-3859_). If you want to cite the FEST-3D code in you work, use the same reference.
+Details about the governing equations used in the FEST-3D code can be found in the publication by Jatinder Pal Singh Sandhu et al. (_Singh Sandhu, J. P., Girdhar, A., Ramakrishnan, R., Teja, R. D., & Ghosh, S., **A convergence study of solutions using two two-equation RANS turbulence models on a finite volume solver for structured grids**, AIAA 2018-3859_). 
+
+User are requested to cite this reference for any research publications made using the FEST-3D solver.
 
 
 @Bug

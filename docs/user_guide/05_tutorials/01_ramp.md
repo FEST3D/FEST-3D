@@ -26,7 +26,12 @@ Alliance Validation Archive](https://www.grc.nasa.gov/WWW/wind/valid/wedgeM2/wed
 
 ## Mesh
 A structured grid of size 153 × 91 × 2 will be used, as shown in Fig. 3. The grid is available in the 
-tutorial folder __|rootFolder|/run/Tutorial/Ramp/CreateBlocks/__. In the ```blocking_point.f90```
+tutorial folder __|rootFolder|/run/Tutorial/Ramp/CreateBlocks/__. 
+@note
+If `run` folder is empty, please download the content from [Github](https://github.com/FEST3D/run) 
+direcotry or download the zip file [here](https://github.com/FEST3D/run/archive/master.zip).
+@endnote
+In the ```blocking_point.f90```
 edit the number of blocks in the I-direction and J-direction. In this test case, only one block will
 be used. <br>
 ```integer, parameter :: xblocks = 1```<br>
@@ -47,8 +52,11 @@ Run the previous command in the __|rootFolder|/run/Tutorial/Ramp/CreateBlocks/__
 
 ## Setup
 In order to setup the case directory, a python automation script is provided: ```automaton.py```. First setup the most important
-parameters, the paths to the grid files and main executable binary to FEST-3D<br>
-```RunDir = 'GiveAnyName'```   Name of the run directory to create for current case. <br>
+parameters, the paths to the grid files and main executable binary to FEST-3D<br><hr>
+```RunDir = 'GiveAnyName'```   Name of the run directory to create for current case. You can give any
+name for this directory. This new directory will contains all the required files. All following command expect `python automaton.py`
+ will be executed in this directory.<br>  
+<br>
 ```GridDir= 'CreateBlocks/grid/'```  Path to the folder which only contains grid file. <br>
 ```NumberOfBlocks = 1``` Total number of blocks. It should match with number of gridfiles avaiable in the __GridDir__ folder <br>
 ```

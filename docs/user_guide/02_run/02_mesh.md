@@ -17,7 +17,8 @@ like to study. Now to apply a numerical method
 to solve the governing equation (Navier-Stokes) on this domain, it needed
 to be discretized. This process is not part of the FEST-3D
 code and it assume a predefine discretized domain(grid) will
-be provided as input. The FEST-3D expect structured grid in
+be provided as input. You can use softwares like Pointwise to generate the
+good quality mesh. The FEST-3D expect structured grid in
  the following format
 ```
 Imax  Jmax  Kmax

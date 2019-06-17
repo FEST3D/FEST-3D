@@ -26,8 +26,13 @@ condition applied to the domain are illustrated in Fig. 2. The case definition a
 
 
 ## Mesh
-A structured grid of size 97 x 49 × 2 will be used, as shown in Fig. 3. The grid is available in the 
-tutorial folder __|rootFolder|/run/Tutorial/2DBump/CreateBlocks/__. In the ```bump.py```
+A structured grid of size 97 x 49 × 2 will be used, as shown in Fig. 3. 
+The grid is available in the tutorial folder __|rootFolder|/run/Tutorial/2DBump/CreateBlocks/__. 
+@note
+If `run` folder is empty, please download the content from [Github](https://github.com/FEST3D/run) 
+direcotry or download the zip file [here](https://github.com/FEST3D/run/archive/master.zip).
+@endnote
+In the ```bump.py```
 edit the number of blocks in the I-direction . In this test case, only two blocks will
 be used. <br>
 ```imax = 97``` Maximum number of grid points in the I-direction<br>
@@ -76,8 +81,8 @@ Few scheme parameters for inviscid flow:<br>
 ```Scheme['TimeStep']='l'``` Local time-stepping method. You can use global time-stepping method also __g__.<br>
 ```Scheme['TimeIntegration']='implicit'``` LU-SGS matrix-free time integration method.<br>
 Now, lets define the flow feature of test case:<br>
-```Flow["DensityInf"] = 1.17682``` Free-stream density.<br>
-```Flow["UInf"] = 173.5943``` Free-stream x-component of velcotiy vector. <br>
+```Flow["DensityInf"] = 1.225``` Free-stream density.<br>
+```Flow["UInf"] = 170.14``` Free-stream x-component of velcotiy vector. <br>
 ```Flow["VInf"] = 0.0``` Free-stream y-component of velcotiy vector. <br>
 ```Flow["WInf"] = 0.0``` Free-stream z-component of velcotiy vector. <br>
 ```Flow["PressureInf"] = 101325.0``` Free-stream pressure. <br>
@@ -85,7 +90,7 @@ Now, lets define the flow feature of test case:<br>
 
 ```OutputControl['Out'] = ["Velocity", "Density", "Pressure"]``` Variables to write in the output file.<br>
 ```ResidualControl['Out'] = ["Mass_abs", "Viscous_abs", "Continuity_abs"]``` Residual to write in the resnorm file. <br>
-```BoundaryConditions = [-8, -4, -6, -6, -6, -6]``` Broad boundary condition.[Riemann-inlet, subsonic outlet, rest are Slip-walls].<br>
+```BoundaryConditions = [-8, -4, -6, -6, -6, -6]``` Broad boundary condition.[Riemann-inlet, subsonic outlet, rest are Slip-walls]. Free-stream pressure is used to fix the pressure outlet value.<br>
 
 Rest of the variables should be left to their default value. In order to execute this script use following command:
 ```

@@ -47,13 +47,13 @@ So for four blocks the layout file looks like following.
  ## PROCESS_NO GRID BC_FILE IMIN IMAX JMIN JMAX KMIN KMAX
  ## ===================================
  ## PROCESS 0
- 00  grid_00.txt  bc_00.md  -006  0001  -006  -006  -006  -006
+ 00  grid_00.txt  bc_00.md  -005  0001  -005  0002  -006  -006
  ## PROCESS 1
- 01  grid_01.txt  bc_01.md  0000  0002  -006  -006  -006  -006
+ 01  grid_01.txt  bc_01.md  0000  -005  -005  0003  -006  -006
  ## PROCESS 2
- 02  grid_02.txt  bc_02.md  0001  0003  -006  -006  -006  -006
+ 02  grid_02.txt  bc_02.md  -005  0003  0000  -003  -006  -006
  ## PROCESS 3
- 03  grid_03.txt  bc_03.md  0002  -006  -006  -006  -006  -006
+ 03  grid_03.txt  bc_03.md  0002  -005  0001  -003  -006  -006
 ```
 
 Each line starting with `#` is a comment line and hence will be ignored while reading. 

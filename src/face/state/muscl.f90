@@ -243,6 +243,8 @@ module muscl
             integer :: i, j, k, l
             !< integer used for DO loop
             integer :: ii, jj, kk
+            !< Variable for ALFA family limiter
+            real :: alpha
             !< Flags to determine face direction
             real :: psi1, psi2
             !< limiters
@@ -286,6 +288,7 @@ module muscl
                     stop
             end select
 
+            alpha = 2./3. !Koren limiter 
             phi = 1.0
             kappa = 1./3.
             switch_L=lam_switch
@@ -298,20 +301,24 @@ module muscl
               do j = 1-jj, jmx - 1 + jj
                do i = 1-ii, imx - 1 + ii
                 ! Cell based
-                ! Hence (i=1, left) and (i=imx, right) will be dealt separately
                 ! Koren limiter for now
                 ! From paper: delta: forward difference 'fd'
                 !             nabla: backward difference 'bd'
                 fd = qp(i+ii, j+jj, k+kk, l) - qp(i, j, k, l)
                 bd = qp(i, j, k, l) - qp(i-ii, j-jj, k-kk, l)
-                r = fd / bd
-!                psi1 = min(1., (3 - kappa) * r / (1 - kappa)) !minmod
-                psi1 = max(0., min(2*r, (2 + r)/3., 2.))  !koren limiter
+
+                r = fd / max(bd,1e-10)
+                psi1 = max(0., min(2*r, alpha*(r-1.0) + 1.0, 2.))  !alpha limiter
 !                psi1 = max(0., min(2*r,1.), min(r,2.))    ! superbee
-                r = bd / fd
-!                psi2 = min(1., (3 - kappa) * r / (1 - kappa))
-                psi2 = max(0., min(2*r, (2 + r)/3., 2.))
+!                psi1 = ((r*r) + r)/((r*r) + 1.0)          ! Van-Albda 
+!                psi1 = (abs(r) + r)/(abs(r) + 1.0)          ! Van-Leer
+
+                r = bd / max(fd, 1e-10)
+                psi2 = max(0., min(2*r, alpha*(r-1.0) + 1.0, 2.))
 !                psi2 = max(0., min(2*r,1.), min(r,2.))
+!                psi2 = ((r*r) + r)/((r*r) + 1.0)          ! Van-Albda 
+!                psi2 = (abs(r) + r)/(abs(r) + 1.0)          ! Van-Leer
+
                 psi1 = (1 - (1 - psi1)*switch_L )
                 psi2 = (1 - (1 - psi2)*switch_L )
 

@@ -29,7 +29,12 @@ The case definition and grid used were obtained from
 
 ## Mesh
 A uniform structured grid of size 129 x 129 × 2 will be used as shown in Fig. 3. The grid is available in the 
-tutorial folder __|rootFolder|/run/Tutorial/LidDrivenCavity/CreateBlocks/__. In the ```blocking_point.f90```
+tutorial folder __|rootFolder|/run/Tutorial/LidDrivenCavity/CreateBlocks/__. 
+@note
+If `run` folder is empty, please download the content from [Github](https://github.com/FEST3D/run) 
+direcotry or download the zip file [here](https://github.com/FEST3D/run/archive/master.zip).
+@endnote
+In the ```blocking_point.f90```
 edit the number of blocks in the I-direction and J-direction. In this test case, four blocks will
 be used. <br>
 ```integer, parameter :: xblocks = 2```<br>
@@ -40,6 +45,9 @@ in the makefile. Just use the following command to generate grid files in the __
 $make
 ```
 Run the previous command in the __|rootFolder|/run/Tutorial/LidDrivenCavity/CreateBlocks/__ directory.
+@note
+Make sure you are using numpy version greater than 1.10 for python script to generate grid.
+
 <figure>
   <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items:center">
     <img src="|media|/tutorials/LidDrivenCavityMesh.png" alt="mesh" style="width:350px">
@@ -76,6 +84,12 @@ Few scheme parameters for inviscid flow:<br>
 ```Scheme['TimeIntegration']='implicit'``` LU-SGS matrix-free time integration method.<br>
 Now, lets define the flow feature of test case:<br>
 ```Flow["DensityInf"] = 1.2``` Free-stream density.<br>
+@note
+The domain is initialized with zero velocity vector and Lid velocity is defined
+later in the boundary condition file. As the residual are normalized with 
+free-stream velocity, residual written in resnom file will be Nan. But solution
+is correct.
+@endnote
 ```Flow["UInf"] = 0.0``` Free-stream x-component of velcotiy vector. <br>
 ```Flow["VInf"] = 0.0``` Free-stream y-component of velcotiy vector. <br>
 ```Flow["WInf"] = 0.0``` Free-stream z-component of velcotiy vector. <br>

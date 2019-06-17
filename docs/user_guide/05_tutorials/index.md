@@ -17,3 +17,4 @@ some verification test cases are provided as tutorials.
  * Laminar flow over a plate (2D)
  * Turbulent flow over a plate  (2D)
  * Turbulent flow over a transonic airfoil RAE-2822 (2D)
+ * Transition flow over a flat plate (2D)

@@ -20,7 +20,12 @@ condition applied to the domain are illustrated in Fig. 1. The case definition a
 
 ## Mesh
 A structured grid of size 113 × 81 x 2 will be used as shown in Fig. 3. The grid is available in the 
-tutorial folder __|rootFolder|/run/Tutorial/TurbulentFlatPlate/CreateBlocks/__. In the ```blocking_point.f90```
+tutorial folder __|rootFolder|/run/Tutorial/TurbulentFlatPlate/CreateBlocks/__. 
+@note
+If `run` folder is empty, please download the content from [Github](https://github.com/FEST3D/run) 
+direcotry or download the zip file [here](https://github.com/FEST3D/run/archive/master.zip).
+@endnote
+In the ```blocking_point.f90```
 edit the number of blocks in the I-direction and J-direction. In this test case, four blocks will
 be used. <br>
 ```integer, parameter :: xblocks = 4```<br>
