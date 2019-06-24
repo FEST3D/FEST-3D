@@ -6,6 +6,7 @@ mod/
 obj/
 build/
 docs/html
+.DS_Store
 
 # module  dependency file
 makefile.dep
