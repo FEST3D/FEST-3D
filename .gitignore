@@ -18,6 +18,9 @@ files
 #Boundary_condition files
 bc_*.md
 
+#Paper file
+paper/paper.pdf
+
 # FORTRAN and C++
 
 # Compiled Object files
