@@ -28,10 +28,9 @@ _van Leer, B., Towards the Ultimate Conservative Difference Scheme, V. A Second 
 * __PPM__ 4th order accurate in space  
 _Colella, P., and Woodward, P. R., “The Piecewise Parabolic Method (PPM) for gas-dynamical simulations,” Journal of Computational Physics, vol. 54, pp. 174–201, 1984._
 * __WENO__ 5th order accurate in space  
-_Britain, G., and Press, P., “Brief of finite volume WENO method,” vol. 5, 1995._
+_Shu, C.-W., “High-order Finite Difference and Finite Volume WENO Schemes and Discontinuous Galerkin Methods for CFD,” International Journal of Computational Fluid Dynamics, vol. 17, pp. 107–118, 2003._
 * __WENO-NM__ 5th order accurate in space (specifically for non-uniform grid)  
-_Huang, W. F., Ren, Y. X., and Jiang, X., “A simple algorithm to improve the performance of the WENO scheme on non-uniform grids,” Acta Mechanica Sinica/Lixue Xuebao, 2017._
-
+_Huang, W.-F., Ren, Y.-X., and Jiang, X., “A simple algorithm to improve the performance of the WENO scheme on non-uniform grids,” Acta Mechanica Sinica, vol. 34, pp. 37–47, 2018._
 
 ### Temporal integration
 #### Explicit

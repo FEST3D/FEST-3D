@@ -38,10 +38,10 @@ exclude: face_interpolant.f90
 md_extensions: markdown.extensions.toc
 ---
 
-FEST-3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid dynamic solver written in Fortran 90 for solving the Navier-Stokes equations on structured grid using state of the art finite-volume numerical methods. It is a modular, multiblock finite-volume code developed to solve flow problems encountered in the field of aerodynamics.
+FEST-3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid dynamic solver written in Fortran 90 for solving the Navier-Stokes equations on structured grids using state-of-the-art finite-volume numerical methods. It is a modular, multiblock finite-volume code developed to solve flow problems encountered in the field of aerodynamics.
 
 ## Installation
-For installation instruction check out the [Documentation](./page/01_install.html) guide. 
+For installation instructions check out the [Documentation](./page/01_install.html) guide. 
 
 ## Tutorials
 For tutorials check out the [test_case](./page/05_tutorials/index.html) descriptions.
