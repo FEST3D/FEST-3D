@@ -8,7 +8,7 @@ subroutine alloc_rank1_real(var, start1, stop1, errmsg)
     integer, intent(in) :: stop1
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1), stat=mem_stat)
@@ -33,7 +33,7 @@ subroutine alloc_rank2_real(var, start1, stop1, start2, stop2, errmsg)
     integer, intent(in) :: stop1, stop2
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1, start2:stop2), stat=mem_stat)
@@ -60,7 +60,7 @@ subroutine alloc_rank3_real(var, start1, stop1, start2, stop2, &
     integer, intent(in) :: stop1, stop2, stop3
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1, start2:stop2, start3:stop3), &
@@ -88,7 +88,7 @@ subroutine alloc_rank4_real(var, start1, stop1, start2, stop2, &
     integer, intent(in) :: stop1, stop2, stop3, stop4
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1, start2:stop2, start3:stop3, &
@@ -117,7 +117,7 @@ subroutine alloc_rank5_real(var, start1, stop1, start2, stop2, &
     integer, intent(in) :: stop1, stop2, stop3, stop4, stop5
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1, start2:stop2, start3:stop3, &
@@ -146,7 +146,7 @@ subroutine alloc_rank6_real(var, start1, stop1, start2, stop2, &
     integer, intent(in) :: stop1, stop2, stop3, stop4, stop5, stop6
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1, start2:stop2, start3:stop3, &
@@ -174,7 +174,7 @@ subroutine alloc_rank1_integer(var, start1, stop1, errmsg)
     integer, intent(in) :: stop1
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1), stat=mem_stat)
@@ -199,7 +199,7 @@ subroutine alloc_rank2_integer(var, start1, stop1, start2, stop2, errmsg)
     integer, intent(in) :: stop1, stop2
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1, start2:stop2), stat=mem_stat)
@@ -227,7 +227,7 @@ subroutine alloc_rank3_integer(var, start1, stop1, start2, stop2, &
     integer, intent(in) :: stop1, stop2, stop3
     !< Last index of Var array's dimension
     integer :: mem_stat
-    !< status of the memory allocation process
+    !< Status of the memory allocation process
     character(len=*), intent(in), optional :: errmsg
     !< Error message to print if mem_stat is not 0(successful)
     allocate(var(start1:stop1, start2:stop2, start3:stop3), &

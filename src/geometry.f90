@@ -1,8 +1,8 @@
-    !< The geometry module contains various geometrical quantities like 
-    !< normals, areas and volumes to be used in computations. 
+    !< The geometry module calculates various geometrical quantities like 
+    !< face-normals, face-areas and cell-volumes to be used in computations. 
 module geometry
-    !< The geometry module contains various geometrical quantities like 
-    !< normals, areas and volumes to be used in computations. 
+    !< The geometry module calculates various geometrical quantities like 
+    !< face-normals, face-areas and cell-volumes to be used in computations. 
     !-------------------------------------------------------------------
 #include "error.inc"
     use global_vars, only : imx
@@ -546,7 +546,7 @@ module geometry
         end subroutine compute_geometric_parameters
 
         subroutine compute_ghost_cell_centroid()
-          !< compute cell center of all cell including ghost cells
+          !< Compute cell center of all cell including ghost cells
           implicit none
           integer :: i,j,k
 
@@ -605,7 +605,7 @@ module geometry
         end subroutine setup_geometry
 
         subroutine destroy_geometry()
-          !< nullify all the face normal pionter 
+          !< Nullify all the face normal pionter 
 
             implicit none
             

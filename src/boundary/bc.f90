@@ -1,6 +1,6 @@
-   !< setup boundary condition for the domain
+   !< Setup boundary condition for the domain
 module bc
-   !< setup boundary condition for the domain
+   !< Setup boundary condition for the domain
   !--------------------------------------------
   ! 170515  Jatinder Pal Singh Sandhu
   ! Aim : setup boundary condition to domain
@@ -34,7 +34,7 @@ module bc
   private
 
   integer                        :: face_num
-  !< number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
+  !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
 
   public :: setup_bc
   public :: destroy_bc
@@ -90,7 +90,7 @@ module bc
     end subroutine setup_bc
 
     subroutine destroy_bc()
-      !< deallocate memory from boundary condition variables
+      !< Deallocate memory from boundary condition variables
       implicit none
       call dealloc(make_F_flux_zero)
       call dealloc(make_G_flux_zero)

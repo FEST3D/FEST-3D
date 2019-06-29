@@ -56,14 +56,14 @@ module time
 
     private
     INTEGER :: &
-    nb_ticks_initial, & !< initial value of the clock tick counter
-    nb_ticks_final,   & !< final value of the clock tick counter
-    nb_ticks_max,     & !< maximum value of the clock counter
-    nb_ticks_sec,     & !< number of clock ticks per second
-    nb_ticks           !< number of clock ticks of the code
-    REAL :: elapsed_time  !< real time in seconds
-    REAL :: t1         !< start clock time
-    REAL :: t2         !< finish clock time
+    nb_ticks_initial, & !< Initial value of the clock tick counter
+    nb_ticks_final,   & !< Final value of the clock tick counter
+    nb_ticks_max,     & !< Maximum value of the clock counter
+    nb_ticks_sec,     & !< Number of clock ticks per second
+    nb_ticks           !< Number of clock ticks of the code
+    REAL :: elapsed_time  !< Real time in seconds
+    REAL :: t1         !< Start clock time
+    REAL :: t2         !< Finish clock time
     real :: cpu_time_elapsed
 
     ! Public methods
@@ -75,7 +75,7 @@ module time
     contains
 
         subroutine setup_time()
-          !< allocate memeroy and setup initial clock
+          !< Allocate memeroy and setup initial clock
             implicit none
             
             call dmsg(1, 'time', 'initmisc')
@@ -88,7 +88,7 @@ module time
         end subroutine setup_time
 
         subroutine destroy_time()
-          !< deallocate memory and find simulation time.
+          !< Deallocate memory and find simulation time.
             implicit none
             real, dimension(:), allocatable :: total_time 
             integer :: ierr
@@ -127,9 +127,9 @@ module time
           !< Particular format to write time in output log file
           implicit none
           real, intent(in) :: time_in_seconds
-          !< time to output
+          !< Time to output
           character(len=64):: string
-          !< time as string in particlar format
+          !< Time as string in particlar format
           if(time_in_seconds>86400) then
             write(string,'(f0.16,2x,A)') time_in_seconds/86400.,"days"
           elseif(time_in_seconds>3600) then
@@ -324,7 +324,7 @@ module time
       end subroutine update_simulation_clock
 
       subroutine add_viscous_time()
-        !< addition to local time step due to viscous effects
+        !< Addition to local time step due to viscous effects
         implicit none
 
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
@@ -390,7 +390,7 @@ module time
       end subroutine add_viscous_time
 
       subroutine add_turbulent_time()
-        !< addition to local time step due to turbulence 
+        !< Addition to local time step due to turbulence 
         implicit none
 
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum

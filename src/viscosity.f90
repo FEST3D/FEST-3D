@@ -546,7 +546,7 @@ module viscosity
     end subroutine calculate_viscosity
 
     subroutine setup_viscosity()
-      !< allocate and pointer for molecular and turbulent viscosity
+      !< Allocate and pointer for molecular and turbulent viscosity
 
       !setup_molecular_viscosity()
       if (mu_ref/=0.) then
@@ -588,7 +588,7 @@ module viscosity
     end subroutine setup_viscosity
 
     subroutine destroy_viscosity()
-      !< deallocate and nullify viscosity (turbulent/molecular)
+      !< Deallocate and nullify viscosity (turbulent/molecular)
 
       ! destroy_molecular_viscosity ---!
       if (mu_ref/=0.) then

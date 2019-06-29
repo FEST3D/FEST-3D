@@ -50,6 +50,7 @@ module string
         include "typelen_implementation.inc"
 
         subroutine chfmt(d, e, f)
+            !< Change format specifier for reals
             !-----------------------------------------------------------
             ! Change format specifier for reals
             !

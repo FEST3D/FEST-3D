@@ -1,6 +1,6 @@
-  !< read the restart file in the tecplot format
+  !< Read the restart file in the tecplot format
 module read_output_tec
-  !< read the restart file in the tecplot format
+  !< Read the restart file in the tecplot format
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
@@ -89,7 +89,7 @@ module read_output_tec
   contains
 
     subroutine read_file()
-      !< read all the variable for the tecplot restart file
+      !< Read all the variable for the tecplot restart file
       implicit none
       integer :: n
 
@@ -142,7 +142,7 @@ module read_output_tec
 
 
     subroutine read_header()
-      !< skip read the header in the tecplot file
+      !< Skip read the header in the tecplot file
       implicit none
       integer :: n
 
@@ -163,7 +163,7 @@ module read_output_tec
 
 
     subroutine read_grid()
-      !< skip the grid read in the restart file
+      !< Skip the grid read in the restart file
       implicit none
       real :: dummy
 
@@ -188,7 +188,7 @@ module read_output_tec
     end subroutine read_scalar
 
     subroutine skip_scalar()
-      !< skip read scalar from the tecplot file
+      !< Skip read scalar from the tecplot file
       implicit none
       real :: dummy
 

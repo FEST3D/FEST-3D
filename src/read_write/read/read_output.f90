@@ -39,20 +39,20 @@ module read_output
   private
   integer :: i,j,k
   real    :: speed_inf
-  !< free-stream velocity magnitude
+  !< Free-stream velocity magnitude
   character(len=8) :: file_format
-  !< read file format
+  !< Read file format
   character(len=16) :: data_format
-  !< read file data type
+  !< Read file data type
   character(len=16) :: read_flow_type
-  !< previous flow type 
+  !< Previous flow type 
 
   public :: read_file
 
   contains
 
     subroutine read_file()
-      !< read restart file
+      !< Read restart file
       implicit none
       call setup_file
       call open_file(infile)
@@ -103,7 +103,7 @@ module read_output
     end subroutine setup_file
 
     subroutine open_file(filename)
-      !< open file from the restart folder 
+      !< Open file from the restart folder 
       implicit none
       character(len=*), intent(in) :: filename 
       call dmsg(1, 'read_output_vtk', 'open_file')
@@ -116,7 +116,7 @@ module read_output
     end subroutine open_file
 
     subroutine close_file()
-      !< close the file after reading 
+      !< Close the file after reading 
       implicit none
 
       call dmsg(1, 'read_output_vtk', 'close_files')
@@ -126,7 +126,7 @@ module read_output
     end subroutine close_file
 
     subroutine read_restart_file()
-      !< read the sub-directory log file in the restart folder
+      !< Read the sub-directory log file in the restart folder
       implicit none
       read(RESTART_FILE_UNIT, *) previous_flow_type
 

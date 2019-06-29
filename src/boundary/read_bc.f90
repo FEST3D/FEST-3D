@@ -152,7 +152,7 @@ module read_bc
 
     
     subroutine fill_fixed_values()
-      !< fill the Fixed_var array with with free-stream value
+      !< Fill the Fixed_var array with with free-stream value
       !< or default values.
       implicit none
       integer :: count

@@ -1,8 +1,8 @@
   !< Calculate Cell-center and normal through them for transition model
 module CC
   !< In order to calculate pressure gradient in the transition model, two
-  !< quantities are required, the distance of the cell-center from the wall 
-  !< the normal made the distance vector (from wall to cell-center).
+  !< quantities are required: the distance of the cell-center from the wall 
+  !< andn the normal made by the distance vector field (from wall to cell-center).
   !< This module calucate both with gradient of V.n also.
 
 #include "debug.h"
@@ -64,7 +64,7 @@ module CC
 
 
     subroutine destroyCC()
-      !< Deallocate memory from the cell-center variables.
+      !< Deallocate memory from the cell-center variables
       implicit none
 
       DebugCall("Destroy CC")

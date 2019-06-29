@@ -1,6 +1,7 @@
     !< Higher face state reconstuction method: WENO for non uniform grids
 module weno_NM
-    !< Reference: 2 Huang, W. F., Ren, Y. X., and Jiang, X., 
+    !<
+    !<Reference: 2 Huang, W. F., Ren, Y. X., and Jiang, X., 
     !<“A simple algorithm to improve the performance of the WENO scheme on non-uniform grids,” 
     !<Acta Mechanica Sinica/Lixue Xuebao, 2017, pp. 1–11.
     !-----------------------------------------------------------------

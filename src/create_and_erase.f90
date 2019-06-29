@@ -133,7 +133,7 @@ module create_and_erase
 
 
       subroutine destroy_all()
-          !< free memory and free pointers
+          !< Free memory and free pointers
           implicit none
           
           call dmsg(1, 'create_erase', 'destroy_all')

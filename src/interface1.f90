@@ -37,11 +37,11 @@ module interface1
 #include "mpi.inc"
   private
   integer :: ibuf_size
-  !< size of the buffer for I face interface
+  !< Size of the buffer for I face interface
   integer :: jbuf_size
-  !< size of the buffer for J face interface
+  !< Size of the buffer for J face interface
   integer :: kbuf_size
-  !< size of the buffer for K face interface
+  !< Size of the buffer for K face interface
   real, dimension(:), allocatable :: imin_send_buf
   !< Array to store data to send data for Imin face
   real, dimension(:), allocatable :: jmin_send_buf
@@ -74,7 +74,7 @@ module interface1
   contains
 
     subroutine setup_interface()
-      !< allocate memory for the data communication between processors
+      !< Allocate memory for the data communication between processors
       implicit none
       character(len=*), parameter :: &
         errmsg="module: interface, subrouinte setup"
@@ -97,7 +97,7 @@ module interface1
 
 
     subroutine destroy_interface()
-      !< deallocate all the memory being used  for data communication between processors
+      !< Deallocate all the memory being used  for data communication between processors
       implicit none
       call dealloc(imin_send_buf)
       call dealloc(jmin_send_buf)

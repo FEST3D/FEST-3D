@@ -29,7 +29,7 @@ module FT_bc
       !< Apply flow tangency boundary condition
       implicit none
       character(len=*), intent(in) :: face
-      !< face over which flow tangency condition has to be applied
+      !< Face over which flow tangency condition has to be applied
       real :: dot1
       real :: dot2
       real :: dot3

@@ -30,7 +30,7 @@ module sa_gradients
   contains
 
     subroutine setup_sa_grad()
-      !< setup Pointer to the main array which stores gradient 
+      !< Setup Pointer to the main array which stores gradient 
       !< all variables with x, y, z
 
       implicit none
@@ -46,7 +46,7 @@ module sa_gradients
 
 
     subroutine destroy_sa_grad()
-      !< nullify all the gradient pointer setup for k-kL model
+      !< Nullify all the gradient pointer setup for k-kL model
 
       implicit none
 

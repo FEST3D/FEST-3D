@@ -1,8 +1,8 @@
     !< Flux splitting scheme: SLAU
 module slau
-    !< 1 Shima, E., and Kitamura, K., “Parameter-Free Simple
-    !<  Low-Dissipation AUSM-Family Scheme for All Speeds,” 
-    !< AIAA Journal, vol. 49, Aug. 2011, pp. 1693–1709.
+    !< Shima, E., and Kitamura, K., “Parameter-Free Simple
+    !< Low-Dissipation AUSM-Family Scheme for All Speeds,” 
+    !< AIAA Journal, vol. 49, pp. 1693–1709, 2011
     !-------------------------------------------------------------------
     
     use global_vars, only : imx
@@ -41,7 +41,7 @@ module slau
     real, public, dimension(:, :, :, :), allocatable, target :: residue
     !< Store residue at each cell-center
     real, dimension(:, :, :, :), pointer :: flux_p
-    !< pointer/alias for the either F, G, or H
+    !< Pointer/alias for the either F, G, or H
 
     ! Public members
     public :: setup_scheme
@@ -96,7 +96,7 @@ module slau
             character, intent(in) :: f_dir
             !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
-            !< integer for DO loop
+            !< Integer for DO loop
             integer :: i_f, j_f, k_f 
             !< Flags to determine face direction
             real, dimension(:, :, :), pointer :: fA, nx, ny, nz
@@ -116,7 +116,7 @@ module slau
             real :: vtface
             real :: mass
             real :: HL, HR 
-            !< enthalpy
+            !< Enthalpy
             real :: uL, uR
             !< X-component of velocity
             real :: vL, vR
@@ -124,13 +124,13 @@ module slau
             real :: wL, wR
             !< Z-component of velocity
             real :: pL, pR
-            !< pressure
+            !< Pressure
             real :: rL, rR
             !< Density
             real :: cL, cR
-            !< speed sound left/right
+            !< Speed sound left/right
             real :: C
-            !< speed of sound at face
+            !< Speed of sound at face
             real :: ML, MR
             !< Mach number left/right
             real :: VnL, VnR

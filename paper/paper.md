@@ -70,10 +70,10 @@ Most of the user inputs can easily be specified  in the first few lines of autom
 |TurbulenceLimiter | '1 1 1' or '0 0 0' | Switch for limiters when used for higher-order face-state reconstruction of turbulent variables; 1->on  and 0-> off|
 |TurbulenceModel | 'none', 'sa', 'sst', or 'sst2003' |  Turbulence model|
 |TransitionModel | 'none', 'bc', 'lctm2015' |  Transition model|
-|TimeStep | 'l' or 'g <optional time step>' | Time-step for time-integration. 'l' for local and 'g' for global. In case of using a global method, you can provide the exact value of time step here.|
+|TimeStep | 'l' or 'g <optional time step>' | Time-step for time-integration. 'l' for local and 'g' for global. In case of using a global method, you can provide the exact value of time step here|
 |TimeIntegration | 'none', 'RK2', 'RK4', 'TVDRK2', 'TVDRK3', 'implicit', or 'plusgs' | Method for time-integration|
-|HigherOrderBC | 0 or 1 |  Higher-order symmetry boundary condition.  1->on  and 0-> off.|
-|NumberOfVariables | 5 | Total number of variables to solve. This number is not used in current version of solver.|
+|HigherOrderBC | 0 or 1 |  Higher-order symmetry boundary condition.  1->on  and 0-> off|
+|NumberOfVariables | 5 | Total number of variables to solve. This number is not used in current version of solver|
 |DensityInf | Real Number | Free-stream density |
 |UInf | Real Number | Free-stream x-component of velocity|
 |VInf | Real Number | Free-stream y-component of velocity|
@@ -86,11 +86,11 @@ Most of the user inputs can easily be specified  in the first few lines of autom
 |ViscosityLaw | 'sutherland_law' or 'constant' |  Method used for viscosity calculation|
 |ReferenceTemp | Real Number | Reference temperature for viscosity calculation usiing Sutherland's law|
 |SutherlandTemp | Real Number | Sutherland temperature|
-|PrandtlNumbers | Two real numbers | Prandtl number and turbulent Prandtl number|check - just 'Prandtl number' or 'laminar Prandtl number'
+|PrandtlNumbers | Two real numbers | Prandtl number and turbulent Prandtl number|
 |SpecificHeatRatio | Real number | Specific heat ratio|
 |GasConstant | Real | Specific gas Constant|
-|OutputControl['Out'] | [ "Velocity" , "Density" , "Pressure" , "Mu" , "Mu_t" , "TKE" , "Omega" , "kL" , "tv" , "Wall_distance" , "Resnorm"]| Variables to write in the output file. Specify the only the ones required. You do not need to specify the entire list.|
-|OutputControl['In'] | ["Velocity" ,"Density" ,"Pressure" ,"viscosity" ,"TKE" ,"Omega" ,"kL" ,"tv"]  | Variables to read in case of restrart. Specify all the variable in the restart file.|
+|OutputControl['Out'] | [ "Velocity" , "Density" , "Pressure" , "Mu" , "Mu_t" , "TKE" , "Omega" , "kL" , "tv" , "Wall_distance" , "Resnorm"]| Variables to write in the output file. Specify the only the ones required. You do not need to specify the entire list|
+|OutputControl['In'] | ["Velocity" ,"Density" ,"Pressure" ,"viscosity" ,"TKE" ,"Omega" ,"kL" ,"tv"]  | Variables to read in case of restrart. Specify all the variable in the restart file|
 |ResidualControl['Out'] | Expected inputs are from the list of "Tolerance" variables| Residual to write in the resnorm file. Specify only the ones you want to write and you do not need to specify the entire list|
 |BoundaryConditions | [-3, -4, -5, -8, -6, -6]  where <-1:'SUPERSONIC INFLOW (DIRICHLET)', -2:'SUPERSONIC OUTFLOW (EXTRAPOLATION)', -3:'SUBSONIC INFLOW (MASS-FLOW RATE FIXED)', -4:'SUBSONIC OUTFLOW (PRESSURE FIXED)', -5:'WALL (NO SLIP)', -6:'SYMMETRY', -7:'POLE', -8:'FAR-FIELD', -11:'TOTAL INLET'> | Boundary conditions used for the six face of a block|
 

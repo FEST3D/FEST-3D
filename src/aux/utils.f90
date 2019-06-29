@@ -70,10 +70,10 @@ module utils
             character(len=*), optional :: method
             !< Subroutine or function name
             character(len=*), optional :: msg
-            !< message to print
+            !< Message to print
             character(len=256)         :: ifmsg   
             integer :: level
-            !< the message's debug level
+            !< The message's debug level
            
 !            if (process_id == 0) then
             if (level < DEBUG_LEVEL) then

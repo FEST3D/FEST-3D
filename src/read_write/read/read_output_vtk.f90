@@ -1,6 +1,6 @@
-  !< read the restart file in the vtk format
+  !< Read the restart file in the vtk format
 module read_output_vtk
-  !< read the restart file in the vtk format
+  !< Read the restart file in the vtk format
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
@@ -79,7 +79,7 @@ module read_output_vtk
   contains
 
     subroutine read_file()
-      !< read all the variable for the vtk restart file
+      !< Read all the variable for the vtk restart file
       implicit none
       integer :: n
 
@@ -128,7 +128,7 @@ module read_output_vtk
     end subroutine read_file
 
     subroutine read_header()
-      !< skip read the header in the vtk file
+      !< Skip read the header in the vtk file
       implicit none
 
       call dmsg(1, 'read_output_vtk', 'read_header')
@@ -142,7 +142,7 @@ module read_output_vtk
     end subroutine read_header
 
     subroutine read_grid()
-      !< skip the grid read in the restart file
+      !< Skip the grid read in the restart file
       implicit none
 
       ! read grid point coordinates
@@ -161,7 +161,7 @@ module read_output_vtk
     end subroutine read_grid
 
     subroutine read_velocity()
-      !< read velocity vector from the vtk file
+      !< Read velocity vector from the vtk file
       implicit none
 
       call dmsg(1, 'read_output_vtk', 'read_velocity')
@@ -200,7 +200,7 @@ module read_output_vtk
     end subroutine read_scalar
 
     subroutine skip_scalar()
-      !< skip read scalar from the vtk file
+      !< Skip read scalar from the vtk file
       implicit none
 
       call dmsg(1, 'read_output_vtk', "skip_scalar")

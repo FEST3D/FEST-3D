@@ -1,6 +1,6 @@
-  !< VTK module to write the solution in the vtk format
+  !< Vtk module to write the solution in the vtk format
 module write_output_vtk
-  !< VTK module to write the solution in the vtk format
+  !< Vtk module to write the solution in the vtk format
   !---------------------------------------------------------
   ! This module write state + other variable in output file
   !---------------------------------------------------------
@@ -103,7 +103,7 @@ module write_output_vtk
   contains
 
     subroutine write_file()
-      !< Write the header and variables in the file "process_xx.dat".
+      !< Write the header and variables in the file "process_xx.dat"
       implicit none
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
@@ -335,7 +335,7 @@ module write_output_vtk
     end subroutine write_grid
 
     subroutine write_velocity()
-      !< write the velocity vector in the output file
+      !< Write the velocity vector in the output file
       implicit none
       DebugCall("write_velocity")
 
@@ -370,7 +370,7 @@ module write_output_vtk
     end subroutine write_velocity
 
     subroutine write_resnorm()
-      !< write the residual information in the output file
+      !< Write the residual information in the output file
       implicit none
 
       DebugCall("write_resnorm")
@@ -479,7 +479,7 @@ module write_output_vtk
 
 
     subroutine write_scalar(var, name, index)
-      !< write the scalar variable in the output file
+      !< Write the scalar variable in the output file
       implicit none
       integer, intent(in) :: index
       real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var

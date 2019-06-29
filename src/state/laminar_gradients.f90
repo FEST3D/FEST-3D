@@ -64,6 +64,7 @@ module laminar_gradients
 
 
     subroutine destroy_laminar_grad()
+      !< Unlink the laminar gradient pointers
 
       implicit none
 

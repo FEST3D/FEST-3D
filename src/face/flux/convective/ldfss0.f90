@@ -1,6 +1,9 @@
-    !< flux-splitting scheme: LDFSS
-module ldfss0
     !< Flux-splitting scheme: LDFSS
+module ldfss0
+    !<
+    !< Reference: Edwards, J.R., A low-diffusion flux-splitting scheme 
+    !< for Navier-Stokes calculations, Computers & Fluids, vol. 26,
+    !< no. 6, pp.635-659, 1997
     !-------------------------------------------------------------------
 
     use global_vars, only : imx
@@ -36,7 +39,7 @@ module ldfss0
     real, public, dimension(:, :, :, :), allocatable, target :: residue
     !< Store residue at each cell-center
     real, dimension(:, :, :, :), pointer :: flux_p
-    !< pointer/alias for the either F, G, or H
+    !< Pointer/alias for the either F, G, or H
 
     ! Public members
     public :: setup_scheme

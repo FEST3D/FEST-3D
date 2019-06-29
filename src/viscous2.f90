@@ -166,8 +166,8 @@ module viscous
     subroutine compute_viscous_fluxes_laminar(F, direction)
       !< Compute viscous fluxes for first five Navier-Stokes equation
       implicit none
-      character(len=*), intent(in) :: direction !< face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
+      character(len=*), intent(in) :: direction !< Face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
       ! local variables
       real :: dudx, dudy, dudz
       real :: dvdx, dvdy, dvdz
@@ -522,8 +522,8 @@ module viscous
     subroutine compute_viscous_fluxes_kkl(F, direction)
       !< Compute viscous fluxes for additianal equations due to k-kL turbulence model
       implicit none
-      character(len=*), intent(in) :: direction !< face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
+      character(len=*), intent(in) :: direction !< Face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
       ! local variables
       real :: tkface
       real :: rhoface
@@ -669,8 +669,8 @@ module viscous
     subroutine compute_viscous_fluxes_sa(F, direction)
       !< Compute viscous fluxes for additianal equations due to SA turbulence model
       implicit none
-      character(len=*), intent(in) :: direction !< face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
+      character(len=*), intent(in) :: direction !< Face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
       ! local variables
       real :: rhoface
       real :: normal_comp
@@ -785,8 +785,8 @@ module viscous
     subroutine compute_viscous_fluxes_lctm2015(F, direction)
       !< Compute viscous fluxes for additianal equations due to LCTM2015 transition model
       implicit none
-      character(len=*), intent(in) :: direction !< face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
+      character(len=*), intent(in) :: direction !< Face direction
+      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
       ! local variables
       real :: rhoface
       real :: normal_comp

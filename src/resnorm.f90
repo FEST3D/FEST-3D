@@ -1,4 +1,4 @@
-  !< this module contains subroutine that 
+  !< This module contains subroutine that 
   !< 1. check if time for resnorm dump is arrived
   !< 2. calculate resnorm
   !< 3. send those resnorm to processor number 0
@@ -6,7 +6,7 @@
   !<    availble from all processors
   !< 5. Append the data to resnorm file
 module resnorm
-  !< this module contains subroutine that 
+  !< This module contains subroutine that 
   !< 1. check if time for resnorm dump is arrived
   !< 2. calculate resnorm
   !< 3. send those resnorm to processor number 0
@@ -71,7 +71,7 @@ module resnorm
   contains
 
     subroutine setup_resnorm()
-      !< allocate memory, setup scale and file to write
+      !< Allocate memory, setup scale and file to write
       implicit none
       call allocate_memory()
       call setup_scale()
@@ -94,14 +94,14 @@ module resnorm
     end subroutine find_resnorm
 
     subroutine destroy_resnorm()
-      !< deallocate memory and close residual file
+      !< Deallocate memory and close residual file
       implicit none
       call deallocate_memory()
       call close_file(RESNORM_FILE_UNIT)
     end subroutine destroy_resnorm
 
     subroutine setup_file()
-      !< open the residual file to write
+      !< Open the residual file to write
       implicit none
       integer :: i
       if(process_id==0)then
@@ -119,7 +119,7 @@ module resnorm
     end subroutine setup_file
 
     subroutine allocate_memory()
-      !< allocate memory to MPI Communication
+      !< Allocate memory to MPI Communication
       implicit none
       call alloc(Res_abs  , 0,n_var)
       call alloc(Res_rel  , 0,n_var)
@@ -226,7 +226,7 @@ module resnorm
     end subroutine get_relative_resnorm
 
     subroutine write_resnorm()
-      !< writing the residual in the file to save.
+      !< Writing the residual in the file to save.
       implicit none
       integer :: i
       integer :: n=6

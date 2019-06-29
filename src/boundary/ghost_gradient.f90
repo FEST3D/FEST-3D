@@ -44,7 +44,7 @@ module ghost_gradients
   contains
 
     subroutine apply_gradient_bc()
-      !< call same subroutine for all the face
+      !< Call same subroutine for all the face
       implicit none
 
       call dmsg(1,'ghost_gradients', 'apply_gradient_bc')

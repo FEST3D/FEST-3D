@@ -152,7 +152,7 @@ module read
 
 
       subroutine read_controls()
-        !< read control.md file
+        !< Read control.md file
         !---------------------------------------------
         implicit none
         character(len=STRING_BUFFER_LENGTH) :: buf
@@ -237,7 +237,7 @@ module read
 
 
       subroutine read_scheme()
-        !< read fvscheme.md control file
+        !< Read fvscheme.md control file
         !--------------------------------------------
         implicit none
         character(len=STRING_BUFFER_LENGTH) :: buf
@@ -315,7 +315,7 @@ module read
       end subroutine read_scheme
 
       subroutine read_flow()
-        !< read flow.md control file
+        !< Read flow.md control file
         !--------------------------------------------
         implicit none
 
@@ -418,7 +418,7 @@ module read
         
 
       subroutine read_output_control()
-        !< read output_contorl.md file
+        !< Read output_contorl.md file
         implicit none
         integer           :: i
         character(len=64) :: buf
@@ -518,7 +518,7 @@ module read
         !< Get number of variables between two curly braces
         implicit none
         integer, intent(in) :: handler
-        !< file handler from which list number is extracted
+        !< File handler from which list number is extracted
         integer, intent(out) :: count
         !< Extracted count
         integer :: skip

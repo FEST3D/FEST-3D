@@ -37,9 +37,9 @@ module dump_solution
   implicit none
   private
   character(len=FILE_NAME_LENGTH) :: dump_dirname
-  !< name(check point number) of the directory to create
+  !< Name(check point number) of the directory to create
   character(len=FILE_NAME_LENGTH) :: purge_dirname
-  !< name(check point number) of the directory to remove
+  !< Name(check point number) of the directory to remove
 
   public :: checkpoint
 
@@ -114,7 +114,7 @@ module dump_solution
     end subroutine make_dump_dir
 
     subroutine dump_data()
-      !< call to write save files in the directory
+      !< Call to write save files in the directory
       implicit none
 !      character(len=FILE_NAME_LENGTH) :: filename
 
@@ -127,8 +127,8 @@ module dump_solution
     end subroutine dump_data
 
     subroutine write_restart_log()
-      !< call to write log file in the subdirectory "restart". 
-      !< It is useful information while restarting the solver. 
+      !< Call to write log file in the subdirectory "restart". 
+      !< It is useful information while restarting the solver
       implicit none
       open(RESTART_FILE_UNIT, file=restartfile)
       select case (turbulence)
@@ -147,7 +147,7 @@ module dump_solution
     end subroutine write_restart_log
 
     subroutine write_initial_resnorm()
-      !< writing Initial resnorom in the log file to 
+      !< Writing Initial resnorom in the log file to 
       !< maintian continuity of resnorm while restrarting
       implicit none
       write(RESTART_FILE_UNIT, '(I0)')    current_iter+last_iter

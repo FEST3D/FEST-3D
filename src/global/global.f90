@@ -62,7 +62,7 @@ module global
     integer, parameter ::     RESTART_FILE_UNIT = 39
     !< Handler for Restart file in Restart folder. eg: time_directories/0001/Restart/process_00
     integer, parameter ::       OUTIN_FILE_UNIT = 40
-    !< Handler for file which control which variables will be read or stored. system/output_control.md
+    !< Handler for file which controls what variables will be read or stored. system/output_control.md
     integer, parameter ::         MAP_FILE_UNIT = 41
     !< Handler for input multi-block mapping file with index and direction.
     integer, parameter ::    PERIODIC_FILE_UNIT = 42
@@ -90,13 +90,13 @@ module global
     character(len=*), Parameter :: wall_dist_file='distance.vtk'
     !< FILENAME string: Wall distance for debug-- not in use anymore
     character(len=*), parameter :: res_control_file='system/res_control.md'
-    !< FILENAME string: Residual equation control file
+    !< FILENAME string: Residual write control file
     character(len=*), parameter :: resnorm_file='time_directories/aux/resnorm'
     !< FILENAME string: Residual output file
     character(len=*), parameter :: stop_file='system/stopfile'
     !< FILENAME string: Halt/stop file
     character(len=*), parameter :: mapfile='system/mesh/layout/mapping.txt'
-    !< FILENAME string: Multiblock detailed mapping file with indicies and direction information at interface
+    !< FILENAME string: Detailed multiblock mapping file with indicies and direction information at interface
     character(len=*), parameter :: periodicfile='system/mesh/layout/periodic.txt'
     !< FILENAME string: Multiblock periodic boundary condition detials
 

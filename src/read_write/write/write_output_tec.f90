@@ -325,7 +325,7 @@ module write_output_tec
     end subroutine write_header
 
     subroutine write_grid()
-      !< write the grid information in the output file
+      !< Write the grid information in the output file
       implicit none
 
       ! write grid point coordinates
@@ -337,7 +337,7 @@ module write_output_tec
     end subroutine write_grid
 
     subroutine write_scalar(var, name, index)
-      !< write the scalar variable in the output file
+      !< Write the scalar variable in the output file
       implicit none
       integer, intent(in) :: index
       real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var

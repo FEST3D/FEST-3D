@@ -4,7 +4,7 @@ module boundary_state_reconstruction
   !< face state reconstruction method. Since the limited information
   !< is available at the boundaries, the boundary face is limiter to 
   !< 3rd order accurate and is reconstructed using MUSCL Scheme even when
-  !< rest of the domain is using WENO or PPM.
+  !< rest of the domain is using WENO or PPM
   use utils,                only: dmsg
 !  use grid,                 only: imx, jmx, kmx
   use global_vars,          only: imx
@@ -34,7 +34,7 @@ module boundary_state_reconstruction
   private
 
   integer :: ppm_flag=0
-  !< flag to check if reconstruction is required
+  !< Flag to check if reconstruction is required
   integer :: switch_L=1
   !< Limiter switch
   public :: reconstruct_boundary_state
@@ -42,7 +42,7 @@ module boundary_state_reconstruction
   contains
 
     subroutine reconstruct_boundary_state(interpolant)
-      !< call reconstruction based on the flag and boundary condition.
+      !< Call reconstruction based on the flag and boundary condition
 
       implicit none
       character(len=*), intent(in)  :: interpolant

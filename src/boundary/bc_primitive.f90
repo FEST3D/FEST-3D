@@ -88,7 +88,7 @@ module bc_primitive
   private
 
   integer                        :: face_num
-  !< number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
+  !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
 
   public :: populate_ghost_primitive
 
@@ -98,7 +98,7 @@ module bc_primitive
     subroutine populate_ghost_primitive()
       !< Populate the state variables in the ghost cell
       !< with particular value based on the boundary conditio 
-      !< being applied at that face.
+      !< being applied at that face
       implicit none
       integer :: i
       character(len=4) :: face
@@ -178,7 +178,7 @@ module bc_primitive
 
 
       subroutine supersonic_inlet(face)
-        !< Supersonic inlet boundary condition. 
+        !< Supersonic inlet boundary condition
         !< All the values of state variables are fixed
         implicit none
         character(len=*), intent(in) :: face
@@ -221,7 +221,7 @@ module bc_primitive
       subroutine supersonic_outlet(face)
         !< Supersonic outlet boundary condition. 
         !< All the values of state variables are copied 
-        !< from inside the domain.
+        !< from inside the domain
         implicit none
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
@@ -259,7 +259,7 @@ module bc_primitive
         !< Subsonic inlet boundary condition. 
         !< All the state variables's value expect pressure
         !< is fixed and pressure is copied from inside the 
-        !< domain.
+        !< domain
         implicit none
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
@@ -302,7 +302,7 @@ module bc_primitive
         !< Subsonic outlet boundary condition. 
         !< All the state variables's value expect pressure
         !< is copied from the inside of the domain and pressure 
-        !< is fixed.
+        !< is fixed
         implicit none
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
@@ -350,7 +350,7 @@ module bc_primitive
 
       subroutine slip_wall(face)
         !< Slip wall boundary condition. 
-        !< Maintain flow tangency.
+        !< Maintain flow tangency
         implicit none
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
@@ -383,7 +383,7 @@ module bc_primitive
 
 
       subroutine pole(face)
-        !< boundary condition for the block face
+        !< Boundary condition for the block face
         !< with zero area; turning into a pole
         implicit none
         character(len=*), intent(in) :: face
@@ -464,7 +464,7 @@ module bc_primitive
 
       subroutine no_slip(face)
         !< No-slip wall boundary condition. All the 
-        !< component of velocity throught face is zero.
+        !< component of velocity throught face is zero
         implicit none
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
@@ -610,7 +610,7 @@ module bc_primitive
     end subroutine check_if_value_fixed
 
     subroutine far_field(face)
-      !< Far-field Riemann boundary condition.
+      !< Far-field Riemann boundary condition
       implicit none
       character(len=*) :: face
       real :: cinf, cexp   ! speed of sound
@@ -1752,7 +1752,7 @@ module bc_primitive
 
     subroutine temp_based_density(temperature, face)
       !< Specify the density in the ghost cell based on the
-      !< temperature on the wall. Isothermal or adiabatic.
+      !< temperature on the wall. Isothermal or adiabatic
       implicit none
       real, dimension(1:6)     , intent(in)  :: temperature
       character(len=*)         , intent(in)  :: face
@@ -1920,7 +1920,7 @@ module bc_primitive
 
     subroutine periodic_bc(face)
       !< Single block periodic boundary condition.
-      !< Not to be used for multiblock boundary condition.
+      !< Not to be used for multiblock boundary condition
       implicit none
       character(len=*), intent(in) :: face
 

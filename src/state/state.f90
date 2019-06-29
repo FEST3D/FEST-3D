@@ -287,7 +287,7 @@ module state
             !< This subroutine should be run before the state variables
             !< are initilized. This subroutine allocates the memory for 
             !< state variables and sets up the aliases to refer to the 
-            !< components of the state.
+            !< components of the state
             !-----------------------------------------------------------
 
             implicit none
@@ -308,7 +308,7 @@ module state
             !< Destroy the state module.
             !< This subroutine destroys the state module which includes
             !< unlinking the aliases for the state components and 
-            !< deallocating the memory held by the state variables. 
+            !< deallocating the memory held by the state variables
             !-----------------------------------------------------------
 
             implicit none
@@ -417,7 +417,7 @@ module state
             !< Initialize the state.
             !< If load file(start_from) is 0, then the state should be 
             !< set to the infinity values. Otherwise, read the state_file
-            !< to get the state values.
+            !< to get the state values
             !-----------------------------------------------------------
 
             implicit none
@@ -464,7 +464,7 @@ module state
 
 
         subroutine init_state_with_infinity_values()
-            !< Initialize the state based on the infinity values.
+            !< Initialize the state based on the infinity values
             !-----------------------------------------------------------
             
             implicit none
@@ -482,7 +482,7 @@ module state
 
         subroutine set_n_var_value()
           !< Set number of variable to solver for based on
-          !< the tubulence and transition model being used.
+          !< the tubulence and transition model being used
           implicit none
 
           DebugCall("set_n_var_value")

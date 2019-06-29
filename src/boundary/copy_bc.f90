@@ -25,9 +25,9 @@ module copy_bc
       !< Copy 1 layer of interior cell to first ghost cell layer
       implicit none
       character(len=*), intent(in) :: face
-      !< Face over which boundary condition is being called.
+      !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
-      !< type of copy: flat, symmetry, anti-symmetry
+      !< Type of copy: flat, symmetry, anti-symmetry
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
       !< Varible over which these operation has to be performed
       real :: a2=1
@@ -64,9 +64,9 @@ module copy_bc
       !< Copy 3 layer of interior cell to three ghost cell layer
       implicit none
       character(len=*), intent(in) :: face
-      !< Face over which boundary condition is being called.
+      !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
-      !< type of copy: flat, symmetry, anti-symmetry
+      !< Type of copy: flat, symmetry, anti-symmetry
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
       !< Varible over which these operation has to be performed
 

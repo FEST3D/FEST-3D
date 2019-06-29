@@ -31,7 +31,7 @@ module bitwise
     contains
 
         function int4_and_int4(a, b) result(r)
-          !< bitwise 'AND' over two integer of kind 4
+          !< Bitwise 'AND' over two integer of kind 4
             implicit none
             integer(kind=4), intent(in) :: a
             integer(kind=4), intent(in) :: b
@@ -40,7 +40,7 @@ module bitwise
         end function int4_and_int4
 
         function int8_and_int8(a, b) result(r)
-          !< bitwise 'AND' over two integer of kind 8
+          !< Bitwise 'AND' over two integer of kind 8
             implicit none
             integer(kind=8), intent(in) :: a
             integer(kind=8), intent(in) :: b
@@ -49,7 +49,7 @@ module bitwise
         end function int8_and_int8
 
         function int4_or_int4(a, b) result(r)
-          !< bitwise 'OR' over two integer of kind 4
+          !< Bitwise 'OR' over two integer of kind 4
             implicit none
             integer(kind=4), intent(in) :: a
             integer(kind=4), intent(in) :: b
@@ -58,7 +58,7 @@ module bitwise
         end function int4_or_int4
 
         function int4_1D_or_int4_1D(a, b) result(r)
-          !< bitwise 'OR' over two 1D integer array of kind 4
+          !< Bitwise 'OR' over two 1D integer array of kind 4
             implicit none
             integer(kind=4), dimension(:), intent(in) :: a
             integer(kind=4), dimension(:), intent(in) :: b
@@ -71,7 +71,7 @@ module bitwise
         end function int4_1D_or_int4_1D
 
         function int4_1D_or_int4(a, b) result(r)
-          !< bitwise 'OR' over one 1D integer array and integer of kind 4
+          !< Bitwise 'OR' over one 1D integer array and integer of kind 4
             implicit none
             integer(kind=4), dimension(:), intent(in) :: a
             integer(kind=4), intent(in) :: b
@@ -85,7 +85,7 @@ module bitwise
         end function int4_1D_or_int4
 
         function int4_2D_or_int4_2D(a, b) result(r)
-          !< bitwise 'OR' over two 2D integer array of kind 4
+          !< Bitwise 'OR' over two 2D integer array of kind 4
             implicit none
             integer(kind=4), dimension(:, :), intent(in) :: a
             integer(kind=4), dimension(:, :), intent(in) :: b
@@ -102,7 +102,7 @@ module bitwise
         end function int4_2D_or_int4_2D
 
         function int4_2D_or_int4(a, b) result(r)
-          !< bitwise 'OR' over one 2D integer array and integer of kind 4
+          !< Bitwise 'OR' over one 2D integer array and integer of kind 4
             implicit none
             integer(kind=4), dimension(:, :), intent(in) :: a
             integer(kind=4), intent(in) :: b
@@ -119,7 +119,7 @@ module bitwise
         end function int4_2D_or_int4
 
         function int8_or_int8(a, b) result(r)
-          !< bitwise 'OR' over two integer of kind 8
+          !< Bitwise 'OR' over two integer of kind 8
             implicit none
             integer(kind=8), intent(in) :: a
             integer(kind=8), intent(in) :: b

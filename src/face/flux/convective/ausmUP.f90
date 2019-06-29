@@ -1,8 +1,9 @@
     !< Flux splitting scheme: AUSM+-UP
 module ausmUP
+    !<
     !< Reference: Liou, M. S., “A sequel to AUSM, Part II: 
     !< AUSM+-up for all speeds,” Journal of Computational Physics, 
-    !< vol. 214, 2006, pp. 137–170.
+    !< vol. 214, 2006, pp. 137–170
     !-------------------------------------------------------------------
     
     use global_vars, only : imx
@@ -43,7 +44,7 @@ module ausmUP
     real, public, dimension(:, :, :, :), allocatable, target :: residue
     !< Store residue at each cell-center
     real, dimension(:, :, :, :), pointer :: flux_p
-    !< pointer/alias for the either F, G, or H
+    !< Pointer/alias for the either F, G, or H
 
     ! Public members
     public :: setup_scheme
@@ -98,7 +99,7 @@ module ausmUP
             character, intent(in) :: f_dir
             !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
-            !< integer for DO loop
+            !< Integer for DO loop
             integer :: i_f, j_f, k_f
             !< Flags to determine face direction
             real, dimension(:, :, :), pointer :: fA, nx, ny, nz
@@ -111,7 +112,7 @@ module ausmUP
             real :: pbar
             real :: mass
             real :: HL, HR 
-            !< enthalpy
+            !< Enthalpy
             real :: uL, uR
             !< X-component of velocity
             real :: vL, vR
@@ -119,13 +120,13 @@ module ausmUP
             real :: wL, wR
             !< Z-component of velocity
             real :: pL, pR
-            !< pressure
+            !< Pressure
             real :: rL, rR
             !< Density
             real :: cL, cR
-            !< speed sound left/right
+            !< Speed sound left/right
             real :: C
-            !< speed of sound at face
+            !< Speed of sound at face
             real :: ML, MR
             !< Mach number left/right
             real :: VnL, VnR

@@ -1,7 +1,7 @@
-  !< allocate memory to laminar gradients if flow is viscous and
+  !< Allocate memory to laminar gradients if flow is viscous and
   !< allocate memory to tubulence gradients base upon the model being used
 module gradients
-  !< allocate memory to laminar gradients if flow is viscous and
+  !< Allocate memory to laminar gradients if flow is viscous and
   !< allocate memory to tubulence gradients base upon the model being used
   !------------------------------------------------------------------
   ! 170509  Jatinder Pal Singh Sandhu
@@ -63,10 +63,10 @@ module gradients
         call get_n_grad()
         call allocate_memory()
 
-        ! linking pointer to laminar gradients
+        ! Linking pointer to laminar gradients
         call setup_laminar_grad()
 
-        ! linking pointer to turbulent gradients
+        ! Linking pointer to turbulent gradients
         select case (trim(turbulence))
           
           case('none')
@@ -216,7 +216,7 @@ module gradients
 
 
     subroutine allocate_memory()
-      !< allocating memory to the gradient variable being used
+      !< Allocating memory to the gradient variable being used
 
       implicit none
 
@@ -231,7 +231,7 @@ module gradients
 
 
     subroutine destroy_memory()
-      !< deallocate memeory from the gradient variables
+      !< Deallocate memeory from the gradient variables
 
       implicit none
 

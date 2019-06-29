@@ -1,6 +1,8 @@
-    !< The AUSM flux-splitting scheme
+    !< Flux splitting scheme: AUSM
 module ausm
-    !< The AUSM flux-splitting scheme
+    !<
+    !< Reference: Liou, M.S. and Steffen Jr, C.J., A new flux splitting scheme, 
+    !< Journal of Computational physics, vol. 107, no. 1, pp.23-39, 1993
     !-------------------------------------------------------------------
     
     use global_vars, only : imx
@@ -40,7 +42,7 @@ module ausm
     real, public, dimension(:, :, :, :), allocatable, target :: residue
     !< Store residue at each cell-center
     real, dimension(:, :, :, :), pointer :: flux_p
-    !< pointer/alias for the either F, G, or H
+    !< Pointer/alias for the either F, G, or H
 
     ! Public members
     public :: setup_scheme
@@ -87,7 +89,7 @@ module ausm
 
         subroutine compute_flux(f_dir)
           !< A generalized subroutine to calculate
-          !< flux through the input direction, :x,y, or z
+          !< flux through the input-argument direction, :x,y, or z
           !< which corresponds to the I,J, or K direction respectively
           !------------------------------------------------------------
 

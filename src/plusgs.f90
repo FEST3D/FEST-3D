@@ -2,9 +2,10 @@
   !<  maxtrix-free implicit time-integration method
   !<  for low speed flows
 module plusgs
-  !< Preconditioned LU-SGS scheme
-  !<  maxtrix-free implicit time-integration method
-  !<  for low speed flows
+  !<
+  !< Reference: Kitamura, K., Shima, E., Fujimoto, K. and Wang, Z.J.,
+  !< Performance of low-dissipation Euler fluxes and preconditioned LU-SGS 
+  !< at low speeds, Communications in Computational Physics, vol. 10 no. 1, pp.90-119, 2011
   !-----------------------------------------------
   use global_kkl , only : cphi1
   use global_kkl , only : cphi2
@@ -145,23 +146,23 @@ module plusgs
 
 
   real, dimension(:,:,:,:), allocatable :: delQ
-  !< change of state variable (solution) over one time-step
+  !< Change of state variable (solution) over one time-step
   real, dimension(:,:,:,:), allocatable :: delQstar
   !< Intermediate change of state variable over one time-step
   real, dimension(:,:,:), allocatable, target :: dummy
-  !< dummy variable
+  !< Dummy variable
   real, dimension(:,:,:), pointer :: tmu
-  !< Pionter to turbulent viscosity
+  !< Pointer to turbulent viscosity
   real, dimension(:,:,:), pointer :: mmu
   !< Pointer to molecular viscosity
 
   !parallel communication
   integer :: ibuf_size
-  !< size of the buffer for I face interface
+  !< Size of the buffer for I face interface
   integer :: jbuf_size
-  !< size of the buffer for J face interface
+  !< Size of the buffer for J face interface
   integer :: kbuf_size
-  !< size of the buffer for K face interface
+  !< Size of the buffer for K face interface
   real, dimension(:), allocatable :: imin_send_buf
   !< Array to store data to send data for Imin face
   real, dimension(:), allocatable :: jmin_send_buf
@@ -194,7 +195,7 @@ module plusgs
   contains
 
     subroutine setup_plusgs()
-      !< allocate array memory for data communication
+      !< Allocate array memory for data communication
       implicit none
       character(len=*), parameter :: &
         errmsg="module: LUSGS, subrouinte setup"
@@ -236,7 +237,7 @@ module plusgs
     end subroutine setup_plusgs
 
     subroutine destroy_plusgs()
-      !< unallocate the memory required by LU-SGS module
+      !< Unallocate the memory required by LU-SGS module
       implicit none
       call dealloc(imin_send_buf)
       call dealloc(jmin_send_buf)
@@ -663,7 +664,7 @@ module plusgs
 
 
     function Flux(ql, qr, du, inputs)
-      !< calculate the total flux through face for laminar flow.
+      !< Calculate the total flux through face for laminar flow.
       !--------------------------------------
       ! calculate the total flux through face
       !---------------------------------------
@@ -1342,7 +1343,7 @@ module plusgs
 
 
     function SSTFlux(ql, qr, du, inputs)
-      !< calculate the total flux through face for turbulent flow (SST)
+      !< Calculate the total flux through face for turbulent flow (SST)
       !--------------------------------------
       ! calculate the total flux through face
       !---------------------------------------
@@ -2041,7 +2042,7 @@ module plusgs
 
 
     function SAFlux(ql, qr, du, inputs)
-      !< calculate the total flux through face for turbulent flow (SA)
+      !< Calculate the total flux through face for turbulent flow (SA)
       !--------------------------------------
       ! calculate the total flux through face
       !---------------------------------------
@@ -2696,7 +2697,7 @@ module plusgs
     end subroutine update_lctm2015
 
     function lctm2015flux(ql, qr, du, inputs)
-      !< calculate the total flux through face for turbulent/transition flow (LCTM2015)
+      !< Calculate the total flux through face for turbulent/transition flow (LCTM2015)
       !--------------------------------------
       ! calculate the total flux through face
       !---------------------------------------
@@ -2882,6 +2883,7 @@ module plusgs
 
 
     subroutine apply_interface(qp, layers)
+      !< Apply inter-block interface boundary condition
       implicit none
       integer, intent(in):: layers
       real, dimension(0:imx,0:jmx,0:kmx,1:n_var), intent(inout):: qp
@@ -3168,6 +3170,7 @@ module plusgs
     end subroutine apply_interface
 
     subroutine apply_periodic_bc(qp, layers)
+      !< Apply periodic boundary condition
       implicit none
       integer, intent(in) :: layers
       real, dimension(0:imx,0:jmx,0:kmx,1:n_var), intent(inout) :: qp

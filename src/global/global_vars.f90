@@ -16,8 +16,8 @@ module global_vars
 
   ! Parallel processig variables
   integer :: total_process      !< Total number of process to be used for computation
-  integer :: total_entries      !< total enteries in layout.md for each processor
-  integer :: process_id         !< id no. of each processor assinged by MPICH library
+  integer :: total_entries      !< Total enteries in layout.md for each processor
+  integer :: process_id         !< Id no. of each processor assinged by MPICH library
   integer :: imin_id            !< Boundary condition number/ID at imin for particulat processor
   integer :: imax_id            !< Boundary condition number/ID at imax for particulat processor
   integer :: jmin_id            !< Boundary condition number/ID at jmin for particulat processor
@@ -32,7 +32,7 @@ module global_vars
   integer :: start_from=0            !< Number of the folder (in time_directories) to load stored state from to restart computation
   integer :: checkpoint_iter=0       !< Write interval for output file. Number of iteration after which solver will dump/store a state in a folder in time_directories
   integer :: checkpoint_iter_count=0 !< Counter of folder number to write in time_directories/
-  integer :: current_iter=0          !< current iteration number
+  integer :: current_iter=0          !< Current iteration number
 
   !write controls
   integer :: r_count=0                               !< Number of variable to read from the restart file
@@ -40,7 +40,7 @@ module global_vars
   integer :: res_write_interval                      !< Write resnorm after every "res_write_interval" iteration
   integer :: purge_write                             !< Remove unwanted folder. If Purge_write=2, latest two folder in time_direcotires are kept and 0=no purge
   integer :: last_iter=0                             !< Last iteration that is stored in the restart file
-  integer :: write_percision=6                       !< number of place after decimal. Only used for resnorm file
+  integer :: write_percision=6                       !< Number of place after decimal. Only used for resnorm file
   character(len=FORMAT_LENGTH):: write_data_format   !< write data type. Either ASCII or BINARY
   character(len=FORMAT_LENGTH):: write_file_format   !< Write file type. Either vtk or tecplot
   character(len=FORMAT_LENGTH)::  read_data_format='ASCII'   !< Read data type in file. Either ASCII or BINARY
@@ -61,14 +61,14 @@ module global_vars
 
   !solver time secific
   character                                 :: time_stepping_method  !< Either local time stepping or global time stepping
-  character(len=INTERPOLANT_NAME_LENGTH)    :: time_step_accuracy    !< Type of time_integration scheme: RK4, none(firt order explicit) implicit, 
-  real                                      :: global_time_step      !< value of global time step to march the solution with
-  real, dimension(:, :, :), allocatable     :: delta_t               !< local time increment value at each cell center.
-  real                                      :: sim_clock             !< Simluation clock time.
+  character(len=INTERPOLANT_NAME_LENGTH)    :: time_step_accuracy    !< Type of time_integration scheme: RK4, none(firt order explicit) implicit,
+  real                                      :: global_time_step      !< Value of global time step to march the solution with
+  real, dimension(:, :, :), allocatable     :: delta_t               !< Local time increment value at each cell center
+  real                                      :: sim_clock             !< Simluation clock time
 
   !scheme
-  character(len=SCHEME_NAME_LENGTH) :: scheme_name         !< flux Scheme to use: ausm, ldfss0, vanleer, ausmup, ausmp, slau
-  character(len=INTERPOLANT_NAME_LENGTH) :: interpolant    !< face state reconstruction  method to user: muscl, ppm, none, weno, 
+  character(len=SCHEME_NAME_LENGTH) :: scheme_name         !< Flux Scheme to use: ausm, ldfss0, vanleer, ausmup, ausmp, slau
+  character(len=INTERPOLANT_NAME_LENGTH) :: interpolant    !< Face state reconstruction  method to user: muscl, ppm, none, weno, and wenoNM
 
   !solution specific (used for Ranga_kutta_4th order)
   real, dimension(:, :, :, :), allocatable  :: qp_n
@@ -78,35 +78,35 @@ module global_vars
 
   ! state variables viscous
   integer                                           :: n_var=5
-   !< number of variable to solve for
+   !< Number of variable to solve for
   real, dimension(:, :, :, :), allocatable, target  :: qp           
    !< Store primitive variable at cell center
   real, dimension(:)         , allocatable, target  :: qp_inf       
    !< Store primitive variable at infinity  
   real, dimension(:, :, :)                , pointer :: density      
-   !< rho pointer, point to slice of qp (:,:,:,1)
+   !< Rho pointer, point to slice of qp (:,:,:,1)
   real, dimension(:, :, :)                , pointer :: x_speed      
-   !< u pointer, point to slice of qp (:,:,:,2) 
+   !< U pointer, point to slice of qp (:,:,:,2) 
   real, dimension(:, :, :)                , pointer :: y_speed      
-   !< v pointer, point to slice of qp (:,:,:,3) 
+   !< V pointer, point to slice of qp (:,:,:,3) 
   real, dimension(:, :, :)                , pointer :: z_speed      
-   !< w pointer, point to slice of qp (:,:,:,4)
+   !< W pointer, point to slice of qp (:,:,:,4)
   real, dimension(:, :, :)                , pointer :: pressure     
    !< P pointer, point to slice of qp (:,:,:,5)
   real                                    , pointer :: density_inf  
-   !< rho pointer, point to slice of qp_inf (1)
+   !< Rho pointer, point to slice of qp_inf (1)
   real                                    , pointer :: x_speed_inf  
-   !< u pointer, point to slice of qp_inf (2)
+   !< U pointer, point to slice of qp_inf (2)
   real                                    , pointer :: y_speed_inf  
-   !< v pointer, point to slice of qp_inf (3)
+   !< V pointer, point to slice of qp_inf (3)
   real                                    , pointer :: z_speed_inf  
-   !< w pointer, point to slice of qp_inf (4)
+   !< W pointer, point to slice of qp_inf (4)
   real                                    , pointer :: pressure_inf 
-   !< p pointer, point to slice of qp_inf (5)
+   !< P pointer, point to slice of qp_inf (5)
   real                                              :: MInf
    !< Free-stream Mach number
   real, dimension(:, :, :), allocatable, target  :: intermittency
-   !< intermiitency pointer
+   !< Intermiitency pointer
   real, dimension(:, :, :), allocatable, target  :: ExtraVar1
    !< Extravar1 used only for debuging or store some sepcial kind of compination of other varialbes
   real, dimension(:, :, :), allocatable, target  :: ExtraVar2
@@ -120,39 +120,39 @@ module global_vars
 
   ! Freestram variable used to read file before inf pointer are linked and allocated
   real                                              :: free_stream_density  
-   !< read freestream Density from control file
+   !< Read freestream Density from control file
   real                                              :: free_stream_x_speed  
-   !< read freestream U from control file
+   !< Read freestream U from control file
   real                                              :: free_stream_y_speed  
-   !< read freestream V from control file
+   !< Read freestream V from control file
   real                                              :: free_stream_z_speed  
-   !< read freestream W from control file
+   !< Read freestream W from control file
   real                                              :: free_stream_pressure 
-   !< read freestream Pressure from control file
+   !< Read freestream Pressure from control file
   real                                              :: free_stream_tk       
-   !< read freestream turbulent kinetic energy rate from control file
+   !< Read freestream turbulent kinetic energy rate from control file
   real                                              :: free_stream_tw       
-   !< read freestream turbulent dissipation rate from control file
+   !< Read freestream turbulent dissipation rate from control file
   real                                              :: free_stream_te
-   !< read freestream turbulent dissipation from control file
+   !< Read freestream turbulent dissipation from control file
   real                                              :: free_stream_tv
-   !< read freestream turbulent viscosity(SA) from control file
+   !< Read freestream turbulent viscosity(SA) from control file
   real                                              :: free_stream_tkl
-   !< read freestream kL variable from control file
+   !< Read freestream kL variable from control file
   real                                              :: free_stream_tu
-   !< read freestream turbulence intensity (percentage) from control file
+   !< Read freestream turbulence intensity (percentage) from control file
   real                                              :: free_stream_tgm
-   !< read freestream turbulence intermittency from control file
+   !< Read freestream turbulence intermittency from control file
   real                                              :: vel_mag
-   !< calulated freestream Velocity Magnitude from control file
+   !< Calulated freestream Velocity Magnitude from control file
   real                                              :: Reynolds_number 
-   !< calculated free_stream Reynolds_number
+   !< Calculated free_stream Reynolds_number
   real                                              :: mu_ratio_inf 
-   !< read freestream turbulent viscosity to molecular viscosity ratio
+   !< Read freestream turbulent viscosity to molecular viscosity ratio
   real                                              :: Turb_intensity_inf 
-   !< calculate free_stream turbulence intensity 
+   !< Calculate free_stream turbulence intensity 
   real, dimension(:, :, :), allocatable             :: dist 
-   !< store wall distance for each cell center
+   !< Store wall distance for each cell center
   real, dimension(:, :, :), allocatable             :: CCnormalX 
    !< Cell-Center normal nx with respect to wall; used for transition model (pressure gradient calcualtion)
   real, dimension(:, :, :), allocatable             :: CCnormalY
@@ -160,13 +160,13 @@ module global_vars
   real, dimension(:, :, :), allocatable             :: CCnormalZ
    !< Cell-Center normal nz with respect to wall; used for transiton model (pressure gradient calculation)
   real, dimension(:, :, :), allocatable             :: CCVn 
-  !< store value at Cell-Center of dot product between velocity vector and cell-center normal. {vec(Velocity).normal}
+  !< Store value at Cell-Center of dot product between velocity vector and cell-center normal. {vec(Velocity).normal}
   real, dimension(:, :, :), allocatable             :: DCCVnX
-  !< store Derivative of Cell-Center CCVn with respect to x
+  !< Store Derivative of Cell-Center CCVn with respect to x
   real, dimension(:, :, :), allocatable             :: DCCVnY
-  !< store Derivative of Cell-Center CCVn with respect to y
+  !< Store Derivative of Cell-Center CCVn with respect to y
   real, dimension(:, :, :), allocatable             :: DCCVnZ
-  !< store Derivative of Cell-Center CCVn with respect to z
+  !< Store Derivative of Cell-Center CCVn with respect to z
 
   ! state variable turbulent
   integer                                           :: sst_n_var=2 
@@ -174,17 +174,17 @@ module global_vars
 !  real, dimension(:, :, :, :), allocatable, target  :: tqp       !< turbulent primitive
 !  real, dimension(:)         , allocatable, target  :: tqp_inf   !< turbulent primitive at inf
   real, dimension(:, :, :)                , pointer :: tk        !< TKE/mass
-  real, dimension(:, :, :)                , pointer :: tw        !< omega
+  real, dimension(:, :, :)                , pointer :: tw        !< Omega
   real, dimension(:, :, :)                , pointer :: te        !< Dissipation
-  real, dimension(:, :, :)                , pointer :: tv        !< sa visocity
+  real, dimension(:, :, :)                , pointer :: tv        !< SA visocity
   real, dimension(:, :, :)                , pointer :: tkl       !< KL K-KL method
-  real, dimension(:, :, :)                , pointer :: tgm       !< intermittency of LCTM2015
+  real, dimension(:, :, :)                , pointer :: tgm       !< Intermittency of LCTM2015
   real                                    , pointer :: tk_inf    !< TKE/mass at inf
-  real                                    , pointer :: tw_inf    !< omega at inf
-  real                                    , pointer :: te_inf    !< dissipation at inf
+  real                                    , pointer :: tw_inf    !< Omega at inf
+  real                                    , pointer :: te_inf    !< Dissipation at inf
   real                                    , pointer :: tv_inf    !< SA viscosity at inf
   real                                    , pointer :: tkl_inf   !< kl at inf
-  real                                    , pointer :: tgm_inf   !< intermittency at inf
+  real                                    , pointer :: tgm_inf   !< Intermittency at inf
 
   ! residue variables
   real, dimension(:, :, :, :)             , pointer :: F_p
@@ -217,12 +217,12 @@ module global_vars
    !< Store nut equation(SA model) residual at each cell-center
 
   ! thermal properties
-  real                                              :: gm    !< gamma commonly 1.4
-  real                                              :: R_gas !< univarsal gas constant
+  real                                              :: gm    !< Gamma commonly 1.4
+  real                                              :: R_gas !< Univarsal gas constant
   
   ! Transport properties
   real                                              :: mu_ref 
-  !< molecular viscoity reference
+  !< Molecular viscoity reference
   character(len=FILE_NAME_LENGTH)                   :: mu_variation
   !< Type of viscosity variaiton: Sutherland or constant
 
@@ -263,65 +263,65 @@ module global_vars
    !< Store Transition model name
   
   real, dimension(:, :, :), allocatable, target     :: mu
-   !< cell-center molecular viscosity
+   !< Cell-center molecular viscosity
   real, dimension(:, :, :), allocatable, target     :: mu_t
-   !< cell-center turbulent viscosity
+   !< Cell-center turbulent viscosity
   real, dimension(:, :, :)              , pointer   :: sst_mu
-   !< pointer to  turbulent viscosity for SST turbulence model
+   !< Pointer to  turbulent viscosity for SST turbulence model
   real, dimension(:, :, :)              , pointer   :: kkl_mu
-   !< pointer to  turbulent viscosity for KKL turbulence model
+   !< Pointer to  turbulent viscosity for KKL turbulence model
   real, dimension(:, :, :)              , pointer   :: sa_mu
-   !< pointer to  turbulent viscosity for SA turbulence model
+   !< Pointer to  turbulent viscosity for SA turbulence model
 
   !residual specific
   character(len=STATE_NAME_LENGTH), dimension(:), allocatable :: Res_list
-  integer            :: Res_count       !< no of variable to save
-  integer            :: Res_itr=3       !< iteration to save
-  real, dimension(:), allocatable :: Res_abs       !< absolute value
-  real, dimension(:), allocatable :: Res_rel       !< relative value
-  real, dimension(:), allocatable :: Res_save      !< saved iteration for relative
-  real, dimension(:), allocatable :: Res_scale     !< scaling factor
-  real, pointer ::        resnorm     !<             residual normalized
+  integer            :: Res_count       !< No of variable to save
+  integer            :: Res_itr=3       !< Iteration to save
+  real, dimension(:), allocatable :: Res_abs       !< Absolute value
+  real, dimension(:), allocatable :: Res_rel       !< Relative value
+  real, dimension(:), allocatable :: Res_save      !< Saved iteration for relative
+  real, dimension(:), allocatable :: Res_scale     !< Scaling factor
+  real, pointer ::        resnorm     !<             Residual normalized
   real, pointer ::    vis_resnorm     !<  {rho+V+P} equation residual normalized
-  real, pointer ::   turb_resnorm     !<  turbulent residual normalized
-  real, pointer ::   cont_resnorm     !<  mass residual normalized
-  real, pointer ::  x_mom_resnorm     !<  x momentum residual normalized
+  real, pointer ::   turb_resnorm     !<  Turbulent residual normalized
+  real, pointer ::   cont_resnorm     !<  Mass residual normalized
+  real, pointer ::  x_mom_resnorm     !<  X momentum residual normalized
   real, pointer ::  y_mom_resnorm     !<  Y momentum residual normalized
   real, pointer ::  z_mom_resnorm     !<  Z momentum residual normalized
-  real, pointer :: energy_resnorm     !<  energy residual normalized
+  real, pointer :: energy_resnorm     !<  Energy residual normalized
   real, pointer ::    TKE_resnorm     !<  TKE residual normalized
-  real, pointer ::  omega_resnorm     !<  omega residual normalized
-  real, pointer ::        resnorm_d1  !<  residual normalized/same at iter 1
+  real, pointer ::  omega_resnorm     !<  Omega residual normalized
+  real, pointer ::        resnorm_d1  !<  Residual normalized/same at iter 1
   real, pointer ::    vis_resnorm_d1  !<  {rho+V+P}  residual normalized/same at iter 1
-  real, pointer ::   turb_resnorm_d1  !<  turbulent residual normalized/same at iter 1 
-  real, pointer ::   cont_resnorm_d1  !<  mass residual normalized/same at iter 1
-  real, pointer ::  x_mom_resnorm_d1  !<  x momentum residual normalized/same at iter 1
+  real, pointer ::   turb_resnorm_d1  !<  Turbulent residual normalized/same at iter 1 
+  real, pointer ::   cont_resnorm_d1  !<  Mass residual normalized/same at iter 1
+  real, pointer ::  x_mom_resnorm_d1  !<  X momentum residual normalized/same at iter 1
   real, pointer ::  y_mom_resnorm_d1  !<  Y momentum residual normalized/same at iter 1
   real, pointer ::  z_mom_resnorm_d1  !<  Z momentum residual normalized/same at iter 1
-  real, pointer :: energy_resnorm_d1  !<  energy residual normalized/same at iter 1
+  real, pointer :: energy_resnorm_d1  !<  Energy residual normalized/same at iter 1
   real, pointer ::    TKE_resnorm_d1  !<  TKE residual normalized/same at iter 1
-  real, pointer ::  omega_resnorm_d1  !<  omega residual normalized/same at iter 1
-  real          ::        resnorm_0   !<  residual normalized at iter 1
+  real, pointer ::  omega_resnorm_d1  !<  Omega residual normalized/same at iter 1
+  real          ::        resnorm_0   !<  Residual normalized at iter 1
   real          ::    vis_resnorm_0   !<  {rho+V+P}  residual normalized at iter 1
-  real          ::   turb_resnorm_0   !<  turbulent residual normalized at iter 1 
-  real          ::   cont_resnorm_0   !<  mass residual normalized at iter 1
-  real          ::  x_mom_resnorm_0   !<  x momentum residual normalized at iter 1
+  real          ::   turb_resnorm_0   !<  Turbulent residual normalized at iter 1 
+  real          ::   cont_resnorm_0   !<  Mass residual normalized at iter 1
+  real          ::  x_mom_resnorm_0   !<  X momentum residual normalized at iter 1
   real          ::  y_mom_resnorm_0   !<  Y momentum residual normalized at iter 1
   real          ::  z_mom_resnorm_0   !<  Z momentum residual normalized at iter 1
-  real          :: energy_resnorm_0   !<  energy residual normalized at iter 1
+  real          :: energy_resnorm_0   !<  Energy residual normalized at iter 1
   real          ::    TKE_resnorm_0   !<  TKE residual normalized at iter 1
-  real          ::  omega_resnorm_0   !<  omega residual normalized at iter 1
+  real          ::  omega_resnorm_0   !<  Omega residual normalized at iter 1
   !used for MPI manipulation
-  real          ::        resnorm_0s  !<  residual normalized at iter 1 
+  real          ::        resnorm_0s  !<  Residual normalized at iter 1 
   real          ::    vis_resnorm_0s  !<  {rho+V+P}  residual normalized at iter 1 
-  real          ::   turb_resnorm_0s  !<  turbulent residual normalized at iter 1  
-  real          ::   cont_resnorm_0s  !<  mass residual normalized at iter 1 
-  real          ::  x_mom_resnorm_0s  !<  x momentum residual normalized at iter 1 
+  real          ::   turb_resnorm_0s  !<  Turbulent residual normalized at iter 1  
+  real          ::   cont_resnorm_0s  !<  Mass residual normalized at iter 1 
+  real          ::  x_mom_resnorm_0s  !<  X momentum residual normalized at iter 1 
   real          ::  y_mom_resnorm_0s  !<  Y momentum residual normalized at iter 1 
   real          ::  z_mom_resnorm_0s  !<  Z momentum residual normalized at iter 1 
-  real          :: energy_resnorm_0s  !<  energy residual normalized at iter 1 
+  real          :: energy_resnorm_0s  !<  Energy residual normalized at iter 1 
   real          ::    TKE_resnorm_0s  !<  TKE residual normalized at iter 1 
-  real          ::  omega_resnorm_0s  !<  omega residual normalized at iter 1 
+  real          ::  omega_resnorm_0s  !<  Omega residual normalized at iter 1 
 
   ! grid variables
   integer                                 :: imx
@@ -336,7 +336,7 @@ module global_vars
   real, dimension(:, :, :), allocatable  :: grid_y
    !< Y corrdinate of the grid point
   real, dimension(:, :, :), allocatable  :: grid_z
-   !< z corrdinate of the grid point
+   !< Z corrdinate of the grid point
 
   ! geometry variables
   real, dimension(:, :, :,:), allocatable, target :: xn
@@ -386,7 +386,7 @@ module global_vars
   
 
   ! gradients
-  integer                                           :: n_grad=4 !< number of variable to store gradient for
+  integer                                           :: n_grad=4 !< Number of variable to store gradient for
   real, dimension(:, :, :, :), allocatable, target  :: gradqp_x !< Store gradient of n_grad variables with respect to direction x
   real, dimension(:, :, :, :), allocatable, target  :: gradqp_y !< Store gradient of n_grad variables with respect to direction y
   real, dimension(:, :, :, :), allocatable, target  :: gradqp_z !< Store gradient of n_grad variables with respect to direction z
@@ -435,11 +435,11 @@ module global_vars
   real, dimension(6) :: fixed_pressure = 0.
   !< Pressure value to fix at particular boundary
   real, dimension(6) :: fixed_x_speed  = 0.
-  !< x component of velocity to fix at particular boundary condition
+  !< X component of velocity to fix at particular boundary condition
   real, dimension(6) :: fixed_y_speed  = 0.
-  !< y component of velocity to fix at particular boundary condition
+  !< Y component of velocity to fix at particular boundary condition
   real, dimension(6) :: fixed_z_speed  = 0.
-  !< z component of velocity to fix at particular boundary condition
+  !< Z component of velocity to fix at particular boundary condition
   real, dimension(6) :: fixed_tk       = 0.
   !< Turbulent kinetic energy value to fix at particular boundary condition
   real, dimension(6) :: fixed_tw       = 0.

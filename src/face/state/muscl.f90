@@ -1,5 +1,10 @@
     !< Higher order face state reconstruction method: MUSCL. 
 module muscl
+    !<
+    !<Reference:Hirsch, C., Numerical computation of internal 
+    !<and external flows: The fundamentals of computational fluid 
+    !<dynamics, Elsevier, 2007
+    !<
     !< MUSCL (Monotone Upwing Schemes for Scalar Conservation Laws is
     !< a scheme which replaces the piecewise constant approximation by
     !< reconstructing the states at the left and right side of each face.

@@ -4,7 +4,7 @@ subroutine dealloc_rank1_real(var)
     real, dimension(:), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then
@@ -19,7 +19,7 @@ subroutine dealloc_rank2_real(var)
     real, dimension(:, :), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then
@@ -34,7 +34,7 @@ subroutine dealloc_rank3_real(var)
     real, dimension(:, :, :), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then
@@ -49,7 +49,7 @@ subroutine dealloc_rank4_real(var)
     real, dimension(:, :, :, :), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then
@@ -64,7 +64,7 @@ subroutine dealloc_rank5_real(var)
     real, dimension(:, :, :, :, :), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then
@@ -79,7 +79,7 @@ subroutine dealloc_rank6_real(var)
     real, dimension(:, :, :, :, :, :), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then
@@ -94,7 +94,7 @@ subroutine dealloc_rank1_integer(var)
     integer, dimension(:), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then
@@ -109,7 +109,7 @@ subroutine dealloc_rank2_integer(var)
     integer, dimension(:, :), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then
@@ -124,7 +124,7 @@ subroutine dealloc_rank3_integer(var)
     integer, dimension(:, :, :), intent(inout), allocatable :: var
     !< Variable to which memeory is deallocated
     integer :: mem_stat
-    !< status of the memory deallocation process
+    !< Status of the memory deallocation process
     if(allocated(var)) then
       deallocate(var, stat=mem_stat)
       if (mem_stat /= 0) then

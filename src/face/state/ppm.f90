@@ -1,8 +1,9 @@
     !< Higher order face state reconstruction method:PPM
 module ppm
-    !< PPM (Piecewise Parabolic Method) is an interpolation technique
-    !< which can be used to create higher order extensions of schemes
-    !< like the Van-Leer and LDFSS schemes.
+    !<
+    !<Reference: Colella, P. and Woodward, P.R., The piecewise 
+    !<parabolic method (PPM) for gas-dynamical simulations, Journal
+    !<of computational physics, vol. 54, no. 1, pp.174-201, 1984
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
@@ -176,7 +177,7 @@ module ppm
         end subroutine compute_face_estimates
 
         subroutine remove_extrema(f_dir)
-          !< Remove extrema for the state estimated
+          !< Remove extrema from the state estimated. 
           !< Limiting the value in case of PPM
 
             implicit none

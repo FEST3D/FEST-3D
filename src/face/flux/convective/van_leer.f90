@@ -1,5 +1,8 @@
+    !< Flux splitting scheme: AUSM+
 module van_leer
-    !< The Van-Leer scheme is a type of flux-splitting scheme
+    !<
+    !< Reference: Van Leer, B., Flux-vector splitting for the Euler equation. 
+    !< In Upwind and High-Resolution Schemes, Springer, Berlin, Heidelberg, pp. 80-89, 1997
     !-------------------------------------------------------------------
 
     use utils, only: alloc, dealloc, dmsg
@@ -43,6 +46,7 @@ module van_leer
     contains
 
         subroutine setup_scheme()
+          !< Allocate memory to the flux variables
 
             implicit none
 
@@ -64,6 +68,7 @@ module van_leer
         end subroutine setup_scheme
 
         subroutine destroy_scheme()
+          !< Deallocate memory
 
             implicit none
 
@@ -76,9 +81,14 @@ module van_leer
         end subroutine destroy_scheme
 
         subroutine compute_flux(f_dir)
+          !< A generalized subroutine to calculate
+          !< flux through the input-argument direction, :x,y, or z
+          !< which corresponds to the I,J, or K direction respectively
+          !------------------------------------------------------------
 
             implicit none
             character, intent(in) :: f_dir
+            !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
             integer :: i_f, j_f, k_f ! Flags to determine face direction
             real, dimension(:, :, :), pointer :: fA, nx, ny, nz
@@ -232,6 +242,7 @@ module van_leer
         end subroutine compute_flux
 
         subroutine compute_fluxes()
+          !< Call to compute fluxes throught faces in each direction
             
             implicit none
             

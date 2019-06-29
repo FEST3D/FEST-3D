@@ -1,6 +1,5 @@
   !< Matix-free time integration: LU-SGS
 module lusgs
-  !< Matix-free time integration: LU-SGS
   !< 
   !< Reference: Sharov, D., Luo, H., Baum, J., and Loehner, R., 
   !< “Implementation of unstructured grid GMRES+LU-SGS method on 

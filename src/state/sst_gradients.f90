@@ -44,7 +44,7 @@ module sst_gradients
   contains
 
     subroutine setup_sst_grad()
-      !< setup Pointer to the main array which stores gradient 
+      !< Setup Pointer to the main array which stores gradient 
       !< all variables with x, y, z
 
       implicit none
@@ -64,7 +64,7 @@ module sst_gradients
 
 
     subroutine destroy_sst_grad()
-      !< nullify all the gradient pointer setup for k-kL model
+      !< Nullify all the gradient pointer setup for k-kL model
       implicit none
 
       DebugCall('destroy_sst_grad')

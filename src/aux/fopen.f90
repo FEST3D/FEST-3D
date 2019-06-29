@@ -1,6 +1,6 @@
   !< Open all files required 
 module fopen
-  !< Open all files required by the solver. Input and auxillary file. 
+  !< Open all files required by the solver. Input and auxillary file
   !---------------------------------------------
   ! 17082  Jatinder Pal Singh Sandhu
   !  Aim : efficient open of files only with handler
