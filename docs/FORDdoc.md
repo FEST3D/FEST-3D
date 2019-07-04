@@ -63,7 +63,10 @@ User are requested to cite this reference for any research publications made usi
 
 
 @Bug
- - Halt/Stop condition does not work on MPI
+
+  - Halt/Stop condition does not work on MPI
+  - Can not run turublent flow simulation on Windows Subsystem for Linux (WSL) due to outdated OS and libraries used by WSL.
+
 @endbug
 
 @todo

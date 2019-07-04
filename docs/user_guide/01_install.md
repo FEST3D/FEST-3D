@@ -42,7 +42,7 @@ Here -j is a parallel building option that speeds up the building process. You c
 So, in summary, the following list of commands are required to build the executable
 ```
 $mkdir build && cd build
-$FC=mpif90 cmake ..
+$FC=mpif90.mpich cmake ..
 $make -j 4
 ```
 
