@@ -51,9 +51,11 @@ ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fort
 ### GENERAL FLAGS ###
 #####################
 
-# Don't add underscores in symbols for C-compatability
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-fno-underscoring")
+## Orignal intent: Don't add underscores in symbols for C-compatability
+## However, this following flag is not being used because 
+## of incomptibilty issue created for MacOSX
+#SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+#                 Fortran "-fno-underscoring")
 
 # There is some bug where -march=native doesn't work on Mac
 IF(APPLE)
