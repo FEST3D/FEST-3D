@@ -14,6 +14,7 @@ folder. This file contains information about the adjacent blocks and physical bo
 All the non-negative numbers in this file represent the interface boundary condition, and negative
 numbers represent the physical boundary conditions. For each block/process a row of information is 
 written: 
+
  1. Block number
  2. Grid file name in the __system/mesh/gridfile/__ directory
  3. Boundary condition file name in the __system/mesh/bc/__ directory

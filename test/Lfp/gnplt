@@ -1,0 +1,6 @@
+set term x11 1 noraise
+set logscale y
+set grid
+#set yrange [1e-8:1e3]
+plot for [col=2:4] 'time_directories/aux/resnorm' using 1:col with lines title columnheader
+pause 5; unset output; refresh; reread;

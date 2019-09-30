@@ -43,6 +43,9 @@ FEST-3D (Finite-volume Explicit STructured 3-Dimensional) is computational fluid
 ## Installation
 For installation instructions check out the [Documentation](./page/01_install.html) guide.
 
+## Steps to run FEST-3D 
+For detailed documentation on steps to run the FEST-3D after downlaod and installation, check out "[How to run FEST-3D](./page/04_Steps_to_run_FEST3D.html)" page.
+
 ## Tutorials
 For tutorials check out the [test_case](./page/05_tutorials/index.html) descriptions.
 
@@ -52,6 +55,9 @@ There are two separate GitHub repositories:<br>
 2. <a href="https://github.com/FEST3D/run" target="_blank">Run</a> directory, which contains the tutorials<br>
 The run directory is a submodule of the FEST-3D code.
 @endnote
+
+## Modules and Subroutines
+Although most of modules and subroutines are named such that its purpose is clear from its name, still more information is provided in [source File](./lists/files.html) and [Modules](./lists/modules.html) pages. Documentation of FEST-3D uses [Ford documentation generator](https://github.com/Fortran-FOSS-Programmers/ford) which generates documentation using the special comments written for each subroutine and module.
 
 ## License
 FEST-3D is an open-source software available under GNU General Public License v3.0
@@ -65,7 +71,7 @@ User are requested to cite this reference for any research publications made usi
 @Bug
 
   - Halt/Stop condition does not work on MPI
-  - Can not run turublent flow simulation on Windows Subsystem for Linux (WSL) due to outdated OS and libraries used by WSL.
+  - Can not run turbulent flow simulation on Windows Subsystem for Linux (WSL) due to outdated OS and libraries used by WSL.
 
 @endbug
 
