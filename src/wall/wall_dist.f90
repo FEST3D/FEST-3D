@@ -11,13 +11,10 @@ module wall_dist
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
+  use grid, only : point
   use global_vars, only : dist
 
   use utils, only: alloc, dealloc, dmsg
-!  use grid, only: imx,jmx, kmx, grid_x, grid_y, grid_z
 
   implicit none
   private
@@ -116,9 +113,9 @@ module wall_dist
             node_dist(i,j,k) = 1.e+20
             do n = 1,n_surfnodes
 
-            current_dist = sqrt((wall_x(n)-grid_x(i,j,k))**2&
-                               +(wall_y(n)-grid_y(i,j,k))**2&
-                               +(wall_z(n)-grid_z(i,j,k))**2&
+            current_dist = sqrt((wall_x(n)-point(i,j,k)%x)**2&
+                               +(wall_y(n)-point(i,j,k)%y)**2&
+                               +(wall_z(n)-point(i,j,k)%z)**2&
                                ) 
             node_dist(i,j,k) = min(node_dist(i,j,k),current_dist)
 

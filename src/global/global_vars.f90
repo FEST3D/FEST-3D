@@ -385,42 +385,6 @@ module global_vars
    !< Store the cell center of the ghost cell on 6 face
   
 
-  ! gradients
-  integer                                           :: n_grad=4 !< Number of variable to store gradient for
-  real, dimension(:, :, :, :), allocatable, target  :: gradqp_x !< Store gradient of n_grad variables with respect to direction x
-  real, dimension(:, :, :, :), allocatable, target  :: gradqp_y !< Store gradient of n_grad variables with respect to direction y
-  real, dimension(:, :, :, :), allocatable, target  :: gradqp_z !< Store gradient of n_grad variables with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradu_x  !< Gradient of variable U with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradu_y  !< Gradient of variable U with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradu_z  !< Gradient of variable U with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradv_x  !< Gradient of variable V with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradv_y  !< Gradient of variable V with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradv_z  !< Gradient of variable V with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradw_x  !< Gradient of variable W with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradw_y  !< Gradient of variable W with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradw_z  !< Gradient of variable W with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradT_x  !< Gradient of variable Temperature with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradT_y  !< Gradient of variable Temperature with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradT_z  !< Gradient of variable Temperature with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtk_x !< Gradient of variable turbulent kinetic energy with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtk_y !< Gradient of variable turbulent kinetic energy with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtk_z !< Gradient of variable turbulent kinetic energy with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtw_x !< Gradient of variable dissipation rate with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtw_y !< Gradient of variable dissipation rate with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtw_z !< Gradient of variable dissipation rate with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtkl_x!< Gradient of variable kL with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtkl_y!< Gradient of variable kL with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtkl_z!< Gradient of variable kL with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradte_x !< Gradient of variable turbulent energy dissiaption with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradte_y !< Gradient of variable turbulent energy dissiaption with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradte_z !< Gradient of variable turbulent energy dissiaption with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtv_x !< Gradient of variable turbulenct visocity(SA mode) with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtv_y !< Gradient of variable turbulenct visocity(SA mode) with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtv_z !< Gradient of variable turbulenct visocity(SA mode) with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtgm_x!< Gradient of variable intermittency with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtgm_y!< Gradient of variable intermittency with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtgm_z!< Gradient of variable intermittency with respect to direction z
-
   ! higher order boundary condtioion
   integer  :: accur=1                          !< Switch for higher order boundary condition
   character(len=4), dimension(6) :: face_names !< Store name of all six boundary faces

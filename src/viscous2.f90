@@ -37,33 +37,33 @@ module viscous
   use global_vars, only : tkl
   use global_vars, only : tv
   use global_vars, only : tgm
-  use global_vars, only : gradu_x
-  use global_vars, only : gradu_y
-  use global_vars, only : gradu_z
-  use global_vars, only : gradv_x
-  use global_vars, only : gradv_y
-  use global_vars, only : gradv_z
-  use global_vars, only : gradw_x
-  use global_vars, only : gradw_y
-  use global_vars, only : gradw_z
-  use global_vars, only : gradT_x
-  use global_vars, only : gradT_y
-  use global_vars, only : gradT_z
-  use global_vars, only : gradtk_x
-  use global_vars, only : gradtk_y
-  use global_vars, only : gradtk_z
-  use global_vars, only : gradtw_x
-  use global_vars, only : gradtw_y
-  use global_vars, only : gradtw_z
-  use global_vars, only : gradtkl_x
-  use global_vars, only : gradtkl_y
-  use global_vars, only : gradtkl_z
-  use global_vars, only : gradtv_x
-  use global_vars, only : gradtv_y
-  use global_vars, only : gradtv_z
-  use global_vars, only : gradtgm_x
-  use global_vars, only : gradtgm_y
-  use global_vars, only : gradtgm_z
+  use gradients  , only : gradu_x
+  use gradients  , only : gradu_y
+  use gradients  , only : gradu_z
+  use gradients  , only : gradv_x
+  use gradients  , only : gradv_y
+  use gradients  , only : gradv_z
+  use gradients  , only : gradw_x
+  use gradients  , only : gradw_y
+  use gradients  , only : gradw_z
+  use gradients  , only : gradT_x
+  use gradients  , only : gradT_y
+  use gradients  , only : gradT_z
+  use gradients  , only : gradtk_x
+  use gradients  , only : gradtk_y
+  use gradients  , only : gradtk_z
+  use gradients  , only : gradtw_x
+  use gradients  , only : gradtw_y
+  use gradients  , only : gradtw_z
+  use gradients  , only : gradtkl_x
+  use gradients  , only : gradtkl_y
+  use gradients  , only : gradtkl_z
+  use gradients  , only : gradtv_x
+  use gradients  , only : gradtv_y
+  use gradients  , only : gradtv_z
+  use gradients  , only : gradtgm_x
+  use gradients  , only : gradtgm_y
+  use gradients  , only : gradtgm_z
   use global_vars, only : mu
   use global_vars, only : mu_t
   use global_vars, only : kkl_mu

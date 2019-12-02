@@ -6,18 +6,18 @@ def GetFileNames(FileInput):
         try:
             with open(FileInput) as f:
                 LoadFiles = [line.strip() for line in f]
-                print "Files to Load:", '\n'.join(LoadFiles)
+                print("Files to Load:", '\n'.join(LoadFiles))
         except IOError as e:
-            print "unable to open file",FileInput
-            print "Either file doesn't exist", 
-            print " OR no read premissions"
+            print("unable to open file",FileInput)
+            print("Either file doesn't exist", )
+            print(" OR no read premissions")
     else:
         LoadFiles = ["../time_directories/"
                 +str(FileInput[0]).zfill(4)
                 +"/process_"+str(i).zfill(2)
                 +'.vtk' 
                 for i in range(FileInput[1])]
-        print "Files to Load:", '\n'.join(LoadFiles)
+        print("Files to Load:", '\n'.join(LoadFiles))
     return LoadFiles
         
 
@@ -39,11 +39,11 @@ def GetInputVarList(VarFile):
                 if(line.strip()=='}'):
                     break
                 VarList.append(line.strip())
-            print "Variable to Load:", '\n'.join(VarList)
+            print("Variable to Load:", '\n'.join(VarList))
     except IOError as e:
-        print "unable to open file", VarFile
-        print "Either file doesn't exist", 
-        print " OR no read premissions"
+        print("unable to open file", VarFile)
+        print("Either file doesn't exist", )
+        print(" OR no read premissions")
     return VarList
 
 

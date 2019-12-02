@@ -7,15 +7,13 @@ module wall
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
+  use grid, only : point
   use global_vars, only : process_id
   use global_vars, only : total_process
   use global_vars, only : id
 
   use string
-  use bitwise
+  !use bitwise
   use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
 
 #include "../error.inc"
@@ -309,9 +307,9 @@ module wall
           do j = jm,jx
             do i = im,ix 
               ind = ind + 1
-              wall_x(ind) = grid_x(i, j, k )        
-              wall_y(ind) = grid_y(i, j, k )        
-              wall_z(ind) = grid_z(i, j, k )        
+              wall_x(ind) = point(i, j, k )%x
+              wall_y(ind) = point(i, j, k )%y
+              wall_z(ind) = point(i, j, k )%z
               write(str(ind),'(3(f0.16, 4x))') wall_x(ind), wall_y(ind), wall_z(ind)
             end do
           end do

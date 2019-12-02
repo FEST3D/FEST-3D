@@ -95,6 +95,32 @@ module scheme
 
     include "turbulence_models/include/scheme/variable_deceleration.inc" 
 
+    type :: residual
+      real,  ::  residue
+    end type
+    type :: fluxLamComp
+      real ::  mass
+      real ::  xmom
+      real ::  ymom
+      real ::  zmom
+      real ::  energy
+    end type fluxLamComp
+
+    type, extends (fluxLamComp) :: fluxkwComp
+      real :: tke
+      real :: omega
+    end type fluxkwComp
+
+    type, extends (fluxLamComp) :: fluxSAComp
+      real :: tv
+    end type fluxSAComp
+
+    type, extends (fluxkwComp) :: fluxkwGammaComp
+      real :: tgm
+    end type fluxkwGammaComp
+      
+
+
     ! Public members
     public :: scheme_name
     public :: setup_scheme

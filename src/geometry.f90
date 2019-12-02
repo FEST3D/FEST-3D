@@ -8,9 +8,7 @@ module geometry
     use global_vars, only : imx
     use global_vars, only : jmx
     use global_vars, only : kmx
-    use global_vars, only : grid_x
-    use global_vars, only : grid_y
-    use global_vars, only : grid_z
+    use grid, only : point
 
     use global_vars, only : xn           !face unit norm x
     use global_vars, only : yn           !face unit norm y
@@ -309,12 +307,12 @@ module geometry
             do k = -2, kmx+2
              do j = -2, jmx+2
               do i = -2, imx+3
-                d1x = grid_x(i, j+1, k+1) - grid_x(i, j, k)
-                d1y = grid_y(i, j+1, k+1) - grid_y(i, j, k)
-                d1z = grid_z(i, j+1, k+1) - grid_z(i, j, k)
-                d2x = grid_x(i, j, k+1) - grid_x(i, j+1, k)
-                d2y = grid_y(i, j, k+1) - grid_y(i, j+1, k)
-                d2z = grid_z(i, j, k+1) - grid_z(i, j+1, k)
+                d1x = point(i, j+1, k+1)%x - point(i, j, k)%x
+                d1y = point(i, j+1, k+1)%y - point(i, j, k)%y
+                d1z = point(i, j+1, k+1)%z - point(i, j, k)%z
+                d2x = point(i, j, k+1)%x - point(i, j+1, k)%x
+                d2y = point(i, j, k+1)%y - point(i, j+1, k)%y
+                d2z = point(i, j, k+1)%z - point(i, j+1, k)%z
                 xnx(i, j, k) = 0.5 * (d1y*d2z - d1z*d2y)
                 xny(i, j, k) = 0.5 * (d1z*d2x - d1x*d2z)
                 xnz(i, j, k) = 0.5 * (d1x*d2y - d1y*d2x)
@@ -326,12 +324,12 @@ module geometry
             do k = -2, kmx+2
              do j = -2, jmx+3
               do i = -2, imx+2
-               d1x = grid_x(i+1, j, k+1) - grid_x(i, j, k)
-               d1y = grid_y(i+1, j, k+1) - grid_y(i, j, k)
-               d1z = grid_z(i+1, j, k+1) - grid_z(i, j, k)
-               d2x = grid_x(i+1, j, k) - grid_x(i, j, k+1)
-               d2y = grid_y(i+1, j, k) - grid_y(i, j, k+1)
-               d2z = grid_z(i+1, j, k) - grid_z(i, j, k+1)
+               d1x = point(i+1, j, k+1)%x - point(i, j, k)%x
+               d1y = point(i+1, j, k+1)%y - point(i, j, k)%y
+               d1z = point(i+1, j, k+1)%z - point(i, j, k)%z
+               d2x = point(i+1, j, k)%x - point(i, j, k+1)%x
+               d2y = point(i+1, j, k)%y - point(i, j, k+1)%y
+               d2z = point(i+1, j, k)%z - point(i, j, k+1)%z
             
                ynx(i, j, k) = 0.5 * (d1y*d2z - d1z*d2y)
                yny(i, j, k) = 0.5 * (d1z*d2x - d1x*d2z)
@@ -344,12 +342,12 @@ module geometry
             do k = -2, kmx+3
              do j = -2, jmx+2
               do i = -2, imx+2
-               d1x = grid_x(i+1, j+1, k) - grid_x(i, j, k)
-               d1y = grid_y(i+1, j+1, k) - grid_y(i, j, k)
-               d1z = grid_z(i+1, j+1, k) - grid_z(i, j, k)
-               d2x = grid_x(i, j+1, k) - grid_x(i+1, j, k)
-               d2y = grid_y(i, j+1, k) - grid_y(i+1, j, k)
-               d2z = grid_z(i, j+1, k) - grid_z(i+1, j, k)
+               d1x = point(i+1, j+1, k)%x - point(i, j, k)%x
+               d1y = point(i+1, j+1, k)%y - point(i, j, k)%y
+               d1z = point(i+1, j+1, k)%z - point(i, j, k)%z
+               d2x = point(i, j+1, k)%x - point(i+1, j, k)%x
+               d2y = point(i, j+1, k)%y - point(i+1, j, k)%y
+               d2z = point(i, j+1, k)%z - point(i+1, j, k)%z
             
                znx(i, j, k) = 0.5 * (d1y*d2z - d1z*d2y)
                zny(i, j, k) = 0.5 * (d1z*d2x - d1x*d2z)
@@ -498,14 +496,14 @@ module geometry
                 do j = 0, jmx+0
                     do i = 0, imx+0
                         p_list(:, :) = 0.
-                        p_list(:, 1) = (/ grid_x(i,j,k), grid_y(i,j,k), grid_z(i,j,k) /)
-                        p_list(:, 2) = (/ grid_x(i+1,j,k), grid_y(i+1,j,k), grid_z(i+1,j,k) /)
-                        p_list(:, 3) = (/ grid_x(i+1,j+1,k), grid_y(i+1,j+1,k), grid_z(i+1,j+1,k) /)
-                        p_list(:, 4) = (/ grid_x(i,j+1,k), grid_y(i,j+1,k), grid_z(i,j+1,k) /)
-                        p_list(:, 5) = (/ grid_x(i,j,k+1), grid_y(i,j,k+1), grid_z(i,j,k+1) /)
-                        p_list(:, 6) = (/ grid_x(i+1,j,k+1), grid_y(i+1,j,k+1), grid_z(i+1,j,k+1) /)
-                        p_list(:, 7) = (/ grid_x(i+1,j+1,k+1), grid_y(i+1,j+1,k+1), grid_z(i+1,j+1,k+1) /)
-                        p_list(:, 8) = (/ grid_x(i,j+1,k+1), grid_y(i,j+1,k+1), grid_z(i,j+1,k+1) /)
+                        p_list(:, 1) = (/ point(i,j,k)%x, point(i,j,k)%y, point(i,j,k)%z /)
+                        p_list(:, 2) = (/ point(i+1,j,k)%x, point(i+1,j,k)%y, point(i+1,j,k)%z /)
+                        p_list(:, 3) = (/ point(i+1,j+1,k)%x, point(i+1,j+1,k)%y, point(i+1,j+1,k)%z /)
+                        p_list(:, 4) = (/ point(i,j+1,k)%x, point(i,j+1,k)%y, point(i,j+1,k)%z /)
+                        p_list(:, 5) = (/ point(i,j,k+1)%x, point(i,j,k+1)%y, point(i,j,k+1)%z /)
+                        p_list(:, 6) = (/ point(i+1,j,k+1)%x, point(i+1,j,k+1)%y, point(i+1,j,k+1)%z /)
+                        p_list(:, 7) = (/ point(i+1,j+1,k+1)%x, point(i+1,j+1,k+1)%y, point(i+1,j+1,k+1)%z /)
+                        p_list(:, 8) = (/ point(i,j+1,k+1)%x, point(i,j+1,k+1)%y, point(i,j+1,k+1)%z /)
                         volume(i, j, k) = (vol_hexahedron(p_list))
                         if(volume(i,j,k)<=0.0) then
                           if(i==0 .or. i==imx .or. j==0 .or. j==jmx .or. k==0 .or. k==kmx) then
@@ -553,34 +551,34 @@ module geometry
           do k = -2, kmx+2
             do j = -2, jmx+2
               do i = -2, imx+2
-                CellCenter(i,j,k,1) = 0.125 * ( grid_x(i  ,j  ,k  ) &
-                                              + grid_x(i+1,j  ,k  ) &
-                                              + grid_x(i+1,j+1,k  ) &
-                                              + grid_x(i+1,j+1,k+1) &
-                                              + grid_x(i+1,j  ,k+1) &
-                                              + grid_x(i  ,j+1,k  ) &
-                                              + grid_x(i  ,j+1,k+1) &
-                                              + grid_x(i  ,j  ,k+1) &
+                CellCenter(i,j,k,1) = 0.125 * ( point(i  ,j  ,k  )%x &
+                                              + point(i+1,j  ,k  )%x &
+                                              + point(i+1,j+1,k  )%x &
+                                              + point(i+1,j+1,k+1)%x &
+                                              + point(i+1,j  ,k+1)%x &
+                                              + point(i  ,j+1,k  )%x &
+                                              + point(i  ,j+1,k+1)%x &
+                                              + point(i  ,j  ,k+1)%x &
                                               )
 
-                CellCenter(i,j,k,2) = 0.125 * ( grid_y(i  ,j  ,k  ) &
-                                              + grid_y(i+1,j  ,k  ) &
-                                              + grid_y(i+1,j+1,k  ) &
-                                              + grid_y(i+1,j+1,k+1) &
-                                              + grid_y(i+1,j  ,k+1) &
-                                              + grid_y(i  ,j+1,k  ) &
-                                              + grid_y(i  ,j+1,k+1) &
-                                              + grid_y(i  ,j  ,k+1) &
+                CellCenter(i,j,k,2) = 0.125 * ( point(i  ,j  ,k  )%y &
+                                              + point(i+1,j  ,k  )%y &
+                                              + point(i+1,j+1,k  )%y &
+                                              + point(i+1,j+1,k+1)%y &
+                                              + point(i+1,j  ,k+1)%y &
+                                              + point(i  ,j+1,k  )%y &
+                                              + point(i  ,j+1,k+1)%y &
+                                              + point(i  ,j  ,k+1)%y &
                                               )
 
-                CellCenter(i,j,k,3) = 0.125 * ( grid_z(i  ,j  ,k  ) &
-                                              + grid_z(i+1,j  ,k  ) &
-                                              + grid_z(i+1,j+1,k  ) &
-                                              + grid_z(i+1,j+1,k+1) &
-                                              + grid_z(i+1,j  ,k+1) &
-                                              + grid_z(i  ,j+1,k  ) &
-                                              + grid_z(i  ,j+1,k+1) &
-                                              + grid_z(i  ,j  ,k+1) &
+                CellCenter(i,j,k,3) = 0.125 * ( point(i  ,j  ,k  )%z  &
+                                              + point(i+1,j  ,k  )%z  &
+                                              + point(i+1,j+1,k  )%z  &
+                                              + point(i+1,j+1,k+1)%z  &
+                                              + point(i+1,j  ,k+1)%z  &
+                                              + point(i  ,j+1,k  )%z  &
+                                              + point(i  ,j+1,k+1)%z  &
+                                              + point(i  ,j  ,k+1)%z  &
                                               )
               end do
             end do

@@ -11,19 +11,13 @@ grid.f90
 viscosity.f90 
 solver.f90 
 mapping.f90 
-summon_grad_evaluation.f90 
 update.f90 
 geometry.f90 
 main.f90 
 source.f90 
 CC.f90
 state/gradients.f90 
-state/laminar_gradients.f90 
-state/lctm2015_gradients.f90 
-state/sst_gradients.f90 
-state/sa_gradients.f90 
 state/state.f90 
-state/kkl_gradients.f90 
 global/global_vars.f90 
 global/global.f90 
 global/global_sa.f90 
@@ -33,7 +27,6 @@ boundary/copy_bc.f90
 boundary/FT_bc.f90 
 boundary/read_bc.f90 
 boundary/boundary_state_reconstruction.f90 
-boundary/ghost_gradient.f90 
 boundary/bc_primitive.f90 
 boundary/bc.f90 
 read_write/read/read_output_tec.f90 

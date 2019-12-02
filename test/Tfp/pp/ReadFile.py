@@ -99,9 +99,9 @@ class File:
                     LoadFiles = [line.strip() for line in f]
                     #print "Files to Load:", '\n'.join(LoadFiles)
             except IOError as e:
-                print "unable to open file",FileInput
-                print "Either file doesn't exist", 
-                print " OR no read premissions"
+                print("unable to open file",FileInput)
+                print("Either file doesn't exist", )
+                print(" OR no read premissions")
         else:
             LoadFiles = ["../time_directories/"
                     +str(FileInput[0]).zfill(4)
@@ -185,12 +185,12 @@ class InputControl:
 
 
     def Out(self):
-        print self.ControlDict
-        print self.SchemeDict
-        print self.FlowDict
-        print self.BCList
-        print self.VarList
-        print '\n'.join(self.ResnormValueList)
+        print(self.ControlDict)
+        print(self.SchemeDict)
+        print(self.FlowDict)
+        print(self.BCList)
+        print(self.VarList)
+        print('\n'.join(self.ResnormValueList))
 
 
     def ReadFile(self, File):
@@ -222,8 +222,8 @@ class InputControl:
                     VarList.append(line.strip())
                 #print "Variable to Load:", '\n'.join(VarList)
         except IOError as e:
-            print "unable to open file", VarFile
-            print "Either file doesn't exist", 
-            print " OR no read premissions"
+            print("unable to open file", VarFile)
+            print("Either file doesn't exist", )
+            print(" OR no read premissions")
         return VarList
 #------Control Class  end---------#

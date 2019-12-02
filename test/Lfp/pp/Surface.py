@@ -85,7 +85,7 @@ class Stress:
         except OSError:
             pass
         ExpectedDragCoeff = 0.00133
-        f = open('surfaceData.dat', 'ab')
+        f = open('surfaceData.dat', 'a')
         headerSurfaceData = "variables=X REX CF"
         f.write(headerSurfaceData+'\n')
         for block,  value in self.BCList.items():
@@ -143,15 +143,15 @@ class Stress:
                     np.savetxt(f, np.c_[x, Rex, cf_x], delimiter="  ")
         CD = sum(cd)/0.05
         Difference = np.abs((0.00133-CD)*100/0.00133)
-        print " ------ Laminar Test case: Flat plate ------ "
-        print " Flux Scheme        : "+ Input.SchemeDict['FluxScheme']
-        print " Higher order method: "+ Input.SchemeDict['FaceScheme']
-        print " Turbulence model   : "+ Input.SchemeDict['TurbulenceModel']
-        print " Expected drag coeffcient    : "+ "{:.3E}".format(0.00133)
-        print " Calculated drag coefficient : "+ "{:.3E}".format(CD)
-        print " Difference                  : "+ "{:.3E}".format(Difference) + " %"
-        print " Allowed Tolerance           : 1 %"
+        print(" ------ Laminar Test case: Flat plate ------ ")
+        print( " Flux Scheme        : "+ Input.SchemeDict['FluxScheme'])
+        print(" Higher order method: "+ Input.SchemeDict['FaceScheme'])
+        print(" Turbulence model   : "+ Input.SchemeDict['TurbulenceModel'])
+        print(" Expected drag coeffcient    : "+ "{:.3E}".format(0.00133))
+        print(" Calculated drag coefficient : "+ "{:.3E}".format(CD))
+        print(" Difference                  : "+ "{:.3E}".format(Difference) + " %")
+        print(" Allowed Tolerance           : 1 %")
         if Difference < 1:
-            print "------------ >>> Test Passed  <<< --------------"
+            print("------------ >>> Test Passed  <<< --------------")
         else:
-            print "------------ xxx Test Failed  xxx --------------"
+            print("------------ xxx Test Failed  xxx --------------")

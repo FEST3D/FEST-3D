@@ -45,24 +45,24 @@ module viscosity
   use global_sa    , only : cv1
 
   ! gradients
-  use global_vars, only : gradu_x
-  use global_vars, only : gradu_y
-  use global_vars, only : gradu_z 
-  use global_vars, only : gradv_x 
-  use global_vars, only : gradv_y
-  use global_vars, only : gradv_z
-  use global_vars, only : gradw_x
-  use global_vars, only : gradw_y
-  use global_vars, only : gradw_z
-  use global_vars, only : gradT_x
-  use global_vars, only : gradT_y
-  use global_vars, only : gradT_z
-  use global_vars, only : gradtk_x
-  use global_vars, only : gradtk_y
-  use global_vars, only : gradtk_z
-  use global_vars, only : gradtw_x
-  use global_vars, only : gradtw_y
-  use global_vars, only : gradtw_z
+  use gradients, only : gradu_x
+  use gradients, only : gradu_y
+  use gradients, only : gradu_z 
+  use gradients, only : gradv_x 
+  use gradients, only : gradv_y
+  use gradients, only : gradv_z
+  use gradients, only : gradw_x
+  use gradients, only : gradw_y
+  use gradients, only : gradw_z
+  use gradients, only : gradT_x
+  use gradients, only : gradT_y
+  use gradients, only : gradT_z
+  use gradients, only : gradtk_x
+  use gradients, only : gradtk_y
+  use gradients, only : gradtk_z
+  use gradients, only : gradtw_x
+  use gradients, only : gradtw_y
+  use gradients, only : gradtw_z
 
   use copy_bc       , only : copy1
 

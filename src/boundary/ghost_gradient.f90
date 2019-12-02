@@ -17,14 +17,14 @@ module ghost_gradients
   use global_vars, only : density
   use global_vars, only : pressure
   use global_vars, only : R_gas
-  use global_vars, only : n_grad
+  use gradients,  only : n_grad
   use global_vars, only : n_var
 
   ! state and gradients
   use global_vars, only : qp
-  use global_vars, only : gradqp_x
-  use global_vars, only : gradqp_y
-  use global_vars, only : gradqp_z
+  use gradients, only : gradqp_x
+  use gradients, only : gradqp_y
+  use gradients, only : gradqp_z
 
   ! layout boundary condition id for face
   use global_vars, only : imin_id

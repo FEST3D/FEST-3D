@@ -11,9 +11,6 @@ module weno_NM
     use global_vars, only : imx
     use global_vars, only : jmx
     use global_vars, only : kmx
-    use global_vars, only : grid_x
-    use global_vars, only : grid_y
-    use global_vars, only : grid_z
     use global_vars, only : volume
 
     use global_vars, only : qp

@@ -87,15 +87,15 @@ module lusgs
   use global_vars, only: residue
   use global_vars, only: mu_ref
 
-  use global_vars, only: gradu_x
-  use global_vars, only: gradu_y
-  use global_vars, only: gradu_z
-  use global_vars, only: gradv_x
-  use global_vars, only: gradv_y
-  use global_vars, only: gradv_z
-  use global_vars, only: gradw_x
-  use global_vars, only: gradw_y
-  use global_vars, only: gradw_z
+  use gradients  , only: gradu_x
+  use gradients  , only: gradu_y
+  use gradients  , only: gradu_z
+  use gradients  , only: gradv_x
+  use gradients  , only: gradv_y
+  use gradients  , only: gradv_z
+  use gradients  , only: gradw_x
+  use gradients  , only: gradw_y
+  use gradients  , only: gradw_z
   use geometry   , only: CellCenter
 
   use utils, only: alloc

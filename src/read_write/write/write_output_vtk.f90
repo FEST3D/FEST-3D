@@ -15,9 +15,7 @@ module write_output_vtk
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
+  use grid, only : point
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -68,24 +66,24 @@ module write_output_vtk
   use global_vars, only : w_list
 
   use global_sst , only : sst_F1
-  use global_vars, only : gradu_x
-  use global_vars, only : gradu_y
-  use global_vars, only : gradu_z
-  use global_vars, only : gradv_x
-  use global_vars, only : gradv_y
-  use global_vars, only : gradv_z
-  use global_vars, only : gradw_x
-  use global_vars, only : gradw_y
-  use global_vars, only : gradw_z
-  use global_vars, only : gradT_x
-  use global_vars, only : gradT_y
-  use global_vars, only : gradT_z
-  use global_vars, only : gradtk_x
-  use global_vars, only : gradtk_y
-  use global_vars, only : gradtk_z
-  use global_vars, only : gradtw_x
-  use global_vars, only : gradtw_y
-  use global_vars, only : gradtw_z
+  use gradients, only : gradu_x
+  use gradients, only : gradu_y
+  use gradients, only : gradu_z
+  use gradients, only : gradv_x
+  use gradients, only : gradv_y
+  use gradients, only : gradv_z
+  use gradients, only : gradw_x
+  use gradients, only : gradw_y
+  use gradients, only : gradw_z
+  use gradients, only : gradT_x
+  use gradients, only : gradT_y
+  use gradients, only : gradT_z
+  use gradients, only : gradtk_x
+  use gradients, only : gradtk_y
+  use gradients, only : gradtk_z
+  use gradients, only : gradtw_x
+  use gradients, only : gradtw_y
+  use gradients, only : gradtw_z
 
   use utils
   use string
@@ -311,7 +309,7 @@ module write_output_vtk
          do j = 1, jmx
           do i = 1, imx
               write(OUT_FILE_UNIT, fmt='(f0.16, a, f0.16, a, f0.16)') &
-                  grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
+                  point(i, j, k)%x, ' ', point(i, j, k)%y, ' ', point(i, j, k)%z
           end do
          end do
         end do
@@ -325,7 +323,7 @@ module write_output_vtk
          do j = 1, jmx
           do i = 1, imx
               write(OUT_FILE_UNIT) &
-                  grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k), newline
+                  point(i, j, k)%x, ' ', point(i, j, k)%y, ' ', point(i, j, k)%z, newline
           end do
          end do
         end do

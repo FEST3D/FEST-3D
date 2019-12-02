@@ -26,16 +26,16 @@ def Getentropy(Filenames,Database, Input):
         vol.append(np.sum(Database[B]['Volume']))
 
         Ds = np.sqrt(sum(np.power(np.array(err),2))/sum(vol))
-    print " ---------- Inviscid Test case: Smooth Bump ---------- "
-    print " Flux Scheme        : "+ Input.SchemeDict['FluxScheme']
-    print " Higher order method: "+ Input.SchemeDict['FaceScheme']
-    print " Turbulence model   : "+ Input.SchemeDict['TurbulenceModel']
-    print " Expected Change in entropy           : " + "{:.3E}".format(0.0)
-    print " Calculated relative change in entropy: " + "{:.3E}".format(Ds)
-    print " Difference                           : " + "{:.3E}".format(Ds*100) + " %"
-    print " Allowed Tolerance                    : 0.1 %"
+    print(" ---------- Inviscid Test case: Smooth Bump ---------- ")
+    print(" Flux Scheme        : "+ Input.SchemeDict['FluxScheme'])
+    print(" Higher order method: "+ Input.SchemeDict['FaceScheme'])
+    print(" Turbulence model   : "+ Input.SchemeDict['TurbulenceModel'])
+    print(" Expected Change in entropy           : " + "{:.3E}".format(0.0))
+    print(" Calculated relative change in entropy: " + "{:.3E}".format(Ds))
+    print(" Difference                           : " + "{:.3E}".format(Ds*100) + " %")
+    print(" Allowed Tolerance                    : 0.1 %")
     if Ds < 1e-3:
-        print "------------ >>> Test Passed  <<< --------------"
+        print("------------ >>> Test Passed  <<< --------------")
     else:
-        print "------------ xxx Test Failed  xxx --------------"
+        print("------------ xxx Test Failed  xxx --------------")
 

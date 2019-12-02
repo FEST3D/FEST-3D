@@ -11,7 +11,7 @@ if [ -f $ex ]; then
     echo "  __________Report__________   "
     mpiexec.hydra -np $total_process ./$ex >> $runlog
     cd pp
-    python main.py
+    python3 main.py
     cd ../
     rm -r time_directories/0000
     rm -r time_directories/0001

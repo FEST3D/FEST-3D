@@ -15,9 +15,7 @@ module write_output_tec_node
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
+  use grid, only : point
   use global_vars, only : density 
   use global_vars, only : x_speed 
   use global_vars, only : y_speed 
@@ -59,24 +57,24 @@ module write_output_tec_node
   use global_vars, only : w_list
 
   use global_sst , only : sst_F1
-  use global_vars, only : gradu_x
-  use global_vars, only : gradu_y
-  use global_vars, only : gradu_z
-  use global_vars, only : gradv_x
-  use global_vars, only : gradv_y
-  use global_vars, only : gradv_z
-  use global_vars, only : gradw_x
-  use global_vars, only : gradw_y
-  use global_vars, only : gradw_z
-  use global_vars, only : gradT_x
-  use global_vars, only : gradT_y
-  use global_vars, only : gradT_z
-  use global_vars, only : gradtk_x
-  use global_vars, only : gradtk_y
-  use global_vars, only : gradtk_z
-  use global_vars, only : gradtw_x
-  use global_vars, only : gradtw_y
-  use global_vars, only : gradtw_z
+  use gradients, only : gradu_x
+  use gradients, only : gradu_y
+  use gradients, only : gradu_z
+  use gradients, only : gradv_x
+  use gradients, only : gradv_y
+  use gradients, only : gradv_z
+  use gradients, only : gradw_x
+  use gradients, only : gradw_y
+  use gradients, only : gradw_z
+  use gradients, only : gradT_x
+  use gradients, only : gradT_y
+  use gradients, only : gradT_z
+  use gradients, only : gradtk_x
+  use gradients, only : gradtk_y
+  use gradients, only : gradtk_z
+  use gradients, only : gradtw_x
+  use gradients, only : gradtw_y
+  use gradients, only : gradtw_z
   use global_vars, only : process_id
   use global_vars, only : checkpoint_iter_count
 
@@ -274,9 +272,9 @@ module write_output_tec_node
 
       ! write grid point coordinates
       call dmsg(1, 'write_output_tec_node', 'write_grid')
-      write(OUT_FILE_UNIT, format) (((grid_x(i, j, k),i=1,imx), j=1,jmx), k=1,kmx-1)
-      write(OUT_FILE_UNIT, format) (((grid_y(i, j, k),i=1,imx), j=1,jmx), k=1,kmx-1)
-      write(OUT_FILE_UNIT, format) (((grid_z(i, j, k),i=1,imx), j=1,jmx), k=1,kmx-1)
+      write(OUT_FILE_UNIT, format) (((point(i, j, k)%x,i=1,imx), j=1,jmx), k=1,kmx-1)
+      write(OUT_FILE_UNIT, format) (((point(i, j, k)%y,i=1,imx), j=1,jmx), k=1,kmx-1)
+      write(OUT_FILE_UNIT, format) (((point(i, j, k)%z,i=1,imx), j=1,jmx), k=1,kmx-1)
 
     end subroutine write_grid
 

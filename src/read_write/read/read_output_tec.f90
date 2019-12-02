@@ -13,9 +13,6 @@ module read_output_tec
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
   use global_vars, only : density 
   use global_vars, only : x_speed 
   use global_vars, only : y_speed 
@@ -28,26 +25,7 @@ module read_output_tec
   use global_vars, only : tgm
   use global_vars, only : mu 
   use global_vars, only : mu_t 
-  use global_vars, only : density_inf
-  use global_vars, only : x_speed_inf
-  use global_vars, only : y_speed_inf
-  use global_vars, only : z_speed_inf
-  use global_vars, only : pressure_inf 
-  use global_vars, only : gm
   use global_vars, only : dist
-  use global_vars, only : vis_resnorm
-  use global_vars, only : cont_resnorm
-  use global_vars, only : x_mom_resnorm
-  use global_vars, only : y_mom_resnorm
-  use global_vars, only : z_mom_resnorm
-  use global_vars, only : energy_resnorm
-  use global_vars, only : resnorm
-  use global_vars, only :   mass_residue
-  use global_vars, only :  x_mom_residue
-  use global_vars, only :  y_mom_residue
-  use global_vars, only :  z_mom_residue
-  use global_vars, only : energy_residue
-  use global_vars, only : TKE_residue
   use global_vars, only : intermittency
 
   use global_vars, only : turbulence
@@ -57,25 +35,6 @@ module read_output_tec
   use global_vars, only : r_count
   use global_vars, only : r_list
 
-  use global_sst , only : sst_F1
-  use global_vars, only : gradu_x
-  use global_vars, only : gradu_y
-  use global_vars, only : gradu_z
-  use global_vars, only : gradv_x
-  use global_vars, only : gradv_y
-  use global_vars, only : gradv_z
-  use global_vars, only : gradw_x
-  use global_vars, only : gradw_y
-  use global_vars, only : gradw_z
-  use global_vars, only : gradT_x
-  use global_vars, only : gradT_y
-  use global_vars, only : gradT_z
-  use global_vars, only : gradtk_x
-  use global_vars, only : gradtk_y
-  use global_vars, only : gradtk_z
-  use global_vars, only : gradtw_x
-  use global_vars, only : gradtw_y
-  use global_vars, only : gradtw_z
   use global_vars, only : process_id
 
   use utils

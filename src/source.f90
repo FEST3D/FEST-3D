@@ -52,24 +52,24 @@ module source
   use global_vars  ,only :   mu
   use global_vars  ,only :   sst_mu
   use global_vars  ,only :   dist
-  use global_vars  ,only :   gradu_x
-  use global_vars  ,only :   gradu_y
-  use global_vars  ,only :   gradu_z
-  use global_vars  ,only :   gradv_x
-  use global_vars  ,only :   gradv_y
-  use global_vars  ,only :   gradv_z
-  use global_vars  ,only :   gradw_x
-  use global_vars  ,only :   gradw_y
-  use global_vars  ,only :   gradw_z
-  use global_vars  ,only :   gradtk_x
-  use global_vars  ,only :   gradtk_y
-  use global_vars  ,only :   gradtk_z
-  use global_vars  ,only :   gradtw_x
-  use global_vars  ,only :   gradtw_y
-  use global_vars  ,only :   gradtw_z
-  use global_vars  ,only :   gradtgm_x
-  use global_vars  ,only :   gradtgm_y
-  use global_vars  ,only :   gradtgm_z
+  use gradients  ,only :   gradu_x
+  use gradients  ,only :   gradu_y
+  use gradients  ,only :   gradu_z
+  use gradients  ,only :   gradv_x
+  use gradients  ,only :   gradv_y
+  use gradients  ,only :   gradv_z
+  use gradients  ,only :   gradw_x
+  use gradients  ,only :   gradw_y
+  use gradients  ,only :   gradw_z
+  use gradients  ,only :   gradtk_x
+  use gradients  ,only :   gradtk_y
+  use gradients  ,only :   gradtk_z
+  use gradients  ,only :   gradtw_x
+  use gradients  ,only :   gradtw_y
+  use gradients  ,only :   gradtw_z
+  use gradients  ,only :   gradtgm_x
+  use gradients  ,only :   gradtgm_y
+  use gradients  ,only :   gradtgm_z
   use global_vars  ,only :   residue
   use global_vars  ,only :   TKE_residue
   use global_vars  ,only : omega_residue
@@ -105,9 +105,9 @@ module source
   use global_sa , only : kappa_sa
   use global_sa , only : cv1_3
   use global_sa , only : cw3_6
-  use global_vars,only : gradtv_x
-  use global_vars,only : gradtv_y
-  use global_vars,only : gradtv_z
+  use gradients ,only : gradtv_x
+  use gradients ,only : gradtv_y
+  use gradients ,only : gradtv_z
 
   use global_vars, only : xnx, xny, xnz !face unit normal x
   use global_vars, only : ynx, yny, ynz !face unit normal y

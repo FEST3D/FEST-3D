@@ -81,30 +81,30 @@ if __name__=="__main__":
     Flux = sys.argv[1]
     HOM  = sys.argv[2] #Higher order method
     Turb = sys.argv[3]
-    print " "
-    print "  ----- Integrated Tests Started -----  "
-    print "Total two processes will be used with MPICH library"
+    print(" ")
+    print("  ----- Integrated Tests Started -----  ")
+    print("Total two processes will be used with MPICH library")
     with open("make.log", 'w+') as f:
         call(['make', 'all'], stdout=f, stderr=f)
     with open("Report.txt", "w+") as f:
-        print "Running Test number 1  --->  Subsonic flow over a smooth bump"
+        print("Running Test number 1  --->  Subsonic flow over a smooth bump")
         Scheme = SetInput(Flux, HOM, 'none', 'none')
         WriteFvSchemeFile(Scheme, 'SmoothBump')
         run('SmoothBump',f)
-        print "Running Test number 2  --->  Laminar flow over a flat plate"
+        print("Running Test number 2  --->  Laminar flow over a flat plate")
         Scheme = SetInput(Flux, HOM, 'none', 'none')
         WriteFvSchemeFile(Scheme, 'Lfp')
         run('Lfp', f)
-        print "Running Test number 3  --->  Turbulent flow over a flat plate"
-        print "This test might takes a few minutes ..."
+        print("Running Test number 3  --->  Turbulent flow over a flat plate")
+        print("This test might takes a few minutes ...")
         Scheme = SetInput(Flux, HOM, Turb, 'none')
         WriteFvSchemeFile(Scheme, 'Tfp')
         run('Tfp', f)
-        print " ----- All tests completed -----"
-        print " "
+        print(" ----- All tests completed -----")
+        print(" ")
 
     with open("Report.txt", 'r') as f:
         data = f.read()
-        print "Tests passed: ", str(data.count("Passed"))+" out of 3"
-        print "Check test summary in 'Report.txt' file."
-        print " "
+        print("Tests passed: ", str(data.count("Passed"))+" out of 3")
+        print("Check test summary in 'Report.txt' file.")
+        print(" ")

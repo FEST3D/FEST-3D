@@ -17,15 +17,15 @@ module update
   use global_sa  , only : cw3
   use global_sa  , only : cv1
   use global_sa  , only : kappa_sa
-  use global_vars  ,only :   gradu_x
-  use global_vars  ,only :   gradu_y
-  use global_vars  ,only :   gradu_z
-  use global_vars  ,only :   gradv_x
-  use global_vars  ,only :   gradv_y
-  use global_vars  ,only :   gradv_z
-  use global_vars  ,only :   gradw_x
-  use global_vars  ,only :   gradw_y
-  use global_vars  ,only :   gradw_z
+  use gradients  ,only :   gradu_x
+  use gradients  ,only :   gradu_y
+  use gradients  ,only :   gradu_z
+  use gradients  ,only :   gradv_x
+  use gradients  ,only :   gradv_y
+  use gradients  ,only :   gradv_z
+  use gradients  ,only :   gradw_x
+  use gradients  ,only :   gradw_y
+  use gradients  ,only :   gradw_z
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
@@ -96,7 +96,7 @@ module update
   use face_interpolant,               only: compute_face_interpolant
   use boundary_state_reconstruction,  only: reconstruct_boundary_state
   use scheme,                         only: compute_fluxes
-  use summon_grad_evaluation,         only: evaluate_all_gradients
+  use gradients,                      only: evaluate_all_gradients
   use viscosity                      ,only: calculate_viscosity
   use viscous,                        only: compute_viscous_fluxes
 !  use turbulent_fluxes,               only: compute_turbulent_fluxes

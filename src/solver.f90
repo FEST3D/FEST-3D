@@ -33,7 +33,8 @@ module solver
   use geometry,  only : setup_geometry, destroy_geometry
   use state,     only : setup_state, destroy_state
   use gradients, only : setup_gradients
-  use gradients, only : destroy_gradients
+  use gradients, only : evaluate_all_gradients
+  !use gradients, only : destroy_gradients
   use Scheme,    only : setup_scheme, destroy_scheme
 
   use source,        only: add_source_term_residue, setup_source, destroy_source
@@ -59,7 +60,6 @@ module solver
   use update,        only : destroy_update
   use mapping,       only : read_interface_map
   use bc_primitive,  only : populate_ghost_primitive
-  use summon_grad_evaluation, only : evaluate_all_gradients
   use boundary_state_reconstruction, only: reconstruct_boundary_state
 #include "error.inc"
 #include "mpi.inc"
@@ -129,7 +129,7 @@ module solver
             end if
             call destroy_update()
             call destroy_viscosity()
-            call destroy_gradients()
+            !call destroy_gradients()
             call destroyCC()
             if(turbulence /= 'none') then
               call destroy_wall_dist()

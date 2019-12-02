@@ -15,9 +15,6 @@ module read_output_vtk
   use global_vars, only : imx
   use global_vars, only : jmx
   use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -29,38 +26,8 @@ module read_output_vtk
   use global_vars, only : tv
   use global_vars, only : tgm
   use global_vars, only : intermittency
-  use global_vars, only : density_inf
-  use global_vars, only : x_speed_inf
-  use global_vars, only : y_speed_inf
-  use global_vars, only : z_speed_inf
-  use global_vars, only : pressure_inf 
-  use global_vars, only : mu
-  use global_vars, only : mu_t
-  use global_vars, only : gm
   use global_vars, only : dist
   use global_vars, only : turbulence
-  use global_vars, only : vis_resnorm
-  use global_vars, only : cont_resnorm
-  use global_vars, only : x_mom_resnorm
-  use global_vars, only : y_mom_resnorm
-  use global_vars, only : z_mom_resnorm
-  use global_vars, only : energy_resnorm
-  use global_vars, only : resnorm
-  use global_vars, only :   mass_residue
-  use global_vars, only :  x_mom_residue
-  use global_vars, only :  y_mom_residue
-  use global_vars, only :  z_mom_residue
-  use global_vars, only : energy_residue
-  use global_vars, only :        resnorm_0
-  use global_vars, only :    vis_resnorm_0
-  use global_vars, only :   turb_resnorm_0
-  use global_vars, only :   cont_resnorm_0
-  use global_vars, only :  x_mom_resnorm_0
-  use global_vars, only :  y_mom_resnorm_0
-  use global_vars, only :  z_mom_resnorm_0
-  use global_vars, only : energy_resnorm_0
-  use global_vars, only :    TKE_resnorm_0
-  use global_vars, only :  omega_resnorm_0
 
   use global_vars, only : mu_ref
   use global_vars, only : r_count
@@ -152,7 +119,7 @@ module read_output_vtk
       do k = 1, kmx
        do j = 1, jmx
         do i = 1, imx
-          read(IN_FILE_UNIT, *) !grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
+          read(IN_FILE_UNIT, *) !point(i, j, k)%x, ' ', point(i, j, k)%y, ' ', point(i, j, k)%z
         end do
        end do
       end do
