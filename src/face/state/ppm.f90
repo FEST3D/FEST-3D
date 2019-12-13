@@ -6,14 +6,16 @@ module ppm
     !<of computational physics, vol. 54, no. 1, pp.174-201, 1984
     !-------------------------------------------------------------------
 
-    use utils, only: alloc, dealloc, dmsg
+    use vartypes
+    use utils, only: alloc, dealloc
 
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
+!    use global_vars, only : imx
+!    use global_vars, only : jmx
+!    use global_vars, only : kmx
+!    use global_vars, only : process_id
 
     use global_vars, only : qp
-    use global_vars, only : n_var
+!    use global_vars, only : n_var
     use global_vars, only : pressure
     use global_vars, only : pressure_inf
     use global_vars, only : ilimiter_switch
@@ -23,6 +25,8 @@ module ppm
     use global_vars, only : jPB_switch
     use global_vars, only : kPB_switch
 
+#include "../../debug.h"
+#include "../../error.h"
 
     implicit none
     private
@@ -54,6 +58,8 @@ module ppm
     real, dimension(:, :, :), allocatable :: pdif
     !< Used for pressure based witch
 
+    integer :: imx, jmx, kmx, n_var
+
     ! Public members
     public :: setup_scheme
     public :: destroy_scheme
@@ -65,13 +71,21 @@ module ppm
 
     contains
 
-        subroutine setup_scheme()
+        subroutine setup_scheme(control, dims)
           !< Allocate memoery to all array which store state
           !< the face.
 
             implicit none
+            type(controltype), intent(in) :: control
+            type(extent), intent(in) :: dims
 
-            call dmsg(1, 'ppm', 'setup_ppm')
+            DebugCall('setup_ppm')
+
+            imx = dims%imx
+            jmx = dims%jmx
+            kmx = dims%kmx
+
+            n_var = control%n_var
 
             call alloc(x_qp_face_estimate, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
@@ -111,7 +125,7 @@ module ppm
 
             implicit none
 
-            call dmsg(1, 'ppm', 'destroy_ppm')
+            DebugCall('destroy_ppm')
 
             call dealloc(x_qp_face_estimate)
             call dealloc(y_qp_face_estimate)
@@ -135,7 +149,7 @@ module ppm
             integer :: i_f, j_f, k_f ! Flags to determine face direction
             real, dimension(:, :, :, :), pointer :: f_qp_estimate
 
-            call dmsg(1, 'ppm', 'compute_face_estimates')
+            DebugCall('compute_face_estimates')
             
             select case (f_dir)
                 case ('x')
@@ -154,9 +168,7 @@ module ppm
                     k_f = 1
                     f_qp_estimate => z_qp_face_estimate
                 case default
-                    call dmsg(5, 'ppm', 'pressure_based_switching', &
-                            'Direction not recognised')
-                    stop
+                    Fatal_error
             end select
 
             !TODO: Vectorize this??
@@ -183,7 +195,7 @@ module ppm
             integer :: i_f, j_f, k_f ! Flags to determine face direction
             real :: dqrl, dq6
 
-            call dmsg(1, 'ppm', 'remove_extrema')
+            DebugCall('remove_extrema')
             
             select case (f_dir)
                 case ('x')
@@ -205,9 +217,7 @@ module ppm
                     f_qp_left => z_qp_left
                     f_qp_right => z_qp_right
                 case default
-                    call dmsg(5, 'ppm', 'remove_extrema', &
-                            'Direction not recognised')
-                    stop
+                    Fatal_error
             end select
             
             !TODO: Vectorize this? Or will it be ugly?
@@ -251,7 +261,7 @@ module ppm
             integer :: i_f, j_f, k_f  ! Flags to determine face direction
             real :: pd2
 
-            call dmsg(1, 'ppm', 'pressure_based_switching')
+            DebugCall('pressure_based_switching')
 
             select case (f_dir)
                 case ('x')
@@ -282,9 +292,7 @@ module ppm
                     j_end = jmx - 1 
                     k_end = kmx
                 case default
-                    call dmsg(5, 'ppm', 'pressure_based_switching', &
-                            'Direction not recognised')
-                    stop
+                    Fatal_error
             end select
 
             ! i_end and j_end denote number of faces

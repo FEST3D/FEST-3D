@@ -1,10 +1,11 @@
 !< This module handles the MPI Communication calls for interface boundary conditions
 module interface1
   !< This module handles the MPI Communication calls for interface boundary conditions
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
-  use global_vars, only: n_var
+  use vartypes
+!  use global_vars, only: imx
+!  use global_vars, only: jmx
+!  use global_vars, only: kmx
+!  use global_vars, only: n_var
   use global_vars, only: qp
   use global_vars, only: imin_id
   use global_vars, only: jmin_id
@@ -31,9 +32,9 @@ module interface1
 
   use utils      , only:   alloc
   use utils      , only: dealloc
-  use utils      , only: dmsg
 
-#include "error.inc"
+#include "debug.h"
+#include "error.h"
 #include "mpi.inc"
   private
   integer :: ibuf_size
@@ -73,11 +74,21 @@ module interface1
 
   contains
 
-    subroutine setup_interface()
+    subroutine setup_interface(control, dims)
       !< Allocate memory for the data communication between processors
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
+      integer :: imx, jmx, kmx, n_var
       character(len=*), parameter :: &
         errmsg="module: interface, subrouinte setup"
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      n_var = control%n_var
+
       ibuf_size = (jmx-1)*(kmx-1)*n_var*layers
       jbuf_size = (imx-1)*(kmx-1)*n_var*layers
       kbuf_size = (imx-1)*(jmx-1)*n_var*layers
@@ -114,16 +125,24 @@ module interface1
     end subroutine destroy_interface
 
 
-    subroutine apply_interface()
+    subroutine apply_interface(control, dims)
       !< MPISEND_RECV call to exchange interface infromation between
       !< connected blocks.
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
       integer:: i,j,k,n,l
       integer:: status(MPI_STATUS_SIZE)
       integer:: ierr
       integer:: tag=1
       integer:: count=0
+      integer :: imx, jmx, kmx, n_var
 
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      n_var = control%n_var
 
       !----------------------------------------------------------
       ! call pattern is change for first block = 0
@@ -185,7 +204,7 @@ module interface1
       end if
 
       !--- IMIN ---!
-      call dmsg(1, 'interface', 'apply_interface')
+      DebugCall('apply_interface')
       if(imin_id>=0)then
         !collect data
         count=0
@@ -241,7 +260,7 @@ module interface1
 
       else
       !--- IMIN ---!
-      call dmsg(1, 'interface', 'apply_interface')
+      DebugCall('apply_interface')
       if(imin_id>=0)then
         !collect data
         count=0
@@ -569,21 +588,31 @@ module interface1
           end do
         end if
       end if
-      call apply_periodic_bc()
+      call apply_periodic_bc(control, dims)
     end subroutine apply_interface
 
 
-    subroutine apply_periodic_bc()
+    subroutine apply_periodic_bc(control, dims)
       !<If a block is connected to another block in perodic
       !<fashion, this subroutine will take care of that boundary condition.
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
       integer:: i,j,k,n,l
       integer:: status(MPI_STATUS_SIZE)
       integer:: ierr
       integer:: tag=1
       integer:: count=0
+      integer :: imx, jmx, kmx, n_var
 
-      call dmsg(1, 'interface', 'apply_periodic_boundary_condition')
+      DebugCall('apply_periodic_boundary_condition')
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      n_var = control%n_var
+
       if(PbcId(1)>=0)then
         !collect data
         count=0

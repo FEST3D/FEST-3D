@@ -18,14 +18,19 @@ module muscl
     ! is created at the faces.
     !-----------------------------------------------------------------
 
-    use utils, only: alloc, dealloc, dmsg
+#include "../../error.h"
+#include "../../debug.h"
 
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
+    use vartypes
+    use utils, only: alloc, dealloc
+
+!    use global_vars, only : imx
+!    use global_vars, only : jmx
+!    use global_vars, only : kmx
+!    use global_vars, only : process_id
 
     use global_vars, only : qp
-    use global_vars, only : n_var
+!    use global_vars, only : n_var
     use global_vars, only : pressure
     use global_vars, only : pressure_inf
     use global_vars, only : ilimiter_switch
@@ -67,6 +72,7 @@ module muscl
     integer :: switch_L=1
     !< Limiter switch 
 
+    integer :: imx, jmx, kmx, n_var
     ! Public members
     public :: setup_scheme
     public :: destroy_scheme
@@ -79,13 +85,21 @@ module muscl
 
     contains
         
-        subroutine setup_scheme()
+        subroutine setup_scheme(control, dims)
           !< Allocate memoery to all array which store state
           !< the face.
 
         implicit none
+        type(controltype), intent(in) :: control
+        type(extent), intent(in) :: dims
 
-        call dmsg(1, 'muscl', 'setup_muscl')
+        DebugCall('setup_muscl')
+
+        imx = dims%imx
+        jmx = dims%jmx
+        kmx = dims%kmx
+
+        n_var = control%n_var
 
         phi = 1.0
 
@@ -124,7 +138,7 @@ module muscl
 
             implicit none
 
-            call dmsg(1, 'muscl', 'destroy_muscl')
+            DebugCall('destroy_muscl')
 
             call dealloc(x_qp_left)
             call dealloc(x_qp_right)
@@ -149,7 +163,7 @@ module muscl
             integer :: i_f, j_f, k_f  ! Flags to determine face direction
             real :: pd2
 
-            call dmsg(1, 'muscl', 'pressure_based_switching')
+            DebugCall('pressure_based_switching')
 
             select case (f_dir)
                 case ('x')
@@ -180,9 +194,7 @@ module muscl
                     j_end = jmx - 1 
                     k_end = kmx
                 case default
-                    call dmsg(5, 'ppm', 'pressure_based_switching', &
-                            'Direction not recognised')
-                    stop
+                    Fatal_error
             end select
 
             ! i_end and j_end denote number of faces
@@ -263,7 +275,7 @@ module muscl
             !< Generalized pointer for any I-J-K direction> f_qp_right can 
             !< either point to x_qp_right, y_qp_right or z_qp_right
 
-            call dmsg(1, 'muscl', 'compute_face_state')
+            DebugCall('compute_face_state')
 
             select case (f_dir)
                 case ('x')
@@ -285,9 +297,7 @@ module muscl
                     jj = 0
                     kk = 1
                 case default
-                    call dmsg(5, 'muscl', 'compute_face_state', &
-                            'Direction not recognised')
-                    stop
+                    Fatal_error
             end select
 
             alpha = 2./3. !Koren limiter 

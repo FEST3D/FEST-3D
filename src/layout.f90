@@ -19,8 +19,8 @@ module layout
   use global_vars, only : kmax_id
 
 
-  use utils, only: dmsg, DEBUG_LEVEL
-#include "error.inc"
+#include "error.h"
+#include "debug.h"
 #include "mpi.inc"
   
   ! process layout
@@ -81,7 +81,6 @@ contains
           exit
        end if
     end do
-    call dmsg(0, 'solver', 'get_next_token', 'Returning: ' // trim(buf))
 
   end subroutine get_next_token_parallel
 
@@ -93,7 +92,7 @@ contains
     integer,intent(in)::process_id
     !< Processor id for current block
     integer :: i,buf_id 
-    call dmsg(1, 'layout', 'read_layout_file')
+    DebugCall('read_layout_file')
 
     open(CONFIG_FILE_UNIT, file=layout_file)
 

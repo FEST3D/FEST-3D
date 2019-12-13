@@ -9,6 +9,7 @@ module viscosity
   ! molecular and turbulence viscosity based on switch
   !-----------------------------------------------------
 
+  use vartypes
   use global_vars , only : turbulence
   use global_vars , only : transition
   use global_vars , only : mu
@@ -21,18 +22,18 @@ module viscosity
 
   use global_vars , only : pressure
   use global_vars , only : density
-  use global_vars  , only : sst_mu
-  use global_vars  , only : kkl_mu
-  use global_vars  , only : sa_mu
+  !use global_vars  , only : sst_mu
+  !use global_vars  , only : kkl_mu
+  !use global_vars  , only : sa_mu
   use global_vars  , only : mu_t
   use global_vars  , only : tw
   use global_vars  , only : tk
   use global_vars  , only : tkl
   use global_vars  , only : tv
 
-  use global_vars , only : imx
-  use global_vars , only : jmx
-  use global_vars , only : kmx
+!  use global_vars , only : imx
+!  use global_vars , only : jmx
+!  use global_vars , only : kmx
 
   use global_vars  , only : id
   use global_vars  , only : face_names
@@ -66,7 +67,6 @@ module viscosity
 
   use copy_bc       , only : copy1
 
-  use utils       , only : dmsg
   use utils       , only :   alloc
   use utils       , only : dealloc
 
@@ -74,6 +74,8 @@ module viscosity
 
   implicit none
   private
+
+  integer :: imx, jmx, kmx
 
   public :: setup_viscosity
   public :: destroy_viscosity
@@ -164,7 +166,7 @@ module viscosity
                    xi = tv(i,j,k)*density(i,j,k)/mu(i,j,k)
                   !calculation fo fv1 function
                   fv1 = (xi**3)/((xi**3) + (cv1**3))
-                  sa_mu(i,j,k) = density(i,j,k)*tv(i,j,k)*fv1
+                  mu_t(i,j,k) = density(i,j,k)*tv(i,j,k)*fv1
                 end do
               end do
             end do
@@ -180,17 +182,17 @@ module viscosity
                   !call copy1(sa_mu, "symm", face_names(i))
                   select case(face_names(i))
                     case("imin")
-                        sa_mu(      0, 1:jmx-1, 1:kmx-1) = sa_mu(     1, 1:jmx-1, 1:kmx-1)
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
-                        sa_mu(  imx  , 1:jmx-1, 1:kmx-1) = sa_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = mu_t( imx-1, 1:jmx-1, 1:kmx-1)
                     case("jmin")
-                        sa_mu(1:imx-1,       0, 1:kmx-1) = sa_mu(1:imx-1,      1, 1:kmx-1)
+                        mu_t(1:imx-1,       0, 1:kmx-1) = mu_t(1:imx-1,      1, 1:kmx-1)
                     case("jmax")
-                        sa_mu(1:imx-1,   jmx  , 1:kmx-1) = sa_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = mu_t(1:imx-1,  jmx-1, 1:kmx-1)
                     case("kmin")
-                        sa_mu(1:imx-1, 1:jmx-1,       0) = sa_mu(1:imx-1, 1:jmx-1,      1)
+                        mu_t(1:imx-1, 1:jmx-1,       0) = mu_t(1:imx-1, 1:jmx-1,      1)
                     case("kmax")
-                        sa_mu(1:imx-1, 1:jmx-1,   kmx  ) = sa_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = mu_t(1:imx-1, 1:jmx-1,  kmx-1)
                     case DEFAULT
                       print*, "ERROR: wrong face for boundary condition"
                       Fatal_error
@@ -200,17 +202,17 @@ module viscosity
                   !call copy1(sa_mu, "anti", face_names(i))
                   select case(face_names(i))
                     case("imin")
-                        sa_mu(      0, 1:jmx-1, 1:kmx-1) = -sa_mu(     1, 1:jmx-1, 1:kmx-1)
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
-                        sa_mu(  imx  , 1:jmx-1, 1:kmx-1) = -sa_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = -mu_t( imx-1, 1:jmx-1, 1:kmx-1)
                     case("jmin")
-                        sa_mu(1:imx-1,       0, 1:kmx-1) = -sa_mu(1:imx-1,      1, 1:kmx-1)
+                        mu_t(1:imx-1,       0, 1:kmx-1) = -mu_t(1:imx-1,      1, 1:kmx-1)
                     case("jmax")
-                        sa_mu(1:imx-1,   jmx  , 1:kmx-1) = -sa_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = -mu_t(1:imx-1,  jmx-1, 1:kmx-1)
                     case("kmin")
-                        sa_mu(1:imx-1, 1:jmx-1,       0) = -sa_mu(1:imx-1, 1:jmx-1,      1)
+                        mu_t(1:imx-1, 1:jmx-1,       0) = -mu_t(1:imx-1, 1:jmx-1,      1)
                     case("kmax")
-                        sa_mu(1:imx-1, 1:jmx-1,   kmx  ) = -sa_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = -mu_t(1:imx-1, 1:jmx-1,  kmx-1)
                     case DEFAULT
                       print*, "ERROR: wrong face for boundary condition"
                       Fatal_error
@@ -247,7 +249,7 @@ module viscosity
 
                   NUM = density(i,j,k)*a1*tk(i,j,k)
                   DENOM = max(max((a1*tw(i,j,k)), strain*F),1.0e-10)
-                  sst_mu(i,j,k) = NUM/DENOM
+                  mu_t(i,j,k) = NUM/DENOM
                   !-- end eddy visocisyt calculation --!
                   !-- calculating blending function F1 --!
                   CD = max(2*density(i,j,k)*sigma_w2*(                             & 
@@ -294,22 +296,22 @@ module viscosity
                   !call copy1(sst_mu, "symm", face_names(i))
                   select case(face_names(i))
                     case("imin")
-                        sst_mu(      0, 1:jmx-1, 1:kmx-1) = sst_mu(     1, 1:jmx-1, 1:kmx-1)
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
                         sst_F1(      0, 1:jmx-1, 1:kmx-1) = sst_F1(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
-                        sst_mu(  imx  , 1:jmx-1, 1:kmx-1) = sst_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = mu_t( imx-1, 1:jmx-1, 1:kmx-1)
                         sst_F1(  imx  , 1:jmx-1, 1:kmx-1) = sst_F1( imx-1, 1:jmx-1, 1:kmx-1)
                     case("jmin")
-                        sst_mu(1:imx-1,       0, 1:kmx-1) = sst_mu(1:imx-1,      1, 1:kmx-1)
+                        mu_t(1:imx-1,       0, 1:kmx-1) = mu_t(1:imx-1,      1, 1:kmx-1)
                         sst_F1(1:imx-1,       0, 1:kmx-1) = sst_F1(1:imx-1,      1, 1:kmx-1)
                     case("jmax")
-                        sst_mu(1:imx-1,   jmx  , 1:kmx-1) = sst_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = mu_t(1:imx-1,  jmx-1, 1:kmx-1)
                         sst_F1(1:imx-1,   jmx  , 1:kmx-1) = sst_F1(1:imx-1,  jmx-1, 1:kmx-1)
                     case("kmin")
-                        sst_mu(1:imx-1, 1:jmx-1,       0) = sst_mu(1:imx-1, 1:jmx-1,      1)
+                        mu_t(1:imx-1, 1:jmx-1,       0) = mu_t(1:imx-1, 1:jmx-1,      1)
                         sst_F1(1:imx-1, 1:jmx-1,       0) = sst_F1(1:imx-1, 1:jmx-1,      1)
                     case("kmax")
-                        sst_mu(1:imx-1, 1:jmx-1,   kmx  ) = sst_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = mu_t(1:imx-1, 1:jmx-1,  kmx-1)
                         sst_F1(1:imx-1, 1:jmx-1,   kmx  ) = sst_F1(1:imx-1, 1:jmx-1,  kmx-1)
                     case DEFAULT
                       print*, "ERROR: wrong face for boundary condition"
@@ -319,22 +321,22 @@ module viscosity
                   !call copy1(sst_mu, "anti", face_names(i))
                   select case(face_names(i))
                     case("imin")
-                        sst_mu(      0, 1:jmx-1, 1:kmx-1) = -sst_mu(     1, 1:jmx-1, 1:kmx-1)
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
                         sst_F1(      0, 1:jmx-1, 1:kmx-1) =  sst_F1(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
-                        sst_mu(  imx  , 1:jmx-1, 1:kmx-1) = -sst_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = -mu_t( imx-1, 1:jmx-1, 1:kmx-1)
                         sst_F1(  imx  , 1:jmx-1, 1:kmx-1) =  sst_F1( imx-1, 1:jmx-1, 1:kmx-1)
                     case("jmin")
-                        sst_mu(1:imx-1,       0, 1:kmx-1) = -sst_mu(1:imx-1,      1, 1:kmx-1)
+                        mu_t(1:imx-1,       0, 1:kmx-1) = -mu_t(1:imx-1,      1, 1:kmx-1)
                         sst_F1(1:imx-1,       0, 1:kmx-1) =  sst_F1(1:imx-1,      1, 1:kmx-1)
                     case("jmax")
-                        sst_mu(1:imx-1,   jmx  , 1:kmx-1) = -sst_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = -mu_t(1:imx-1,  jmx-1, 1:kmx-1)
                         sst_F1(1:imx-1,   jmx  , 1:kmx-1) =  sst_F1(1:imx-1,  jmx-1, 1:kmx-1)
                     case("kmin")
-                        sst_mu(1:imx-1, 1:jmx-1,       0) = -sst_mu(1:imx-1, 1:jmx-1,      1)
+                        mu_t(1:imx-1, 1:jmx-1,       0) = -mu_t(1:imx-1, 1:jmx-1,      1)
                         sst_F1(1:imx-1, 1:jmx-1,       0) =  sst_F1(1:imx-1, 1:jmx-1,      1)
                     case("kmax")
-                        sst_mu(1:imx-1, 1:jmx-1,   kmx  ) = -sst_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = -mu_t(1:imx-1, 1:jmx-1,  kmx-1)
                         sst_F1(1:imx-1, 1:jmx-1,   kmx  ) =  sst_F1(1:imx-1, 1:jmx-1,  kmx-1)
                     case DEFAULT
                       print*, "ERROR: wrong face for boundary condition"
@@ -369,7 +371,7 @@ module viscosity
 
                   NUM = density(i,j,k)*a1*tk(i,j,k)
                   DENOM = max(max((a1*tw(i,j,k)), vort*F),1.e-20)
-                  sst_mu(i,j,k) = NUM/DENOM
+                  mu_t(i,j,k) = NUM/DENOM
                   !-- end eddy visocisyt calculation --!
                   !-- calculating blending function F1 --!
                   CD = max(2*density(i,j,k)*sigma_w2*(                             & 
@@ -416,22 +418,22 @@ module viscosity
                   !call copy1(sst_mu, "symm", face_names(i))
                   select case(face_names(i))
                     case("imin")
-                        sst_mu(      0, 1:jmx-1, 1:kmx-1) = sst_mu(     1, 1:jmx-1, 1:kmx-1)
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
                         sst_F1(      0, 1:jmx-1, 1:kmx-1) = sst_F1(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
-                        sst_mu(  imx  , 1:jmx-1, 1:kmx-1) = sst_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = mu_t( imx-1, 1:jmx-1, 1:kmx-1)
                         sst_F1(  imx  , 1:jmx-1, 1:kmx-1) = sst_F1( imx-1, 1:jmx-1, 1:kmx-1)
                     case("jmin")
-                        sst_mu(1:imx-1,       0, 1:kmx-1) = sst_mu(1:imx-1,      1, 1:kmx-1)
+                        mu_t(1:imx-1,       0, 1:kmx-1) = mu_t(1:imx-1,      1, 1:kmx-1)
                         sst_F1(1:imx-1,       0, 1:kmx-1) = sst_F1(1:imx-1,      1, 1:kmx-1)
                     case("jmax")
-                        sst_mu(1:imx-1,   jmx  , 1:kmx-1) = sst_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = mu_t(1:imx-1,  jmx-1, 1:kmx-1)
                         sst_F1(1:imx-1,   jmx  , 1:kmx-1) = sst_F1(1:imx-1,  jmx-1, 1:kmx-1)
                     case("kmin")
-                        sst_mu(1:imx-1, 1:jmx-1,       0) = sst_mu(1:imx-1, 1:jmx-1,      1)
+                        mu_t(1:imx-1, 1:jmx-1,       0) = mu_t(1:imx-1, 1:jmx-1,      1)
                         sst_F1(1:imx-1, 1:jmx-1,       0) = sst_F1(1:imx-1, 1:jmx-1,      1)
                     case("kmax")
-                        sst_mu(1:imx-1, 1:jmx-1,   kmx  ) = sst_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = mu_t(1:imx-1, 1:jmx-1,  kmx-1)
                         sst_F1(1:imx-1, 1:jmx-1,   kmx  ) = sst_F1(1:imx-1, 1:jmx-1,  kmx-1)
                     case DEFAULT
                       print*, "ERROR: wrong face for boundary condition"
@@ -441,22 +443,22 @@ module viscosity
                   !call copy1(sst_mu, "anti", face_names(i))
                   select case(face_names(i))
                     case("imin")
-                        sst_mu(      0, 1:jmx-1, 1:kmx-1) = -sst_mu(     1, 1:jmx-1, 1:kmx-1)
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
                         sst_F1(      0, 1:jmx-1, 1:kmx-1) =  sst_F1(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
-                        sst_mu(  imx  , 1:jmx-1, 1:kmx-1) = -sst_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = -mu_t( imx-1, 1:jmx-1, 1:kmx-1)
                         sst_F1(  imx  , 1:jmx-1, 1:kmx-1) =  sst_F1( imx-1, 1:jmx-1, 1:kmx-1)
                     case("jmin")
-                        sst_mu(1:imx-1,       0, 1:kmx-1) = -sst_mu(1:imx-1,      1, 1:kmx-1)
+                        mu_t(1:imx-1,       0, 1:kmx-1) = -mu_t(1:imx-1,      1, 1:kmx-1)
                         sst_F1(1:imx-1,       0, 1:kmx-1) =  sst_F1(1:imx-1,      1, 1:kmx-1)
                     case("jmax")
-                        sst_mu(1:imx-1,   jmx  , 1:kmx-1) = -sst_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = -mu_t(1:imx-1,  jmx-1, 1:kmx-1)
                         sst_F1(1:imx-1,   jmx  , 1:kmx-1) =  sst_F1(1:imx-1,  jmx-1, 1:kmx-1)
                     case("kmin")
-                        sst_mu(1:imx-1, 1:jmx-1,       0) = -sst_mu(1:imx-1, 1:jmx-1,      1)
+                        mu_t(1:imx-1, 1:jmx-1,       0) = -mu_t(1:imx-1, 1:jmx-1,      1)
                         sst_F1(1:imx-1, 1:jmx-1,       0) =  sst_F1(1:imx-1, 1:jmx-1,      1)
                     case("kmax")
-                        sst_mu(1:imx-1, 1:jmx-1,   kmx  ) = -sst_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = -mu_t(1:imx-1, 1:jmx-1,  kmx-1)
                         sst_F1(1:imx-1, 1:jmx-1,   kmx  ) =  sst_F1(1:imx-1, 1:jmx-1,  kmx-1)
                     case DEFAULT
                       print*, "ERROR: wrong face for boundary condition"
@@ -474,10 +476,10 @@ module viscosity
             do k = 0,kmx
               do j = 0,jmx
                 do i = 0,imx
-                  kkl_mu(i,j,k) = c*density(i,j,k)*tkl(i,j,k)&
+                  mu_t(i,j,k) = c*density(i,j,k)*tkl(i,j,k)&
                     /(max(sqrt(tk(i,j,k)),1.e-20))
                   if(tkl(i,j,k)<1.e-14 .or. tk(i,j,k)<1.e-14) &
-                    kkl_mu(i,j,k) =0.0 
+                    mu_t(i,j,k) =0.0 
                 end do
               end do
             end do
@@ -493,17 +495,17 @@ module viscosity
                   !call copy1(kkl_mu, "symm", face_names(i))
                   select case(face_names(i))
                     case("imin")
-                        kkl_mu(      0, 1:jmx-1, 1:kmx-1) = kkl_mu(     1, 1:jmx-1, 1:kmx-1)
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
-                        kkl_mu(  imx  , 1:jmx-1, 1:kmx-1) = kkl_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = mu_t( imx-1, 1:jmx-1, 1:kmx-1)
                     case("jmin")
-                        kkl_mu(1:imx-1,       0, 1:kmx-1) = kkl_mu(1:imx-1,      1, 1:kmx-1)
+                        mu_t(1:imx-1,       0, 1:kmx-1) = mu_t(1:imx-1,      1, 1:kmx-1)
                     case("jmax")
-                        kkl_mu(1:imx-1,   jmx  , 1:kmx-1) = kkl_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = mu_t(1:imx-1,  jmx-1, 1:kmx-1)
                     case("kmin")
-                        kkl_mu(1:imx-1, 1:jmx-1,       0) = kkl_mu(1:imx-1, 1:jmx-1,      1)
+                        mu_t(1:imx-1, 1:jmx-1,       0) = mu_t(1:imx-1, 1:jmx-1,      1)
                     case("kmax")
-                        kkl_mu(1:imx-1, 1:jmx-1,   kmx  ) = kkl_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = mu_t(1:imx-1, 1:jmx-1,  kmx-1)
                     case DEFAULT
                       print*, "ERROR: wrong face for boundary condition"
                       Fatal_error
@@ -512,17 +514,17 @@ module viscosity
                   !call copy1(kkl_mu, "anti", face_names(i))
                   select case(face_names(i))
                     case("imin")
-                        kkl_mu(      0, 1:jmx-1, 1:kmx-1) = -kkl_mu(     1, 1:jmx-1, 1:kmx-1)
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
-                        kkl_mu(  imx  , 1:jmx-1, 1:kmx-1) = -kkl_mu( imx-1, 1:jmx-1, 1:kmx-1)
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = -mu_t( imx-1, 1:jmx-1, 1:kmx-1)
                     case("jmin")
-                        kkl_mu(1:imx-1,       0, 1:kmx-1) = -kkl_mu(1:imx-1,      1, 1:kmx-1)
+                        mu_t(1:imx-1,       0, 1:kmx-1) = -mu_t(1:imx-1,      1, 1:kmx-1)
                     case("jmax")
-                        kkl_mu(1:imx-1,   jmx  , 1:kmx-1) = -kkl_mu(1:imx-1,  jmx-1, 1:kmx-1)
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = -mu_t(1:imx-1,  jmx-1, 1:kmx-1)
                     case("kmin")
-                        kkl_mu(1:imx-1, 1:jmx-1,       0) = -kkl_mu(1:imx-1, 1:jmx-1,      1)
+                        mu_t(1:imx-1, 1:jmx-1,       0) = -mu_t(1:imx-1, 1:jmx-1,      1)
                     case("kmax")
-                        kkl_mu(1:imx-1, 1:jmx-1,   kmx  ) = -kkl_mu(1:imx-1, 1:jmx-1,  kmx-1)
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = -mu_t(1:imx-1, 1:jmx-1,  kmx-1)
                     case DEFAULT
                       print*, "ERROR: wrong face for boundary condition"
                       Fatal_error
@@ -545,9 +547,16 @@ module viscosity
 
     end subroutine calculate_viscosity
 
-    subroutine setup_viscosity()
+    subroutine setup_viscosity(mu, mu_t, dims)
       !< Allocate and pointer for molecular and turbulent viscosity
+      implicit none
+      type(extent), intent(in) :: dims
+      real, dimension(:,:,:), allocatable, intent(out) :: mu
+      real, dimension(:,:,:), allocatable, intent(out) :: mu_t
 
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
       !setup_molecular_viscosity()
       if (mu_ref/=0.) then
         call alloc(mu, -2, imx+2, -2, jmx+2, -2, kmx+2)
@@ -558,6 +567,7 @@ module viscosity
       if (turbulence/='none') then
         call alloc(mu_t, -2,imx+2, -2,jmx+2, -2,kmx+2)
 
+
         select case (trim(turbulence))
 
           case ('none')
@@ -565,17 +575,19 @@ module viscosity
             continue
 
           case ('sa', 'saBC')
-            sa_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
+            !sa_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
+            continue
 
           case ('sst', 'sst2003')
-            sst_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
+            !sst_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
             !-- sst blending funciton F1 --!
             call alloc(sst_F1, -2,imx+2, -2,jmx+2, -2,kmx+2)
             sst_F1=0.
             !-- sst blnding function setup compete--!
 
           case ('kkl')
-            kkl_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
+            !kkl_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
+            continue
 
           case DEFAULT 
             !call turbulence_read_error()
@@ -604,16 +616,18 @@ module viscosity
             continue
 
           case('sa', 'saBC')
-            nullify(sa_mu)
+            !nullify(sa_mu)
+            continue
 
           case ('sst', 'sst2003')
-            nullify(sst_mu)
+            !nullify(sst_mu)
             !-- blending funciton F1 --!
             call dealloc(sst_F1)
             !--- sst blending funciton destoryed--!
 
           case ('kkl')
-            nullify(kkl_mu)
+            !nullify(kkl_mu)
+            continue
 
           case DEFAULT 
             !call turbulence_read_error()

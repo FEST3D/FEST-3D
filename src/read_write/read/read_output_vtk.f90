@@ -4,13 +4,14 @@ module read_output_vtk
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
+#include "../../debug.h"
+#include "../../error.h"
   use global     , only :    IN_FILE_UNIT
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
 
   use global_vars, only : read_data_format
   use global_vars, only : read_file_format
-  use global_vars, only : start_from
   use global_vars, only : process_id
   use global_vars, only : imx
   use global_vars, only : jmx
@@ -98,7 +99,7 @@ module read_output_vtk
       !< Skip read the header in the vtk file
       implicit none
 
-      call dmsg(1, 'read_output_vtk', 'read_header')
+      DebugCall('read_output_vtk: read_header')
       read(IN_FILE_UNIT, *) !'# vtk DataFile Version 3.1'
       read(IN_FILE_UNIT, *) !'cfd-iitm output'   ! comment line
       read(IN_FILE_UNIT, *) !trim(read_data_format)
@@ -113,7 +114,7 @@ module read_output_vtk
       implicit none
 
       ! read grid point coordinates
-      call dmsg(1, 'read_output_vtk', 'read_grid')
+      DebugCall('read_output_vtk: read_grid')
       read(IN_FILE_UNIT, * ) !'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
       read(IN_FILE_UNIT, * ) !'POINTS ', imx*jmx*kmx, ' DOUBLE'
       do k = 1, kmx
@@ -131,7 +132,7 @@ module read_output_vtk
       !< Read velocity vector from the vtk file
       implicit none
 
-      call dmsg(1, 'read_output_vtk', 'read_velocity')
+      DebugCall('read_output_vtk: read_velocity')
       read(IN_FILE_UNIT, *) !'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
       read(IN_FILE_UNIT, *) !'VECTORS Velocity FLOAT'
       do k = 1, kmx - 1
@@ -152,7 +153,7 @@ module read_output_vtk
       real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
       character(len=*), intent(in) :: name
 
-      call dmsg(1, 'read_output_vtk', trim(name))
+      DebugCall('read_output_vtk'//trim(name))
       read(IN_FILE_UNIT, *) !'SCALARS '//trim(name)//' FLOAT'
       read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
       do k = 1, kmx - 1
@@ -170,7 +171,7 @@ module read_output_vtk
       !< Skip read scalar from the vtk file
       implicit none
 
-      call dmsg(1, 'read_output_vtk', "skip_scalar")
+      DebugCall('read_output_vtk: skip_scalar')
       read(IN_FILE_UNIT, *) !'SCALARS '//trim(name)//' FLOAT'
       read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
       do k = 1, kmx - 1

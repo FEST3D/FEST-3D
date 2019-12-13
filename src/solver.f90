@@ -3,8 +3,11 @@ module solver
   !< allocate/deallcoate memory, initialize, iterate
   !-------------------------------------------------
 
+  use vartypes
   use global, only: STOP_FILE_UNIT
   use global, only: stop_file
+  use global, only: mapfile
+  use global, only: periodicfile
   use global_vars, only : want_to_stop
   use global_vars, only : Halt
 
@@ -20,8 +23,9 @@ module solver
   use global_vars, only: r_list
   use global_vars, only: w_list
   use global_vars, only: Res_itr
+  use global_vars, only: mu_t
+  use global_vars, only: mu
 
-  use utils, only:  dmsg
 
   use CC,    only: setupCC
   use CC,    only: destroyCC
@@ -30,14 +34,13 @@ module solver
   use read, only : read_input_and_controls
 
   use grid,      only : setup_grid, destroy_grid
-  use geometry,  only : setup_geometry, destroy_geometry
+  use geometry,  only : setup_geometry!, destroy_geometry
   use state,     only : setup_state, destroy_state
   use gradients, only : setup_gradients
   use gradients, only : evaluate_all_gradients
   !use gradients, only : destroy_gradients
   use Scheme,    only : setup_scheme, destroy_scheme
 
-  use source,        only: add_source_term_residue, setup_source, destroy_source
   use wall_dist,     only: setup_wall_dist, destroy_wall_dist, find_wall_dist
   use viscous,       only: compute_viscous_fluxes
   use layout,        only: process_id, grid_file_buf, bc_file, &
@@ -54,16 +57,23 @@ module solver
   use bc,            only : destroy_bc
   use time ,         only : setup_time
   use time ,         only : destroy_time
-  use time ,         only : compute_time_step
+!  use time ,         only : compute_time_step
   use update,        only : get_next_solution
   use update,        only : setup_update
   use update,        only : destroy_update
   use mapping,       only : read_interface_map
   use bc_primitive,  only : populate_ghost_primitive
   use boundary_state_reconstruction, only: reconstruct_boundary_state
-#include "error.inc"
+#include "debug.h"
+#include "error.h"
 #include "mpi.inc"
     private
+
+    type(extent) :: dims
+    type(nodetype), dimension(:,:,:), allocatable :: nodes
+    type(celltype), dimension(:,:,:), allocatable :: cells
+    type(facetype), dimension(:,:,:), allocatable :: Ifaces, Jfaces, Kfaces
+    type(controltype) :: control
 
     ! Public methods
     public :: setup_solver
@@ -80,39 +90,46 @@ module solver
             implicit none
             integer :: ierr
 
-            call dmsg(1, 'solver', 'setup_solver')
+            DebugCall('setup_solver: Start')
             call get_process_data() ! parallel calls
             call read_layout_file(process_id) ! reads layout file calls
             
-            call read_input_and_controls()
-            call setup_grid(grid_file_buf)
-            call setup_geometry()
-            call setup_viscosity()
-            call setup_state()
-            call setup_gradients()
-            call setup_source
+            print*, "CFL;; ", control%CFL
+            call read_input_and_controls(control)
+            print*, "CFL;; ", control%CFL
+            print*, dims%imx, dims%jmx, dims%kmx
+            call setup_grid(grid_file_buf, mapfile, periodicfile, nodes, dims)
+            print*, dims%imx, dims%jmx, dims%kmx
+            call setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, dims)
+            print*, dims%imx, dims%jmx, dims%kmx
+            call setup_viscosity(mu, mu_t, dims)
+            call setup_state(control, dims)
+            call setup_gradients(control,dims)
+            !call setup_source
             call setup_bc()
-            call setup_time()
-            call setup_update()
-            call setup_interface()
-            call setup_scheme()
+            call setup_time(control,dims)
+            call setup_update(control, dims)
+            call setup_interface(control,dims)
+            call setup_scheme(control, dims)
             if(turbulence /= 'none') then
-              call write_surfnode()
-              call setup_wall_dist()
+              call write_surfnode(nodes, dims)
+              call setup_wall_dist(dims)
               call mpi_barrier(MPI_COMM_WORLD,ierr)
-              call find_wall_dist()
+              call find_wall_dist(nodes, dims)
             end if
             call setupCC()
-            call setup_resnorm()
+            call setup_resnorm(control)
             call initmisc()
             checkpoint_iter_count = 0
-            call checkpoint()  ! Create an initial dump file
+            call checkpoint(nodes, dims)  ! Create an initial dump file
             current_iter=1
-            call dmsg(1, 'solver', 'setup_solver', 'checkpoint')
+            DebugCall('setup_solver: checkpoint')
             if(process_id==0)then
               open(STOP_FILE_UNIT, file=stop_file)
             end if
-            call dmsg(1, 'solver', 'setup_solver', 'Setup solver complete')
+            DebugCall('Setup solver complete')
+            print*, dims%imx, dims%jmx, dims%kmx
+            print*, control%n_var
 
         end subroutine setup_solver
 
@@ -122,7 +139,7 @@ module solver
 
             implicit none
             
-            call dmsg(1, 'solver', 'destroy_solver')
+            DebugCall('destroy_solver')
 
             if(process_id==0)then
               close(STOP_FILE_UNIT)
@@ -135,10 +152,10 @@ module solver
               call destroy_wall_dist()
             end if
             call destroy_scheme()
-            call destroy_source()
+            !call destroy_source()
             call destroy_state()
-            call destroy_geometry()
-            call destroy_grid()
+            !call destroy_geometry()
+            !call destroy_grid()
             call destroy_resnorm()
             call destroy_interface()
             call destroy_time()
@@ -155,7 +172,7 @@ module solver
             
             implicit none
             
-            call dmsg(1, 'solver', 'initmisc')
+            DebugCall('initmisc')
 
             sim_clock = 0.
             current_iter = 0
@@ -171,18 +188,18 @@ module solver
 
             implicit none
             integer :: ierr
-            call dmsg(1, 'solver', 'iterate_one_more_time_step')
+            DebugCall('iterate_one_more_time_step')
 
             if (process_id==0) then
               print*, current_iter
             end if
-            call get_next_solution()
+            call get_next_solution(control, dims)
             if((mod(current_iter,res_write_interval)==0 .or. &
                     current_iter==Res_itr .or.               &
                     current_iter==1))      then
-              call find_resnorm()
+              call find_resnorm(control, dims)
             end if
-            call checkpoint()
+            call checkpoint(nodes, dims)
             current_iter = current_iter + 1
             if(process_id==0)then
               REWIND(STOP_FILE_UNIT)

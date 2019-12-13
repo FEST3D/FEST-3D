@@ -2,21 +2,23 @@
 module wall
  !< Detect all the grid points on the wall boundary condition
  !< and store them in a single file
+  use vartypes
   use global     , only : surface_node_points
   use global     , only : NODESURF_FILE_UNIT
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use grid, only : point
-  use global_vars, only : process_id
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
+!  use grid, only : point
+!  use global_vars, only : process_id
   use global_vars, only : total_process
   use global_vars, only : id
 
   use string
   !use bitwise
-  use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
+  use utils, only: alloc, dealloc
 
-#include "../error.inc"
+#include "../debug.h"
+#include "../error.h"
 #include "../mpi.inc"
 
   private
@@ -60,18 +62,26 @@ module wall
   integer, dimension(:), allocatable :: write_flag
   !< Check if current processor has any wall points to write
 
+  integer :: imx, jmx, kmx
   public :: write_surfnode
 
   contains 
 
-    subroutine write_surfnode()
+    subroutine write_surfnode(nodes, dims)
       !< Extract and write the wall surface node points
       !< in a file shared by all the MPI processes
       implicit none
+      type(extent), intent(in) :: dims
+      type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
       integer :: count
       integer :: i
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
       call setup_surface()
-      call surface_points()
+      call surface_points(nodes)
       call MPI_GATHER(n_wall, 1, MPI_Integer, n_wall_buf, 1, &
                       MPI_integer,0, MPI_COMM_WORLD, ierr)
       total_n_wall = sum(n_wall_buf(:))
@@ -117,7 +127,7 @@ module wall
       !< Allocate memory to str and wallc variable array
         implicit none
 
-        call dmsg(1, 'wall_find', 'setup_surface')
+        DebugCall('setup_surface')
 
         n_wall = -1
 
@@ -144,7 +154,7 @@ module wall
 
       implicit none
 
-      call dmsg(1, 'wall_find', 'link_aliases')
+      DebugCall('link_aliases')
       wall_x(1:n_wall) => wallc(1:n_wall,1)
       wall_y(1:n_wall) => wallc(1:n_wall,2)
       wall_z(1:n_wall) => wallc(1:n_wall,3)
@@ -158,7 +168,7 @@ module wall
 
       implicit none
 
-      call dmsg(1, 'wall_find', 'unlink_aliases')
+      DebugCall('unlink_aliases')
       nullify(wall_x)
       nullify(wall_y)
       nullify(wall_z)
@@ -172,7 +182,7 @@ module wall
 
       implicit none
 
-      call dmsg(1, 'wall_find', 'dealloate_memory')
+      DebugCall('dealloate_memory')
       call dealloc(wallc)
 
     end subroutine deallocate_memory
@@ -186,7 +196,7 @@ module wall
       implicit none
       integer :: stat
 
-      call dmsg(1, 'wall_find', 'setup_surface')
+      DebugCall('setup_surface')
       if(process_id==0)then
       open(NODESURF_FILE_UNIT, file=surface_node_points, iostat=stat)
       if(stat==0) close(NODESURF_FILE_UNIT, status='delete')
@@ -208,7 +218,7 @@ module wall
 
       implicit none
 
-      call dmsg(1, 'wall_find', 'destroy_surface')
+      DebugCall('destroy_surface')
       call deallocate_memory()
       call unlink_aliases()
       call MPI_FILE_CLOSE(thisfile, ierr)
@@ -231,18 +241,20 @@ module wall
 
 
 
-    subroutine surface_points()
+    subroutine surface_points(nodes)
       !< Extract surface points and store them
       !< in a string vector str(ind)
 
+
       implicit none
+      type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in) :: nodes
       integer :: OL
       integer :: i, j, k, ind
       integer :: im=1, ix=1
       integer :: jm=1, jx=1
       integer :: km=1, kx=1
 
-      call dmsg(1, 'wall_find', 'surface_points')
+      DebugCall('surface_points')
 
 
       ind = 0
@@ -294,7 +306,7 @@ module wall
               jx = jmx
               ix = imx
             case DEFAULT
-              call dmsg(5, "wall_find", 'Surface_points', 'FATAL  ERROR: select case')
+              Fatal_error
               km = 1
               jm = 1
               im = 1
@@ -307,9 +319,9 @@ module wall
           do j = jm,jx
             do i = im,ix 
               ind = ind + 1
-              wall_x(ind) = point(i, j, k )%x
-              wall_y(ind) = point(i, j, k )%y
-              wall_z(ind) = point(i, j, k )%z
+              wall_x(ind) = nodes(i, j, k )%x
+              wall_y(ind) = nodes(i, j, k )%y
+              wall_z(ind) = nodes(i, j, k )%z
               write(str(ind),'(3(f0.16, 4x))') wall_x(ind), wall_y(ind), wall_z(ind)
             end do
           end do

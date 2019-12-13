@@ -3,6 +3,9 @@ module write_output
   !< Open/close and call other modules for writing solution
   !< based on the input: type of file, either vtk or tecplot
   !< modules are called
+#include "../../debug.h"
+#include "../../error.h"
+  use vartypes
   use global                 ,only : OUT_FILE_UNIT
   use global_vars            ,only : outfile
   use global_vars            ,only : outfile
@@ -26,7 +29,7 @@ module write_output
     subroutine setup_file()
       !< Setup the file type based on the input
       implicit none
-      call dmsg(1, 'write_output_vtk', 'setup_file')
+      DebugCall('write_output_vtk: setup_file')
       if (write_file_format == "vtk") then
         file_format = ".vtk"
       elseif (write_file_format == "tecplot" .or. write_file_format == "tecplot_nodal") then
@@ -51,7 +54,7 @@ module write_output
       !< Open the file to write the solution
       implicit none
       character(len=*), intent(in) :: filename 
-      call dmsg(1, 'write_output_vtk', 'open_file')
+      DebugCall('write_output_vtk: open_file')
 
       open(OUT_FILE_UNIT, file=trim(filename)//trim(file_format) + '.part', form=trim(data_format))
 
@@ -62,14 +65,16 @@ module write_output
       implicit none
 
       character(len=*), intent(in) :: filename 
-      call dmsg(1, 'write_output_vtk', 'close_file')
+      DebugCall('write_output_vtk: close_file')
       call rename(trim(filename)//trim(file_format) + '.part', trim(filename)//trim(file_format))
       close(OUT_FILE_UNIT)
     end subroutine close_file
 
-    subroutine write_file()
+    subroutine write_file(nodes, dims)
       !< Writing output in the file according to the input file type
       implicit none
+      type(extent), intent(in) :: dims
+      type(nodetype), dimension(-2:dims%imx+3, -2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
 
       call setup_file()
       call open_file(outfile)
@@ -77,17 +82,16 @@ module write_output
       select case (write_file_format)
 
         case ('vtk')
-          call write_file_vtk()
+          call write_file_vtk(nodes, dims)
 
         case ('tecplot')
-          call write_file_tec()
+          call write_file_tec(nodes, dims)
 
         case ('tecplot_nodal')
-          call write_file_tec_nodal()
+          call write_file_tec_nodal(nodes, dims)
 
         case DEFAULT
-          call dmsg(5, 'write_output', 'write_file',&
-            'ERROR: write file format nor recognised. READ format -> '//write_file_format)
+          Fatal_error
 
       end select
 

@@ -88,6 +88,10 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                          "-extend_soruce"                 #Intel
                  )
 
+# fpic
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+                Fortran "-fPIC"        Intel # Intel/GNU
+                )
 ###################
 ### DEBUG FLAGS ###
 ###################

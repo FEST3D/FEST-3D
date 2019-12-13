@@ -5,6 +5,7 @@ module lusgs
   !< “Implementation of unstructured grid GMRES+LU-SGS method on 
   !< shared-memory, cache-based parallel computers,” 
   !< 38th Aerospace Sciences Meeting and Exhibit, vol. 927, 2000, p. 2000.
+  use vartypes
   use global_kkl , only : cphi1
   use global_kkl , only : cphi2
   use global_kkl , only : fphi
@@ -26,9 +27,9 @@ module lusgs
   use global_sa , only : kappa_sa
   use global_sa , only : cv1_3
   use global_sa , only : cw3_6
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
   use global_vars, only : R_gas
   use global_vars, only : Pr
   use global_vars, only : tPr
@@ -45,10 +46,10 @@ module lusgs
   use global_vars, only : znx, zny, znz !face unit normal z
   use global_vars, only : xA, yA, zA    !face area
     
-  use global_vars, only : n_var
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
+!  use global_vars, only : n_var
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
   use global_vars, only : gm
   use global_vars, only : sst_n_var
   use global_vars, only : qp
@@ -100,8 +101,6 @@ module lusgs
 
   use utils, only: alloc
   use utils, only:  dealloc 
-  use utils, only:  dmsg
-  use utils, only:  DEBUG_LEVEL
 
   use string
 
@@ -136,7 +135,8 @@ module lusgs
   use global_vars, only: PbcId
 
 
-#include "error.inc"
+#include "debug.h"
+#include "error.h"
 #include "mpi.inc"
 
 
@@ -183,17 +183,26 @@ module lusgs
   real, dimension(:), allocatable :: kmax_recv_buf
   !< Array to store data to receive data for Kmax face
 
+  integer :: imx, jmx, kmx, n_var
+
   public :: update_with_lusgs
   public :: setup_lusgs
   public :: destroy_lusgs
 
   contains
 
-    subroutine setup_lusgs()
+    subroutine setup_lusgs(control, dims)
       !< allocate array memory for data communication
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
       character(len=*), parameter :: &
         errmsg="module: LUSGS, subrouinte setup"
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+      n_var = control%n_var
 
       ibuf_size = (jmx-1)*(kmx-1)*n_var*1
       jbuf_size = (imx-1)*(kmx-1)*n_var*1
@@ -254,6 +263,7 @@ module lusgs
       !< Time-integrate with LU_SGS method
       implicit none
 
+      DebugCall("Update_with_lusgs")
       select case(trim(turbulence))
         case('none')
           call update_laminar_variables()
@@ -330,6 +340,7 @@ module lusgs
 
 
 
+        DebugCall("Update_with_lusgs")
         !intialize delQ
         delQstar = 0.0
 
@@ -2903,7 +2914,7 @@ module lusgs
 
 
       !--- IMIN ---!
-      call dmsg(1, 'interface', 'apply_interface')
+      DebugCall('apply_interface')
       if(imin_id>=0)then
         !collect data
         count=0
@@ -3187,7 +3198,7 @@ module lusgs
       integer:: tag=1
       integer:: count=0
 
-      call dmsg(1, 'interface', 'apply_periodic_boundary_condition')
+      DebugCall('apply_periodic_boundary_condition')
       if(PbcId(1)>=0)then
         !collect data
         count=0

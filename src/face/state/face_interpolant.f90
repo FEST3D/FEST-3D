@@ -1,19 +1,22 @@
 module face_interpolant
 
+#include "../../debug.h"
+#include "../../error.h"
+    use vartypes
     use global, only: INTERPOLANT_NAME_LENGTH
 
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
+!    use global_vars, only : imx
+!    use global_vars, only : jmx
+!    use global_vars, only : kmx
 
     use global_vars, only : qp
     use global_vars, only : gm
-    use global_vars, only : n_var
+!    use global_vars, only : n_var
     use global_vars, only : turbulence
 
     use global_vars, only : interpolant
 
-    use utils, only: alloc, dealloc, dmsg
+    use utils, only: alloc, dealloc
     use muscl, only: setup_scheme_muscl => setup_scheme, &
             destroy_scheme_muscl => destroy_scheme, &
             compute_muscl_states, &
@@ -75,6 +78,8 @@ module face_interpolant
     real, dimension(:, :, :), pointer :: z_z_speed_left, z_z_speed_right
     real, dimension(:, :, :), pointer :: z_pressure_left, z_pressure_right
 
+    integer :: imx, jmx, kmx, n_var
+
     !turbulent variable left and right with public deceleration
     include "turbulence_models/include/face_interpolant/variables_deceleration.inc"
 
@@ -84,12 +89,12 @@ module face_interpolant
     public :: extrapolate_cell_averages_to_faces
     public :: destroy_interpolant_scheme
     public :: compute_face_interpolant
-    public :: x_sound_speed_left
-    public :: x_sound_speed_right
-    public :: y_sound_speed_left
-    public :: y_sound_speed_right
-    public :: z_sound_speed_left
-    public :: z_sound_speed_right
+!    public :: x_sound_speed_left
+!    public :: x_sound_speed_right
+!    public :: y_sound_speed_left
+!    public :: y_sound_speed_right
+!    public :: z_sound_speed_left
+!    public :: z_sound_speed_right
     public :: x_qp_left, x_qp_right
     public :: y_qp_left, y_qp_right
     public :: z_qp_left, z_qp_right
@@ -182,25 +187,31 @@ module face_interpolant
             include "turbulence_models/include/face_interpolant/link_aliases.inc"
         end subroutine link_aliases
 
-        subroutine setup_interpolant_scheme()
+        subroutine setup_interpolant_scheme(control, dims)
             implicit none
+            type(controltype), intent(in) :: control
+            type(extent), intent(in) :: dims
+
+            imx = dims%imx
+            jmx = dims%jmx
+            kmx = dims%kmx
+
+            n_var = control%n_var
+
             select case (interpolant)
                 case ("none")
                     ! Do nothing
                     continue
                 case ("ppm")
-                    call setup_scheme_ppm()
+                    call setup_scheme_ppm(control, dims)
                 case ("muscl")
-                    call setup_scheme_muscl()
+                    call setup_scheme_muscl(control, dims)
                 case ("weno")
-                    call setup_scheme_weno()
+                    call setup_scheme_weno(control, dims)
                 case ("weno_NM")
-                    call setup_scheme_weno_NM()
+                    call setup_scheme_weno_NM(control, dims)
                 case default
-                    call dmsg(5, 'state_interpolant', &
-                            'setup_interpolant_scheme', &
-                            'Interpolant not recognized.')
-                    stop
+                    Fatal_error
             end select
             call allocate_memory()
             call link_aliases()
@@ -281,17 +292,14 @@ module face_interpolant
                 case ("weno_NM")
                     call destroy_scheme_weno_NM()
                 case default
-                    call dmsg(5, 'state_interpolant', &
-                            'destroy_interpolant_scheme', &
-                            'Interpolant not recognized.')
-                    stop
+                    Fatal_error
             end select
         end subroutine destroy_interpolant_scheme
 
         subroutine extrapolate_cell_averages_to_faces()
             implicit none
 
-            call dmsg(1, 'face_interpolant', 'extrapolate_cell_averages_to_faces')
+            DebugCall('extrapolate_cell_averages_to_faces')
 
             x_qp_left(:, :, :, :) = qp(-1:imx, 1:jmx-1, 1:kmx-1, 1:n_var)
             x_qp_right(:, :, :, :) = qp(0:imx+1, 1:jmx-1, 1:kmx-1, 1:n_var)
@@ -351,47 +359,44 @@ module face_interpolant
                     z_qp_left  =  z_qp_left_weno_NM
                     z_qp_right = z_qp_right_weno_NM
                 case default
-                    call dmsg(5, 'state_interpolant', &
-                            'compute_face_interpolant', &
-                            'Interpolant not recognized.')
-                    stop
+                    Fatal_error
             end select
         end subroutine compute_face_interpolant
 
-        function x_sound_speed_left()
-            implicit none
-            real, dimension(1:imx, 1:jmx-1, 1:kmx-1) :: x_sound_speed_left
-            x_sound_speed_left = sqrt(gm * x_pressure_left / x_density_left)
-        end function x_sound_speed_left
-
-        function x_sound_speed_right()
-            implicit none
-            real, dimension(1:imx, 1:jmx-1, 1:kmx-1) :: x_sound_speed_right
-            x_sound_speed_right = sqrt(gm * x_pressure_right / x_density_right)
-        end function x_sound_speed_right
-
-        function y_sound_speed_left()
-            implicit none
-            real, dimension(1:imx-1, 1:jmx, 1:kmx-1) :: y_sound_speed_left
-            y_sound_speed_left = sqrt(gm * y_pressure_left / y_density_left)
-        end function y_sound_speed_left
-
-        function y_sound_speed_right()
-            implicit none
-            real, dimension(1:imx-1, 1:jmx, 1:kmx-1) :: y_sound_speed_right
-            y_sound_speed_right = sqrt(gm * y_pressure_right / y_density_right)
-        end function y_sound_speed_right
-
-        function z_sound_speed_left()
-            implicit none
-            real, dimension(1:imx-1, 1:jmx-1, 1:kmx) :: z_sound_speed_left
-            z_sound_speed_left = sqrt(gm * z_pressure_left / z_density_left)
-        end function z_sound_speed_left
-
-        function z_sound_speed_right()
-            implicit none
-            real, dimension(1:imx-1, 1:jmx-1, 1:kmx) :: z_sound_speed_right
-            z_sound_speed_right = sqrt(gm * z_pressure_right / z_density_right)
-        end function z_sound_speed_right
+!        function x_sound_speed_left()
+!            implicit none
+!            real, dimension(1:imx, 1:jmx-1, 1:kmx-1) :: x_sound_speed_left
+!            x_sound_speed_left = sqrt(gm * x_pressure_left / x_density_left)
+!        end function x_sound_speed_left
+!
+!        function x_sound_speed_right()
+!            implicit none
+!            real, dimension(1:imx, 1:jmx-1, 1:kmx-1) :: x_sound_speed_right
+!            x_sound_speed_right = sqrt(gm * x_pressure_right / x_density_right)
+!        end function x_sound_speed_right
+!
+!        function y_sound_speed_left()
+!            implicit none
+!            real, dimension(1:imx-1, 1:jmx, 1:kmx-1) :: y_sound_speed_left
+!            y_sound_speed_left = sqrt(gm * y_pressure_left / y_density_left)
+!        end function y_sound_speed_left
+!
+!        function y_sound_speed_right()
+!            implicit none
+!            real, dimension(1:imx-1, 1:jmx, 1:kmx-1) :: y_sound_speed_right
+!            y_sound_speed_right = sqrt(gm * y_pressure_right / y_density_right)
+!        end function y_sound_speed_right
+!
+!        function z_sound_speed_left()
+!            implicit none
+!            real, dimension(1:imx-1, 1:jmx-1, 1:kmx) :: z_sound_speed_left
+!            z_sound_speed_left = sqrt(gm * z_pressure_left / z_density_left)
+!        end function z_sound_speed_left
+!
+!        function z_sound_speed_right()
+!            implicit none
+!            real, dimension(1:imx-1, 1:jmx-1, 1:kmx) :: z_sound_speed_right
+!            z_sound_speed_right = sqrt(gm * z_pressure_right / z_density_right)
+!        end function z_sound_speed_right
 
 end module face_interpolant

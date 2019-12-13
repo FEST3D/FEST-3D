@@ -4,6 +4,8 @@ module read_output_tec
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
+#include "../../debug.h"
+#include "../../error.h"
   use global     , only : IN_FILE_UNIT
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
@@ -105,7 +107,7 @@ module read_output_tec
       implicit none
       integer :: n
 
-      call dmsg(1, 'read_output_tec', 'read_header')
+      DebugCall('read_output_tec: read_header')
       read(IN_FILE_UNIT, *) !"variables = x y z "
 
       do n = 1,r_count
@@ -127,7 +129,7 @@ module read_output_tec
       real :: dummy
 
       ! read grid point coordinates
-      call dmsg(1, 'read_output_tec', 'read_grid')
+      DebugCall('read_output_tec: read_grid')
       read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
       read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
       read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
@@ -141,7 +143,7 @@ module read_output_tec
       real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
       character(len=*),       intent(in):: name
 
-      call dmsg(1, 'read_output_tec', trim(name))
+      DebugCall('read_output_tec'//trim(name))
       read(IN_FILE_UNIT, *) (((var(i, j, k),i=1,imx-1), j=1,jmx-1), k=1,kmx-1)
 
     end subroutine read_scalar
@@ -151,7 +153,7 @@ module read_output_tec
       implicit none
       real :: dummy
 
-      call dmsg(1, 'read_output_tec',"skip_scalar")
+      DebugCall('read_output_tec: skip_scalar')
       read(IN_FILE_UNIT, *) (((dummy ,i=1,imx-1), j=1,jmx-1), k=1,kmx-1)
 
     end subroutine skip_scalar

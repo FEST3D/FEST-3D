@@ -5,11 +5,13 @@ module boundary_state_reconstruction
   !< is available at the boundaries, the boundary face is limiter to 
   !< 3rd order accurate and is reconstructed using MUSCL Scheme even when
   !< rest of the domain is using WENO or PPM
-  use utils,                only: dmsg
-!  use grid,                 only: imx, jmx, kmx
-  use global_vars,          only: imx
-  use global_vars,          only: jmx
-  use global_vars,          only: kmx
+#include "../debug.h"
+#include "../error.h"
+
+   use vartypes
+!  use global_vars,          only: imx
+!  use global_vars,          only: jmx
+!  use global_vars,          only: kmx
   use global_vars,          only: imin_id
   use global_vars,          only: jmin_id
   use global_vars,          only: kmin_id
@@ -18,7 +20,7 @@ module boundary_state_reconstruction
   use global_vars,          only: kmax_id
 
   use global_vars,          only: qp
-  use global_vars,          only: n_var
+!  use global_vars,          only: n_var
   use global_vars,          only: ilimiter_switch
   use global_vars,          only: jlimiter_switch
   use global_vars,          only: klimiter_switch
@@ -37,42 +39,52 @@ module boundary_state_reconstruction
   !< Flag to check if reconstruction is required
   integer :: switch_L=1
   !< Limiter switch
+  integer :: imx, jmx, kmx, n_var
   public :: reconstruct_boundary_state
 
   contains
 
-    subroutine reconstruct_boundary_state(interpolant)
+    subroutine reconstruct_boundary_state(interpolant, control, dims)
       !< Call reconstruction based on the flag and boundary condition
 
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
       character(len=*), intent(in)  :: interpolant
-      call dmsg(1,'boundary_state_recons', 'recons_boundary_state')
+
+      DebugCall('recons_boundary_state')
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      n_var = control%n_var
       if (interpolant == 'ppm' .or. interpolant=='weno' .or. interpolant=='weno_NM') ppm_flag=1
       if (imin_id==-7 .or. jmin_id==-7 .or. kmin_id==-7) ppm_flag=1
       if (imax_id==-7 .or. jmax_id==-7 .or. kmax_id==-7) ppm_flag=1
       if(interpolant /='none')then
         if(imin_id<0 .and. imin_id/=-10)then
-          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imin')
+          DebugCall('recons_bndry_state: imin')
           call reconstruct_imin()
         end if
         if(imax_id<0 .and. imax_id/=-10)then
-          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'imax')
+          DebugCall('recons_bndry_state: imax')
           call reconstruct_imax()
         end if
         if(jmin_id<0 .and. jmin_id/=-10)then
-          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'jmin')
+          DebugCall('recons_bndry_state: jmin')
           call reconstruct_jmin()
         end if
         if(jmax_id<0 .and. jmax_id/=-10)then
-          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'jmax')
+          DebugCall('recons_bndry_state: jmax')
           call reconstruct_jmax()
         end if
         if(kmin_id<0 .and. kmin_id/=-10)then
-          call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'kmin')
+          DebugCall('recons_bndry_state: kmin')
           call reconstruct_kmin()
         end if
         if(kmax_id<0 .and. kmax_id/=-10)then
-        call dmsg(1,'bndry_state_recons', 'recons_bndry_state', 'kmax')
+        DebugCall('recons_bndry_state: kmax')
           call reconstruct_kmax()
         end if
       end if

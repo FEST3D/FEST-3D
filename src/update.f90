@@ -1,6 +1,7 @@
   !< Time integration module
 module update
   !< This module march the solution is time.
+  use vartypes
   use global_kkl , only : cphi1
   use global_kkl , only : cphi2
   use global_kkl , only : fphi
@@ -26,9 +27,9 @@ module update
   use gradients  ,only :   gradw_x
   use gradients  ,only :   gradw_y
   use gradients  ,only :   gradw_z
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
   use global_vars, only : R_gas
   use global_vars, only : Pr
   use global_vars, only : tPr
@@ -39,10 +40,10 @@ module update
   use global_vars, only : znx, zny, znz !face unit normal z
   use global_vars, only : xA, yA, zA    !face area
     
-  use global_vars, only : n_var
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
+!  use global_vars, only : n_var
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
   use global_vars, only : gm
   use global_vars, only : sst_n_var
   use global_vars, only : qp
@@ -83,8 +84,6 @@ module update
 
   use utils, only: alloc
   use utils, only:  dealloc 
-  use utils, only:  dmsg
-  use utils, only:  DEBUG_LEVEL
 
   use string
 
@@ -117,7 +116,8 @@ module update
   use lusgs     , only : update_with_lusgs
   use lusgs     , only : setup_lusgs
   use lusgs     , only : destroy_lusgs
-#include "error.inc"
+#include "debug.h"
+#include "error.h"
 #include "mpi.inc"
     private
 
@@ -133,6 +133,7 @@ module update
     !< Variable array new for each cell center
     real, dimension(:)      , allocatable :: R
     !< Residue array for each cell center
+    integer :: imx, jmx, kmx, n_var
 
     ! Public methods
     public :: setup_update
@@ -142,10 +143,18 @@ module update
     contains
 
 
-      subroutine setup_update()
+      subroutine setup_update(control, dims)
         !< Allocate memory to variables required based 
         !< on the time-integration scheme.
         implicit none
+        type(controltype), intent(in) :: control
+        type(extent), intent(in) :: dims
+
+        imx = dims%imx
+        jmx = dims%jmx
+        kmx = dims%kmx
+
+        n_var = control%n_var
 
         call alloc(u1,1,n_var)
         call alloc(u2,1,n_var)
@@ -162,9 +171,9 @@ module update
           case ("TVDRK2", "TVDRK3", "TVDRK4")
             call alloc(U_store,-2,imx+2,-2,jmx+2,-2,kmx+2,1,n_var)
           case ("implicit")
-            call setup_lusgs()
+            call setup_lusgs(control, dims)
           case ("plusgs")
-            call setup_plusgs()
+            call setup_plusgs(control, dims)
           case default
             Fatal_error
         end select
@@ -200,14 +209,19 @@ module update
       end subroutine destroy_update
 
 
-      subroutine get_next_solution()
+      subroutine get_next_solution(control, dims)
         !< Get solution at next time-step using scheme
         !< given in the input file.
         implicit none
+        type(controltype), intent(in) :: control
+        type(extent), intent(in) :: dims
+        real :: CFL 
+        CFL = control%CFL
+        print*, "CFL", control%CFL
         select case (trim(time_step_accuracy))
             case ("none")
-              call get_total_conservative_Residue()
-              call compute_time_step() ! has to be after get_..._Residue()
+              call get_total_conservative_Residue(control, dims)
+              call compute_time_step(CFL) ! has to be after get_..._Residue()
               call update_with("conservative", 1. ,1., .FALSE.) 
               !call update_with("primitive", 1. ,1., .FALSE.) 
               !call update_laminar_variables_primitive(1. ,1., .FALSE.) 
@@ -217,80 +231,80 @@ module update
             case ("RK4")
               R_store=0.
               U_store = qp
-              call get_total_conservative_Residue()
-              call compute_time_step()
+              call get_total_conservative_Residue(control, dims)
+              call compute_time_step(CFL)
               call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
               !call update_laminar_variables_primitive(0.5, 1., .FALSE., .True., R_store, U_store) 
               !call update_turbulent_variables_primitive(0.5, 1., .FALSE., .True., R_store, U_store) 
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_with("conservative", 0.5  , 2., .FALSE., R_store, U_store) 
               !call update_laminar_variables_primitive(0.5, 2., .FALSE., .True., R_store, U_store) 
               !call update_turbulent_variables_primitive(0.5, 2., .FALSE., .True., R_store, U_store) 
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_with("conservative", 1.0  , 2., .FALSE., R_store, U_store) 
               !call update_laminar_variables_primitive(1.0, 2., .FALSE., .True., R_store, U_store) 
               !call update_turbulent_variables_primitive(1.0, 2., .FALSE., .True., R_store, U_store) 
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_with("conservative", 1./6., 1., .TRUE. , R_store, U_store) 
               !call update_laminar_variables_primitive(1./6., 1., .TRUE., .FALSE., R_store, U_store) 
               !call update_turbulent_variables_primitive(1./6., 1., .TRUE., .FALSE., R_store, U_store) 
             case("RK2")
               R_store=0.
               U_store = qp
-              call get_total_conservative_Residue()
-              call compute_time_step()
+              call get_total_conservative_Residue(control, dims)
+              call compute_time_step(CFL)
               call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_with("conservative", 0.5  , 1., .TRUE., R_store, U_store) 
             case ("TVDRK3")
               U_store = qp
-              call get_total_conservative_Residue()
-              call compute_time_step()
+              call get_total_conservative_Residue(control, dims)
+              call compute_time_step(CFL)
               call update_with("conservative", 1.0  , 1.) 
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_with("conservative", 1.0  , 1.) 
               qp = 0.75*U_store + 0.25*qp
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_with("conservative", 1.0  , 1.) 
               qp = (1./3.)*U_store + (2./3.)*qp
             case ("TVDRK2")
               U_store = qp
-              call get_total_conservative_Residue()
-              call compute_time_step()
+              call get_total_conservative_Residue(control, dims)
+              call compute_time_step(CFL)
               call update_with("conservative", 1.0  , 1.) 
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_with("conservative", 1.0  , 1.) 
               qp = 0.5*U_store + 0.5*qp
             case ("TVDRK4")
               U_store = qp
-              call get_total_conservative_Residue()
-              call compute_time_step()
+              call get_total_conservative_Residue(control, dims)
+              call compute_time_step(CFL)
               call update_laminar_variables_conservative(0.25, un=U_store) 
               if(turbulence/='none')then
                 call update_turbulent_variables_conservative(1.0, un=U_store)
               end if
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_laminar_variables_conservative(0.333333, un=U_store) 
               !if(turbulence/='none')then
               !  call update_turbulent_variables_conservative(0.333333, un=U_store)
               !end if
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_laminar_variables_conservative(0.5, un=U_store) 
               !if(turbulence/='none')then
               !  call update_turbulent_variables_conservative(0.5, un=U_store)
               !end if
-              call get_total_conservative_Residue()
+              call get_total_conservative_Residue(control, dims)
               call update_laminar_variables_conservative(1.00, un=U_store) 
               !if(turbulence/='none')then
               !  call update_turbulent_variables_conservative(1.00, un=U_store)
               !end if
             case ("implicit")
-              call get_total_conservative_Residue()
-              call compute_time_step() ! has to be after get_..._Residue()
+              call get_total_conservative_Residue(control, dims)
+              call compute_time_step(CFL) ! has to be after get_..._Residue()
               call update_with_lusgs()
             case ("plusgs")
-              call get_total_conservative_Residue()
-              call compute_time_step() ! has to be after get_..._Residue()
+              call get_total_conservative_Residue(control, dims)
+              call compute_time_step(CFL) ! has to be after get_..._Residue()
               call update_with_plusgs()
             case default
               Fatal_error
@@ -338,7 +352,6 @@ module update
 
         select case(type)
           case('primitive')
-            !include "update_primitive.inc"
 
             !update primitive variable
             do k = 1,kmx-1
@@ -538,7 +551,7 @@ module update
       end subroutine update_with
 
 
-      subroutine get_total_conservative_Residue()
+      subroutine get_total_conservative_Residue(control, dims)
         !< Main loop of whole code. Find residual
         !< 
         !< For each iteration it apply boundary conditions,
@@ -548,21 +561,23 @@ module update
         !< residual due to  viscosity, turbulence and source
         !< terms.
         implicit none
+        type(controltype), intent(in) :: control
+        type(extent), intent(in) :: dims
 
 !        call send_recv(3) ! parallel call-argument:no of layers 
-        call apply_interface()
+        call apply_interface(control, dims)
         call populate_ghost_primitive()
         call compute_face_interpolant()
-        call reconstruct_boundary_state(interpolant)
+        call reconstruct_boundary_state(interpolant, control, dims)
         call compute_fluxes()
         if (mu_ref /= 0.0) then
           call evaluate_all_gradients()
           call calculate_viscosity()
-          call compute_viscous_fluxes(F_p, G_p, H_p)
+          call compute_viscous_fluxes(F_p, G_p, H_p, control, dims)
 !          call compute_turbulent_fluxes(F_p, G_p, H_p)
         end if
         call compute_residue()
-        call add_source_term_residue()
+        call add_source_term_residue(control, dims)
 
       end subroutine get_total_conservative_Residue
 

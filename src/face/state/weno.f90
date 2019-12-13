@@ -9,14 +9,16 @@ module weno
     !<Acta Mechanica Sinica/Lixue Xuebao, 2017, pp. 1–11.
     !-----------------------------------------------------------------
 
-    use utils, only: alloc, dealloc, dmsg
+#include "../../debug.h"
+    use vartypes
+    use utils, only: alloc, dealloc
 
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
+!    use global_vars, only : imx
+!    use global_vars, only : jmx
+!    use global_vars, only : kmx
 
     use global_vars, only : qp
-    use global_vars, only : n_var
+!    use global_vars, only : n_var
     use global_vars, only : pressure
     use global_vars, only : pressure_inf
     use global_vars, only : ilimiter_switch
@@ -46,6 +48,7 @@ module weno
     !< Generalized pointer for any I-J-K direction> f_qp_right can 
     !< either point to x_qp_right, y_qp_right or z_qp_right
 
+    integer :: imx, jmx, kmx, n_var
     ! Public members
     public :: setup_scheme
     public :: destroy_scheme
@@ -56,13 +59,21 @@ module weno
 
     contains
         
-        subroutine setup_scheme()
+        subroutine setup_scheme(control, dims)
           !< Allocate memoery to all array which store state
           !< the face.
 
         implicit none
+        type(controltype), intent(in) :: control
+        type(extent), intent(in) :: dims
 
-        call dmsg(1, 'weno', 'setup_weno')
+        DebugCall('setup_weno')
+
+        imx = dims%imx
+        jmx = dims%jmx
+        kmx = dims%kmx
+
+        n_var = control%n_var
 
         call alloc(x_qp_left, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
             errmsg='Error: Unable to allocate memory for ' // &
@@ -94,7 +105,7 @@ module weno
 
             implicit none
 
-            call dmsg(1, 'weno', 'destroy_weno')
+            DebugCall('destroy_weno')
 
             call dealloc(x_qp_left)
             call dealloc(x_qp_right)

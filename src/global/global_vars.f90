@@ -29,7 +29,7 @@ module global_vars
   ! Time controls
   integer :: min_iter=1              !< Minimum iteration value, starting iteration value
   integer :: max_iters=1             !< Maximum iteration value, stop after these many iteration
-  integer :: start_from=0            !< Number of the folder (in time_directories) to load stored state from to restart computation
+!  integer :: start_from=0            !< Number of the folder (in time_directories) to load stored state from to restart computation
   integer :: checkpoint_iter=0       !< Write interval for output file. Number of iteration after which solver will dump/store a state in a folder in time_directories
   integer :: checkpoint_iter_count=0 !< Counter of folder number to write in time_directories/
   integer :: current_iter=0          !< Current iteration number
@@ -53,7 +53,7 @@ module global_vars
   character(len=FLOW_TYPE_LENGTH):: previous_flow_type="none"   !< Type of flow:inviscid, laminar, etc, stored in the load file 
 
   ! solver specific
-  real :: CFL                  !< Courant–Friedrichs–Lewy (CFL) (Read from input)
+!  real :: CFL                  !< Courant–Friedrichs–Lewy (CFL) (Read from input)
   real :: tolerance            !< Minimum value of resnorm after which simulation stop
   character(len=TOLERANCE_LENGTH) :: tolerance_type="abs" !< Type of tolerance to check:absolute or relative
   integer :: want_to_stop=0    !< 0: continue the solver; 1=Stop the solver
@@ -77,7 +77,7 @@ module global_vars
   real, dimension(:, :, :, :), allocatable  :: dEdx_3
 
   ! state variables viscous
-  integer                                           :: n_var=5
+!  integer                                           :: n_var=5
    !< Number of variable to solve for
   real, dimension(:, :, :, :), allocatable, target  :: qp           
    !< Store primitive variable at cell center
@@ -371,18 +371,18 @@ module global_vars
    !< Store magnitude of face area vector of K direction faces
   real, dimension(:, :, :), allocatable, target :: volume
    !< Store cell volume
-  real, dimension(:, :, :), allocatable, target ::   left_ghost_centroid
-   !< Store the cell center of the ghost cell on 1 face
-  real, dimension(:, :, :), allocatable, target ::  right_ghost_centroid
-   !< Store the cell center of the ghost cell on 2 face
-  real, dimension(:, :, :), allocatable, target ::  front_ghost_centroid
-   !< Store the cell center of the ghost cell on 3 face
-  real, dimension(:, :, :), allocatable, target ::   back_ghost_centroid
-   !< Store the cell center of the ghost cell on 4 face
-  real, dimension(:, :, :), allocatable, target ::    top_ghost_centroid
-   !< Store the cell center of the ghost cell on 5 face
-  real, dimension(:, :, :), allocatable, target :: bottom_ghost_centroid
-   !< Store the cell center of the ghost cell on 6 face
+!  real, dimension(:, :, :), allocatable, target ::   left_ghost_centroid
+!   !< Store the cell center of the ghost cell on 1 face
+!  real, dimension(:, :, :), allocatable, target ::  right_ghost_centroid
+!   !< Store the cell center of the ghost cell on 2 face
+!  real, dimension(:, :, :), allocatable, target ::  front_ghost_centroid
+!   !< Store the cell center of the ghost cell on 3 face
+!  real, dimension(:, :, :), allocatable, target ::   back_ghost_centroid
+!   !< Store the cell center of the ghost cell on 4 face
+!  real, dimension(:, :, :), allocatable, target ::    top_ghost_centroid
+!   !< Store the cell center of the ghost cell on 5 face
+!  real, dimension(:, :, :), allocatable, target :: bottom_ghost_centroid
+!   !< Store the cell center of the ghost cell on 6 face
   
 
   ! higher order boundary condtioion

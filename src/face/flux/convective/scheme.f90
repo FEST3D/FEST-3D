@@ -1,14 +1,16 @@
 module scheme
 
+#include "../../../debug.h"
+#include "../../../error.h"
+    use vartypes
     use global, only: SCHEME_NAME_LENGTH
 
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
+!    use global_vars, only : imx
+!    use global_vars, only : jmx
+!    use global_vars, only : kmx
 
     use global_vars, only : mu_ref
-    use global_vars, only : n_var
-    use global_vars, only : n_var
+!    use global_vars, only : n_var
     use global_vars, only : F_p
     use global_vars, only : G_p
     use global_vars, only : H_p
@@ -27,7 +29,7 @@ module scheme
 
     use global_vars, only : scheme_name
 
-    use utils, only: alloc, dealloc, dmsg
+    use utils, only: alloc, dealloc
     use face_interpolant, only: setup_interpolant_scheme, &
             destroy_interpolant_scheme
     use van_leer, only: &
@@ -90,13 +92,15 @@ module scheme
 !           get_residue_hlle => get_residue
     include "turbulence_models/include/scheme/import_module.inc"
 
+
     implicit none
+    integer :: imx, jmx, kmx, n_var
     private
 
     include "turbulence_models/include/scheme/variable_deceleration.inc" 
 
     type :: residual
-      real,  ::  residue
+      real  ::  residue
     end type
     type :: fluxLamComp
       real ::  mass
@@ -131,14 +135,22 @@ module scheme
 
     contains
 
-        subroutine setup_scheme()
+        subroutine setup_scheme(control, dims)
             implicit none
+            type(controltype), intent(in) :: control
+            type(extent), intent(in) :: dims
 
-            call setup_interpolant_scheme()
+            imx = dims%imx
+            jmx = dims%jmx
+            kmx = dims%kmx
+
+            n_var = control%n_var
+
+            call setup_interpolant_scheme(control, dims)
 
             select case (scheme_name)
                 case ("van_leer")
-                    call setup_scheme_van_leer()
+                    call setup_scheme_van_leer(control, dims)
                     F_p => F_van_leer
                     G_p => G_van_leer
                     H_p => H_van_leer
@@ -164,14 +176,12 @@ module scheme
                                   TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 6)
                           dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 7)
                         case DEFAULT
-                            call dmsg(5, "scheme", "van_leer_setup", &
-                                      "ERROR: Turbulence model not recognised")
-                            STOP
+                            Fatal_error
 
                     end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_van_leer(:,:,:,:)
                 case ("ausm")
-                    call setup_scheme_ausm()
+                    call setup_scheme_ausm(control, dims)
                     F_p => F_ausm
                     G_p => G_ausm
                     H_p => H_ausm
@@ -196,13 +206,11 @@ module scheme
                           TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 6)
                   dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 7)
                         case DEFAULT
-                            call dmsg(5, "scheme", "AUSM_setup", &
-                                      "ERROR: Turbulence model not recognised")
-                            STOP
+                            Fatal_error
                     end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausm(:,:,:,:)
                 case ("ausmP")
-                    call setup_scheme_ausmP()
+                    call setup_scheme_ausmP(control, dims)
                     F_p => F_ausmP
                     G_p => G_ausmP
                     H_p => H_ausmP
@@ -227,13 +235,11 @@ module scheme
                           TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 6)
                   dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 7)
                         case DEFAULT
-                            call dmsg(5, "scheme", "AUSM+_setup", &
-                                      "ERROR: Turbulence model not recognised")
-                            STOP
+                            Fatal_error
                     end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausmP(:,:,:,:)
                 case ("ausmUP")
-                    call setup_scheme_ausmUP()
+                    call setup_scheme_ausmUP(control, dims)
                     F_p => F_ausmUP
                     G_p => G_ausmUP
                     H_p => H_ausmUP
@@ -258,13 +264,11 @@ module scheme
                           TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 6)
                   dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 7)
                         case DEFAULT
-                            call dmsg(5, "scheme", "AUSMUP_setup", &
-                                      "ERROR: Turbulence model not recognised")
-                            STOP
+                            Fatal_error
                     end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ausmUP(:,:,:,:)
                 case ("slau")
-                    call setup_scheme_slau()
+                    call setup_scheme_slau(control, dims)
                     F_p => F_slau
                     G_p => G_slau
                     H_p => H_slau
@@ -289,13 +293,11 @@ module scheme
                           TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 6)
                   dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 7)
                         case DEFAULT
-                            call dmsg(5, "scheme", "SLAU_setup", &
-                                      "ERROR: Turbulence model not recognised")
-                            STOP
+                            Fatal_error
                     end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_slau(:,:,:,:)
                 case ("ldfss0")
-                    call setup_scheme_ldfss0()
+                    call setup_scheme_ldfss0(control, dims)
                     F_p => F_ldfss0
                     G_p => G_ldfss0
                     H_p => H_ldfss0
@@ -320,17 +322,13 @@ module scheme
                           TKE_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 6)
                   dissipation_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 7)
                         case DEFAULT
-                            call dmsg(5, "scheme", "LDFSS_setup", &
-                                      "ERROR: Turbulence model not recognised")
-                            STOP
+                            Fatal_error
                     end select
                     residue(1:imx-1,1:jmx-1,1:kmx-1,1:n_var)=>residue_ldfss0(:,:,:,:)
 !               case ("hlle")
 !                   call setup_scheme_hlle()
                 case default
-                    call dmsg(5, 'scheme', 'setup_scheme', &
-                            'Scheme not recognized.')
-                    stop
+                    Fatal_error
             end select
 
         end subroutine setup_scheme
@@ -376,9 +374,7 @@ module scheme
 !               case ("hlle")
 !                   call destroy_scheme_hlle()
                 case default
-                    call dmsg(5, 'scheme', 'destroy_scheme', &
-                            'Scheme not recognized.')
-                    stop
+                    Fatal_error
             end select
             
             call destroy_interpolant_scheme()
@@ -406,9 +402,7 @@ module scheme
 !               case ("hlle")
 !                   call compute_fluxes_hlle()
                 case default
-                    call dmsg(5, 'scheme', 'compute_fluxes', &
-                            'Scheme not recognized.')
-                    stop
+                    Fatal_error
             end select
             
         end subroutine compute_fluxes
@@ -433,9 +427,7 @@ module scheme
 !               case ("hlle")
 !                   call get_residue_hlle()
                 case default
-                    call dmsg(5, 'scheme', 'compute_residue', &
-                            'Scheme not recognized.')
-                    stop
+                    Fatal_error
             end select
         
         end subroutine compute_residue

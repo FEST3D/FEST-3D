@@ -5,10 +5,13 @@ module ausmUP
     !< AUSM+-up for all speeds,” Journal of Computational Physics, 
     !< vol. 214, 2006, pp. 137–170
     !-------------------------------------------------------------------
-    
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
+#include "../../../debug.h"
+#include "../../../error.h"    
+
+    use vartypes
+!    use global_vars, only : imx
+!    use global_vars, only : jmx
+!    use global_vars, only : kmx
 
     use global_vars, only : xnx, xny, xnz !face unit normal x
     use global_vars, only : ynx, yny, ynz !face unit normal y
@@ -17,7 +20,7 @@ module ausmUP
 
     use global_vars, only : gm
     use global_vars, only : MInf
-    use global_vars, only : n_var
+!    use global_vars, only : n_var
     use global_vars, only : turbulence
     use global_vars, only : process_id
     use global_vars, only : current_iter
@@ -26,7 +29,7 @@ module ausmUP
     use global_vars, only : make_G_flux_zero
     use global_vars, only : make_H_flux_zero
 
-    use utils, only: alloc, dealloc, dmsg
+    use utils, only: alloc, dealloc
     use face_interpolant, only: x_qp_left, x_qp_right 
     use face_interpolant, only: y_qp_left, y_qp_right
     use face_interpolant, only:  z_qp_left, z_qp_right
@@ -46,6 +49,8 @@ module ausmUP
     real, dimension(:, :, :, :), pointer :: flux_p
     !< Pointer/alias for the either F, G, or H
 
+    integer :: imx, jmx, kmx, n_var
+
     ! Public members
     public :: setup_scheme
     public :: destroy_scheme
@@ -54,12 +59,21 @@ module ausmUP
     
     contains
 
-        subroutine setup_scheme()
+        subroutine setup_scheme(control, dims)
           !< Allocate memory to the flux variables
 
             implicit none
+            type(controltype), intent(in) :: control
+            type(extent), intent(in) :: dims
 
-            call dmsg(1, 'AUSM+-UP', 'setup_scheme')
+            imx = dims%imx
+            jmx = dims%jmx
+            kmx = dims%kmx
+
+            n_var = control%n_var
+
+
+            DebugCall('setup_scheme')
 
             call alloc(F, 1, imx, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &
@@ -81,7 +95,7 @@ module ausmUP
 
             implicit none
 
-            call dmsg(1, 'AUSM+-UP', 'destroy_scheme')
+            DebugCall('destroy_scheme')
             
             call dealloc(F)
             call dealloc(G)
@@ -146,7 +160,7 @@ module ausmUP
             real, parameter :: Ku = 0.75
             real, parameter :: sigma = 1.0
 
-            call dmsg(1, 'ausm+-UP', 'compute_flux '//trim(f_dir))
+            DebugCall('compute_flux '//trim(f_dir))
             
             select case (f_dir)
                 case ('x')
@@ -183,9 +197,7 @@ module ausmUP
                     f_qp_left => z_qp_left
                     f_qp_right => z_qp_right
                 case default
-                    call dmsg(5, 'AUSM+-UP', 'compute_flux', &
-                            'Direction not recognised')
-                    stop
+                    Fatal_error
             end select
             
 
@@ -324,18 +336,16 @@ module ausmUP
             
             implicit none
             
-            call dmsg(1, 'AUSM+-UP', 'compute_fluxes')
+            DebugCall('compute_fluxes')
 
             call compute_flux('x')
             if (any(isnan(F))) then
-                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: F flux Nan detected')
-                stop
+              Fatal_error
             end if    
 
             call compute_flux('y')
             if (any(isnan(G))) then 
-                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: G flux Nan detected')
-                stop
+              Fatal_error
             end if    
             
             if(kmx==2) then
@@ -344,8 +354,7 @@ module ausmUP
               call compute_flux('z')
             end if
             if (any(isnan(H))) then
-                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: H flux Nan detected')
-                stop
+              Fatal_error
             end if
 
         end subroutine compute_fluxes
@@ -358,7 +367,7 @@ module ausmUP
             
             integer :: i, j, k, l
 
-            call dmsg(1, 'AUSM+-UP', 'compute_residue')
+            DebugCall('compute_residue')
 
             do l = 1, n_var
              do k = 1, kmx - 1

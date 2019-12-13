@@ -1,14 +1,12 @@
-# CMake project file for FOO
+# CMake project file for FEST-3D
 
-##################################################
-# Define the project and the depencies that it has
-##################################################
-
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
 PROJECT(FEST3D Fortran)
+enable_language (C Fortran)
+enable_testing ()
 
 # Set the FOO version
-SET(VERSION 0.0.1)
+SET(VERSION 1.1.1)
 
 # Add our local modlues to the module path
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -46,6 +44,13 @@ ENDIF(FCNAME STREQUAL "pgf90")
 # Define the actual files and folders that make up the build
 ############################################################
 
+function(LinkFortranLibraries Target)
+  target_link_libraries(Target ${ARGN})
+  foreach(Lib IN LISTS ARGN)
+    target_include_directories(Simulation PUBLIC $<TARGET_PROPERTY:${Lib},Fortran_MODULE_DIRECTORY>)
+  endforeach()
+endfunction()
+
 # Define the executable name
 SET(EXE FEST3D)
 
@@ -53,6 +58,7 @@ SET(EXE FEST3D)
 SET(SRC ${CMAKE_SOURCE_DIR}/src)
 SET(MOD ${CMAKE_SOURCE_DIR}/mod)
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
+SET(TST ${CMAKE_SOURCE_DIR}/tests)
 
 # Have the .mod files placed in the lib folder
 SET(CMAKE_Fortran_MODULE_DIRECTORY ${MOD})
@@ -60,6 +66,11 @@ SET(CMAKE_Fortran_MODULE_DIRECTORY ${MOD})
 # The source for the FEST3D binary and have it placed in bin folder
 Add_subdirectory(${SRC} ${BIN})
 
+# Add ctest function
+INCLUDE(${CMAKE_MODULE_PATH}/CTestFunctions.cmake)
+Add_subdirectory(${TST})
+
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall")
 # Add a distclean target to the Makefile
 ADD_CUSTOM_TARGET(distclean 
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/distclean.cmake

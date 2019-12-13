@@ -15,6 +15,7 @@ module read
 
 #include "../../debug.h"
 
+  use vartypes
   use global, only: CONTROL_FILE_UNIT
   use global, only:  SCHEME_FILE_UNIT
   use global, only:    FLOW_FILE_UNIT
@@ -27,9 +28,9 @@ module read
   use global, only: RES_CONTROL_FILE_UNIT
   use global, only: res_control_file
 
-  use global_vars, only: CFL
+!  use global_vars, only: CFL
   use global_vars, only: max_iters
-  use global_vars, only: start_from
+!  use global_vars, only: start_from
   use global_vars, only: checkpoint_iter
   use global_vars, only: res_write_interval
   use global_vars, only: write_file_format
@@ -46,7 +47,7 @@ module read
   use global_vars, only: time_step_accuracy
   use global_vars, only: global_time_step
 
-  use global_vars, only: n_var
+!  use global_vars, only: n_var
   use global_vars, only: free_stream_density
   use global_vars, only: free_stream_x_speed
   use global_vars, only: free_stream_y_speed
@@ -85,7 +86,6 @@ module read
   use global_vars, only: Res_list
   use global_vars, only: Res_count
   use utils      , only: DEBUG_LEVEL
-  use utils      , only: dmsg
   use string
   use fclose     , only: close_file
 
@@ -93,16 +93,24 @@ module read
   implicit none
   private
 
+!  type :: controltype
+!      real :: CFL               
+!      !< Courant–Friedrichs–Lewy (CFL) (Read from input)
+!  end type controltype
+
   public :: read_input_and_controls
 
     contains
 
-      subroutine read_input_and_controls()
+      subroutine read_input_and_controls(control)
         !< Read all the input control files
         implicit none
-        call read_controls()
+        type(controltype), intent(out) :: control
+        call read_controls(control)
+        print*, "CFL read", control%cfL
         call read_scheme()
-        call read_flow()
+        call read_flow(control)
+        print*, "CFL read", control%cfL
         call read_output_control()
         call read_Res_list()
       end subroutine read_input_and_controls
@@ -145,16 +153,16 @@ module read
                 exit
             end if
         end do
-        call dmsg(0, 'read', 'get_next_token', 'Returning: ' // trim(buf))
 
       end subroutine get_next_token
 
 
 
-      subroutine read_controls()
+      subroutine read_controls(control)
         !< Read control.md file
         !---------------------------------------------
         implicit none
+        type(controltype), intent(inout) :: control
         character(len=STRING_BUFFER_LENGTH) :: buf
 
         DebugCall('read_controls')
@@ -168,12 +176,13 @@ module read
 
         ! READ CFL
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) CFL
+        read(buf, *) control%CFL
+        print*, "controlCFL", control%CFL
         DebugInfo("CFL = "//trim(buf))
 
         ! READ start_from
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) start_from
+        read(buf, *) control%start_from
         DebugInfo('Start from  level = '//trim(buf))
 
         ! READ max_iters
@@ -314,10 +323,11 @@ module read
 
       end subroutine read_scheme
 
-      subroutine read_flow()
+      subroutine read_flow(control)
         !< Read flow.md control file
         !--------------------------------------------
         implicit none
+        type(controltype), intent(inout) :: control
 
         character(len=STRING_BUFFER_LENGTH) :: buf
 
@@ -332,7 +342,7 @@ module read
        
         ! read number of variable
         call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) n_var
+        read(buf, *) control%n_var
         DebugInfo('Number of variables = '//trim(buf))
 
         ! read rho_inf

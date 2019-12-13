@@ -5,6 +5,9 @@ module read_output
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
+#include "../../debug.h"
+#include "../../error.h"
+  use vartypes
   use global     , only :      IN_FILE_UNIT
   use global     , only : RESTART_FILE_UNIT
   use global_vars, only :      infile
@@ -12,7 +15,7 @@ module read_output
 
   use global_vars, only : read_data_format
   use global_vars, only : read_file_format
-  use global_vars, only : start_from
+!  use global_vars, only : start_from
   use global_vars, only : process_id
   use global_vars, only :        resnorm_0
   use global_vars, only :    vis_resnorm_0
@@ -51,11 +54,12 @@ module read_output
 
   contains
 
-    subroutine read_file()
+    subroutine read_file(control)
       !< Read restart file
       implicit none
+      type(controltype), intent(in) :: control
       call setup_file
-      call open_file(infile)
+      call open_file(infile, control)
       call read_restart_file()
       call verify_read_control()
         
@@ -68,8 +72,7 @@ module read_output
           call read_file_tec()
         
         case DEFAULT
-        call dmsg(5, 'read_output', 'read_file',&
-          'ERROR: read file format not recognised. READ format -> '//read_file_format)
+          Fatal_error
       end select
 
       call close_file()
@@ -79,7 +82,7 @@ module read_output
     subroutine setup_file()
       !< Steup the file to read the restart state.
       implicit none
-      call dmsg(1, 'read_output_vtk', 'setup_file')
+      DebugCall('setup_file')
       if (read_file_format == "vtk") then
         file_format = ".vtk"
       elseif (read_file_format == "tecplot") then
@@ -102,13 +105,14 @@ module read_output
 
     end subroutine setup_file
 
-    subroutine open_file(filename)
+    subroutine open_file(filename, control)
       !< Open file from the restart folder 
       implicit none
+      type(controltype), intent(in) :: control
       character(len=*), intent(in) :: filename 
-      call dmsg(1, 'read_output_vtk', 'open_file')
+      DebugCall('open_file')
 
-      write(restartfile, '(A,I4.4,A,I2.2)') 'time_directories/',start_from,&
+      write(restartfile, '(A,I4.4,A,I2.2)') 'time_directories/',control%start_from,&
                           '/restart/process_', process_id
       open(IN_FILE_UNIT, file=trim(filename)//trim(file_format))!, form=trim(data_format))
       open(RESTART_FILE_UNIT, file=restartfile, status='old')
@@ -119,7 +123,7 @@ module read_output
       !< Close the file after reading 
       implicit none
 
-      call dmsg(1, 'read_output_vtk', 'close_files')
+      DebugCall('close_files')
       close(IN_FILE_UNIT)
       close(RESTART_FILE_UNIT)
 

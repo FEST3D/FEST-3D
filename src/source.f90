@@ -8,11 +8,11 @@ module source
   !-----------------------------------------------------------------
 #include "debug.h"
 #include "error.h"
+  use vartypes
   use dump_solution, only : checkpoint
   use global_vars, only : turbulence
   use global_vars, only : transition
   use global_vars, only : process_id
-  use utils      , only : dmsg
   use utils      , only : turbulence_read_error
   !--- variable required for sst source calculation ---!
   use global_sst   ,only : sigma_k1
@@ -36,10 +36,10 @@ module source
   use global_vars  ,only : intermittency
   use global_vars  ,only : vel_mag
   use global_vars  ,only :  qp
-  use global_vars  ,only :   imx
-  use global_vars  ,only :   jmx
-  use global_vars  ,only :   kmx
-  use global_vars  ,only :   n_var
+!  use global_vars  ,only :   imx
+!  use global_vars  ,only :   jmx
+!  use global_vars  ,only :   kmx
+!  use global_vars  ,only :   n_var
   use global_vars  ,only :   volume
   use global_vars  ,only :   density
   use global_vars  ,only :   x_speed
@@ -50,7 +50,7 @@ module source
   use global_vars  ,only :   tw_inf
   use global_vars  ,only :   free_stream_tu
   use global_vars  ,only :   mu
-  use global_vars  ,only :   sst_mu
+!  use global_vars  ,only :   sst_mu
   use global_vars  ,only :   dist
   use gradients  ,only :   gradu_x
   use gradients  ,only :   gradu_y
@@ -126,7 +126,7 @@ module source
   use global_vars, only : CCnormalZ
 
   use CC         , only : find_DCCVn
-    use utils,       only: alloc, dealloc, dmsg
+    use utils,       only: alloc, dealloc
     use layout,      only: process_id
     use string
 
@@ -134,18 +134,20 @@ module source
   private
 
   public :: add_source_term_residue
-  public :: Setup_source
-  public :: destroy_source
+!  public :: Setup_source
+!  public :: destroy_source
 
   contains
 
     
-    subroutine add_source_term_residue()
+    subroutine add_source_term_residue(control, dims)
       !< Call to add different source terms to the residual of different equations.
 
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
 
-      call dmsg(1, 'source', 'add_source_term_residue')
+      DebugCall('add_source_term_residue')
 
       select case (trim(turbulence))
 
@@ -156,9 +158,9 @@ module source
         case ('sa')
           select case(trim(transition))
             case('none')
-              call add_sa_source()
+              call add_sa_source(dims)
             case('bc')
-              call add_saBC_source()
+              call add_saBC_source(dims)
             case DEFAULT
               Fatal_error
           end select
@@ -166,17 +168,17 @@ module source
         case ('sst', 'sst2003')
           select case(trim(transition))
             case('none')
-              call add_sst_source()
+              call add_sst_source(dims)
             case('lctm2015')
-              call add_sst_source_lctm2015()
+              call add_sst_source_lctm2015(control, dims)
             case('bc')
-              call add_sst_bc_source()
+              call add_sst_bc_source(dims)
             case DEFAULT
               Fatal_error
           end select
 
         case ('kkl')
-          call add_kkl_source()
+          call add_kkl_source(dims)
 
         case DEFAULT
           Fatal_error
@@ -186,22 +188,23 @@ module source
     end subroutine add_source_term_residue
 
 
-    subroutine Setup_source()
-      !< Allcoate memory to the required by the variable
-        implicit none
-        !nothing
-    end subroutine Setup_source
+!    subroutine Setup_source()
+!      !< Allcoate memory to the required by the variable
+!        implicit none
+!        !nothing
+!    end subroutine Setup_source
+!
+!
+!    subroutine destroy_source()
+!      !< deallocate memory before stoping the solver
+!        implicit none
+!        !nothing
+!    end subroutine destroy_source
 
-
-    subroutine destroy_source()
-      !< deallocate memory before stoping the solver
-        implicit none
-        !nothing
-    end subroutine destroy_source
-
-    subroutine add_sst_source()
+    subroutine add_sst_source(dims)
       !< Add residual due to source terms of the SST turbulence model
       implicit none
+      type(extent), intent(in) :: dims
       integer :: i,j,k
 
       real :: CD
@@ -226,9 +229,9 @@ module source
       end if
 
 
-      do k = 1,kmx-1
-        do j = 1,jmx-1
-          do i = 1,imx-1
+      do k = 1,dims%kmx-1
+        do j = 1,dims%jmx-1
+          do i = 1,dims%imx-1
 
             ! __ vorticity __
             vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
@@ -258,9 +261,9 @@ module source
 
             ! ____ PRODUCTION term____ 
             divergence = gradu_x(i,j,k) + gradv_y(i,j,k) + gradw_z(i,j,k)
-            P_k = sst_mu(i,j,k)*(vort**2) -((2.0/3.0)*density(i,j,k)*tk(i,j,k)*divergence)
+            P_k = mu_t(i,j,k)*(vort**2) -((2.0/3.0)*density(i,j,k)*tk(i,j,k)*divergence)
             P_k = min(P_k,limiter*D_k)
-            P_w = (density(i,j,k)*gama/sst_mu(i,j,k))*P_k
+            P_w = (density(i,j,k)*gama/mu_t(i,j,k))*P_k
 
             ! ____ cross diffusion term ___
             lamda = (1. - F1)*CD
@@ -281,9 +284,11 @@ module source
     end subroutine add_sst_source
 
 
-    subroutine add_sst_source_lctm2015()
+    subroutine add_sst_source_lctm2015(control, dims)
       !< Add residual due to source terms of the LCTM2015 transition model
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
       integer :: i,j,k
 
       real :: CD
@@ -336,11 +341,11 @@ module source
       !for pressure gradient calculation
       call find_DCCVn()
 
-      do k = 1,kmx-1
-        do j = 1,jmx-1
-          do i = 1,imx-1
+      do k = 1,dims%kmx-1
+        do j = 1,dims%jmx-1
+          do i = 1,dims%imx-1
 
-            intermittency = qp(i,j,k,n_var)
+            intermittency = qp(i,j,k,control%n_var)
 
             ! __ vorticity __
             vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
@@ -379,9 +384,9 @@ module source
 
             ! ____ PRODUCTION term____ 
             divergence = gradu_x(i,j,k) + gradv_y(i,j,k) + gradw_z(i,j,k)
-            P_k = sst_mu(i,j,k)*(vort*strain) - ((2.0/3.0)*density(i,j,k)*tk(i,j,k)*divergence)
+            P_k = mu_t(i,j,k)*(vort*strain) - ((2.0/3.0)*density(i,j,k)*tk(i,j,k)*divergence)
             P_k = min(P_k, limiter*D_k)
-            P_w = (density(i,j,k)*gama/sst_mu(i,j,k))*P_k
+            P_w = (density(i,j,k)*gama/mu_t(i,j,k))*P_k
 
             ! ____ cross diffusion term ___
             lamda = (1. - F1)*CD
@@ -435,7 +440,7 @@ module source
 
             TKE_residue(i, j, k)   = TKE_residue(i, j, k) - S_k
             omega_residue(i, j, k) = omega_residue(i, j, k) - S_w
-            residue(i,j,k,n_var) = residue(i,j,k,n_var) -S_gm
+            residue(i,j,k,control%n_var) = residue(i,j,k,control%n_var) -S_gm
 
           end do
         end do
@@ -445,9 +450,10 @@ module source
 
 
     ! SST-BC model
-    subroutine add_sst_bc_source()
+    subroutine add_sst_bc_source(dims)
       !< Add residual due to source terms of the SST-BC transition model
       implicit none
+      type(extent), intent(in) :: dims
       integer :: i,j,k
 
       real :: CD
@@ -477,9 +483,9 @@ module source
       real :: vmag
 
 
-      do k = 1,kmx-1
-        do j = 1,jmx-1
-          do i = 1,imx-1
+      do k = 1,dims%kmx-1
+        do j = 1,dims%jmx-1
+          do i = 1,dims%imx-1
 
             ! __ vorticity __
             vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
@@ -508,9 +514,9 @@ module source
             D_w = beta*density(i,j,k)*tw(i,j,k)**2
 
             ! ____ PRODUCTION term____ 
-            P_k = sst_mu(i,j,k)*(vort**2)
+            P_k = mu_t(i,j,k)*(vort**2)
             P_k = min(P_k,20.0*D_k)
-            P_w = (density(i,j,k)*gama/sst_mu(i,j,k))*P_k
+            P_w = (density(i,j,k)*gama/mu_t(i,j,k))*P_k
 
             ! ____ cross diffusion term ___
             lamda = (1. - F1)*CD
@@ -556,9 +562,10 @@ module source
     end subroutine add_sst_bc_source
 
 
-    subroutine add_kkl_source()
+    subroutine add_kkl_source(dims)
       !< Add residual due to source terms of the k-kL turbulence model
       implicit none
+      type(extent), intent(in) :: dims
       integer :: i,j,k
 
       real :: Tau11
@@ -620,9 +627,9 @@ module source
       real :: term1
 
 
-      do k = 1,kmx-1
-        do j = 1,jmx-1
-          do i = 1,imx-1
+      do k = 1,dims%kmx-1
+        do j = 1,dims%jmx-1
+          do i = 1,dims%imx-1
 
             S11 = 0.5*(gradu_x(i,j,k) + gradu_x(i,j,k))
             S12 = 0.5*(gradu_y(i,j,k) + gradv_x(i,j,k))
@@ -772,9 +779,10 @@ module source
     end subroutine add_kkl_source
 
 
-    subroutine add_sa_source()
+    subroutine add_sa_source(dims)
       !< Add residual due to source terms of SA turbulence model
       implicit none
+      type(extent), intent(in) :: dims
       integer :: i,j,k
 
       real :: CD1
@@ -800,9 +808,9 @@ module source
       real, dimension(6) :: Area
       real, dimension(6,3) :: Normal
 
-      do k = 1,kmx-1
-        do j = 1,jmx-1
-          do i = 1,imx-1
+      do k = 1,dims%kmx-1
+        do j = 1,dims%jmx-1
+          do i = 1,dims%imx-1
 
             RhoFace(1) = density(i-1,j  ,k  )+density(i,j,k)
             RhoFace(2) = density(i  ,j-1,k  )+density(i,j,k)
@@ -903,9 +911,10 @@ module source
 
     end subroutine add_sa_source
 
-    subroutine add_saBC_source()
+    subroutine add_saBC_source(dims)
       !< Add residual due to source terms of SABC transition model
       implicit none
+      type(extent), intent(in) :: dims
       integer :: i,j,k
 
       real :: CD1
@@ -961,9 +970,9 @@ module source
 
       tu = free_stream_tu
 
-      do k = 1,kmx-1
-        do j = 1,jmx-1
-          do i = 1,imx-1
+      do k = 1,dims%kmx-1
+        do j = 1,dims%jmx-1
+          do i = 1,dims%imx-1
 
             !Local_vel_mag
             u = qp(i,j,k,2)

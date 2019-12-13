@@ -3,18 +3,21 @@
 module wall_dist
   !< Calculate the distance from the wall 
   !< for each cell-center in the domain
+  use vartypes
   use global,  only: NODESURF_FILE_UNIT
   use global,  only: WALL_DIST_FILE_UNIT
   use global,  only: wall_dist_file
   use global,  only: surface_node_points
 
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use grid, only : point
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
+!  use grid, only : point
   use global_vars, only : dist
 
-  use utils, only: alloc, dealloc, dmsg
+  use utils, only: alloc, dealloc
+#include "../debug.h"
+#include "../error.h"
 
   implicit none
   private
@@ -28,6 +31,7 @@ module wall_dist
   !< Y component of wall surface node point
   real, private,dimension(:)    , allocatable :: wall_z
   !< Z component of wall surface node point
+  integer :: imx, jmx, kmx
 
   public :: setup_wall_dist
   public :: destroy_wall_dist
@@ -35,13 +39,17 @@ module wall_dist
 
   contains
 
-    subroutine setup_wall_dist()
+    subroutine setup_wall_dist(dims)
       !< Allocate memory to the wall_distance variables
       !< and read the surface node file
 
       implicit none
+      type(extent), intent(in) :: dims
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
-      call dmsg(1, 'wall_dist', 'setup_wall_dist')
+      DebugCall('setup_wall_dist')
       call setup_nodefile()
       call alloc(wall_x, 1, n_surfnodes,&
                 "ERROR: unale to allocate memory to 'Dist' variable " )
@@ -63,7 +71,7 @@ module wall_dist
 
       implicit none
 
-      call dmsg(1, 'wall_dist', 'destroy_wall_dist')
+      DebugCall('destroy_wall_dist')
       call dealloc(wall_x)
       call dealloc(wall_y)
       call dealloc(wall_z)
@@ -78,8 +86,8 @@ module wall_dist
       integer :: ios
       open(NODESURF_FILE_UNIT, file=surface_node_points, status='old', IOSTAT=ios)
       if(ios/=0) then
-        call dmsg(5, 'wall_dist', 'setup_nodefile', &
-          "!!! -->file containg surface nodepoints not found" )
+        print*, "!!! -->file containg surface nodepoints not found"
+        Fatal_error
       end if
       read(NODESURF_FILE_UNIT, *) n_surfnodes
 
@@ -96,26 +104,28 @@ module wall_dist
       close(NODESURF_FILE_UNIT)
     end subroutine read_destroy_nodefile
 
-    subroutine find_wall_dist()
+    subroutine find_wall_dist(nodes, dims)
       !< Determine the minimum wall distance from the wall surface node points
 
       implicit none
+      type(extent), intent(in) :: dims
+      type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
 
       integer :: i,j,k,n
       real :: current_dist
       real, dimension(:,:,:), allocatable :: node_dist
-      call dmsg(1, 'wall_dist', 'find_wall_dist')
+      DebugCall('find_wall_dist')
       call alloc(node_dist,-2,imx+3,-2,jmx+3,-2,kmx+3)
 
-      do k = -2,kmx+3
-        do j = -2,jmx+3
-          do i = -2,imx+3
+      do k = -2,dims%kmx+3
+        do j = -2,dims%jmx+3
+          do i = -2,dims%imx+3
             node_dist(i,j,k) = 1.e+20
             do n = 1,n_surfnodes
 
-            current_dist = sqrt((wall_x(n)-point(i,j,k)%x)**2&
-                               +(wall_y(n)-point(i,j,k)%y)**2&
-                               +(wall_z(n)-point(i,j,k)%z)**2&
+            current_dist = sqrt((wall_x(n)-nodes(i,j,k)%x)**2&
+                               +(wall_y(n)-nodes(i,j,k)%y)**2&
+                               +(wall_z(n)-nodes(i,j,k)%z)**2&
                                ) 
             node_dist(i,j,k) = min(node_dist(i,j,k),current_dist)
 
@@ -123,9 +133,9 @@ module wall_dist
           end do
         end do
       end do
-      do k=-2,kmx+2
-        do j=-2,jmx+2
-          do i=-2,imx+2
+      do k=-2,dims%kmx+2
+        do j=-2,dims%jmx+2
+          do i=-2,dims%imx+2
             dist(i,j,k) = 0.125*(node_dist(i  ,j  ,k  )&
                                 +node_dist(i  ,j+1,k  )&
                                 +node_dist(i  ,j+1,k+1)&
@@ -139,7 +149,7 @@ module wall_dist
         end do
       end do
       call dealloc(node_dist)
-      call dmsg(1, 'wall_dist', 'find_wall_dist-> complete')
+      DebugCall('find_wall_dist-> complete')
 
     end subroutine find_wall_dist
 

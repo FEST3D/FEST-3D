@@ -9,13 +9,14 @@ module write_output_tec
   use global     , only : OUT_FILE_UNIT
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
+  use vartypes
 
   use global_vars, only : write_data_format
   use global_vars, only : write_file_format
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use grid, only : point
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
+  !use grid, only : point
   use global_vars, only : density 
   use global_vars, only : x_speed 
   use global_vars, only : y_speed 
@@ -28,11 +29,6 @@ module write_output_tec
   use global_vars, only : tgm
   use global_vars, only : mu 
   use global_vars, only : mu_t 
-  use global_vars, only : density_inf
-  use global_vars, only : x_speed_inf
-  use global_vars, only : y_speed_inf
-  use global_vars, only : z_speed_inf
-  use global_vars, only : pressure_inf 
   use global_vars, only : gm
   use global_vars, only : dist
   use global_vars, only : vis_resnorm
@@ -92,24 +88,26 @@ module write_output_tec
   implicit none
   private
   integer :: i,j,k
-  real    :: speed_inf
-  character(len=8) :: file_format
-  character(len=16) :: data_format
-  character                          :: newline=achar(10)
   character(len=*), parameter :: format="(1ES28.15E4)"
+  integer :: imx, jmx, kmx
   public :: write_file
 
   contains
 
-    subroutine write_file()
+    subroutine write_file(nodes, dims)
       !< Write the header and variables in the file "process_xx.dat".
       implicit none
+      type(extent), intent(in) :: dims
+      type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
       DebugCall("write_file")
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
       call write_header()
-      call write_grid()
+      call write_grid(nodes)
 
       do n = 1,w_count
 
@@ -322,15 +320,16 @@ module write_output_tec
 
     end subroutine write_header
 
-    subroutine write_grid()
+    subroutine write_grid(nodes)
       !< Write the grid information in the output file
       implicit none
+      type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in) :: nodes 
 
       ! write grid point coordinates
       DebugCall("write_grid")
-      write(OUT_FILE_UNIT, format) (((point(i, j, k)%x,i=1,imx), j=1,jmx), k=1,kmx)
-      write(OUT_FILE_UNIT, format) (((point(i, j, k)%y,i=1,imx), j=1,jmx), k=1,kmx)
-      write(OUT_FILE_UNIT, format) (((point(i, j, k)%z,i=1,imx), j=1,jmx), k=1,kmx)
+      write(OUT_FILE_UNIT, format) (((nodes(i, j, k)%x,i=1,imx), j=1,jmx), k=1,kmx)
+      write(OUT_FILE_UNIT, format) (((nodes(i, j, k)%y,i=1,imx), j=1,jmx), k=1,kmx)
+      write(OUT_FILE_UNIT, format) (((nodes(i, j, k)%z,i=1,imx), j=1,jmx), k=1,kmx)
 
     end subroutine write_grid
 

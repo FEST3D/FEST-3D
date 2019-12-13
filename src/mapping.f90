@@ -3,16 +3,14 @@ module mapping
   !< Setup the indicies map at interface between two blocks
 
   use global, only: MAP_FILE_UNIT
-  use global, only: mapfile
+ ! use global, only: mapfile
   use global, only: PERIODIC_FILE_UNIT
-  use global, only: periodicfile
+!  use global, only: periodicfile
 
   use global_vars, only: total_process
   use global_vars, only: process_id
   use global_vars, only: PbcId
 
-  use utils      , only: DEBUG_LEVEL
-  use utils      , only: dmsg
   use string
   use fclose     , only: close_file
 
@@ -87,9 +85,11 @@ module mapping
 
     contains
 
-      subroutine read_interface_map()
+      subroutine read_interface_map(mapfile, periodicfile)
         !< Read mapping file in the system/mesh/layout/mapping.txt
         implicit none
+        character(len=*), intent(in) :: mapfile
+        character(len=*), intent(in) :: periodicfile
         integer :: ios
         integer :: max_call
 
@@ -197,7 +197,7 @@ module mapping
         call close_file(MAP_FILE_UNIT)
         call change_map_to_particular_range()
 
-        call read_periodic_bc_file()
+        call read_periodic_bc_file(periodicfile)
       end subroutine read_interface_map
 
       subroutine change_map_to_particular_range()
@@ -276,9 +276,10 @@ module mapping
       end subroutine change_map_to_particular_range
           
 
-      subroutine read_periodic_bc_file()
+      subroutine read_periodic_bc_file(periodicfile)
         !< Read periodic.md file in the system/mesh/layout/periodic.md
         implicit none
+        character(len=*), intent(in) :: periodicfile
         integer :: ios
         integer :: max_call
         integer :: i

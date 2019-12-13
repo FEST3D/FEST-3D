@@ -15,14 +15,15 @@ module resnorm
   !< 5. Append the data to resnorm file
   !----------------------------------------------------
 
+  use vartypes
   use global,      only: RESNORM_FILE_UNIT
   use global,      only: resnorm_file
 
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
+!  use global_vars, only: imx
+!  use global_vars, only: jmx
+!  use global_vars, only: kmx
   use global_vars, only: gm
-  use global_vars, only: n_var
+!  use global_vars, only: n_var
   use global_vars, only: density_inf
   use global_vars, only: vel_mag
   use global_vars, only: pressure_inf
@@ -43,14 +44,13 @@ module resnorm
   use global_vars, only: Res_itr
   use global_vars, only: turbulence
   use global_vars, only: residue
-  use global_vars, only: start_from
+!  use global_vars, only: start_from
   use global_vars, only: last_iter
   use global_vars, only: F_p
   use global_vars, only: G_p
   use global_vars, only: H_p
 
 
-  use utils,      only: dmsg
   use utils,      only: dealloc
   use utils,      only: alloc
   use layout,     only: process_id
@@ -70,20 +70,23 @@ module resnorm
 
   contains
 
-    subroutine setup_resnorm()
+    subroutine setup_resnorm(control)
       !< Allocate memory, setup scale and file to write
       implicit none
-      call allocate_memory()
+      type(controltype), intent(in) :: control
+      call allocate_memory(control)
       call setup_scale()
-      call setup_file()
+      call setup_file(control)
     end subroutine setup_resnorm
 
-    subroutine find_resnorm()
+    subroutine find_resnorm(control, dims)
       !< Find the normalized residual for each processor
       implicit none
-      call get_absolute_resnorm()
-      call collect_resnorm_from_all_blocks()
-      call assemble_resnom_at_each_process()
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
+      call get_absolute_resnorm(control, dims)
+      call collect_resnorm_from_all_blocks(control)
+      call assemble_resnom_at_each_process(control)
       call get_relative_resnorm()
       if((mod(current_iter,res_write_interval)==0 .or. &
               current_iter==Res_itr .or.               &
@@ -100,12 +103,13 @@ module resnorm
       call close_file(RESNORM_FILE_UNIT)
     end subroutine destroy_resnorm
 
-    subroutine setup_file()
+    subroutine setup_file(control)
       !< Open the residual file to write
       implicit none
+      type(controltype), intent(in) :: control
       integer :: i
       if(process_id==0)then
-        if(start_from==0)then
+        if(control%start_from==0)then
           open(RESNORM_FILE_UNIT,file=resnorm_file)
         else
           open(RESNORM_FILE_UNIT,file=resnorm_file, status='old', position='append', action='write')
@@ -118,14 +122,15 @@ module resnorm
       end if
     end subroutine setup_file
 
-    subroutine allocate_memory()
+    subroutine allocate_memory(control)
       !< Allocate memory to MPI Communication
       implicit none
-      call alloc(Res_abs  , 0,n_var)
-      call alloc(Res_rel  , 0,n_var)
-      call alloc(Res_scale, 0,n_var)
-      call alloc(Res_save , 0,n_var)
-      call alloc(buffer   , 1,(n_var+1)*total_process)
+      type(controltype), intent(in) :: control
+      call alloc(Res_abs  , 0,control%n_var)
+      call alloc(Res_rel  , 0,control%n_var)
+      call alloc(Res_scale, 0,control%n_var)
+      call alloc(Res_save , 0,control%n_var)
+      call alloc(buffer   , 1,(control%n_var+1)*total_process)
     end subroutine allocate_memory
 
     subroutine deallocate_memory()
@@ -178,40 +183,44 @@ module resnorm
 
     end subroutine setup_scale
 
-    subroutine get_absolute_resnorm()
+    subroutine get_absolute_resnorm(control, dims)
       !< Get absolute residual for current process
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
       integer :: i
-      do i=1,n_var
+      do i=1,control%n_var
         Res_abs(i) =(sum(Residue(:,:,:,i)**2)/Res_scale(i)**2)
       end do
       merror = (                                     &
-               sum(F_p(  1,1:jmx-1,1:kmx-1,1)) &
-              -sum(F_p(imx,1:jmx-1,1:kmx-1,1)) &
-              +sum(G_p(1:imx-1,  1,1:kmx-1,1)) &
-              -sum(G_p(1:imx-1,jmx,1:kmx-1,1)) &
-              +sum(H_p(1:imx-1,1:jmx-1,  1,1)) &
-              -sum(H_p(1:imx-1,1:jmx-1,kmx,1)) &
+               sum(F_p(  1,1:dims%jmx-1,1:dims%kmx-1,1)) &
+              -sum(F_p(dims%imx,1:dims%jmx-1,1:dims%kmx-1,1)) &
+              +sum(G_p(1:dims%imx-1,  1,1:dims%kmx-1,1)) &
+              -sum(G_p(1:dims%imx-1,dims%jmx,1:dims%kmx-1,1)) &
+              +sum(H_p(1:dims%imx-1,1:dims%jmx-1,  1,1)) &
+              -sum(H_p(1:dims%imx-1,1:dims%jmx-1,dims%kmx,1)) &
               )
       Res_abs(0) = (merror/Res_scale(0))
     end subroutine get_absolute_resnorm
 
-    subroutine collect_resnorm_from_all_blocks()
+    subroutine collect_resnorm_from_all_blocks(control)
       !< MPI Communication to gather residual from all processes
       implicit none
+      type(controltype), intent(in) :: control
       integer :: ierr
-      call MPI_ALLGATHER(Res_abs, n_var+1, MPI_DOUBLE_PRECISION, &
-      buffer, n_var+1, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierr)
+      call MPI_ALLGATHER(Res_abs, control%n_var+1, MPI_DOUBLE_PRECISION, &
+      buffer, control%n_var+1, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierr)
     end subroutine collect_resnorm_from_all_blocks
 
-    subroutine assemble_resnom_at_each_process()
+    subroutine assemble_resnom_at_each_process(control)
       !< Sum residual obtained from all the processes after MPI_Communication
       implicit none
+      type(controltype), intent(in) :: control
       integer :: i,j
       Res_abs=0.
       do i=0,total_process-1
-        do j = 0,n_var
-          Res_abs(j) =  Res_abs(j)+buffer((j+1)+(n_var+1)*i)
+        do j = 0,control%n_var
+          Res_abs(j) =  Res_abs(j)+buffer((j+1)+(control%n_var+1)*i)
         end do
       end do
       Res_abs(1:) = sqrt(Res_abs(1:))

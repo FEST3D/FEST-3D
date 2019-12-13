@@ -27,8 +27,6 @@
               include "turbulence_models/des-sst/face_interpolant/unlink_aliases.inc"
 
           case DEFAULT
-              call dmsg(5, "turbulence_models/include/face_interpolant", "unlink_aliases", &
-                        "ERROR: Turbulence model not recognised")
-              STOP
+             stop
 
       end select

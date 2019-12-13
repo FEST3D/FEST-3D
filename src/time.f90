@@ -2,9 +2,10 @@
 module time
   !< Calculate the time step for the current iteration
 
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
+  use vartypes
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
 
   use global_vars, only : xnx, xny, xnz !face unit normal x
   use global_vars, only : ynx, yny, ynz !face unit normal y
@@ -12,7 +13,7 @@ module time
   use global_vars, only : xA, yA, zA    !face area
   use global_vars, only : volume
     
-  use global_vars, only : n_var
+!  use global_vars, only : n_var
   use global_vars, only : qp
   use global_vars, only : qp_inf
   use global_vars, only : density
@@ -28,7 +29,7 @@ module time
   use global_vars, only : mu
   use global_vars, only : mu_t
 
-  use global_vars, only : CFL
+  !use global_vars, only : CFL
   use global_vars, only : total_process
   use global_vars, only : process_id
   use global_vars, only : time_stepping_method
@@ -40,8 +41,6 @@ module time
 
   use utils, only: alloc
   use utils, only:  dealloc 
-  use utils, only:  dmsg
-  use utils, only:  DEBUG_LEVEL
   use face_interpolant, only: interpolant, &
           x_qp_left, x_qp_right, &
           y_qp_left, y_qp_right, &
@@ -52,6 +51,8 @@ module time
   use read, only : read_input_and_controls
   use geometry, only : CellCenter
 
+#include "debug.h"
+#include "error.h"
 #include "mpi.inc"
 
     private
@@ -66,6 +67,7 @@ module time
     REAL :: t2         !< Finish clock time
     real :: cpu_time_elapsed
 
+    integer :: imx, jmx, kmx, n_var
     ! Public methods
     public :: setup_time
     public :: destroy_time
@@ -74,11 +76,18 @@ module time
 
     contains
 
-        subroutine setup_time()
+        subroutine setup_time(control, dims)
           !< Allocate memeroy and setup initial clock
             implicit none
-            
-            call dmsg(1, 'time', 'initmisc')
+            type(controltype), intent(in) :: control
+            type(extent), intent(in) :: dims
+
+            DebugCall('initmisc')
+
+            imx = dims%imx
+            jmx = dims%jmx
+            kmx = dims%kmx
+            n_var = control%n_var
             call alloc(delta_t, 1, imx-1, 1, jmx-1, 1, kmx-1, &
                     errmsg='Error: Unable to allocate memory for delta_t.')
             CALL SYSTEM_CLOCK(COUNT_RATE=nb_ticks_sec, COUNT_MAX=nb_ticks_max)
@@ -93,7 +102,7 @@ module time
             real, dimension(:), allocatable :: total_time 
             integer :: ierr
             
-            call dmsg(1, 'solver', 'deallocate_misc')
+            DebugCall('deallocate_misc')
 
             !simlulation clock data
             if(process_id==0) write(*, '(A)') '>> TIME <<'
@@ -143,7 +152,7 @@ module time
           end if
         end function write_time
 
-        subroutine compute_local_time_step()
+        subroutine compute_local_time_step(CFL)
             !< Compute the time step to be used at each cell center
             !<
             !< Local time stepping can be used to get the solution 
@@ -153,12 +162,13 @@ module time
             !-----------------------------------------------------------
 
             implicit none
+            real, intent(in) :: CFL
 
             real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
             real :: x_sound_speed_avg, y_sound_speed_avg, z_sound_speed_avg
             integer :: i, j, k
 
-            call dmsg(1, 'solver', 'compute_local_time_step')
+            DebugCall('compute_local_time_step')
 
             do k = 1, kmx - 1
              do j = 1, jmx - 1
@@ -241,15 +251,15 @@ module time
             end do
 
             if(mu_ref/=0.0) then
-              call add_viscous_time()
+              call add_viscous_time(CFL)
             end if
             if(mu_ref/=0 .and. trim(turbulence)/='none')then
-              call add_turbulent_time()
+              call add_turbulent_time(CFL)
             end if
 
         end subroutine compute_local_time_step
 
-        subroutine compute_global_time_step()
+        subroutine compute_global_time_step(CFL)
             !< Compute a common time step to be used at all cell centers
             !<
             !< Global time stepping is generally used to get time 
@@ -258,13 +268,14 @@ module time
             !<-----------------------------------------------------------
 
             implicit none
+            real, intent(in) :: CFL
             
-            call dmsg(1, 'solver', 'compute_global_time_step')
+            DebugCall('compute_global_time_step')
 
             if (global_time_step > 0) then
                 delta_t = global_time_step
             else
-                call compute_local_time_step()
+                call compute_local_time_step(CFL)
                 ! The global time step is the minimum of all the local time
                 ! steps.
                 delta_t = minval(delta_t)
@@ -272,7 +283,7 @@ module time
 
         end subroutine compute_global_time_step
 
-        subroutine compute_time_step()
+        subroutine compute_time_step(CFL)
             !< Compute the time step to be used
             !<
             !< This calls either compute_global_time_step() or 
@@ -281,18 +292,17 @@ module time
             !-----------------------------------------------------------
 
             implicit none
+            real, intent(in) :: CFL
             
-            call dmsg(1, 'solver', 'compute_time_step')
+            DebugCall('compute_time_step')
 
             if (time_stepping_method .eq. 'g') then
-                call compute_global_time_step()
+                call compute_global_time_step(CFL)
             else if (time_stepping_method .eq. 'l') then
-                call compute_local_time_step()
+                call compute_local_time_step(CFL)
             else
-                call dmsg(5, 'solver', 'compute_time_step', &
-                        msg='Value for time_stepping_method (' // &
-                            time_stepping_method // ') not recognized.')
-                stop
+                print*,'In compute_time_step: value for time_stepping_method (' //time_stepping_method // ') not recognized.'
+                Fatal_error
             end if
             !update_simulation clock
             call update_simulation_clock()
@@ -300,7 +310,7 @@ module time
         end subroutine compute_time_step
 
 
-      subroutine update_simulation_clock
+      subroutine update_simulation_clock()
           !<  Update the simulation clock
           !< 
           !<  It is sometimes useful to know what the simulation time is
@@ -323,14 +333,15 @@ module time
 
       end subroutine update_simulation_clock
 
-      subroutine add_viscous_time()
+      subroutine add_viscous_time(CFL)
         !< Addition to local time step due to viscous effects
         implicit none
 
+        real, intent(in) :: CFL
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
         integer :: i, j, k
 
-        call dmsg(1, 'time', 'add_viscous_time_step')
+        DebugCall('add_viscous_time_step')
 
         do k = 1, kmx - 1
          do j = 1, jmx - 1
@@ -389,14 +400,14 @@ module time
         end do
       end subroutine add_viscous_time
 
-      subroutine add_turbulent_time()
+      subroutine add_turbulent_time(CFL)
         !< Addition to local time step due to turbulence 
         implicit none
-
+        real, intent(in) :: CFL
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
         integer :: i, j, k
 
-        call dmsg(1, 'time', 'add_viscous_time_step')
+        DebugCall('add_viscous_time_step')
 
         do k = 1, kmx - 1
          do j = 1, jmx - 1
