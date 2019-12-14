@@ -128,7 +128,7 @@ module source
   use CC         , only : find_DCCVn
     use utils,       only: alloc, dealloc
     use layout,      only: process_id
-    use string
+!    use string
 
   implicit none
   private
@@ -339,7 +339,7 @@ module source
       end if
 
       !for pressure gradient calculation
-      call find_DCCVn()
+      call find_DCCVn(dims)
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1

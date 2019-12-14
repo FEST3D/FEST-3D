@@ -13,7 +13,7 @@ module wall
   use global_vars, only : total_process
   use global_vars, only : id
 
-  use string
+!  use string
   !use bitwise
   use utils, only: alloc, dealloc
 

@@ -2,16 +2,14 @@
 module FT_bc
   !< Apply flow tangency boundary condition
   !--------------------------------------------
-  ! 170509  Jatinder Pal Singh Sandhu
-  ! Aim : applying Flow tangency boundary condition
-  !-------------------------------------------
+  use vartypes
   use global_vars, only: qp
   use global_vars, only: x_speed
   use global_vars, only: y_speed
   use global_vars, only: z_speed
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
+!  use global_vars, only: imx
+!  use global_vars, only: jmx
+!  use global_vars, only: kmx
   use global_vars, only: xn
   use global_vars, only: yn
   use global_vars, only: zn
@@ -25,9 +23,10 @@ module FT_bc
 
   contains
 
-    subroutine flow_tangency(face)
+    subroutine flow_tangency(face, dims)
       !< Apply flow tangency boundary condition
       implicit none
+      type(extent), intent(in) :: dims
       character(len=*), intent(in) :: face
       !< Face over which flow tangency condition has to be applied
       real :: dot1
@@ -36,6 +35,11 @@ module FT_bc
       integer :: i
       integer :: j
       integer :: k
+      integer :: imx, jmx, kmx
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
       select case(face)
         case("imin")

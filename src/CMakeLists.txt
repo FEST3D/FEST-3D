@@ -45,7 +45,6 @@ aux/start_finish.f90
 aux/bitwise.f90 
 aux/str_case.f90 
 aux/check_outout_control.f90 
-aux/string.f90 
 aux/utils.f90 
 face/state/weno.f90 
 face/state/weno_NM.f90 

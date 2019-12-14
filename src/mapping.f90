@@ -1,7 +1,7 @@
   !< Setup the indicies map at interface between two blocks
 module mapping
   !< Setup the indicies map at interface between two blocks
-
+  use vartypes
   use global, only: MAP_FILE_UNIT
  ! use global, only: mapfile
   use global, only: PERIODIC_FILE_UNIT
@@ -11,13 +11,13 @@ module mapping
   use global_vars, only: process_id
   use global_vars, only: PbcId
 
-  use string
+!  use string
   use fclose     , only: close_file
 
   !map variablews
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
+!  use global_vars, only: imx
+!  use global_vars, only: jmx
+!  use global_vars, only: kmx
   use global_vars, only: otherface
   use global_vars, only: dir_switch
   use global_vars, only: imin_id
@@ -85,11 +85,12 @@ module mapping
 
     contains
 
-      subroutine read_interface_map(mapfile, periodicfile)
+      subroutine read_interface_map(mapfile, periodicfile, dims)
         !< Read mapping file in the system/mesh/layout/mapping.txt
         implicit none
         character(len=*), intent(in) :: mapfile
         character(len=*), intent(in) :: periodicfile
+        type(extent), intent(in) :: dims
         integer :: ios
         integer :: max_call
 
@@ -102,25 +103,25 @@ module mapping
         !--- initialize indicies --!
         max_call = total_process*6
         ilo(1) = 1  ; ihi(1) = 1
-        ilo(2) = imx; ihi(2) = imx
-        ilo(3) = 1  ; ihi(3) = imx
-        ilo(4) = 1  ; ihi(4) = imx
-        ilo(5) = 1  ; ihi(5) = imx
-        ilo(6) = 1  ; ihi(6) = imx
+        ilo(2) = dims%imx; ihi(2) = dims%imx
+        ilo(3) = 1  ; ihi(3) = dims%imx
+        ilo(4) = 1  ; ihi(4) = dims%imx
+        ilo(5) = 1  ; ihi(5) = dims%imx
+        ilo(6) = 1  ; ihi(6) = dims%imx
 
-        jlo(1) = 1  ; jhi(1) = jmx
-        jlo(2) = 1  ; jhi(2) = jmx
+        jlo(1) = 1  ; jhi(1) = dims%jmx
+        jlo(2) = 1  ; jhi(2) = dims%jmx
         jlo(3) = 1  ; jhi(3) = 1
-        jlo(4) = jmx; jhi(4) = jmx
-        jlo(5) = 1  ; jhi(5) = jmx
-        jlo(6) = 1  ; jhi(6) = jmx
+        jlo(4) = dims%jmx; jhi(4) = dims%jmx
+        jlo(5) = 1  ; jhi(5) = dims%jmx
+        jlo(6) = 1  ; jhi(6) = dims%jmx
 
-        klo(1) = 1  ; khi(1) = kmx
-        klo(2) = 1  ; khi(2) = kmx
-        klo(3) = 1  ; khi(3) = kmx
-        klo(4) = 1  ; khi(4) = kmx
+        klo(1) = 1  ; khi(1) = dims%kmx
+        klo(2) = 1  ; khi(2) = dims%kmx
+        klo(3) = 1  ; khi(3) = dims%kmx
+        klo(4) = 1  ; khi(4) = dims%kmx
         klo(5) = 1  ; khi(5) = 1
-        klo(6) = kmx; khi(6) = kmx
+        klo(6) = dims%kmx; khi(6) = dims%kmx
 
         otherface(1)=2
         otherface(2)=1

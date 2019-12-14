@@ -11,8 +11,8 @@ module write_output_tec
   use global     , only : outin_file
   use vartypes
 
-  use global_vars, only : write_data_format
-  use global_vars, only : write_file_format
+!  use global_vars, only : write_data_format
+!  use global_vars, only : write_file_format
 !  use global_vars, only : imx
 !  use global_vars, only : jmx
 !  use global_vars, only : kmx
@@ -47,16 +47,11 @@ module write_output_tec
   use global_vars, only : omega_residue
   use global_vars, only : tv_residue
   use global_vars, only : intermittency
-  use global_vars, only : ExtraVar1
-  use global_vars, only : ExtraVar2
-  use global_vars, only : ExtraVar3
-  use global_vars, only : ExtraVar4
-  use global_vars, only : ExtraVar5
 
   use global_vars, only : turbulence
   use global_vars, only : mu_ref
-  use global_vars, only : current_iter
-  use global_vars, only : max_iters
+!  use global_vars, only : current_iter
+!  use global_vars, only : max_iters
   use global_vars, only : w_count
   use global_vars, only : w_list
 
@@ -80,10 +75,10 @@ module write_output_tec
   use gradients, only : gradtw_y
   use gradients, only : gradtw_z
   use global_vars, only : process_id
-  use global_vars, only : checkpoint_iter_count
+!  use global_vars, only : checkpoint_iter_count
 
   use utils
-  use string
+!  use string
 
   implicit none
   private
@@ -94,11 +89,12 @@ module write_output_tec
 
   contains
 
-    subroutine write_file(nodes, dims)
+    subroutine write_file(nodes, dims, checkpoint_iter_count)
       !< Write the header and variables in the file "process_xx.dat".
       implicit none
       type(extent), intent(in) :: dims
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
+      integer, intent(in) :: checkpoint_iter_count
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
@@ -106,7 +102,7 @@ module write_output_tec
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx
-      call write_header()
+      call write_header(checkpoint_iter_count)
       call write_grid(nodes)
 
       do n = 1,w_count
@@ -232,41 +228,6 @@ module write_output_tec
           case('Intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
 
-          case('extravar1')
-            if(allocated(ExtraVar1))then
-              call write_scalar(ExtraVar1, "ExtraVar1", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar2')
-            if(allocated(ExtraVar2))then
-              call write_scalar(ExtraVar2, "ExtraVar2", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar3')
-            if(allocated(ExtraVar3))then
-              call write_scalar(ExtraVar3, "ExtraVar3", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar4')
-            if(allocated(ExtraVar4))then
-              call write_scalar(ExtraVar4, "ExtraVar4", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar5')
-            if(allocated(ExtraVar5))then
-              call write_scalar(ExtraVar5, "ExtraVar5", -2)
-            else
-              Issue_warning
-            end if
-          
           case('do not write')
             ! do not write
             continue
@@ -281,9 +242,10 @@ module write_output_tec
     end subroutine write_file
 
 
-    subroutine write_header()
+    subroutine write_header(checkpoint_iter_count)
       !< Write the header in the output file in the tecplot format
       implicit none
+      integer, intent(in) :: checkpoint_iter_count
       integer :: n
       integer :: total
 

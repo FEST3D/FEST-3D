@@ -8,9 +8,6 @@ module viscous
 !  use global_vars, only : imx
 !  use global_vars, only : jmx
 !  use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
 
   use global_vars, only : xnx, xny, xnz !face unit normal x
   use global_vars, only : ynx, yny, ynz !face unit normal y
@@ -79,7 +76,7 @@ module viscous
   use global_sa  , only : sigma_sa
   use global_sa  , only : cb2
   use utils      , only : alloc, dealloc
-  use string
+!  use string
   implicit none
   private
 

@@ -8,10 +8,11 @@ program main
   ! change : - new name to step -> iterate_one_more_time_step
   !------------------------------------------------
 
-  use global_vars,  only: max_iters
-  use global_vars,  only: current_iter
+!  use global_vars,  only: max_iters
+!  use global_vars,  only: current_iter
   use global_vars,  only: Halt
   use solver     ,  only: iterate_one_more_time_step
+  use solver     ,  only: control
   use convergence,  only: converged
   use start_finish, only:  start_run
   use start_finish, only: finish_run
@@ -22,7 +23,7 @@ program main
 !--------Start---------!
   call start_run()
 
-  do while ((current_iter <= max_iters) .and. (.not. converged()) .and. (.not. Halt))
+  do while ((control%current_iter <= control%max_iters) .and. (.not. converged(control)) .and. (.not. Halt))
      call iterate_one_more_time_step()
   end do
 

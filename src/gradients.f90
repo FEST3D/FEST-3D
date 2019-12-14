@@ -53,7 +53,7 @@ module gradients
   use global_vars, only : pressure
   use global_vars, only : R_gas
   use global_vars, only : gm
-  use string
+!  use string
   ! layout boundary condition id for face
   use global_vars, only : imin_id
   use global_vars, only : imax_id
@@ -501,9 +501,6 @@ module gradients
       !< volume_G = volume_I
       !-----------------------------------------------------------
       implicit none
-      real, dimension(:,:,:), pointer  :: nxA
-      real, dimension(:,:,:), pointer  :: nyA
-      real, dimension(:,:,:), pointer  :: nzA
       real, dimension(n_grad) :: qp_I
       real, dimension(n_grad) :: qp_G
       real    :: T_I

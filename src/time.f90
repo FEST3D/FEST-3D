@@ -47,7 +47,7 @@ module time
           z_qp_left, z_qp_right, compute_face_interpolant, &
           extrapolate_cell_averages_to_faces
 
-  use string
+!  use string
   use read, only : read_input_and_controls
   use geometry, only : CellCenter
 

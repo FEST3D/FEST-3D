@@ -11,18 +11,18 @@ module solver
   use global_vars, only : want_to_stop
   use global_vars, only : Halt
 
-  use global_vars, only : max_iters
-  use global_vars, only : current_iter
-  use global_vars, only : checkpoint_iter
-  use global_vars, only : checkpoint_iter_count
+!  use global_vars, only : max_iters
+!  use global_vars, only : current_iter
+!  use global_vars, only : checkpoint_iter
+!  use global_vars, only : checkpoint_iter_count
   use global_vars, only : sim_clock
   use global_vars, only : turbulence
   use global_vars, only : supersonic_flag
 
-  use global_vars, only: res_write_interval
+!  use global_vars, only: res_write_interval
   use global_vars, only: r_list
   use global_vars, only: w_list
-  use global_vars, only: Res_itr
+!  use global_vars, only: Res_itr
   use global_vars, only: mu_t
   use global_vars, only: mu
 
@@ -30,7 +30,7 @@ module solver
   use CC,    only: setupCC
   use CC,    only: destroyCC
 
-  use string
+!  use string
   use read, only : read_input_and_controls
 
   use grid,      only : setup_grid, destroy_grid
@@ -73,7 +73,9 @@ module solver
     type(nodetype), dimension(:,:,:), allocatable :: nodes
     type(celltype), dimension(:,:,:), allocatable :: cells
     type(facetype), dimension(:,:,:), allocatable :: Ifaces, Jfaces, Kfaces
-    type(controltype) :: control
+    type(controltype), public :: control
+    type(schemetype), public :: scheme
+    type(flowtype), public :: flow
 
     ! Public methods
     public :: setup_solver
@@ -94,19 +96,14 @@ module solver
             call get_process_data() ! parallel calls
             call read_layout_file(process_id) ! reads layout file calls
             
-            print*, "CFL;; ", control%CFL
-            call read_input_and_controls(control)
-            print*, "CFL;; ", control%CFL
-            print*, dims%imx, dims%jmx, dims%kmx
+            call read_input_and_controls(control, scheme, flow)
             call setup_grid(grid_file_buf, mapfile, periodicfile, nodes, dims)
-            print*, dims%imx, dims%jmx, dims%kmx
             call setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, dims)
-            print*, dims%imx, dims%jmx, dims%kmx
             call setup_viscosity(mu, mu_t, dims)
             call setup_state(control, dims)
             call setup_gradients(control,dims)
             !call setup_source
-            call setup_bc()
+            call setup_bc(dims)
             call setup_time(control,dims)
             call setup_update(control, dims)
             call setup_interface(control,dims)
@@ -117,19 +114,17 @@ module solver
               call mpi_barrier(MPI_COMM_WORLD,ierr)
               call find_wall_dist(nodes, dims)
             end if
-            call setupCC()
+            call setupCC(dims)
             call setup_resnorm(control)
             call initmisc()
-            checkpoint_iter_count = 0
-            call checkpoint(nodes, dims)  ! Create an initial dump file
-            current_iter=1
+            control%checkpoint_iter_count = 0
+            call checkpoint(nodes, control, dims)  ! Create an initial dump file
+            control%current_iter=1
             DebugCall('setup_solver: checkpoint')
             if(process_id==0)then
               open(STOP_FILE_UNIT, file=stop_file)
             end if
             DebugCall('Setup solver complete')
-            print*, dims%imx, dims%jmx, dims%kmx
-            print*, control%n_var
 
         end subroutine setup_solver
 
@@ -175,7 +170,7 @@ module solver
             DebugCall('initmisc')
 
             sim_clock = 0.
-            current_iter = 0
+            control%current_iter = 0
 
         end subroutine initmisc
 
@@ -191,16 +186,16 @@ module solver
             DebugCall('iterate_one_more_time_step')
 
             if (process_id==0) then
-              print*, current_iter
+              print*, control%current_iter
             end if
             call get_next_solution(control, dims)
-            if((mod(current_iter,res_write_interval)==0 .or. &
-                    current_iter==Res_itr .or.               &
-                    current_iter==1))      then
+            !if((mod(control%current_iter,control%res_write_interval)==0 .or. &
+            !        control%current_iter==Res_itr .or.               &
+            !        control%current_iter==1))      then
               call find_resnorm(control, dims)
-            end if
-            call checkpoint(nodes, dims)
-            current_iter = current_iter + 1
+            !end if
+            call checkpoint(nodes, control, dims)
+            control%current_iter = control%current_iter + 1
             if(process_id==0)then
               REWIND(STOP_FILE_UNIT)
               read(STOP_FILE_UNIT,*) want_to_stop

@@ -27,35 +27,35 @@ module global_vars
   integer :: layers=3           !< Number of ghost cell layers to transfer with mpi
 
   ! Time controls
-  integer :: min_iter=1              !< Minimum iteration value, starting iteration value
-  integer :: max_iters=1             !< Maximum iteration value, stop after these many iteration
+!  integer :: min_iter=1              !< Minimum iteration value, starting iteration value
+!  integer :: max_iters=1             !< Maximum iteration value, stop after these many iteration
 !  integer :: start_from=0            !< Number of the folder (in time_directories) to load stored state from to restart computation
-  integer :: checkpoint_iter=0       !< Write interval for output file. Number of iteration after which solver will dump/store a state in a folder in time_directories
-  integer :: checkpoint_iter_count=0 !< Counter of folder number to write in time_directories/
-  integer :: current_iter=0          !< Current iteration number
+!  integer :: checkpoint_iter=0       !< Write interval for output file. Number of iteration after which solver will dump/store a state in a folder in time_directories
+!  integer :: checkpoint_iter_count=0 !< Counter of folder number to write in time_directories/
+!  integer :: current_iter=0          !< Current iteration number
 
   !write controls
   integer :: r_count=0                               !< Number of variable to read from the restart file
   integer :: w_count=0                               !< Number of variable to write in the output file
-  integer :: res_write_interval                      !< Write resnorm after every "res_write_interval" iteration
-  integer :: purge_write                             !< Remove unwanted folder. If Purge_write=2, latest two folder in time_direcotires are kept and 0=no purge
-  integer :: last_iter=0                             !< Last iteration that is stored in the restart file
-  integer :: write_percision=6                       !< Number of place after decimal. Only used for resnorm file
-  character(len=FORMAT_LENGTH):: write_data_format   !< write data type. Either ASCII or BINARY
-  character(len=FORMAT_LENGTH):: write_file_format   !< Write file type. Either vtk or tecplot
-  character(len=FORMAT_LENGTH)::  read_data_format='ASCII'   !< Read data type in file. Either ASCII or BINARY
-  character(len=FORMAT_LENGTH)::  read_file_format="vtk"     !< Read file type. Either vtk or tecplot
+!  integer :: res_write_interval                      !< Write resnorm after every "res_write_interval" iteration
+!  integer :: purge_write                             !< Remove unwanted folder. If Purge_write=2, latest two folder in time_direcotires are kept and 0=no purge
+!  integer :: last_iter=0                             !< Last iteration that is stored in the restart file
+!  integer :: write_percision=6                       !< Number of place after decimal. Only used for resnorm file
+!  character(len=FORMAT_LENGTH):: write_data_format   !< write data type. Either ASCII or BINARY
+!  character(len=FORMAT_LENGTH):: write_file_format   !< Write file type. Either vtk or tecplot
+!  character(len=FORMAT_LENGTH)::  read_data_format='ASCII'   !< Read data type in file. Either ASCII or BINARY
+!  character(len=FORMAT_LENGTH)::  read_file_format="vtk"     !< Read file type. Either vtk or tecplot
   character(len=FILE_NAME_LENGTH)::     outfile          !< String to store name of output file
   character(len=FILE_NAME_LENGTH)::      infile          !< String to store the name of restart/load file
   character(len=FILE_NAME_LENGTH):: restartfile          !< Sting to store the name of restart log file
   character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  r_list !< Read variable list
   character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  w_list !< Write variable list
-  character(len=FLOW_TYPE_LENGTH):: previous_flow_type="none"   !< Type of flow:inviscid, laminar, etc, stored in the load file 
+!  character(len=FLOW_TYPE_LENGTH):: previous_flow_type="none"   !< Type of flow:inviscid, laminar, etc, stored in the load file 
 
   ! solver specific
 !  real :: CFL                  !< Courant–Friedrichs–Lewy (CFL) (Read from input)
-  real :: tolerance            !< Minimum value of resnorm after which simulation stop
-  character(len=TOLERANCE_LENGTH) :: tolerance_type="abs" !< Type of tolerance to check:absolute or relative
+!  real :: tolerance            !< Minimum value of resnorm after which simulation stop
+!  character(len=TOLERANCE_LENGTH) :: tolerance_type="abs" !< Type of tolerance to check:absolute or relative
   integer :: want_to_stop=0    !< 0: continue the solver; 1=Stop the solver
   logical :: Halt = .FALSE.    !< Logical value used to stop the solver in main program file.
 
@@ -107,16 +107,6 @@ module global_vars
    !< Free-stream Mach number
   real, dimension(:, :, :), allocatable, target  :: intermittency
    !< Intermiitency pointer
-  real, dimension(:, :, :), allocatable, target  :: ExtraVar1
-   !< Extravar1 used only for debuging or store some sepcial kind of compination of other varialbes
-  real, dimension(:, :, :), allocatable, target  :: ExtraVar2
-   !< Extravar2 used only for debuging or store some sepcial kind of compination of other varialbes
-  real, dimension(:, :, :), allocatable, target  :: ExtraVar3
-   !< Extravar3 used only for debuging or store some sepcial kind of compination of other varialbes
-  real, dimension(:, :, :), allocatable, target  :: ExtraVar4
-   !< Extravar4 used only for debuging or store some sepcial kind of compination of other varialbes
-  real, dimension(:, :, :), allocatable, target  :: ExtraVar5
-   !< Extravar5 used only for debuging or store some sepcial kind of compination of other varialbes
 
   ! Freestram variable used to read file before inf pointer are linked and allocated
   real                                              :: free_stream_density  
@@ -276,7 +266,7 @@ module global_vars
   !residual specific
   character(len=STATE_NAME_LENGTH), dimension(:), allocatable :: Res_list
   integer            :: Res_count       !< No of variable to save
-  integer            :: Res_itr=3       !< Iteration to save
+!  integer            :: Res_itr=3       !< Iteration to save
   real, dimension(:), allocatable :: Res_abs       !< Absolute value
   real, dimension(:), allocatable :: Res_rel       !< Relative value
   real, dimension(:), allocatable :: Res_save      !< Saved iteration for relative
@@ -324,18 +314,18 @@ module global_vars
   real          ::  omega_resnorm_0s  !<  Omega residual normalized at iter 1 
 
   ! grid variables
-  integer                                 :: imx
+!  integer                                 :: imx
    !< Maximum number of grid points in the I direction
-  integer                                 :: jmx
+!  integer                                 :: jmx
    !< Maximum number of grid points in the K direction
-  integer                                 :: kmx
+!  integer                                 :: kmx
    !< Maximum number of grid points in the K direction
-  integer                                 :: imn, jmn, kmn
-  real, dimension(:, :, :), allocatable  :: grid_x
+  !integer                                 :: imn, jmn, kmn
+!  real, dimension(:, :, :), allocatable  :: grid_x
    !< X corrdinate of the grid point
-  real, dimension(:, :, :), allocatable  :: grid_y
+!  real, dimension(:, :, :), allocatable  :: grid_y
    !< Y corrdinate of the grid point
-  real, dimension(:, :, :), allocatable  :: grid_z
+!  real, dimension(:, :, :), allocatable  :: grid_z
    !< Z corrdinate of the grid point
 
   ! geometry variables
@@ -371,18 +361,6 @@ module global_vars
    !< Store magnitude of face area vector of K direction faces
   real, dimension(:, :, :), allocatable, target :: volume
    !< Store cell volume
-!  real, dimension(:, :, :), allocatable, target ::   left_ghost_centroid
-!   !< Store the cell center of the ghost cell on 1 face
-!  real, dimension(:, :, :), allocatable, target ::  right_ghost_centroid
-!   !< Store the cell center of the ghost cell on 2 face
-!  real, dimension(:, :, :), allocatable, target ::  front_ghost_centroid
-!   !< Store the cell center of the ghost cell on 3 face
-!  real, dimension(:, :, :), allocatable, target ::   back_ghost_centroid
-!   !< Store the cell center of the ghost cell on 4 face
-!  real, dimension(:, :, :), allocatable, target ::    top_ghost_centroid
-!   !< Store the cell center of the ghost cell on 5 face
-!  real, dimension(:, :, :), allocatable, target :: bottom_ghost_centroid
-!   !< Store the cell center of the ghost cell on 6 face
   
 
   ! higher order boundary condtioion
@@ -423,21 +401,6 @@ module global_vars
   real, dimension(6) :: fixed_Ttemperature      = 0.
   !<  Fixed Total Temperature value to apply at particular boundary condition
 
-  ! variable for post_processing
-  integer :: N_blocks
-  !< Total number of blocks 
-  integer :: I_blocks
-  !< Total number of blocks  in I direction
-  integer :: J_blocks
-  !< Total number of blocks  in J direction
-  integer :: K_blocks
-  !< Total number of blocks  in K direction
-  integer, dimension(:), allocatable:: imin
-  integer, dimension(:), allocatable:: imax
-  integer, dimension(:), allocatable:: jmin
-  integer, dimension(:), allocatable:: jmax
-  integer, dimension(:), allocatable:: kmin
-  integer, dimension(:), allocatable:: kmax
 
   !interface mapping
   integer, dimension(6) :: ilo, ihi 

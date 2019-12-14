@@ -8,9 +8,10 @@ module CC
 #include "debug.h"
 #include "error.h"
 
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
+   use vartypes
+!  use global_vars, only: imx
+!  use global_vars, only: jmx
+!  use global_vars, only: kmx
   use global_vars, only: process_id
   use global_vars, only: xn
   use global_vars, only: yn
@@ -43,21 +44,22 @@ module CC
   
   contains
 
-    subroutine setupCC()
+    subroutine setupCC(dims)
       !< Allocate memory for the cell center variable only in case of transition model
       implicit none
+      type(extent), intent(in) :: dims
 
       DebugCall("Setup CC")
 
       if((transition=='lctm2015') .and. turbulence/='none')then
-        call alloc(CCnormalX, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("CCnormalX"))
-        call alloc(CCnormalY, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("CCnormalY"))
-        call alloc(CCnormalZ, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("CCnormalZ"))
-        call alloc(CCVn,   -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("CCVn"))
-        call alloc(DCCVnX, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("DCCVnZ"))
-        call alloc(DCCVnY, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("DCCVnY"))
-        call alloc(DCCVnZ, -2, imx+2, -2, jmx+2, -2, kmx+2, AErrMsg("DCCVnZ"))
-        call find_CCnormal()
+        call alloc(CCnormalX, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("CCnormalX"))
+        call alloc(CCnormalY, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("CCnormalY"))
+        call alloc(CCnormalZ, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("CCnormalZ"))
+        call alloc(CCVn,   -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("CCVn"))
+        call alloc(DCCVnX, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("DCCVnZ"))
+        call alloc(DCCVnY, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("DCCVnY"))
+        call alloc(DCCVnZ, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("DCCVnZ"))
+        call find_CCnormal(dims)
       end if
 
     end subroutine setupCC
@@ -80,12 +82,13 @@ module CC
     end subroutine destroyCC
 
 
-    subroutine find_CCnormal()
+    subroutine find_CCnormal(dims)
       !< Find the cell-center unit normal
       implicit none
-      call compute_gradient(CCnormalX, dist, 'x')
-      call compute_gradient(CCnormalY, dist, 'y')
-      call compute_gradient(CCnormalZ, dist, 'z')
+      type(extent), intent(in) :: dims
+      call compute_gradient(CCnormalX, dist, 'x', dims)
+      call compute_gradient(CCnormalY, dist, 'y', dims)
+      call compute_gradient(CCnormalZ, dist, 'z', dims)
       !using already allocated memeory for storing magnitude
       CCVn = sqrt(CCnormalX**2 + CCnormalY**2 + CCnormalZ**2)
       !CCVn hold the magnitude of CCnormal temporaraly and can be 
@@ -103,21 +106,23 @@ module CC
     end subroutine find_CCVn
 
 
-    subroutine find_DCCVn()
+    subroutine find_DCCVn(dims)
       !< Find gradient of the dot product between cell velocity and unit normal
       implicit none
+      type(extent), intent(in) :: dims
       call find_CCVn()
-      call compute_gradient(DCCVnX, dist, 'x')
-      call compute_gradient(DCCVnY, dist, 'y')
-      call compute_gradient(DCCVnZ, dist, 'z')
+      call compute_gradient(DCCVnX, dist, 'x', dims)
+      call compute_gradient(DCCVnY, dist, 'y', dims)
+      call compute_gradient(DCCVnZ, dist, 'z', dims)
     end subroutine find_DCCVn
 
 
-    subroutine compute_gradient(grad, var, dir)
+    subroutine compute_gradient(grad, var, dir, dims)
       !< Generalized subroutine to calculate gradients
       implicit none
-      real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(out) :: grad
-      real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(in) :: var
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(out) :: grad
+      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: var
       character(len=*)                           , intent(in) :: dir
       
       real, dimension(:,:,:), pointer  :: nx
@@ -133,28 +138,28 @@ module CC
 
       select case(dir)
         case('x')
-          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
-          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
-          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
+          nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,1)
+          ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,1)
+          nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,1)
         case('y')
-          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
-          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
-          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
+          nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,2)
+          ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,2)
+          nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,2)
         case('z')
-          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
-          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
-          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
+          nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,3)
+          ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,3)
+          nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,3)
         case DEFAULT
-          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
-          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
-          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
+          nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,1)
+          ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,1)
+          nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,1)
           print*, "ERROR: gradient direction error"
       end select
       grad = 0.0
 
-      do k=0,kmx
-        do j=0,jmx
-          do i=0,imx
+      do k=0,dims%kmx
+        do j=0,dims%jmx
+          do i=0,dims%imx
             grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*nx(i,j,k)*xA(i,j,k) &
                           -(var(i  ,j-1,k  )+var(i,j,k))*ny(i,j,k)*yA(i,j,k) &
                           -(var(i  ,j  ,k-1)+var(i,j,k))*nz(i,j,k)*zA(i,j,k) &

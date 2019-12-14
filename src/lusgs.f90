@@ -102,7 +102,7 @@ module lusgs
   use utils, only: alloc
   use utils, only:  dealloc 
 
-  use string
+!  use string
 
   !--- sst implicit update ---!
   use global_sst, only : sst_F1

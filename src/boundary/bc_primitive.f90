@@ -6,7 +6,7 @@ module bc_primitive
   ! Aim : applying boundary condition to domain
   !-------------------------------------------
 #include "../error.inc"
-
+  use vartypes
   use global_vars, only: imin_id
   use global_vars, only: imax_id
   use global_vars, only: jmin_id
@@ -40,9 +40,9 @@ module bc_primitive
   use global_vars, only: tv
   use global_vars, only: tgm
   use global_vars, only: accur
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
+!  use global_vars, only: imx
+!  use global_vars, only: jmx
+!  use global_vars, only: kmx
   use global_vars, only: turbulence
   use global_vars, only: transition
   use global_vars, only: xnx
@@ -75,7 +75,7 @@ module bc_primitive
   use global_vars, only: pressure_inf
   use global_vars, only: vel_mag
   use global_vars, only: qp
-  use global_vars, only: current_iter
+!  use global_vars, only: current_iter
 
   use global_sst , only: beta1
   use utils,       only: turbulence_read_error
@@ -88,6 +88,7 @@ module bc_primitive
   private
 
   integer                        :: face_num
+  integer                        :: current_iter, imx, jmx, kmx
   !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
 
   public :: populate_ghost_primitive
@@ -95,14 +96,20 @@ module bc_primitive
 
   contains
 
-    subroutine populate_ghost_primitive()
+    subroutine populate_ghost_primitive(control, dims)
       !< Populate the state variables in the ghost cell
       !< with particular value based on the boundary conditio 
       !< being applied at that face
       implicit none
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
       integer :: i
       character(len=4) :: face
 
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+      current_iter = control%current_iter
       
       do i = 1,6
         face_num = i
@@ -114,31 +121,31 @@ module bc_primitive
             call supersonic_inlet(face)
 
           case(-2)
-            call supersonic_outlet(face)
+            call supersonic_outlet(face, dims)
 
           case(-3)
-            call subsonic_inlet(face)
+            call subsonic_inlet(face, dims)
 
           case(-4)
-            call subsonic_outlet(face)
+            call subsonic_outlet(face, dims)
 
           case(-5)
-            call wall(face)
+            call wall(face, dims)
 
           case(-6)
-            call slip_wall(face)
+            call slip_wall(face, dims)
 
           case(-7)
-            call pole(face)
+            call pole(face, dims)
 
           case(-8)
-            call far_field(face)
+            call far_field(face, dims)
 
           case(-9)
             call periodic_bc(face)
 
           case(-11)
-            call total_pressure(face)
+            call total_pressure(face, dims)
 
           case Default
             if(id(i)>=0 .or. id(i)==-10) then
@@ -218,49 +225,51 @@ module bc_primitive
       end subroutine supersonic_inlet
 
 
-      subroutine supersonic_outlet(face)
+      subroutine supersonic_outlet(face, dims)
         !< Supersonic outlet boundary condition. 
         !< All the values of state variables are copied 
         !< from inside the domain
         implicit none
+        type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(density , "flat", face)
-        call copy3(x_speed , "flat", face)
-        call copy3(y_speed , "flat", face)
-        call copy3(z_speed , "flat", face)
-        call copy3(pressure, "flat", face)
+        call copy3(density , "flat", face, dims)
+        call copy3(x_speed , "flat", face, dims)
+        call copy3(y_speed , "flat", face, dims)
+        call copy3(z_speed , "flat", face, dims)
+        call copy3(pressure, "flat", face, dims)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv, "flat", face)
+            call copy3(tv, "flat", face, dims)
           case('sst', 'sst2003')
-            call copy3(tk, "flat", face)
-            call copy3(tw, "flat", face)
+            call copy3(tk, "flat", face, dims)
+            call copy3(tw, "flat", face, dims)
           case('kkl')
-            call copy3(tk, "flat", face)
-            call copy3(tkl, "flat", face)
+            call copy3(tk, "flat", face, dims)
+            call copy3(tkl, "flat", face, dims)
           case DEFAULT
             !call turbulence_read_error()
             Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face)
+            call copy3(tgm, "flat", face, dims)
           case DEFAULT
             continue
         end select
       end subroutine supersonic_outlet
 
 
-      subroutine subsonic_inlet(face)
+      subroutine subsonic_inlet(face, dims)
         !< Subsonic inlet boundary condition. 
         !< All the state variables's value expect pressure
         !< is fixed and pressure is copied from inside the 
         !< domain
         implicit none
+        type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
         if(current_iter<=2)then
@@ -294,22 +303,23 @@ module bc_primitive
             continue
         end select
         end if
-        call copy3(pressure, "flat", face)
+        call copy3(pressure, "flat", face, dims)
       end subroutine subsonic_inlet
 
 
-      subroutine subsonic_outlet(face)
+      subroutine subsonic_outlet(face, dims)
         !< Subsonic outlet boundary condition. 
         !< All the state variables's value expect pressure
         !< is copied from the inside of the domain and pressure 
         !< is fixed
         implicit none
+        type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(density, "flat", face)
-        call copy3(x_speed, "flat", face)
-        call copy3(y_speed, "flat", face)
-        call copy3(z_speed, "flat", face)
+        call copy3(density, "flat", face, dims)
+        call copy3(x_speed, "flat", face, dims)
+        call copy3(y_speed, "flat", face, dims)
+        call copy3(z_speed, "flat", face, dims)
         if(current_iter<=2)then
         call fix(pressure, fixed_pressure, face)
         end if
@@ -318,99 +328,102 @@ module bc_primitive
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv, "flat", face)
+            call copy3(tv, "flat", face, dims)
           case('sst', 'sst2003')
-            call copy3(tk, "flat", face)
-            call copy3(tw, "flat", face)
+            call copy3(tk, "flat", face, dims)
+            call copy3(tw, "flat", face, dims)
           case('kkl')
-            call copy3(tk, "flat", face)
-            call copy3(tkl, "flat", face)
+            call copy3(tk, "flat", face, dims)
+            call copy3(tkl, "flat", face, dims)
           case DEFAULT
            ! call turbulence_read_error()
            Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face)
+            call copy3(tgm, "flat", face, dims)
           case DEFAULT
             continue
         end select
       end subroutine subsonic_outlet
 
-      subroutine wall(face)
+      subroutine wall(face, dims)
         !< Adiabatic/Isothermal wall boundary condition
         implicit none
+        type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(pressure, "symm",  face)
-        call temp_based_density(fixed_wall_temperature, face)
-        call no_slip(face)
+        call copy3(pressure, "symm",  face, dims)
+        call temp_based_density(fixed_wall_temperature, face, dims)
+        call no_slip(face, dims)
       end subroutine wall
 
 
-      subroutine slip_wall(face)
+      subroutine slip_wall(face, dims)
         !< Slip wall boundary condition. 
         !< Maintain flow tangency
         implicit none
+        type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(density , "symm", face)
-        call copy3(pressure, "symm", face)
+        call copy3(density , "symm", face, dims)
+        call copy3(pressure, "symm", face, dims)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv, "symm", face)
+            call copy3(tv, "symm", face, dims)
           case('sst', 'sst2003')
-            call copy3(tk, "symm", face)
-            call copy3(tw, "symm", face)
+            call copy3(tk, "symm", face, dims)
+            call copy3(tw, "symm", face, dims)
           case('kkl')
-            call copy3(tk, "symm", face)
-            call copy3(tkl, "symm", face)
+            call copy3(tk, "symm", face, dims)
+            call copy3(tkl, "symm", face, dims)
           case DEFAULT
             !call turbulence_read_error()
             Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face)
+            call copy3(tgm, "flat", face, dims)
           case DEFAULT
             continue
         end select
-        call flow_tangency(face)
+        call flow_tangency(face, dims)
       end subroutine slip_wall
 
 
-      subroutine pole(face)
+      subroutine pole(face, dims)
         !< Boundary condition for the block face
         !< with zero area; turning into a pole
         implicit none
+        type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(density , "flat", face)
-        call copy3(x_speed , "flat", face)
-        call copy3(y_speed , "flat", face)
-        call copy3(z_speed , "flat", face)
-        call copy3(pressure, "flat", face)
+        call copy3(density , "flat", face, dims)
+        call copy3(x_speed , "flat", face, dims)
+        call copy3(y_speed , "flat", face, dims)
+        call copy3(z_speed , "flat", face, dims)
+        call copy3(pressure, "flat", face, dims)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv, "flat", face) 
+            call copy3(tv, "flat", face, dims) 
           case('sst', 'sst2003')
-            call copy3(tk, "flat", face)
-            call copy3(tw, "flat", face)
+            call copy3(tk, "flat", face, dims)
+            call copy3(tw, "flat", face, dims)
           case('kkl')
-            call copy3(tk, "flat", face)
-            call copy3(tkl, "flat", face)
+            call copy3(tk, "flat", face, dims)
+            call copy3(tkl, "flat", face, dims)
           case DEFAULT
             call turbulence_read_error()
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face)
+            call copy3(tgm, "flat", face, dims)
           case DEFAULT
             continue
         end select
@@ -462,34 +475,35 @@ module bc_primitive
       end subroutine fix
 
 
-      subroutine no_slip(face)
+      subroutine no_slip(face, dims)
         !< No-slip wall boundary condition. All the 
         !< component of velocity throught face is zero
         implicit none
+        type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(x_speed, "anti", face)
-        call copy3(y_speed, "anti", face)
-        call copy3(z_speed, "anti", face)
+        call copy3(x_speed, "anti", face, dims)
+        call copy3(y_speed, "anti", face, dims)
+        call copy3(z_speed, "anti", face, dims)
         select case(turbulence)
           case("none")
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv  , "anti", face)
+            call copy3(tv  , "anti", face, dims)
           case("sst", 'sst2003')
-            call copy3(tk  , "anti", face)
+            call copy3(tk  , "anti", face, dims)
             call set_omega_at_wall(face)
           case("kkl")
-            call copy3(tk  , "anti", face)
-            call copy3(tkl , "anti", face)
+            call copy3(tk  , "anti", face, dims)
+            call copy3(tkl , "anti", face, dims)
           case DEFAULT
             !call turbulence_read_error()
             Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face)
+            call copy3(tgm, "flat", face, dims)
           case DEFAULT
             continue
         end select
@@ -609,9 +623,10 @@ module bc_primitive
       end select
     end subroutine check_if_value_fixed
 
-    subroutine far_field(face)
+    subroutine far_field(face, dims)
       !< Far-field Riemann boundary condition
       implicit none
+      type(extent), intent(in) :: dims
       character(len=*) :: face
       real :: cinf, cexp   ! speed of sound
       real :: Rinf, Rexp   ! Riemann invarient
@@ -661,20 +676,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -756,20 +771,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -851,20 +866,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -946,20 +961,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1041,20 +1056,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1136,20 +1151,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1205,9 +1220,10 @@ module bc_primitive
     end subroutine far_field
 
 
-    subroutine total_pressure(face)
+    subroutine total_pressure(face, dims)
       !< Total Pressure Riemann boundary condition
       implicit none
+      type(extent), intent(in) :: dims
       character(len=*) :: face
       real :: cinf, cexp   ! speed of sound
       real :: Rinf, Rexp   ! Riemann invarient
@@ -1252,20 +1268,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1339,20 +1355,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1426,20 +1442,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1513,20 +1529,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1600,20 +1616,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1687,20 +1703,20 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face)
+                      call copy3(tv, "flat", face, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face)
-                      call copy3(tw, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tw, "flat", face, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face)
-                      call copy3(tkl, "flat", face)
+                      call copy3(tk, "flat", face, dims)
+                      call copy3(tkl, "flat", face, dims)
                     case DEFAULT
                       !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face)
+                      call copy3(tgm, "flat", face, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1750,10 +1766,11 @@ module bc_primitive
 
     end subroutine total_pressure
 
-    subroutine temp_based_density(temperature, face)
+    subroutine temp_based_density(temperature, face, dims)
       !< Specify the density in the ghost cell based on the
       !< temperature on the wall. Isothermal or adiabatic
       implicit none
+      type(extent), intent(in) :: dims
       real, dimension(1:6)     , intent(in)  :: temperature
       character(len=*)         , intent(in)  :: face
       real :: stag_temp
@@ -1783,7 +1800,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face)
+            call copy3(density , "symm",  face, dims)
           end if
          case("imax")
           if(temperature(2)<0.0)then
@@ -1808,7 +1825,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face)
+            call copy3(density , "symm",  face, dims)
           end if
         case("jmin")
           if(temperature(3)<0.0)then
@@ -1833,7 +1850,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face)
+            call copy3(density , "symm",  face, dims)
           end if
         case("jmax")
           if(temperature(4)<0.0)then
@@ -1858,7 +1875,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face)
+            call copy3(density , "symm",  face, dims)
           end if
         case("kmin")
           if(temperature(5)<0.0)then
@@ -1883,7 +1900,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face)
+            call copy3(density , "symm",  face, dims)
           end if
         case("kmax")
           if(temperature(6)<0.0)then
@@ -1908,7 +1925,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face)
+            call copy3(density , "symm",  face, dims)
           end if
         case DEFAULT
           !print*, "ERROR: wrong face for boundary condition"

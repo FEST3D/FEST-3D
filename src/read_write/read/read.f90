@@ -29,18 +29,18 @@ module read
   use global, only: res_control_file
 
 !  use global_vars, only: CFL
-  use global_vars, only: max_iters
+!  use global_vars, only: max_iters
 !  use global_vars, only: start_from
-  use global_vars, only: checkpoint_iter
-  use global_vars, only: res_write_interval
-  use global_vars, only: write_file_format
-  use global_vars, only: write_data_format
-  use global_vars, only: read_file_format
-  use global_vars, only: read_data_format
-  use global_vars, only: write_percision
-  use global_vars, only: purge_write
-  use global_vars, only: tolerance
-  use global_vars, only: tolerance_type
+!  use global_vars, only: checkpoint_iter
+!  use global_vars, only: res_write_interval
+!  use global_vars, only: write_file_format
+!  use global_vars, only: write_data_format
+!  use global_vars, only: read_file_format
+!  use global_vars, only: read_data_format
+!  use global_vars, only: write_percision
+!  use global_vars, only: purge_write
+!  use global_vars, only: tolerance
+!  use global_vars, only: tolerance_type
   use global_vars, only: process_id
 
   use global_vars, only: time_stepping_method
@@ -85,32 +85,26 @@ module read
   use global_vars, only: w_count
   use global_vars, only: Res_list
   use global_vars, only: Res_count
-  use utils      , only: DEBUG_LEVEL
-  use string
+!  use string
   use fclose     , only: close_file
 
 
   implicit none
   private
 
-!  type :: controltype
-!      real :: CFL               
-!      !< Courant–Friedrichs–Lewy (CFL) (Read from input)
-!  end type controltype
-
   public :: read_input_and_controls
 
     contains
 
-      subroutine read_input_and_controls(control)
+      subroutine read_input_and_controls(control, scheme, flow)
         !< Read all the input control files
         implicit none
         type(controltype), intent(out) :: control
+        type(schemetype), intent(out) :: scheme
+        type(flowtype), intent(out) :: flow
         call read_controls(control)
-        print*, "CFL read", control%cfL
-        call read_scheme()
-        call read_flow(control)
-        print*, "CFL read", control%cfL
+        call read_scheme(scheme)
+        call read_flow(control, flow)
         call read_output_control()
         call read_Res_list()
       end subroutine read_input_and_controls
@@ -177,7 +171,6 @@ module read
         ! READ CFL
         call get_next_token(CONTROL_FILE_UNIT, buf)
         read(buf, *) control%CFL
-        print*, "controlCFL", control%CFL
         DebugInfo("CFL = "//trim(buf))
 
         ! READ start_from
@@ -187,57 +180,57 @@ module read
 
         ! READ max_iters
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) max_iters
+        read(buf, *) control%max_iters
         DebugInfo('Stop at iteration = '//trim(buf))
 
         ! READ checkpoint_iter
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) checkpoint_iter
+        read(buf, *) control%checkpoint_iter
         DebugInfo(' Solution write interval = '//trim(buf))
 
         ! READ write_file_format
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) write_file_format
+        read(buf, *) control%write_file_format
         DebugInfo('Solution file format  = '//trim(buf))
 
         ! READ write_data_format
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) write_data_format
+        read(buf, *) control%write_data_format
         DebugInfo('solution file data format = '//trim(buf))
 
         ! READ read_file_format
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) read_file_format
+        read(buf, *) control%read_file_format
         DebugInfo('Restart file format  = '//trim(buf))
 
         ! READ_read data_format
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) read_data_format
+        read(buf, *) control%read_data_format
         DebugInfo('Restart file data format = '//trim(buf))
 
         ! READ write_percision
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) write_percision
+        read(buf, *) control%write_percision
         DebugInfo('File write percision = '//trim(buf))
 
         ! READ purge_write
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) purge_write
+        read(buf, *) control%purge_write
         DebugInfo('Purge folder more then  = '//trim(buf))
 
         ! READ res_write_interval
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) res_write_interval
+        read(buf, *) control%res_write_interval
         DebugInfo('resnorm write interval  = '//trim(buf))
 
         ! READ tolerance
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) tolerance, tolerance_type
+        read(buf, *) control%tolerance, control%tolerance_type
         DebugInfo(trim(tolerance_type)//' Tolerance  = '//trim(buf))
 
         ! READ DEBUG_LEVEL
         call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) DEBUG_LEVEL
+        read(buf, *) control%DEBUG_LEVEL
         DebugInfo('DEBUG_LEVEL = '//trim(buf))
 
         close(CONTROL_FILE_UNIT)
@@ -245,10 +238,11 @@ module read
       end subroutine read_controls
 
 
-      subroutine read_scheme()
+      subroutine read_scheme(scheme)
         !< Read fvscheme.md control file
         !--------------------------------------------
         implicit none
+        type(schemetype), intent(out) :: scheme
         character(len=STRING_BUFFER_LENGTH) :: buf
         integer                             :: ios
 
@@ -274,7 +268,7 @@ module read
 
         ! read ilimiter and PB switch
         call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) ilimiter_switch,jlimiter_switch,klimiter_switch, &
+        read(buf, *) ilimiter_switch, jlimiter_switch, klimiter_switch, &
                      iPB_switch, jPB_switch, kPB_switch
         DebugInfo('ilimiter switch = '//trim(buf) )
         DebugInfo('jlimiter switch = '//trim(buf) )
@@ -323,11 +317,12 @@ module read
 
       end subroutine read_scheme
 
-      subroutine read_flow(control)
+      subroutine read_flow(control, flow)
         !< Read flow.md control file
         !--------------------------------------------
         implicit none
         type(controltype), intent(inout) :: control
+        type(flowtype), intent(inout) :: flow
 
         character(len=STRING_BUFFER_LENGTH) :: buf
 

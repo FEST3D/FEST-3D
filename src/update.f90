@@ -85,7 +85,7 @@ module update
   use utils, only: alloc
   use utils, only:  dealloc 
 
-  use string
+!  use string
 
   !subroutine for residual calculation
   use face_interpolant,               only: interpolant
@@ -566,7 +566,7 @@ module update
 
 !        call send_recv(3) ! parallel call-argument:no of layers 
         call apply_interface(control, dims)
-        call populate_ghost_primitive()
+        call populate_ghost_primitive(control, dims)
         call compute_face_interpolant()
         call reconstruct_boundary_state(interpolant, control, dims)
         call compute_fluxes()

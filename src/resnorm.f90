@@ -32,20 +32,20 @@ module resnorm
   use global_vars, only: tkl_inf
   use global_vars, only: te_inf
   use global_vars, only: tv_inf
-  use global_vars, only: current_iter
-  use global_vars, only: res_write_interval
-  use global_vars, only: write_percision
+!  use global_vars, only: current_iter
+!  use global_vars, only: res_write_interval
+!  use global_vars, only: write_percision
   use global_vars, only: Res_abs
   use global_vars, only: Res_rel
   use global_vars, only: Res_save
   use global_vars, only: Res_scale
   use global_vars, only: Res_count
   use global_vars, only: Res_list
-  use global_vars, only: Res_itr
+!  use global_vars, only: Res_itr
   use global_vars, only: turbulence
   use global_vars, only: residue
 !  use global_vars, only: start_from
-  use global_vars, only: last_iter
+!  use global_vars, only: last_iter
   use global_vars, only: F_p
   use global_vars, only: G_p
   use global_vars, only: H_p
@@ -55,7 +55,7 @@ module resnorm
   use utils,      only: alloc
   use layout,     only: process_id
   use layout,     only: total_process
-  use string
+!  use string
   use fclose,     only: close_file
 
 #include "error.inc"
@@ -63,6 +63,7 @@ module resnorm
   private
   real :: merror
   real, dimension(:), allocatable :: buffer
+  integer, parameter :: Res_itr = 3
 
   public :: setup_resnorm
   public :: destroy_resnorm
@@ -87,12 +88,12 @@ module resnorm
       call get_absolute_resnorm(control, dims)
       call collect_resnorm_from_all_blocks(control)
       call assemble_resnom_at_each_process(control)
-      call get_relative_resnorm()
-      if((mod(current_iter,res_write_interval)==0 .or. &
-              current_iter==Res_itr .or.               &
-              current_iter==1)      .and.              &
+      call get_relative_resnorm(control)
+      if((mod(control%current_iter,control%res_write_interval)==0 .or. &
+              control%current_iter==Res_itr .or.               &
+              control%current_iter==1)      .and.              &
               process_id  ==0)      then
-        call write_resnorm()
+        call write_resnorm(control)
       end if
     end subroutine find_resnorm
 
@@ -227,24 +228,26 @@ module resnorm
       Res_abs(0) =  abs(Res_abs(0))
     end subroutine assemble_resnom_at_each_process
 
-    subroutine get_relative_resnorm()
+    subroutine get_relative_resnorm(control)
       !< Get relative residual with respect to first iteration residual
       implicit none
-      if(current_iter<=Res_itr) Res_save=Res_abs
+      type(controltype), intent(in) :: control
+      if(control%current_iter<=Res_itr) Res_save=Res_abs
       Res_rel = Res_abs/Res_save
     end subroutine get_relative_resnorm
 
-    subroutine write_resnorm()
+    subroutine write_resnorm(control)
       !< Writing the residual in the file to save.
       implicit none
+      type(controltype), intent(in) :: control
       integer :: i
       integer :: n=6
       character(len=20) :: frm
 
-      n=write_percision
+      n=control%write_percision
       write(frm, '(A,I0,A,I0,A)') "(e",n+8,".",n,"E2, 4x)"
 
-      write(RESNORM_FILE_UNIT, '(I0,4x)', advance='no') current_iter+last_iter
+      write(RESNORM_FILE_UNIT, '(I0,4x)', advance='no') control%current_iter+control%last_iter
       do i=1,Res_count
         select case(trim(Res_list(i)))
           !include "resnorm_write_cases.inc"

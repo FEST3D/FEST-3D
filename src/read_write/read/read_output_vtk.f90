@@ -6,16 +6,15 @@ module read_output_vtk
   !---------------------------------------------------------
 #include "../../debug.h"
 #include "../../error.h"
+  use vartypes
   use global     , only :    IN_FILE_UNIT
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
 
-  use global_vars, only : read_data_format
-  use global_vars, only : read_file_format
   use global_vars, only : process_id
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
+!  use global_vars, only : imx
+!  use global_vars, only : jmx
+!  use global_vars, only : kmx
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -33,23 +32,27 @@ module read_output_vtk
   use global_vars, only : mu_ref
   use global_vars, only : r_count
   use global_vars, only : r_list
-  use global_vars, only : previous_flow_type
 
   use utils
-  use string
+!  use string
 
   implicit none
   private
+  integer :: imx, jmx, kmx
   integer :: i,j,k
 
   public :: read_file
 
   contains
 
-    subroutine read_file()
+    subroutine read_file(dims)
       !< Read all the variable for the vtk restart file
       implicit none
+      type(extent), intent(in) :: dims
       integer :: n
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
       call read_header()
       call read_grid()

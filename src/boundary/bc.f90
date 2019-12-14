@@ -1,10 +1,8 @@
    !< Setup boundary condition for the domain
 module bc
    !< Setup boundary condition for the domain
-  !--------------------------------------------
-  ! 170515  Jatinder Pal Singh Sandhu
-  ! Aim : setup boundary condition to domain
   !-------------------------------------------
+  use vartypes
   use global_vars, only: imin_id
   use global_vars, only: imax_id
   use global_vars, only: jmin_id
@@ -20,9 +18,9 @@ module bc
   use global_vars, only: make_F_flux_zero
   use global_vars, only: make_G_flux_zero
   use global_vars, only: make_H_flux_zero
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
+!  use global_vars, only: imx
+!  use global_vars, only: jmx
+!  use global_vars, only: kmx
   use global_vars, only: PbcId
   use utils, only: alloc
   use utils, only: dealloc
@@ -33,7 +31,7 @@ module bc
   implicit none
   private
 
-  integer                        :: face_num
+  !integer                        :: face_num
   !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
 
   public :: setup_bc
@@ -42,9 +40,10 @@ module bc
 
   contains
 
-    subroutine setup_bc()
+    subroutine setup_bc(dims)
       !< Initialization and allocate memory of boundary condition variables
       implicit none
+      type(extent), intent(in) :: dims
       !check for periodic bc
       if(PbcId(1)>=0) imin_id=-10
       if(PbcId(2)>=0) imax_id=-10
@@ -72,9 +71,9 @@ module bc
       c1 = c2-c3
       call read_fixed_values()
 
-      call alloc(make_F_flux_zero, 1,imx)
-      call alloc(make_G_flux_zero, 1,jmx)
-      call alloc(make_H_flux_zero, 1,kmx)
+      call alloc(make_F_flux_zero, 1,dims%imx)
+      call alloc(make_G_flux_zero, 1,dims%jmx)
+      call alloc(make_H_flux_zero, 1,dims%kmx)
 
       make_F_flux_zero=1
       make_G_flux_zero=1
@@ -83,9 +82,9 @@ module bc
       if(imin_id==-5 .or. imin_id==-6 .or. imin_id==-7) make_F_flux_zero(1)=0
       if(jmin_id==-5 .or. jmin_id==-6 .or. jmin_id==-7) make_G_flux_zero(1)=0
       if(kmin_id==-5 .or. kmin_id==-6 .or. kmin_id==-7) make_H_flux_zero(1)=0
-      if(imax_id==-5 .or. imax_id==-6 .or. imax_id==-7) make_F_flux_zero(imx)=0
-      if(jmax_id==-5 .or. jmax_id==-6 .or. jmax_id==-7) make_G_flux_zero(jmx)=0
-      if(kmax_id==-5 .or. kmax_id==-6 .or. kmax_id==-7) make_H_flux_zero(kmx)=0
+      if(imax_id==-5 .or. imax_id==-6 .or. imax_id==-7) make_F_flux_zero(dims%imx)=0
+      if(jmax_id==-5 .or. jmax_id==-6 .or. jmax_id==-7) make_G_flux_zero(dims%jmx)=0
+      if(kmax_id==-5 .or. kmax_id==-6 .or. kmax_id==-7) make_H_flux_zero(dims%kmx)=0
 
     end subroutine setup_bc
 

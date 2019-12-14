@@ -6,9 +6,9 @@ module grid
     
     use vartypes
     use global, only: STRING_BUFFER_LENGTH, GRID_FILE_UNIT
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
+!    use global_vars, only : imx
+!    use global_vars, only : jmx
+!    use global_vars, only : kmx
     use global_vars, only : imin_id
     use global_vars, only : jmin_id
     use global_vars, only : kmin_id
@@ -170,7 +170,7 @@ module grid
             call extract_grid_size(dims)
             call allocate_memory(nodes, dims)
             !read interface mapping
-            call read_interface_map(mapfile, periodicfile)
+            call read_interface_map(mapfile, periodicfile, dims)
 
             ! ghost grid exchange
             call populate_grid_points(nodes, dims)
@@ -231,9 +231,9 @@ module grid
            !     dims%kmx = 1
            ! end if
            ! print*, dims%imx, dims%jmx, dims%kmx
-            imx = dims%imx
-            jmx = dims%jmx
-            kmx = dims%kmx
+           ! imx = dims%imx
+           ! jmx = dims%jmx
+           ! kmx = dims%kmx
 
         end subroutine extract_grid_size
 !

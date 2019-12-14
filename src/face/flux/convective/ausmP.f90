@@ -20,8 +20,6 @@ module ausmP
 !    use global_vars, only : n_var
     use global_vars, only : turbulence
     use global_vars, only : process_id
-    use global_vars, only : current_iter
-    use global_vars, only : max_iters
     use global_vars, only : make_F_flux_zero
     use global_vars, only : make_G_flux_zero
     use global_vars, only : make_H_flux_zero

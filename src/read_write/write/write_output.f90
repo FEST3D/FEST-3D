@@ -9,10 +9,10 @@ module write_output
   use global                 ,only : OUT_FILE_UNIT
   use global_vars            ,only : outfile
   use global_vars            ,only : outfile
-  use global_vars            ,only : write_data_format
-  use global_vars            ,only : write_file_format
+!  use global_vars            ,only : write_data_format
+!  use global_vars            ,only : write_file_format
   use utils
-  use string
+!  use string
   use write_output_vtk       ,only : write_file_vtk     => write_file
   use write_output_tec       ,only : write_file_tec => write_file
   use write_output_tec_node  ,only : write_file_tec_nodal => write_file
@@ -26,22 +26,23 @@ module write_output
 
   contains
 
-    subroutine setup_file()
+    subroutine setup_file(control)
       !< Setup the file type based on the input
       implicit none
+      type(controltype), intent(in) :: control
       DebugCall('write_output_vtk: setup_file')
-      if (write_file_format == "vtk") then
+      if (control%write_file_format == "vtk") then
         file_format = ".vtk"
-      elseif (write_file_format == "tecplot" .or. write_file_format == "tecplot_nodal") then
+      elseif (control%write_file_format == "tecplot" .or. control%write_file_format == "tecplot_nodal") then
         file_format = ".dat"
       else
         print*, "File format not recoganised. Accepted formats are"
         print*, "'vtk', 'tecplot' and 'tecplot_nodal' "
       end if
 
-      if (write_data_format == "ASCII") then
+      if (control%write_data_format == "ASCII") then
         data_format = "formatted"
-      elseif (write_data_format == "BINARY") then
+      elseif (control%write_data_format == "BINARY") then
         data_format = "unformatted"
       else
         print*, "Data format not recoganised. Accepted formats are"
@@ -56,7 +57,7 @@ module write_output
       character(len=*), intent(in) :: filename 
       DebugCall('write_output_vtk: open_file')
 
-      open(OUT_FILE_UNIT, file=trim(filename)//trim(file_format) + '.part', form=trim(data_format))
+      open(OUT_FILE_UNIT, file=trim(filename)//trim(file_format)//'.part', form=trim(data_format))
 
     end subroutine open_file
 
@@ -66,29 +67,30 @@ module write_output
 
       character(len=*), intent(in) :: filename 
       DebugCall('write_output_vtk: close_file')
-      call rename(trim(filename)//trim(file_format) + '.part', trim(filename)//trim(file_format))
+      call rename(trim(filename)//trim(file_format)//'.part', trim(filename)//trim(file_format))
       close(OUT_FILE_UNIT)
     end subroutine close_file
 
-    subroutine write_file(nodes, dims)
+    subroutine write_file(nodes, control, dims)
       !< Writing output in the file according to the input file type
       implicit none
       type(extent), intent(in) :: dims
+      type(controltype), intent(in) :: control
       type(nodetype), dimension(-2:dims%imx+3, -2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
 
-      call setup_file()
+      call setup_file(control)
       call open_file(outfile)
 
-      select case (write_file_format)
+      select case (control%write_file_format)
 
         case ('vtk')
-          call write_file_vtk(nodes, dims)
+          call write_file_vtk(nodes, dims, control%write_data_format)
 
         case ('tecplot')
-          call write_file_tec(nodes, dims)
+          call write_file_tec(nodes, dims, control%checkpoint_iter_count)
 
         case ('tecplot_nodal')
-          call write_file_tec_nodal(nodes, dims)
+          call write_file_tec_nodal(nodes, dims, control%checkpoint_iter_count)
 
         case DEFAULT
           Fatal_error

@@ -11,12 +11,12 @@ module dump_solution
   use vartypes
   use global,      only : FILE_NAME_LENGTH
   use global,      only : RESTART_FILE_UNIT
-  use global_vars, only : current_iter
-  use global_vars, only : max_iters
-  use global_vars, only : last_iter
-  use global_vars, only : checkpoint_iter
-  use global_vars, only : checkpoint_iter_count
-  use global_vars, only : purge_write
+!  use global_vars, only : current_iter
+!  use global_vars, only : max_iters
+!  use global_vars, only : last_iter
+!  use global_vars, only : checkpoint_iter
+!  use global_vars, only : checkpoint_iter_count
+!  use global_vars, only : purge_write
   use global_vars, only : sim_clock
   use global_vars, only :     outfile
   use global_vars, only : restartfile
@@ -32,7 +32,7 @@ module dump_solution
   use global_vars, only :  omega_resnorm_0
   use global_vars, only :  turbulence
   use utils
-  use string
+!  use string
   use write_output, only : write_file
   use layout,      only : process_id
 
@@ -47,25 +47,26 @@ module dump_solution
 
   contains
 
-    subroutine checkpoint(nodes, dims)
+    subroutine checkpoint(nodes, control, dims)
       !< Create a checkpoint dump file if the time has come
       !-----------------------------------------------------------
 
       implicit none
       type(extent), intent(in) :: dims
+      type(controltype), intent(inout) :: control
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
 
 
       DebugCall('checkpoint')
 
-      if (checkpoint_iter .ne. 0) then
-          if (mod(current_iter, checkpoint_iter) == 0 &
-             .or. current_iter == max_iters) then
-              call make_dump_dir()
-              call dump_data(nodes, dims)
-              print*, "writing data at: ", current_iter, checkpoint_iter_count
-              call purge_dump_dir()
-              checkpoint_iter_count = checkpoint_iter_count + 1
+      if (control%checkpoint_iter .ne. 0) then
+          if (mod(control%current_iter, control%checkpoint_iter) == 0 &
+             .or. control%current_iter == control%max_iters) then
+              call make_dump_dir(control)
+              call dump_data(nodes, control, dims)
+              print*, "writing data at: ", control%current_iter, control%checkpoint_iter_count
+              call purge_dump_dir(control)
+              control%checkpoint_iter_count = control%checkpoint_iter_count + 1
           end if
       end if
 
@@ -93,48 +94,52 @@ module dump_solution
 
     end subroutine remove_directory
 
-    subroutine purge_dump_dir()
+    subroutine purge_dump_dir(control)
       !< Purge the directory based on the input
       implicit none
+      type(controltype), intent(in) :: control
       integer                         :: purge_num
 
-      purge_num = checkpoint_iter_count-purge_write
-      if (purge_write /=0 .and. purge_num > 0) then
+      purge_num = control%checkpoint_iter_count-control%purge_write
+      if (control%purge_write /=0 .and. purge_num > 0) then
         write(purge_dirname,'(A,I4.4)') 'time_directories/', purge_num
         call remove_directory(purge_dirname)
       end if
 
     end subroutine purge_dump_dir
 
-    subroutine make_dump_dir()
+    subroutine make_dump_dir(control)
       !< Solution directory and sub-directory in created with particular number 
       implicit none
+      type(controltype), intent(in) :: control
 
-      write(dump_dirname,'(A,I4.4)') 'time_directories/',checkpoint_iter_count
+      write(dump_dirname,'(A,I4.4)') 'time_directories/',control%checkpoint_iter_count
       call create_directory(dump_dirname)
       call create_directory(trim(dump_dirname)//'/restart')
 
     end subroutine make_dump_dir
 
-    subroutine dump_data(nodes, dims)
+    subroutine dump_data(nodes, control, dims)
       !< Call to write save files in the directory
       implicit none
       type(extent), intent(in) :: dims
+      type(controltype), intent(in) :: control
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
 !      character(len=FILE_NAME_LENGTH) :: filename
 
       DebugCall('dump_solution: dump_data')
       write(restartfile, '(A,I2.2)') trim(dump_dirname)//'/restart/process_',process_id
       write(    outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
-      call write_restart_log()
-      call write_file(nodes, dims)
+      call write_restart_log(control)
+      call write_file(nodes, control, dims)
 
     end subroutine dump_data
 
-    subroutine write_restart_log()
+    subroutine write_restart_log(control)
       !< Call to write log file in the subdirectory "restart". 
       !< It is useful information while restarting the solver
       implicit none
+      type(controltype), intent(in) :: control
       open(RESTART_FILE_UNIT, file=restartfile)
       select case (turbulence)
           
@@ -145,15 +150,16 @@ module dump_solution
         case DEFAULT
            Fatal_error
       end select
-      call write_initial_resnorm()
+      call write_initial_resnorm(control%current_iter, control%last_iter)
       close(RESTART_FILE_UNIT)
 
     end subroutine write_restart_log
 
-    subroutine write_initial_resnorm()
+    subroutine write_initial_resnorm(current_iter, last_iter)
       !< Writing Initial resnorom in the log file to 
       !< maintian continuity of resnorm while restrarting
       implicit none
+      integer, intent(in) :: current_iter, last_iter
       write(RESTART_FILE_UNIT, '(I0)')    current_iter+last_iter
       write(RESTART_FILE_UNIT, '(f0.16)')        resnorm_0
       write(RESTART_FILE_UNIT, '(f0.16)')    vis_resnorm_0

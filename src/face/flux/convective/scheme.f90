@@ -90,14 +90,14 @@ module scheme
 !           setup_scheme_hlle => setup_scheme, &
 !           destroy_scheme_hlle => destroy_scheme, &
 !           get_residue_hlle => get_residue
-    include "turbulence_models/include/scheme/import_module.inc"
+!    include "turbulence_models/include/scheme/import_module.inc"
 
 
     implicit none
     integer :: imx, jmx, kmx, n_var
     private
 
-    include "turbulence_models/include/scheme/variable_deceleration.inc" 
+!    include "turbulence_models/include/scheme/variable_deceleration.inc" 
 
     type :: residual
       real  ::  residue

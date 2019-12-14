@@ -5,7 +5,7 @@ module utils
     use global_vars, only : process_id
     implicit none
     private
-    integer, public :: DEBUG_LEVEL = 1
+!    integer, public :: DEBUG_LEVEL = 1
     !< Debug level is an input from the control file.
     !< 5-> important calls only, and, 
     !< 1-> all the calls

@@ -13,8 +13,8 @@ module read_output
   use global_vars, only :      infile
   use global_vars, only : restartfile
 
-  use global_vars, only : read_data_format
-  use global_vars, only : read_file_format
+!  use global_vars, only : read_data_format
+!  use global_vars, only : read_file_format
 !  use global_vars, only : start_from
   use global_vars, only : process_id
   use global_vars, only :        resnorm_0
@@ -27,8 +27,8 @@ module read_output
   use global_vars, only : energy_resnorm_0
   use global_vars, only :    TKE_resnorm_0
   use global_vars, only :  omega_resnorm_0
-  use global_vars, only : previous_flow_type
-  use global_vars, only : last_iter
+!  use global_vars, only : previous_flow_type
+!  use global_vars, only : last_iter
   use global_vars, only : mu_ref
 
   use read_output_vtk, only : read_file_vtk => read_file
@@ -36,7 +36,7 @@ module read_output
   use check_output_control, only: verify_read_control
 
   use utils
-  use string
+!  use string
 
   implicit none
   private
@@ -54,22 +54,23 @@ module read_output
 
   contains
 
-    subroutine read_file(control)
+    subroutine read_file(control, dims)
       !< Read restart file
       implicit none
-      type(controltype), intent(in) :: control
-      call setup_file
+      type(extent), intent(in) :: dims
+      type(controltype), intent(inout) :: control
+      call setup_file(control)
       call open_file(infile, control)
-      call read_restart_file()
-      call verify_read_control()
+      call read_restart_file(control)
+      call verify_read_control(control)
         
-      select case (read_file_format)
+      select case (control%read_file_format)
         
         case ('vtk')
-          call read_file_vtk()
+          call read_file_vtk(dims)
         
         case ('tecplot')
-          call read_file_tec()
+          call read_file_tec(dims)
         
         case DEFAULT
           Fatal_error
@@ -79,22 +80,23 @@ module read_output
     end subroutine read_file
 
 
-    subroutine setup_file()
+    subroutine setup_file(control)
       !< Steup the file to read the restart state.
       implicit none
+      type(controltype), intent(in) :: control
       DebugCall('setup_file')
-      if (read_file_format == "vtk") then
+      if (control%read_file_format == "vtk") then
         file_format = ".vtk"
-      elseif (read_file_format == "tecplot") then
+      elseif (control%read_file_format == "tecplot") then
         file_format = ".dat"
       else
         print*, "File format not recoganised. Accepted formats are"
         print*, "'vtk' and 'tecplot' "
       end if
 
-      if (read_data_format == "ASCII") then
+      if (control%read_data_format == "ASCII") then
         data_format = "formatted"
-      elseif (read_data_format == "BINARY") then
+      elseif (control%read_data_format == "BINARY") then
         data_format = "unformatted"
       else
         print*, "Data format not recoganised. Accepted formats are"
@@ -129,12 +131,13 @@ module read_output
 
     end subroutine close_file
 
-    subroutine read_restart_file()
+    subroutine read_restart_file(control)
       !< Read the sub-directory log file in the restart folder
       implicit none
-      read(RESTART_FILE_UNIT, *) previous_flow_type
+      type(controltype), intent(inout) :: control
+      read(RESTART_FILE_UNIT, *) control%previous_flow_type
 
-      read(RESTART_FILE_UNIT, *)        last_iter
+      read(RESTART_FILE_UNIT, *)        control%last_iter
       read(RESTART_FILE_UNIT, *)        resnorm_0
       read(RESTART_FILE_UNIT, *)    vis_resnorm_0
       read(RESTART_FILE_UNIT, *)   turb_resnorm_0

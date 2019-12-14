@@ -6,9 +6,10 @@ module copy_bc
   ! Aim : applying boundary condition to domain
   !-------------------------------------------
  
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
+   use vartypes
+!  use global_vars, only: imx
+!  use global_vars, only: jmx
+!  use global_vars, only: kmx
   use global_vars, only: c1
   use global_vars, only: c2
   use global_vars, only: c3
@@ -21,16 +22,21 @@ module copy_bc
 
   contains
 
-    subroutine copy1(var, type, face)
+    subroutine copy1(var, type, face, dims)
       !< Copy 1 layer of interior cell to first ghost cell layer
       implicit none
+      type(extent), intent(in) :: dims
       character(len=*), intent(in) :: face
       !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
       !< Type of copy: flat, symmetry, anti-symmetry
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2), intent(inout) :: var
       !< Varible over which these operation has to be performed
       real :: a2=1
+      integer :: imx, jmx, kmx
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
       select case(type)
         case("anti")
@@ -60,14 +66,15 @@ module copy_bc
     end subroutine copy1
 
     
-    subroutine copy3(var, type, face)
+    subroutine copy3(var, type, face, dims)
       !< Copy 3 layer of interior cell to three ghost cell layer
       implicit none
+      type(extent), intent(in) :: dims
       character(len=*), intent(in) :: face
       !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
       !< Type of copy: flat, symmetry, anti-symmetry
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2), intent(inout) :: var
       !< Varible over which these operation has to be performed
 
       real :: a1=1
@@ -77,6 +84,11 @@ module copy_bc
       integer :: i1=1
       integer :: i2=2
       integer :: i3=3
+
+      integer :: imx, jmx, kmx
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
       select case(type)
         case("anti")

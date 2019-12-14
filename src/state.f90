@@ -56,11 +56,6 @@ module state
     use global_vars, only : transition
     use global_vars, only : infile
     use global_vars, only : intermittency
-    use global_vars, only : ExtraVar1
-    use global_vars, only : ExtraVar2
-    use global_vars, only : ExtraVar3
-    use global_vars, only : ExtraVar4
-    use global_vars, only : ExtraVar5
     
     use global_vars, only  : free_stream_density
     use global_vars, only  : free_stream_x_speed
@@ -80,7 +75,7 @@ module state
 
     use utils,       only: alloc, dealloc
     use layout,      only: process_id
-    use string
+!    use string
     use read_output, only: read_file
 
     use check_output_control, only : verify_write_control
@@ -306,7 +301,7 @@ module state
             call allocate_memory()
             call link_aliases()
             call init_infinity_values()
-            call initstate(control)
+            call initstate(control, dims)
 
         end subroutine setup_state
 
@@ -421,7 +416,7 @@ module state
 
 
 
-        subroutine initstate(control)
+        subroutine initstate(control, dims)
             !< Initialize the state.
             !< If load file(start_from) is 0, then the state should be 
             !< set to the infinity values. Otherwise, read the state_file
@@ -429,11 +424,12 @@ module state
             !-----------------------------------------------------------
 
             implicit none
-            type(controltype), intent(in) :: control
+            type(extent), intent(in) :: dims
+            type(controltype), intent(inout) :: control
             
             DebugCall("initstate")
 
-            call  verify_write_control()
+            call  verify_write_control(control)
 
             if (control%start_from .eq. 0) then
                 ! Set the state to the infinity values
@@ -464,7 +460,7 @@ module state
                 ! Set the state to the infinity values so if some
                 ! variable are not restart variable they get free_stream value
                 call init_state_with_infinity_values()
-                call read_file(control)
+                call read_file(control, dims)
 
             end if
 

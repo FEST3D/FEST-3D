@@ -5,9 +5,10 @@ module check_output_control
 ! 170619 -jatinder pal singh sandhu
 ! Aim: to check wheter input are correct or not
 !----------------------------------------------
+  use vartypes
   use global_vars, only: r_list
   use global_vars, only: w_list
-  use global_vars, only: previous_flow_type
+!  use global_vars, only: previous_flow_type
   use global_vars, only: turbulence
   use global_vars, only: transition
   use global_vars, only: mu_ref
@@ -19,12 +20,14 @@ module check_output_control
   public :: verify_write_control
   public :: verify_read_control
 
+
   contains
 
-    subroutine verify_write_control()
+    subroutine verify_write_control(control)
       !< Verify all the variable being asked to write in the output file. 
       !< This is a fail-safe subroutine which do not allow to write the incorrect input variable
       implicit none
+      type(controltype), intent(in) :: control
       integer :: n
       character(len=*), parameter :: err="Control Error: can't write variable - "
 
@@ -345,11 +348,12 @@ module check_output_control
 
     end subroutine verify_write_control
 
-    subroutine verify_read_control()
+    subroutine verify_read_control(control)
       !< Verify all the variable being asked to read in the output file. 
       !< This is a fail-safe subroutine which do not allow to read the incorrect input variable. 
       !< Based on previous flow type some varible might be skipped
       implicit none
+      type(controltype), intent(in) :: control
       integer :: n
       character(len=*), parameter :: err="Control Error: can't read variable - "
 
@@ -387,7 +391,7 @@ module check_output_control
           case('tke','tk','turbulent_kinetic_enrgy','k')
             select case (trim(turbulence))
               case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
-                select case (trim(previous_flow_type))
+                select case (trim(control%previous_flow_type))
                   case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
                     r_list(n) = "TKE"
                 end select
@@ -399,7 +403,7 @@ module check_output_control
           case('omega','tw')
             select case (trim(turbulence))
               case('sst','sst2003','kw','bsl','des-sst')
-                select case (trim(previous_flow_type))
+                select case (trim(control%previous_flow_type))
                   case('sst','sst2003','kw','bsl','des-sst')
                     r_list(n) = "Omega"
                   case DEFAULT
@@ -414,7 +418,7 @@ module check_output_control
           case('dissipation','te','teps','eps')
             select case (trim(turbulence))
               case('ke')
-                select case (trim(previous_flow_type))
+                select case (trim(control%previous_flow_type))
                   case('ke')
                     r_list(n) = "Dissipation"
                   case DEFAULT
@@ -429,7 +433,7 @@ module check_output_control
           case('kl')
             select case (trim(turbulence))
               case('kkl')
-                select case (trim(previous_flow_type))
+                select case (trim(control%previous_flow_type))
                   case('kkl')
                     r_list(n) = "Kl"
                   case DEFAULT
@@ -444,7 +448,7 @@ module check_output_control
           case('tv')
             select case (trim(turbulence))
               case('sa', 'saBC')
-                select case (trim(previous_flow_type))
+                select case (trim(control%previous_flow_type))
                   case('sa', 'saBC')
                     r_list(n) = "tv"
                   case DEFAULT
@@ -468,7 +472,7 @@ module check_output_control
           case('intermittency')
             select case (trim(turbulence))
               case('saBC')
-                select case(trim(previous_flow_type))
+                select case(trim(control%previous_flow_type))
                   case('saBC')
                     r_list(n) = "Intermittency"
                   case DEFAULT
@@ -483,7 +487,7 @@ module check_output_control
           case('tgm')
             select case (trim(transition))
               case('lctm2015')
-                select case(trim(previous_flow_type))
+                select case(trim(control%previous_flow_type))
                   case('sst','sst2003')
                     r_list(n) = "tgm"
                   case DEFAULT

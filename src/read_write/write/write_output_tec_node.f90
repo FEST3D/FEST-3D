@@ -13,8 +13,8 @@ module write_output_tec_node
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
 
-  use global_vars, only : write_data_format
-  use global_vars, only : write_file_format
+!  use global_vars, only : write_data_format
+!  use global_vars, only : write_file_format
 !  use global_vars, only : imx
 !  use global_vars, only : jmx
 !  use global_vars, only : kmx
@@ -49,8 +49,8 @@ module write_output_tec_node
 
   use global_vars, only : turbulence
   use global_vars, only : mu_ref
-  use global_vars, only : current_iter
-  use global_vars, only : max_iters
+!  use global_vars, only : current_iter
+!  use global_vars, only : max_iters
   use global_vars, only : w_count
   use global_vars, only : w_list
 
@@ -74,10 +74,10 @@ module write_output_tec_node
   use gradients, only : gradtw_y
   use gradients, only : gradtw_z
   use global_vars, only : process_id
-  use global_vars, only : checkpoint_iter_count
+!  use global_vars, only : checkpoint_iter_count
 
   use utils
-  use string
+!  use string
 
   implicit none
   private
@@ -88,11 +88,12 @@ module write_output_tec_node
 
   contains
 
-    subroutine write_file(nodes, dims)
+    subroutine write_file(nodes, dims, checkpoint_iter_count)
       !< Write output file in the tecplot format with node data
       implicit none
       type(extent), intent(in) :: dims
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
+      integer, intent(in) :: checkpoint_iter_count
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
@@ -100,7 +101,7 @@ module write_output_tec_node
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx
-      call write_header()
+      call write_header(checkpoint_iter_count)
       call write_grid(nodes)
 
       do n = 1,w_count
@@ -228,9 +229,10 @@ module write_output_tec_node
     end subroutine write_file
 
 
-    subroutine write_header()
+    subroutine write_header(checkpoint_iter_count)
       !< Write the header in the output file
       implicit none
+      integer, intent(in) :: checkpoint_iter_count
       integer :: n
       integer :: total
 
