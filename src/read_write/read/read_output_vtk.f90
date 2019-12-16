@@ -12,9 +12,6 @@ module read_output_vtk
   use global     , only : outin_file
 
   use global_vars, only : process_id
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -27,11 +24,9 @@ module read_output_vtk
   use global_vars, only : tgm
   use global_vars, only : intermittency
   use global_vars, only : dist
-  use global_vars, only : turbulence
 
-  use global_vars, only : mu_ref
-  use global_vars, only : r_count
-  use global_vars, only : r_list
+!  use global_vars, only : r_count
+!  use global_vars, only : r_list
 
   use utils
 !  use string
@@ -45,9 +40,10 @@ module read_output_vtk
 
   contains
 
-    subroutine read_file(dims)
+    subroutine read_file(control, dims)
       !< Read all the variable for the vtk restart file
       implicit none
+      type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       integer :: n
       imx = dims%imx
@@ -56,9 +52,9 @@ module read_output_vtk
 
       call read_header()
       call read_grid()
-      do n = 1,r_count
+      do n = 1,control%r_count
 
-        select case (trim(r_list(n)))
+        select case (trim(control%r_list(n)))
         
           case('Velocity')
             call read_velocity()
@@ -91,7 +87,7 @@ module read_output_vtk
             call skip_scalar()
 
           case Default
-            Print*, "read error: list var : "//trim(r_list(n))
+            Print*, "read error: list var : "//trim(control%r_list(n))
 
         end select
       end do

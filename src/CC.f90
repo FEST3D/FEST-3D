@@ -9,9 +9,6 @@ module CC
 #include "error.h"
 
    use vartypes
-!  use global_vars, only: imx
-!  use global_vars, only: jmx
-!  use global_vars, only: kmx
   use global_vars, only: process_id
   use global_vars, only: xn
   use global_vars, only: yn
@@ -31,8 +28,8 @@ module CC
   use global_vars, only: x_speed
   use global_vars, only: y_speed
   use global_vars, only: z_speed
-  use global_vars, only: transition
-  use global_vars, only: turbulence
+ ! use global_vars, only: transition
+ ! use global_vars, only: turbulence
 
   use utils, only : alloc
   use utils, only : dealloc
@@ -40,18 +37,19 @@ module CC
   private
   public :: find_DCCVn
   public :: setupCC
-  public :: destroyCC
+!  public :: destroyCC
   
   contains
 
-    subroutine setupCC(dims)
+    subroutine setupCC(scheme, dims)
       !< Allocate memory for the cell center variable only in case of transition model
       implicit none
+      type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
 
       DebugCall("Setup CC")
 
-      if((transition=='lctm2015') .and. turbulence/='none')then
+      if((scheme%transition=='lctm2015') .and. scheme%turbulence/='none')then
         call alloc(CCnormalX, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("CCnormalX"))
         call alloc(CCnormalY, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("CCnormalY"))
         call alloc(CCnormalZ, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("CCnormalZ"))
@@ -65,21 +63,21 @@ module CC
     end subroutine setupCC
 
 
-    subroutine destroyCC()
-      !< Deallocate memory from the cell-center variables
-      implicit none
-
-      DebugCall("Destroy CC")
-
-      call dealloc(CCnormalX)
-      call dealloc(CCnormalY)
-      call dealloc(CCnormalZ)
-      call dealloc(CCVn)
-      call dealloc(DCCVnX)
-      call dealloc(DCCVnY)
-      call dealloc(DCCVnZ)
-
-    end subroutine destroyCC
+!    subroutine destroyCC()
+!      !< Deallocate memory from the cell-center variables
+!      implicit none
+!
+!      DebugCall("Destroy CC")
+!
+!      call dealloc(CCnormalX)
+!      call dealloc(CCnormalY)
+!      call dealloc(CCnormalZ)
+!      call dealloc(CCVn)
+!      call dealloc(DCCVnX)
+!      call dealloc(DCCVnY)
+!      call dealloc(DCCVnZ)
+!
+!    end subroutine destroyCC
 
 
     subroutine find_CCnormal(dims)

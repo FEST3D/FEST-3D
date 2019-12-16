@@ -6,7 +6,7 @@ integer function test_grid() result(r)
     
    type(nodetype), dimension(:,:,:), allocatable :: points
    type(extent) :: dims
-   character(len=*), parameter :: prefix="../../tests/"
+   character(len=*), parameter :: prefix="../../tests/files/"
 
    !type(celltype), dimension(:,:,:), allocatable :: cell
    !type(facetype), dimension(:,:,:), allocatable :: Iface, Jface, Kface

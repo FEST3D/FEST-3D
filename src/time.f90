@@ -3,10 +3,6 @@ module time
   !< Calculate the time step for the current iteration
 
   use vartypes
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
-
   use global_vars, only : xnx, xny, xnz !face unit normal x
   use global_vars, only : ynx, yny, ynz !face unit normal y
   use global_vars, only : znx, zny, znz !face unit normal z
@@ -15,33 +11,32 @@ module time
     
 !  use global_vars, only : n_var
   use global_vars, only : qp
-  use global_vars, only : qp_inf
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
   use global_vars, only : z_speed
   use global_vars, only : pressure
-  use global_vars, only : gm
-  use global_vars, only : Pr
-  use global_vars, only : tPr
-  use global_vars, only : R_gas
-  use global_vars, only : mu_ref
+!  use global_vars, only : gm
+!  use global_vars, only : Pr
+!  use global_vars, only : tPr
+!  use global_vars, only : R_gas
+!  use global_vars, only : mu_ref
   use global_vars, only : mu
   use global_vars, only : mu_t
 
   !use global_vars, only : CFL
   use global_vars, only : total_process
   use global_vars, only : process_id
-  use global_vars, only : time_stepping_method
-  use global_vars, only : time_step_accuracy
-  use global_vars, only : global_time_step
+!  use global_vars, only : time_stepping_method
+!  use global_vars, only : time_step_accuracy
+!  use global_vars, only : global_time_step
   use global_vars, only : delta_t
   use global_vars, only : sim_clock
-  use global_vars, only : turbulence
+!  use global_vars, only : turbulence
 
   use utils, only: alloc
   use utils, only:  dealloc 
-  use face_interpolant, only: interpolant, &
+  use face_interpolant, only: &
           x_qp_left, x_qp_right, &
           y_qp_left, y_qp_right, &
           z_qp_left, z_qp_right, compute_face_interpolant, &
@@ -152,7 +147,7 @@ module time
           end if
         end function write_time
 
-        subroutine compute_local_time_step(CFL)
+        subroutine compute_local_time_step(CFL, scheme, flow)
             !< Compute the time step to be used at each cell center
             !<
             !< Local time stepping can be used to get the solution 
@@ -163,6 +158,8 @@ module time
 
             implicit none
             real, intent(in) :: CFL
+            type(schemetype), intent(in) :: scheme
+            type(flowtype), intent(in) :: flow
 
             real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
             real :: x_sound_speed_avg, y_sound_speed_avg, z_sound_speed_avg
@@ -178,17 +175,17 @@ module time
                ! to the perspective shown in the image.
 
                ! Faces with lower index
-               x_sound_speed_avg = 0.5 * (sqrt(gm * x_qp_left(i, j, k, 5) / &
+               x_sound_speed_avg = 0.5 * (sqrt(flow%gm * x_qp_left(i, j, k, 5) / &
                                                     x_qp_left(i, j, k, 1)) + &
-                                          sqrt(gm * x_qp_right(i, j, k, 5) / &
+                                          sqrt(flow%gm * x_qp_right(i, j, k, 5) / &
                                                     x_qp_right(i, j, k, 1)) )
-               y_sound_speed_avg = 0.5 * (sqrt(gm * y_qp_left(i, j, k, 5) / &
+               y_sound_speed_avg = 0.5 * (sqrt(flow%gm * y_qp_left(i, j, k, 5) / &
                                                     y_qp_left(i, j, k, 1)) + &
-                                          sqrt(gm * y_qp_right(i, j, k, 5) / &
+                                          sqrt(flow%gm * y_qp_right(i, j, k, 5) / &
                                                     y_qp_right(i, j, k, 1)) )
-               z_sound_speed_avg = 0.5 * (sqrt(gm * z_qp_left(i, j, k, 5) / &
+               z_sound_speed_avg = 0.5 * (sqrt(flow%gm * z_qp_left(i, j, k, 5) / &
                                                     z_qp_left(i, j, k, 1)) + &
-                                          sqrt(gm * z_qp_right(i, j, k, 5) / &
+                                          sqrt(flow%gm * z_qp_right(i, j, k, 5) / &
                                                     z_qp_right(i, j, k, 1)) )
                
                ! For left face: i.e., lower index face along xi direction
@@ -211,12 +208,12 @@ module time
                     z_sound_speed_avg
 
                ! Faces with higher index
-               x_sound_speed_avg = 0.5 * (sqrt(gm * x_qp_left(i+1,j,k,5) / x_qp_left(i+1,j,k,1)) + &
-                                          sqrt(gm * x_qp_right(i+1,j,k,5) / x_qp_right(i+1,j,k,1)) )
-               y_sound_speed_avg = 0.5 * (sqrt(gm * y_qp_left(i,j+1,k,5) / y_qp_left(i,j+1,k,1)) + &
-                                          sqrt(gm * y_qp_right(i,j+1,k,5) / y_qp_right(i,j+1,k,1)) )
-               z_sound_speed_avg = 0.5 * (sqrt(gm * z_qp_left(i,j,k+1,5) / z_qp_left(i,j,k+1,1)) + &
-                                          sqrt(gm * z_qp_right(i,j,k+1,5) / z_qp_right(i,j,k+1,1)) )
+               x_sound_speed_avg = 0.5 * (sqrt(flow%gm * x_qp_left(i+1,j,k,5) / x_qp_left(i+1,j,k,1)) + &
+                                          sqrt(flow%gm * x_qp_right(i+1,j,k,5) / x_qp_right(i+1,j,k,1)) )
+               y_sound_speed_avg = 0.5 * (sqrt(flow%gm * y_qp_left(i,j+1,k,5) / y_qp_left(i,j+1,k,1)) + &
+                                          sqrt(flow%gm * y_qp_right(i,j+1,k,5) / y_qp_right(i,j+1,k,1)) )
+               z_sound_speed_avg = 0.5 * (sqrt(flow%gm * z_qp_left(i,j,k+1,5) / z_qp_left(i,j,k+1,1)) + &
+                                          sqrt(flow%gm * z_qp_right(i,j,k+1,5) / z_qp_right(i,j,k+1,1)) )
                
                ! For right face, i.e., higher index face along xi direction
                lmx4 = abs( &
@@ -250,16 +247,16 @@ module time
              end do
             end do
 
-            if(mu_ref/=0.0) then
-              call add_viscous_time(CFL)
+            if(flow%mu_ref/=0.0) then
+              call add_viscous_time(CFL, flow)
             end if
-            if(mu_ref/=0 .and. trim(turbulence)/='none')then
-              call add_turbulent_time(CFL)
+            if(flow%mu_ref/=0 .and. trim(scheme%turbulence)/='none')then
+              call add_turbulent_time(CFL, flow)
             end if
 
         end subroutine compute_local_time_step
 
-        subroutine compute_global_time_step(CFL)
+        subroutine compute_global_time_step(CFL, scheme, flow)
             !< Compute a common time step to be used at all cell centers
             !<
             !< Global time stepping is generally used to get time 
@@ -269,13 +266,15 @@ module time
 
             implicit none
             real, intent(in) :: CFL
+            type(schemetype), intent(in) :: scheme
+            type(flowtype), intent(in) :: flow
             
             DebugCall('compute_global_time_step')
 
-            if (global_time_step > 0) then
-                delta_t = global_time_step
+            if (scheme%global_time_step > 0) then
+                delta_t = scheme%global_time_step
             else
-                call compute_local_time_step(CFL)
+                call compute_local_time_step(CFL, scheme, flow)
                 ! The global time step is the minimum of all the local time
                 ! steps.
                 delta_t = minval(delta_t)
@@ -283,7 +282,7 @@ module time
 
         end subroutine compute_global_time_step
 
-        subroutine compute_time_step(CFL)
+        subroutine compute_time_step(CFL, scheme, flow)
             !< Compute the time step to be used
             !<
             !< This calls either compute_global_time_step() or 
@@ -293,24 +292,26 @@ module time
 
             implicit none
             real, intent(in) :: CFL
+            type(schemetype), intent(in) :: scheme
+            type(flowtype), intent(in) :: flow
             
             DebugCall('compute_time_step')
 
-            if (time_stepping_method .eq. 'g') then
-                call compute_global_time_step(CFL)
-            else if (time_stepping_method .eq. 'l') then
-                call compute_local_time_step(CFL)
+            if (scheme%time_stepping_method .eq. 'g') then
+                call compute_global_time_step(CFL, scheme, flow)
+            else if (scheme%time_stepping_method .eq. 'l') then
+                call compute_local_time_step(CFL, scheme, flow)
             else
-                print*,'In compute_time_step: value for time_stepping_method (' //time_stepping_method // ') not recognized.'
+                print*,'In compute_time_step: value for time_stepping_method (' //scheme%time_stepping_method // ') not recognized.'
                 Fatal_error
             end if
             !update_simulation clock
-            call update_simulation_clock()
+            call update_simulation_clock(scheme)
 
         end subroutine compute_time_step
 
 
-      subroutine update_simulation_clock()
+      subroutine update_simulation_clock(scheme)
           !<  Update the simulation clock
           !< 
           !<  It is sometimes useful to know what the simulation time is
@@ -325,19 +326,21 @@ module time
           !-----------------------------------------------------------
 
           implicit none
-          if (time_stepping_method .eq. 'g' .and. sim_clock >= 0.) then
+          type(schemetype), intent(in) :: scheme
+          if (scheme%time_stepping_method .eq. 'g' .and. sim_clock >= 0.) then
               sim_clock = sim_clock + minval(delta_t)
-          else if (time_stepping_method .eq. 'l') then
+          else if (scheme%time_stepping_method .eq. 'l') then
               sim_clock = -1
           end if
 
       end subroutine update_simulation_clock
 
-      subroutine add_viscous_time(CFL)
+      subroutine add_viscous_time(CFL, flow)
         !< Addition to local time step due to viscous effects
         implicit none
 
         real, intent(in) :: CFL
+        type(flowtype), intent(in) :: flow
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
         integer :: i, j, k
 
@@ -390,7 +393,7 @@ module time
                     (yA(i, j+1, k) * lmx5) + &
                     (zA(i, j, k+1) * lmx6)
 
-           lmxsum = gm*lmxsum/Pr
+           lmxsum = flow%gm*lmxsum/flow%Pr
 
            lmxsum = 2./(lmxsum + (2.*CFL*volume(i,j,k)/delta_t(i,j,k)))
         
@@ -400,10 +403,11 @@ module time
         end do
       end subroutine add_viscous_time
 
-      subroutine add_turbulent_time(CFL)
+      subroutine add_turbulent_time(CFL,flow)
         !< Addition to local time step due to turbulence 
         implicit none
         real, intent(in) :: CFL
+        type(flowtype), intent(in) :: flow
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
         integer :: i, j, k
 
@@ -456,7 +460,7 @@ module time
                     (yA(i, j+1, k) * lmx5) + &
                     (zA(i, j, k+1) * lmx6)
 
-           lmxsum = gm*lmxsum/tPr
+           lmxsum = flow%gm*lmxsum/flow%tPr
 
            lmxsum = 2./(lmxsum + (2.*CFL*volume(i,j,k)/delta_t(i,j,k)))
         

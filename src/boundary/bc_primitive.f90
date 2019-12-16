@@ -26,9 +26,9 @@ module bc_primitive
   use global_vars, only: fixed_Ttemperature
   use global_vars, only: fixed_Tpressure
   use global_vars, only: fixed_tv
-  use global_vars, only: mu_ref
-  use global_vars, only: R_gas
-  use global_vars, only: sutherland_temp
+!  use global_vars, only: mu_ref
+!  use global_vars, only: R_gas
+!  use global_vars, only: sutherland_temp
   use global_vars, only: pressure
   use global_vars, only: density
   use global_vars, only: x_speed
@@ -39,12 +39,12 @@ module bc_primitive
   use global_vars, only: tkl
   use global_vars, only: tv
   use global_vars, only: tgm
-  use global_vars, only: accur
+!  use global_vars, only: accur
 !  use global_vars, only: imx
 !  use global_vars, only: jmx
 !  use global_vars, only: kmx
-  use global_vars, only: turbulence
-  use global_vars, only: transition
+!  use global_vars, only: turbulence
+!  use global_vars, only: transition
   use global_vars, only: xnx
   use global_vars, only: xny
   use global_vars, only: xnz
@@ -55,25 +55,24 @@ module bc_primitive
   use global_vars, only: zny
   use global_vars, only: znz
   use global_vars, only: mu_t
-  use global_vars, only: T_ref
+!  use global_vars, only: T_ref
   use global_vars, only: dist
   use global_vars, only: process_id
-  use global_vars, only: tk_inf
-  use global_vars, only: tw_inf
-  use global_vars, only: te_inf
-  use global_vars, only: tv_inf
-  use global_vars, only: tgm_inf
-  use global_vars, only: tkl_inf
+!  use global_vars, only: tk_inf
+!  use global_vars, only: tw_inf
+!  use global_vars, only: te_inf
+!  use global_vars, only: tv_inf
+!  use global_vars, only: tgm_inf
+!  use global_vars, only: tkl_inf
   use global_vars, only: face_names
   use global_vars, only: id
 
-  use global_vars, only: gm
-  use global_vars, only: x_speed_inf
-  use global_vars, only: y_speed_inf
-  use global_vars, only: z_speed_inf
-  use global_vars, only: density_inf
-  use global_vars, only: pressure_inf
-  use global_vars, only: vel_mag
+!  use global_vars, only: gm
+!  use global_vars, only: x_speed_inf
+!  use global_vars, only: y_speed_inf
+!  use global_vars, only: z_speed_inf
+!  use global_vars, only: density_inf
+!  use global_vars, only: pressure_inf
   use global_vars, only: qp
 !  use global_vars, only: current_iter
 
@@ -90,18 +89,33 @@ module bc_primitive
   integer                        :: face_num
   integer                        :: current_iter, imx, jmx, kmx
   !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
+  character(len=32) :: turbulence, transition
+  real :: gm, R_gas, mu_ref,  T_ref, Sutherland_temp
+  real :: x_speed_inf
+  real :: y_speed_inf
+  real :: z_speed_inf
+  real :: density_inf
+  real :: pressure_inf
+  real :: tk_inf
+  real :: tw_inf
+  real :: te_inf
+  real :: tv_inf
+  real :: tgm_inf
+  real :: tkl_inf
 
   public :: populate_ghost_primitive
 
 
   contains
 
-    subroutine populate_ghost_primitive(control, dims)
+    subroutine populate_ghost_primitive(control, scheme, flow, dims)
       !< Populate the state variables in the ghost cell
       !< with particular value based on the boundary conditio 
       !< being applied at that face
       implicit none
       type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
+      type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
       integer :: i
       character(len=4) :: face
@@ -110,6 +124,31 @@ module bc_primitive
       jmx = dims%jmx
       kmx = dims%kmx
       current_iter = control%current_iter
+      turbulence = trim(scheme%turbulence)
+      transition = trim(scheme%transition)
+      mu_ref = flow%mu_ref
+      gm = flow%gm
+      R_gas = flow%R_gas
+      T_ref = flow%T_ref
+      sutherland_temp = flow%sutherland_temp
+      x_speed_inf  =  flow%x_speed_inf 
+      y_speed_inf  =  flow%y_speed_inf 
+      z_speed_inf  =  flow%z_speed_inf 
+      density_inf  =  flow%density_inf 
+      pressure_inf =  flow%pressure_inf
+      tk_inf       =  flow%tk_inf      
+      tw_inf       =  flow%tw_inf      
+      te_inf       =  flow%te_inf      
+      tv_inf       =  flow%tv_inf      
+      tgm_inf      =  flow%tgm_inf     
+      tkl_inf      =  flow%tkl_inf     
+     
+     
+     
+     
+     
+     
+     
       
       do i = 1,6
         face_num = i

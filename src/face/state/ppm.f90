@@ -8,22 +8,15 @@ module ppm
 
     use vartypes
     use utils, only: alloc, dealloc
-
-!    use global_vars, only : imx
-!    use global_vars, only : jmx
-!    use global_vars, only : kmx
-!    use global_vars, only : process_id
-
     use global_vars, only : qp
-!    use global_vars, only : n_var
     use global_vars, only : pressure
-    use global_vars, only : pressure_inf
-    use global_vars, only : ilimiter_switch
-    use global_vars, only : jlimiter_switch
-    use global_vars, only : klimiter_switch
-    use global_vars, only : iPB_switch
-    use global_vars, only : jPB_switch
-    use global_vars, only : kPB_switch
+!    use global_vars, only : pressure_inf
+!    use global_vars, only : ilimiter_switch
+!    use global_vars, only : jlimiter_switch
+!    use global_vars, only : klimiter_switch
+!    use global_vars, only : iPB_switch
+!    use global_vars, only : jPB_switch
+!    use global_vars, only : kPB_switch
 
 #include "../../debug.h"
 #include "../../error.h"
@@ -249,12 +242,13 @@ module ppm
 
         end subroutine remove_extrema
 
-        subroutine pressure_based_switching(f_dir)
+        subroutine pressure_based_switching(f_dir, flow)
           !< Pressure based switching. 
           !< User x,y, or z for I,J,or K face respectively
           !----------------------------------------------
 
             implicit none
+            type(flowtype), intent(in) :: flow
             ! Character can be x or y or z
             character, intent(in) :: f_dir
             integer :: i, j, k, i_end, j_end, k_end
@@ -306,7 +300,7 @@ module ppm
               do i = 1, imx - 1
                 pd2 = abs(pressure(i + i_f*1, j + j_f*1, k + k_f*1) - &
                           pressure(i - i_f*1, j - j_f*1, k - k_f*1))
-                pdif(i, j, k) = 1 - (pd2/(pd2 + pressure_inf))
+                pdif(i, j, k) = 1 - (pd2/(pd2 + flow%pressure_inf))
               end do
              end do
             end do
@@ -374,39 +368,41 @@ module ppm
 
         end subroutine init_left_and_right_zeta_estimates
      
-        subroutine compute_ppm_states()
+        subroutine compute_ppm_states(scheme, flow)
           !< Call PPM face-state reconstruction for each face
           !< with optional call for remove extrema based on
           !< input limter switch and call pressure based switching
           !< based on input pressure based switch
 
             implicit none
+            type(schemetype), intent(in) :: scheme
+            type(flowtype), intent(in) :: flow
 
             call compute_face_estimates('x')
             call init_left_and_right_xi_estimates()
-            if(ilimiter_switch==1)then
+            if(scheme%ilimiter_switch==1)then
               call remove_extrema('x')
             end if
-            if (iPB_switch==1)then
-              call pressure_based_switching('x')
+            if (scheme%iPB_switch==1)then
+              call pressure_based_switching('x', flow)
             end if
 
             call compute_face_estimates('y')
             call init_left_and_right_eta_estimates()
-            if(jlimiter_switch==1)then
+            if(scheme%jlimiter_switch==1)then
               call remove_extrema('y')
             end if
-            if (jPB_switch==1)then
-              call pressure_based_switching('y')
+            if (scheme%jPB_switch==1)then
+              call pressure_based_switching('y', flow)
             end if
 
             call compute_face_estimates('z')
             call init_left_and_right_zeta_estimates()
-            if(klimiter_switch==1)then
+            if(scheme%klimiter_switch==1)then
               call remove_extrema('z')
             end if
-            if (kPB_switch==1)then
-              call pressure_based_switching('z')
+            if (scheme%kPB_switch==1)then
+              call pressure_based_switching('z', flow)
             end if
 
         end subroutine compute_ppm_states

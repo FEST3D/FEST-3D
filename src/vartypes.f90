@@ -35,6 +35,77 @@ module vartypes
        !< Store unit face normal vector for all faces 
     end type facetype
 
+    
+    type, public :: filetype
+        integer :: FILE_NAME_LENGTH = 64
+        !< Length of string used for defining any filename
+        integer ::      CONFIG_FILE_UNIT = 16
+        !< Handler unit for config.md file
+        integer ::        GRID_FILE_UNIT = 17
+        !< Handler for input Gridfile; eg: grid_00.txt
+        integer :: BOUNDARY_CONDITIONS_FILE_UNIT= 18
+        !< Handler for Boundary condition file; eg: bc_00.md
+        !integer, parameter :: STATE_FILE_UNIT = 10
+        !< __Handler no longer in use__
+        integer ::          IN_FILE_UNIT = 19
+        !< Handler for restart file for block: eg: time_drectories/0001/process_00.dat
+        integer ::         OUT_FILE_UNIT = 20
+        !< Handler for output file for each block
+        integer ::     RESNORM_FILE_UNIT = 21
+        !< Handler for Residual output file. filename: time_directories/aux/resnorm
+        integer ::      LAYOUT_FILE_UNIT = 31
+        !< Handler for input multi-block layout and boundary condition file.
+        integer ::    NODESURF_FILE_UNIT = 32
+        !< Handler for storing node point on the wall
+        !integer, parameter ::   WALL_DIST_FILE_UNIT = 33
+        !< __Handler no longer in use__
+        integer :: RES_CONTROL_FILE_UNIT = 34
+        !< Handler for residual control file. filename: system/res_control.md
+        !integer, parameter ::        INFO_FILE_UNIT = 35
+        !< __Handler NO longer in user__; info is handled using print*, command
+        integer ::     CONTROL_FILE_UNIT = 36
+        !< Handler for input system/control.md file
+        integer ::      SCHEME_FILE_UNIT = 37
+        !< Handler for input system/fvscheme.md file
+        integer ::        FLOW_FILE_UNIT = 38
+        !< Handler for input system/flow.md  file
+        integer ::     RESTART_FILE_UNIT = 39
+        !< Handler for Restart file in Restart folder. eg: time_directories/0001/Restart/process_00
+        integer ::       OUTIN_FILE_UNIT = 40
+        !< Handler for file which controls what variables will be read or stored. system/output_control.md
+        integer ::         MAP_FILE_UNIT = 41
+        !< Handler for input multi-block mapping file with index and direction.
+        integer ::    PERIODIC_FILE_UNIT = 42
+        !< Handler for input periodic boundary condition file
+        integer ::       STOP_FILE_UNIT   = 43
+        !< Handler for Stop file
+        !file names
+        character(len=FILE_NAME_LENGTH) :: control_file="system/control.md"
+        !< FILENAME string: Control file
+        character(len=FILE_NAME_LENGTH) ::  scheme_file="system/fvscheme.md"
+        !< FILENAME string: Scheme file
+        character(len=FILE_NAME_LENGTH) ::    flow_file="system/flow.md"
+        !< FILENAME string: FLow condition file
+        character(len=FILE_NAME_LENGTH) ::   outin_file="system/output_control.md"
+        !< FILENAME string: Ouput/Input variable control file
+        character(len=FILE_NAME_LENGTH) :: layout_file='system/mesh/layout/layout.md'
+        !< FILENAME string: Multiple layout/boundary condition file
+        character(len=FILE_NAME_LENGTH) :: nodefile_temp="scratch.dat"
+        !< FILENAME string: Temperory file for nodesurface points 
+        character(len=FILE_NAME_LENGTH) :: surface_node_points='time_directories/aux/surfnode.dat'
+        !< FILENAME string: Wall surface node points
+        character(len=FILE_NAME_LENGTH) :: res_control_file='system/res_control.md'
+        !< FILENAME string: Residual write control file
+        character(len=FILE_NAME_LENGTH) :: resnorm_file='time_directories/aux/resnorm'
+        !< FILENAME string: Residual output file
+        character(len=FILE_NAME_LENGTH) :: stop_file='system/stopfile'
+        !< FILENAME string: Halt/stop file
+        character(len=FILE_NAME_LENGTH) :: mapfile='system/mesh/layout/mapping.txt'
+        !< FILENAME string: Detailed multiblock mapping file with indicies and direction information at interface
+        character(len=FILE_NAME_LENGTH) :: periodicfile='system/mesh/layout/periodic.txt'
+        !< FILENAME string: Multiblock periodic boundary condition detials
+    end type filetype
+
 
     type, public :: controltype
         real :: CFL=1.0
@@ -79,6 +150,18 @@ module vartypes
         !< Type of flow:inviscid, laminar, etc, stored in the load file 
         integer                                           :: n_var=5
         ! Freestram variable used to read file before inf pointer are linked and allocated
+        character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  r_list 
+        !< Read variable list
+        character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  w_list 
+        !< Write variable list
+        integer :: r_count=0                               
+        !< Number of variable to read from the restart file
+        integer :: w_count=0                               
+        !< Number of variable to write in the output file
+        character(len=STATE_NAME_LENGTH), dimension(:), allocatable :: Res_list
+        !< Write residual variable list
+        integer            :: Res_count       
+        !< No of residual variable to save
     end type controltype
 
     type, public :: schemetype
@@ -86,7 +169,6 @@ module vartypes
       !< Flux Scheme to use: ausm, ldfss0, vanleer, ausmup, ausmp, slau
       character(len=INTERPOLANT_NAME_LENGTH) :: interpolant
       !< Face state reconstruction  method to user: muscl, ppm, none, weno, and wenoNM
-      !solver time secific
       real                                      :: global_time_step   
       !< Value of global time step to march the solution with
       character                                 :: time_stepping_method
@@ -115,65 +197,63 @@ module vartypes
        !< Store Turbulence model name
       character(len=8)                                  :: transition
        !< Store Transition model name
+      integer  :: accur=1                          
+      !< Switch for higher order boundary condition
    end type schemetype
 
 
    type, public ::  flowtype
-      real                                              :: free_stream_density  
+      real                                              :: density_inf
        !< Read freestream Density from control file
-      real                                              :: free_stream_x_speed  
+      real                                              :: x_speed_inf
        !< Read freestream U from control file
-      real                                              :: free_stream_y_speed  
+      real                                              :: y_speed_inf
        !< Read freestream V from control file
-      real                                              :: free_stream_z_speed  
+      real                                              :: z_speed_inf
        !< Read freestream W from control file
-      real                                              :: free_stream_pressure 
+      real                                              :: pressure_inf
        !< Read freestream Pressure from control file
-      real                                              :: free_stream_tk       
+      real                                              :: tk_inf
        !< Read freestream turbulent kinetic energy rate from control file
-      real                                              :: free_stream_tw       
+      real                                              :: tw_inf       
        !< Read freestream turbulent dissipation rate from control file
-      real                                              :: free_stream_te
+      real                                              :: te_inf
        !< Read freestream turbulent dissipation from control file
-      real                                              :: free_stream_tv
+      real                                              :: tv_inf
        !< Read freestream turbulent viscosity(SA) from control file
-      real                                              :: free_stream_tkl
+      real                                              :: tkl_inf
        !< Read freestream kL variable from control file
-      real                                              :: free_stream_tu
+      real                                              :: tu_inf
        !< Read freestream turbulence intensity (percentage) from control file
-      real                                              :: free_stream_tgm
+      real                                              :: tgm_inf
        !< Read freestream turbulence intermittency from control file
       real                                              :: vel_mag
        !< Calulated freestream Velocity Magnitude from control file
+      real                                              :: MInf
+       !< Calulated freestream Mach number
       real                                              :: Reynolds_number 
        !< Calculated free_stream Reynolds_number
       real                                              :: mu_ratio_inf 
        !< Read freestream turbulent viscosity to molecular viscosity ratio
       real                                              :: Turb_intensity_inf 
        !< Calculate free_stream turbulence intensity 
-      ! thermal properties
-      real                                              :: gm    !< Gamma commonly 1.4
-      real                                              :: R_gas !< Univarsal gas constant
-      
-      ! Transport properties
-      real                                              :: mu_ref 
+      real                                              :: gm=1.4    
+      !< Gamma commonly 1.4
+      real                                              :: R_gas=287 
+      !< Univarsal gas constant
+      real                                              :: mu_ref=0.0
       !< Molecular viscoity reference
-      character(len=FILE_NAME_LENGTH)                   :: mu_variation
+      character(len=FILE_NAME_LENGTH)                   :: mu_variation="constant"
       !< Type of viscosity variaiton: Sutherland or constant
-
-      ! sutherland law variable
-      real                                              :: T_ref
+      real                                              :: T_ref=300
       !< Reference Temperature of flow for viscosity calculation
-      real                                              :: Sutherland_temp
+      real                                              :: Sutherland_temp=110
       !< Sutherland temperature for viscosity calculation
-
-      ! nondimensional numbers
-      real                                              :: Pr=0.7 !< prandtl number
-      real                                              :: tPr=0.9 !< turbulent Prandtl number
-
-      ! switches
-      logical                                           :: supersonic_flag
-       !< Switch for boundary condition. No longer in use
+      real                                              :: Pr=0.7 
+      !< prandtl number
+      real                                              :: tPr=0.9 
+      !< turbulent Prandtl number
     end type flowtype
+
 
 end module vartypes

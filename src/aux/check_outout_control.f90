@@ -6,14 +6,14 @@ module check_output_control
 ! Aim: to check wheter input are correct or not
 !----------------------------------------------
   use vartypes
-  use global_vars, only: r_list
-  use global_vars, only: w_list
+!  use global_vars, only: r_list
+!  use global_vars, only: w_list
 !  use global_vars, only: previous_flow_type
-  use global_vars, only: turbulence
-  use global_vars, only: transition
-  use global_vars, only: mu_ref
-  use global_vars, only: r_count
-  use global_vars, only: w_count
+!  use global_vars, only: turbulence
+!  use global_vars, only: transition
+!  use global_vars, only: mu_ref
+!  use global_vars, only: r_count
+!  use global_vars, only: w_count
   use str_case   , only: lcase
   implicit none
   private
@@ -23,577 +23,580 @@ module check_output_control
 
   contains
 
-    subroutine verify_write_control(control)
+    subroutine verify_write_control(control, scheme, flow)
       !< Verify all the variable being asked to write in the output file. 
       !< This is a fail-safe subroutine which do not allow to write the incorrect input variable
       implicit none
-      type(controltype), intent(in) :: control
+      type(controltype), intent(inout) :: control
+      type(schemetype) , intent(in) :: scheme
+      type(flowtype)   , intent(in) :: flow
       integer :: n
       character(len=*), parameter :: err="Control Error: can't write variable - "
 
-      do n = 1,w_count
+      do n = 1,control%w_count
 
-        select case (trim(lcase(w_list(n))))
+        select case (trim(lcase(control%w_list(n))))
         
           case('velocity','vel','speed','u','v')
-            w_list(n) = "Velocity"
+            control%w_list(n) = "Velocity"
 
           case('density','rho')
-            w_list(n) = "Density"
+            control%w_list(n) = "Density"
           
           case('pressure','presssure','p')
-            w_list(n) = "Pressure"
+            control%w_list(n) = "Pressure"
 
           case('mu','viscosity','mu_l','laminar_viscosity','muv','mu_v')
-            if (mu_ref/=0.0) then
-              w_list(n) = "Mu"
+            if (flow%mu_ref/=0.0) then
+              control%w_list(n) = "Mu"
             else
-              print*, err//trim(w_list(n))//" to file"
-              w_list(n) = "do not write"
+              print*, err//trim(control%w_list(n))//" to file"
+              control%w_list(n) = "do not write"
             end if
             
           case('mu_t','turbulent_viscosity','mut')
-            if (turbulence/='none') then
-              w_list(n) = "Mu_t"
+            if (scheme%turbulence/='none') then
+              control%w_list(n) = "Mu_t"
             else
-              print*, err//trim(w_list(n))//" to file"
-              w_list(n) = "do not write"
+              print*, err//trim(control%w_list(n))//" to file"
+              control%w_list(n) = "do not write"
             end if
             
           case('tke','tk','turbulent_kinetic_enrgy','k')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
-                w_list(n) = "TKE"
+                control%w_list(n) = "TKE"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('omega','tw')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst', 'sst2003','kw','bsl','des-sst')
-                w_list(n) = "Omega"
+                control%w_list(n) = "Omega"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('dissipation','te','teps','eps')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('ke')
-                w_list(n) = "Dissipation"
+                control%w_list(n) = "Dissipation"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('kl')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('kkl')
-                w_list(n) = "Kl"
+                control%w_list(n) = "Kl"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('tv')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sa', 'saBC')
-                w_list(n) = "tv"
+                control%w_list(n) = "tv"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('wall_distance', 'dist', 'wall_dist', 'wdist')
-            if(turbulence/="none") then
-              w_list(n) = "Wall_distance"
+            if(scheme%turbulence/="none") then
+              control%w_list(n) = "Wall_distance"
             else
-              print*, err//trim(w_list(n))//" to file"
-              w_list(n) = "do not write"
+              print*, err//trim(control%w_list(n))//" to file"
+              control%w_list(n) = "do not write"
             end if
 
           case('resnorm')
-            w_list(n) = "Resnorm"
+            control%w_list(n) = "Resnorm"
 
           case('tke_residue')
-            w_list(n) = "TKE_residue"
+            control%w_list(n) = "TKE_residue"
 
           case('omega_residue')
-            w_list(n) = "Omega_residue"
+            control%w_list(n) = "Omega_residue"
 
           case('tv_residue')
-            w_list(n) = "Tv_residue"
+            control%w_list(n) = "Tv_residue"
 
           case('mass_residue')
-            w_list(n) = "Mass_residue"
+            control%w_list(n) = "Mass_residue"
 
           case('x_mom_residue')
-            w_list(n) = "X_mom_residue"
+            control%w_list(n) = "X_mom_residue"
 
           case('y_mom_residue')
-            w_list(n) = "Y_mom_residue"
+            control%w_list(n) = "Y_mom_residue"
 
           case('z_mom_residue')
-            w_list(n) = "Z_mom_residue"
+            control%w_list(n) = "Z_mom_residue"
 
           case('energy_residue')
-            w_list(n) = "Energy_residue"
+            control%w_list(n) = "Energy_residue"
 
           case('f1')
-            if(trim(turbulence)=='sst' .or. trim(turbulence)=='sst2003')then
-              w_list(n) = "F1"
+            if(trim(scheme%turbulence)=='sst' .or. trim(scheme%turbulence)=='sst2003')then
+              control%w_list(n) = "F1"
             else
-              w_list(n) = 'do not write'
+              control%w_list(n) = 'do not write'
             end if
 
           case('dudx')
-            w_list(n) = "Dudx"
+            control%w_list(n) = "Dudx"
 
           case('dudy')
-            w_list(n) = "Dudy"
+            control%w_list(n) = "Dudy"
 
           case('dudz')
-            w_list(n) = "Dudz"
+            control%w_list(n) = "Dudz"
 
           case('dvdx')
-            w_list(n) = "Dvdx"
+            control%w_list(n) = "Dvdx"
 
           case('dvdy')
-            w_list(n) = "Dvdy"
+            control%w_list(n) = "Dvdy"
 
           case('dvdz')
-            w_list(n) = "Dvdz"
+            control%w_list(n) = "Dvdz"
 
           case('dwdx')
-            w_list(n) = "Dwdx"
+            control%w_list(n) = "Dwdx"
 
           case('dwdy')
-            w_list(n) = "Dwdy"
+            control%w_list(n) = "Dwdy"
 
           case('dwdz')
-            w_list(n) = "Dwdz"
+            control%w_list(n) = "Dwdz"
 
           case('dTdx')
-            w_list(n) = "DTdx"
+            control%w_list(n) = "DTdx"
 
           case('dTdy')
-            w_list(n) = "DTdy"
+            control%w_list(n) = "DTdy"
 
           case('dTdz')
-            w_list(n) = "DTdz"
+            control%w_list(n) = "DTdz"
 
           case('dtkdx')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
-                w_list(n) = "Dtkdx"
+                control%w_list(n) = "Dtkdx"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtkdy')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
-                w_list(n) = "Dtkdy"
+                control%w_list(n) = "Dtkdy"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtkdz')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
-                w_list(n) = "Dtkdz"
+                control%w_list(n) = "Dtkdz"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtwdx')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst','sst2003','kw','bsl','des-sst')
-                w_list(n) = "Dtwdx"
+                control%w_list(n) = "Dtwdx"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtwdy')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst','sst2003','kw','bsl','des-sst')
-                w_list(n) = "Dtwdy"
+                control%w_list(n) = "Dtwdy"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtwdz')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst','sst2003','kw','bsl','des-sst')
-                w_list(n) = "Dtwdz"
+                control%w_list(n) = "Dtwdz"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtedx')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('ke')
-                w_list(n) = "Dtedx"
+                control%w_list(n) = "Dtedx"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtedy')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('ke')
-                w_list(n) = "Dtedy"
+                control%w_list(n) = "Dtedy"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtedz')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('ke')
-                w_list(n) = "Dtedz"
+                control%w_list(n) = "Dtedz"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
             end select
 
           case('dtkldx')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('kkl')
-                w_list(n) = "Dtkldx"
+                control%w_list(n) = "Dtkldx"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('dtkldy')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('kkl')
-                w_list(n) = "Dtkldy"
+                control%w_list(n) = "Dtkldy"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('dtkldz')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('kkl')
-                w_list(n) = "Dtkldz"
+                control%w_list(n) = "Dtkldz"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('dtvdx')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sa', 'saBC')
-                w_list(n) = "Dtvdx"
+                control%w_list(n) = "Dtvdx"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('dtvdy')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sa', 'saBC')
-                w_list(n) = "Dtvdy"
+                control%w_list(n) = "Dtvdy"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('dtvdz')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sa', 'saBC')
-                w_list(n) = "Dtvdz"
+                control%w_list(n) = "Dtvdz"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('intermittency')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('saBC')
-                w_list(n) = "Intermittency"
+                control%w_list(n) = "Intermittency"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
            case('tgm')
-            select case (trim(transition))
+            select case (trim(scheme%transition))
               case('lctm2015')
-                w_list(n) = "tgm"
+                control%w_list(n) = "tgm"
               case DEFAULT
-                print*, err//trim(w_list(n))//" to file"
-                w_list(n) = "do not write"
+                print*, err//trim(control%w_list(n))//" to file"
+                control%w_list(n) = "do not write"
              end select
 
           case('extravar1','extravar2', 'extravar3', 'extravar4', 'extravar5')
-            w_list(n) = trim(lcase(w_list(n)))
+            control%w_list(n) = trim(lcase(control%w_list(n)))
 
           case Default
-            print*, err//trim(w_list(n))//" to file"
-            w_list(n) = "do not write"
+            print*, err//trim(control%w_list(n))//" to file"
+            control%w_list(n) = "do not write"
 
         end select
       end do
 
     end subroutine verify_write_control
 
-    subroutine verify_read_control(control)
+    subroutine verify_read_control(control, scheme)
       !< Verify all the variable being asked to read in the output file. 
       !< This is a fail-safe subroutine which do not allow to read the incorrect input variable. 
       !< Based on previous flow type some varible might be skipped
       implicit none
-      type(controltype), intent(in) :: control
+      type(controltype), intent(inout) :: control
+      type(schemetype) , intent(in) :: scheme
       integer :: n
       character(len=*), parameter :: err="Control Error: can't read variable - "
 
-      do n = 1,r_count
+      do n = 1,control%r_count
 
-        select case (trim(lcase(r_list(n))))
+        select case (trim(lcase(control%r_list(n))))
         
           case('velocity','vel','speed','u','v')
-            r_list(n) = "Velocity"
+            control%r_list(n) = "Velocity"
 
           case('density','rho')
-            r_list(n) = "Density"
+            control%r_list(n) = "Density"
           
           case('pressure','presssure','p')
-            r_list(n) = "Pressure"
+            control%r_list(n) = "Pressure"
 
           case('mu','viscosity','mu_l','laminar_viscosity','muv','mu_v')
-            r_list(n) = "do not read"
-           ! if (mu_ref/=0.0) then
-           !   r_list(n) = "Mu"
+            control%r_list(n) = "do not read"
+           ! if (flow%mu_ref/=0.0) then
+           !   control%r_list(n) = "Mu"
            ! else
-           !   print*, err//trim(r_list(n))//" from file"
-           !   r_list(n) = "do not read"
+           !   print*, err//trim(control%r_list(n))//" from file"
+           !   control%r_list(n) = "do not read"
            ! end if
             
           case('mu_t','turbulent_viscosity','mut')
-            r_list(n) = "do not read"
-            !if (turbulence/='none') then
-            !  r_list(n) = "Mu_t"
+            control%r_list(n) = "do not read"
+            !if (scheme%turbulence/='none') then
+            !  control%r_list(n) = "Mu_t"
             !else
-            !  print*, err//trim(r_list(n))//" from file"
-            !  r_list(n) = "do not read"
+            !  print*, err//trim(control%r_list(n))//" from file"
+            !  control%r_list(n) = "do not read"
             !end if
             
           case('tke','tk','turbulent_kinetic_enrgy','k')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
                 select case (trim(control%previous_flow_type))
                   case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
-                    r_list(n) = "TKE"
+                    control%r_list(n) = "TKE"
                 end select
               case DEFAULT
-                print*, err//trim(w_list(n))//" from file"
-                r_list(n) = "do not read"
+                print*, err//trim(control%w_list(n))//" from file"
+                control%r_list(n) = "do not read"
             end select
 
           case('omega','tw')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sst','sst2003','kw','bsl','des-sst')
                 select case (trim(control%previous_flow_type))
                   case('sst','sst2003','kw','bsl','des-sst')
-                    r_list(n) = "Omega"
+                    control%r_list(n) = "Omega"
                   case DEFAULT
-                    print*, err//trim(w_list(n))//" from file"
-                    r_list(n) = "do not read"
+                    print*, err//trim(control%w_list(n))//" from file"
+                    control%r_list(n) = "do not read"
                 end select
               case DEFAULT
-                print*, err//trim(w_list(n))//" from file"
-                r_list(n) = "do not read"
+                print*, err//trim(control%w_list(n))//" from file"
+                control%r_list(n) = "do not read"
             end select
 
           case('dissipation','te','teps','eps')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('ke')
                 select case (trim(control%previous_flow_type))
                   case('ke')
-                    r_list(n) = "Dissipation"
+                    control%r_list(n) = "Dissipation"
                   case DEFAULT
-                    print*, err//trim(w_list(n))//" to file"
-                    r_list(n) = "do not write"
+                    print*, err//trim(control%w_list(n))//" to file"
+                    control%r_list(n) = "do not write"
                 end select
               case DEFAULT
-                print*, err//trim(w_list(n))//" from file"
-                r_list(n) = "do not read"
+                print*, err//trim(control%w_list(n))//" from file"
+                control%r_list(n) = "do not read"
             end select
 
           case('kl')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('kkl')
                 select case (trim(control%previous_flow_type))
                   case('kkl')
-                    r_list(n) = "Kl"
+                    control%r_list(n) = "Kl"
                   case DEFAULT
-                    print*, err//trim(w_list(n))//" to file"
-                    r_list(n) = "do not write"
+                    print*, err//trim(control%w_list(n))//" to file"
+                    control%r_list(n) = "do not write"
                 end select
               case DEFAULT
-                print*, err//trim(w_list(n))//" from file"
-                r_list(n) = "do not read"
+                print*, err//trim(control%w_list(n))//" from file"
+                control%r_list(n) = "do not read"
             end select
 
           case('tv')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('sa', 'saBC')
                 select case (trim(control%previous_flow_type))
                   case('sa', 'saBC')
-                    r_list(n) = "tv"
+                    control%r_list(n) = "tv"
                   case DEFAULT
-                    print*, err//trim(w_list(n))//" to file"
-                    r_list(n) = "do not write"
+                    print*, err//trim(control%w_list(n))//" to file"
+                    control%r_list(n) = "do not write"
                 end select
               case DEFAULT
-                print*, err//trim(w_list(n))//" from file"
-                r_list(n) = "do not read"
+                print*, err//trim(control%w_list(n))//" from file"
+                control%r_list(n) = "do not read"
             end select
 
           case('wall_distance', 'dist', 'wall_dist', 'wdist')
-            r_list(n) = "do not read"
-            !if(turbulence/="none") then
-            !  r_list(n) = "Wall_distance"
+            control%r_list(n) = "do not read"
+            !if(scheme%turbulence/="none") then
+            !  control%r_list(n) = "Wall_distance"
             !else
-            !  print*, err//trim(r_list(n))//" from file"
-            !  r_list(n) = "do not read"
+            !  print*, err//trim(control%r_list(n))//" from file"
+            !  control%r_list(n) = "do not read"
             !end if
 
           case('intermittency')
-            select case (trim(turbulence))
+            select case (trim(scheme%turbulence))
               case('saBC')
                 select case(trim(control%previous_flow_type))
                   case('saBC')
-                    r_list(n) = "Intermittency"
+                    control%r_list(n) = "Intermittency"
                   case DEFAULT
-                    print*, err//trim(r_list(n))//" to file"
-                    r_list(n) = "do not read"
+                    print*, err//trim(control%r_list(n))//" to file"
+                    control%r_list(n) = "do not read"
                 end select
               case DEFAULT
-                print*, err//trim(r_list(n))//" to file"
-                r_list(n) = "do not read"
+                print*, err//trim(control%r_list(n))//" to file"
+                control%r_list(n) = "do not read"
              end select
 
           case('tgm')
-            select case (trim(transition))
+            select case (trim(scheme%transition))
               case('lctm2015')
                 select case(trim(control%previous_flow_type))
                   case('sst','sst2003')
-                    r_list(n) = "tgm"
+                    control%r_list(n) = "tgm"
                   case DEFAULT
-                    print*, err//trim(r_list(n))//" to file"
-                    r_list(n) = "do not read"
+                    print*, err//trim(control%r_list(n))//" to file"
+                    control%r_list(n) = "do not read"
                 end select
               case DEFAULT
-                print*, err//trim(r_list(n))//" to file"
-                r_list(n) = "do not read"
+                print*, err//trim(control%r_list(n))//" to file"
+                control%r_list(n) = "do not read"
              end select
 
           case('resnorm')
-            r_list(n) = "do not read"
-            !r_list(n) = "Resnorm"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Resnorm"
 
           case('tke_residue')
-            r_list(n) = "do not read"
-            !r_list(n) = "TKE_residue"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "TKE_residue"
 
           case('omega_residue')
-            r_list(n) = "do not read"
-            !w_list(n) = "Omega_residue"
+            control%r_list(n) = "do not read"
+            !control%w_list(n) = "Omega_residue"
 
           case('f1')
-            r_list(n) = "do not read"
-            !r_list(n) = "F1"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "F1"
 
           case('dudx')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dudx"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dudx"
 
           case('dudy')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dudy"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dudy"
 
           case('dudz')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dudz"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dudz"
 
           case('dvdx')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dvdx"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dvdx"
 
           case('dvdy')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dvdy"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dvdy"
 
           case('dvdz')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dvdz"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dvdz"
 
           case('dwdx')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dwdx"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dwdx"
 
           case('dwdy')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dwdy"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dwdy"
 
           case('dwdz')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dwdz"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dwdz"
 
           case('dTdx')
-            r_list(n) = "do not read"
-            !r_list(n) = "DTdx"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "DTdx"
 
           case('dTdy')
-            r_list(n) = "do not read"
-            !r_list(n) = "DTdy"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "DTdy"
 
           case('dTdz')
-            r_list(n) = "do not read"
-            !r_list(n) = "DTdz"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "DTdz"
 
           case('dtkdx')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dtkdx"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dtkdx"
 
           case('dtkdy')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dtkdy"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dtkdy"
 
           case('dtkdz')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dtkdz"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dtkdz"
 
           case('dtwdx')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dtwdx"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dtwdx"
 
           case('dtwdy')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dtwdy"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dtwdy"
 
           case('dtwdz')
-            r_list(n) = "do not read"
-            !r_list(n) = "Dtwdz"
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = "Dtwdz"
 
           case('extravar1','extravar2', 'extravar3', 'extravar4', 'extravar5')
-            r_list(n) = "do not read"
-            !r_list(n) = trim(lcase(w_list(n)))
+            control%r_list(n) = "do not read"
+            !control%r_list(n) = trim(lcase(control%w_list(n)))
 
           case Default
-            print*, err//trim(r_list(n))//" from file"
-            r_list(n) = "do not read"
+            print*, err//trim(control%r_list(n))//" from file"
+            control%r_list(n) = "do not read"
 
         end select
       end do

@@ -2,13 +2,10 @@
 module convergence
   !< Check for solution's convergence
   use vartypes
-  use global_vars, only: Res_abs
-  use global_vars, only: Res_rel
-!  use global_vars, only: tolerance
-!  use global_vars, only: tolerance_type
+  use resnorm    , only: Res_abs
+  use resnorm    , only: Res_rel
   use global_vars, only: process_id
-!  use global_vars, only: current_iter
-#include "../error.inc"
+#include "error.inc"
   implicit none
   private
   public :: converged
@@ -26,7 +23,6 @@ module convergence
         real    :: check=10.
 
         select case(trim(control%tolerance_type))
-        !include "convergence_select.inc"
           case('Mass_abs')
             check =  Res_abs(0)
 

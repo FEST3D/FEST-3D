@@ -4,17 +4,11 @@ module face_interpolant
 #include "../../error.h"
     use vartypes
     use global, only: INTERPOLANT_NAME_LENGTH
-
-!    use global_vars, only : imx
-!    use global_vars, only : jmx
-!    use global_vars, only : kmx
-
     use global_vars, only : qp
-    use global_vars, only : gm
-!    use global_vars, only : n_var
-    use global_vars, only : turbulence
+!    use global_vars, only : gm
+!    use global_vars, only : turbulence
 
-    use global_vars, only : interpolant
+!    use global_vars, only : interpolant
 
     use utils, only: alloc, dealloc
     use muscl, only: setup_scheme_muscl => setup_scheme, &
@@ -53,7 +47,7 @@ module face_interpolant
             y_qp_right_weno_NM => y_qp_right, &
              z_qp_left_weno_NM => z_qp_left, &
             z_qp_right_weno_NM => z_qp_right
-    include "turbulence_models/include/face_interpolant/import_module.inc"
+    !include "turbulence_models/include/face_interpolant/import_module.inc"
 
     implicit none
     private
@@ -81,10 +75,48 @@ module face_interpolant
     integer :: imx, jmx, kmx, n_var
 
     !turbulent variable left and right with public deceleration
-    include "turbulence_models/include/face_interpolant/variables_deceleration.inc"
+    !include "turbulence_models/include/face_interpolant/variables_deceleration.inc"
+!    real, dimension(:, :, :), pointer :: x_tk_left, x_tk_right
+!    real, dimension(:, :, :), pointer :: y_tk_left, y_tk_right
+!    real, dimension(:, :, :), pointer :: z_tk_left, z_tk_right
+!    real, dimension(:, :, :), pointer :: x_tw_left, x_tw_right
+!    real, dimension(:, :, :), pointer :: y_tw_left, y_tw_right
+!    real, dimension(:, :, :), pointer :: z_tw_left, z_tw_right
+!    real, dimension(:, :, :), pointer :: x_tkl_left, x_tkl_right
+!    real, dimension(:, :, :), pointer :: y_tkl_left, y_tkl_right
+!    real, dimension(:, :, :), pointer :: z_tkl_left, z_tkl_right
+!    real, dimension(:, :, :), pointer :: x_tv_left, x_tv_right
+!    real, dimension(:, :, :), pointer :: y_tv_left, y_tv_right
+!    real, dimension(:, :, :), pointer :: z_tv_left, z_tv_right
+!    real, dimension(:, :, :), pointer :: x_te_left, x_te_right
+!    real, dimension(:, :, :), pointer :: y_te_left, y_te_right
+!    real, dimension(:, :, :), pointer :: z_te_left, z_te_right
+!    real, dimension(:, :, :), pointer :: x_tgm_left, x_tgm_right
+!    real, dimension(:, :, :), pointer :: y_tgm_left, y_tgm_right
+!    real, dimension(:, :, :), pointer :: z_tgm_left, z_tgm_right
+!
+!    !public member
+!    public :: x_tk_left, x_tk_right
+!    public :: y_tk_left, y_tk_right
+!    public :: z_tk_left, z_tk_right
+!    public :: x_tw_left, x_tw_right
+!    public :: y_tw_left, y_tw_right
+!    public :: z_tw_left, z_tw_right
+!    public :: x_tkl_left, x_tkl_right
+!    public :: y_tkl_left, y_tkl_right
+!    public :: z_tkl_left, z_tkl_right
+!    public :: x_tv_left, x_tv_right
+!    public :: y_tv_left, y_tv_right
+!    public :: z_tv_left, z_tv_right
+!    public :: x_te_left, x_te_right
+!    public :: y_te_left, y_te_right
+!    public :: z_te_left, z_te_right
+!    public :: x_tgm_left, x_tgm_right
+!    public :: y_tgm_left, y_tgm_right
+!    public :: z_tgm_left, z_tgm_right
 
     ! Public members
-    public :: interpolant
+!    public :: interpolant
     public :: setup_interpolant_scheme
     public :: extrapolate_cell_averages_to_faces
     public :: destroy_interpolant_scheme
@@ -184,12 +216,177 @@ module face_interpolant
             z_pressure_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 5)
 
             !turbulent variable tk and tw linking _qp_ (6:7)
-            include "turbulence_models/include/face_interpolant/link_aliases.inc"
+            !include "turbulence_models/include/face_interpolant/link_aliases.inc"
+  
+            !select case (turbulence)
+       
+            !    case ("none")
+            !        !include nothing
+            !        continue
+            !   
+            !    case ("sst", "sst2003")
+            !        !include "turbulence_models/sst/face_interpolant/link_aliases.inc"
+            !        ! Link xi faces left pointers
+            !        x_tk_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 6)
+            !        x_tw_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 7)
+
+            !        ! Link xi faces right pointers
+            !        x_tk_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 6)
+            !        x_tw_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 7)
+
+            !        ! Link eta faces left pointers
+            !        y_tk_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 6)
+            !        y_tw_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 7)
+
+            !        ! Link eta faces right pointers
+            !        y_tk_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 6)
+            !        y_tw_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 7)
+            !        
+            !        ! Link zeta faces left pointers
+            !        z_tk_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 6)
+            !        z_tw_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 7)
+
+            !        ! Link zeta faces right pointers
+            !        z_tk_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 6)
+            !        z_tw_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 7)
+
+  
+            !    case ("kkl")
+            !        !include "turbulence_models/kkl/face_interpolant/link_aliases.inc"
+            !        ! Link xi faces left pointers
+            !        x_tk_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 6)
+            !        x_tkl_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 7)
+
+            !        ! Link xi faces right pointers
+            !        x_tk_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 6)
+            !        x_tkl_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 7)
+
+            !        ! Link eta faces left pointers
+            !        y_tk_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 6)
+            !        y_tkl_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 7)
+
+            !        ! Link eta faces right pointers
+            !        y_tk_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 6)
+            !        y_tkl_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 7)
+            !        
+            !        ! Link zeta faces left pointers
+            !        z_tk_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 6)
+            !        z_tkl_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 7)
+
+            !        ! Link zeta faces right pointers
+            !        z_tk_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 6)
+            !        z_tkl_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 7)
+
+  
+            !    case ("sa", "saBC")
+            !        !include "turbulence_models/sa/face_interpolant/link_aliases.inc"
+            !        ! Link xi faces left pointers
+            !        x_tv_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 6)
+
+            !        ! Link xi faces right pointers
+            !        x_tv_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 6)
+
+            !        ! Link eta faces left pointers
+            !        y_tv_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 6)
+
+            !        ! Link eta faces right pointers
+            !        y_tv_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 6)
+            !        
+            !        ! Link zeta faces left pointers
+            !        z_tv_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 6)
+
+            !        ! Link zeta faces right pointers
+            !        z_tv_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 6)
+  
+            !    case ("ke")
+            !        !include "turbulence_models/ke/face_interpolant/link_aliases.inc"
+            !        ! Link xi faces left pointers
+            !        x_tk_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 6)
+            !        x_te_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 7)
+
+            !        ! Link xi faces right pointers
+            !        x_tk_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 6)
+            !        x_te_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 7)
+
+            !        ! Link eta faces left pointers
+            !        y_tk_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 6)
+            !        y_te_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 7)
+
+            !        ! Link eta faces right pointers
+            !        y_tk_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 6)
+            !        y_te_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 7)
+            !        
+            !        ! Link zeta faces left pointers
+            !        z_tk_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 6)
+            !        z_te_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 7)
+
+            !        ! Link zeta faces right pointers
+            !        z_tk_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 6)
+            !        z_te_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 7)
+  
+            !    case ("kw")
+            !        !include "turbulence_models/kw/face_interpolant/link_aliases.inc"
+            !        ! Link xi faces left pointers
+            !        x_tk_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 6)
+            !        x_tw_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 7)
+
+            !        ! Link xi faces right pointers
+            !        x_tk_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 6)
+            !        x_tw_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 7)
+
+            !        ! Link eta faces left pointers
+            !        y_tk_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 6)
+            !        y_tw_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 7)
+
+            !        ! Link eta faces right pointers
+            !        y_tk_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 6)
+            !        y_tw_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 7)
+            !        
+            !        ! Link zeta faces left pointers
+            !        z_tk_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 6)
+            !        z_tw_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 7)
+
+            !        ! Link zeta faces right pointers
+            !        z_tk_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 6)
+            !        z_tw_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 7)
+  
+            !    case ("des-sst")
+            !        !include "turbulence_models/des-sst/face_interpolant/link_aliases.inc"
+            !        ! Link xi faces left pointers
+            !        x_tk_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 6)
+            !        x_tw_left(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_left(:, :, :, 7)
+
+            !        ! Link xi faces right pointers
+            !        x_tk_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 6)
+            !        x_tw_right(0:imx+1, 1:jmx-1, 1:kmx-1) => x_qp_right(:, :, :, 7)
+
+            !        ! Link eta faces left pointers
+            !        y_tk_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 6)
+            !        y_tw_left(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_left(:, :, :, 7)
+
+            !        ! Link eta faces right pointers
+            !        y_tk_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 6)
+            !        y_tw_right(1:imx-1, 0:jmx+1, 1:kmx-1) => y_qp_right(:, :, :, 7)
+            !        
+            !        ! Link zeta faces left pointers
+            !        z_tk_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 6)
+            !        z_tw_left(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_left(:, :, :, 7)
+
+            !        ! Link zeta faces right pointers
+            !        z_tk_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 6)
+            !        z_tw_right(1:imx-1, 1:jmx-1, 0:kmx+1) => z_qp_right(:, :, :, 7)
+
+  
+            !    case DEFAULT
+            !       stop
+  
+            !end select
         end subroutine link_aliases
 
-        subroutine setup_interpolant_scheme(control, dims)
+        subroutine setup_interpolant_scheme(control, scheme, dims)
             implicit none
             type(controltype), intent(in) :: control
+            type(schemetype), intent(in) :: scheme
             type(extent), intent(in) :: dims
 
             imx = dims%imx
@@ -198,7 +395,7 @@ module face_interpolant
 
             n_var = control%n_var
 
-            select case (interpolant)
+            select case (scheme%interpolant)
                 case ("none")
                     ! Do nothing
                     continue
@@ -227,59 +424,60 @@ module face_interpolant
             call dealloc(z_qp_right)
         end subroutine deallocate_memory
 
-        subroutine unlink_aliases()
+!        subroutine unlink_aliases()
+!            implicit none
+!
+!            ! Unlink xi faces left pointers
+!            nullify(x_density_left)
+!            nullify(x_x_speed_left)
+!            nullify(x_y_speed_left)
+!            nullify(x_z_speed_left)
+!            nullify(x_pressure_left)
+!
+!            ! Unlink xi faces right pointers
+!            nullify(x_density_right)
+!            nullify(x_x_speed_right)
+!            nullify(x_y_speed_right)
+!            nullify(x_z_speed_right)
+!            nullify(x_pressure_right)
+!
+!            ! Unlink eta faces left pointers
+!            nullify(y_density_left)
+!            nullify(y_x_speed_left)
+!            nullify(y_y_speed_left)
+!            nullify(y_z_speed_left)
+!            nullify(y_pressure_left)
+!
+!            ! Unlink eta faces right pointers
+!            nullify(y_density_right)
+!            nullify(y_x_speed_right)
+!            nullify(y_y_speed_right)
+!            nullify(y_z_speed_right)
+!            nullify(y_pressure_right)
+!            
+!            ! Unlink tau faces left pointers
+!            nullify(z_density_left)
+!            nullify(z_x_speed_left)
+!            nullify(z_y_speed_left)
+!            nullify(z_z_speed_left)
+!            nullify(z_pressure_left)
+!
+!            ! Unlink tau faces right pointers
+!            nullify(z_density_right)
+!            nullify(z_x_speed_right)
+!            nullify(z_y_speed_right)
+!            nullify(z_z_speed_right)
+!            nullify(z_pressure_right)
+!
+!            include "turbulence_models/include/face_interpolant/unlink_aliases.inc" 
+!        end subroutine unlink_aliases
+
+        subroutine destroy_interpolant_scheme(scheme)
             implicit none
-
-            ! Unlink xi faces left pointers
-            nullify(x_density_left)
-            nullify(x_x_speed_left)
-            nullify(x_y_speed_left)
-            nullify(x_z_speed_left)
-            nullify(x_pressure_left)
-
-            ! Unlink xi faces right pointers
-            nullify(x_density_right)
-            nullify(x_x_speed_right)
-            nullify(x_y_speed_right)
-            nullify(x_z_speed_right)
-            nullify(x_pressure_right)
-
-            ! Unlink eta faces left pointers
-            nullify(y_density_left)
-            nullify(y_x_speed_left)
-            nullify(y_y_speed_left)
-            nullify(y_z_speed_left)
-            nullify(y_pressure_left)
-
-            ! Unlink eta faces right pointers
-            nullify(y_density_right)
-            nullify(y_x_speed_right)
-            nullify(y_y_speed_right)
-            nullify(y_z_speed_right)
-            nullify(y_pressure_right)
-            
-            ! Unlink tau faces left pointers
-            nullify(z_density_left)
-            nullify(z_x_speed_left)
-            nullify(z_y_speed_left)
-            nullify(z_z_speed_left)
-            nullify(z_pressure_left)
-
-            ! Unlink tau faces right pointers
-            nullify(z_density_right)
-            nullify(z_x_speed_right)
-            nullify(z_y_speed_right)
-            nullify(z_z_speed_right)
-            nullify(z_pressure_right)
-
-            include "turbulence_models/include/face_interpolant/unlink_aliases.inc" 
-        end subroutine unlink_aliases
-
-        subroutine destroy_interpolant_scheme()
-            implicit none
-            call unlink_aliases()
+            type(schemetype), intent(in) :: scheme
+            !call unlink_aliases()
             call deallocate_memory()
-            select case (interpolant)
+            select case (scheme%interpolant)
                 case ("none")
                     ! Do nothing
                     continue
@@ -309,13 +507,15 @@ module face_interpolant
             z_qp_right(:, :, :, :) = qp(1:imx-1, 1:jmx-1, 0:kmx+1, 1:n_var)
         end subroutine extrapolate_cell_averages_to_faces
 
-        subroutine compute_face_interpolant()
+        subroutine compute_face_interpolant(scheme, flow)
             implicit none
-            select case (interpolant)
+            type(schemetype), intent(in) :: scheme
+            type(flowtype), intent(in) :: flow
+            select case (scheme%interpolant)
                 case ("none")
                     call extrapolate_cell_averages_to_faces()
                 case ("ppm")
-                    call compute_ppm_states()
+                    call compute_ppm_states(scheme, flow)
                     x_qp_left(:, :, :, :) = x_qp_left_ppm(:, :, :, :)
                     x_qp_right(:, :, :, :) = x_qp_right_ppm(:, :, :, :)
                     y_qp_left(:, :, :, :) = y_qp_left_ppm(:, :, :, :)
@@ -323,7 +523,7 @@ module face_interpolant
                     z_qp_left(:, :, :, :) = z_qp_left_ppm(:, :, :, :)
                     z_qp_right(:, :, :, :) = z_qp_right_ppm(:, :, :, :)
                 case ("muscl")
-                    call compute_muscl_states()
+                    call compute_muscl_states(scheme, flow)
                     x_qp_left = x_qp_left_muscl
                     x_qp_right = x_qp_right_muscl
                     y_qp_left = y_qp_left_muscl
@@ -362,41 +562,5 @@ module face_interpolant
                     Fatal_error
             end select
         end subroutine compute_face_interpolant
-
-!        function x_sound_speed_left()
-!            implicit none
-!            real, dimension(1:imx, 1:jmx-1, 1:kmx-1) :: x_sound_speed_left
-!            x_sound_speed_left = sqrt(gm * x_pressure_left / x_density_left)
-!        end function x_sound_speed_left
-!
-!        function x_sound_speed_right()
-!            implicit none
-!            real, dimension(1:imx, 1:jmx-1, 1:kmx-1) :: x_sound_speed_right
-!            x_sound_speed_right = sqrt(gm * x_pressure_right / x_density_right)
-!        end function x_sound_speed_right
-!
-!        function y_sound_speed_left()
-!            implicit none
-!            real, dimension(1:imx-1, 1:jmx, 1:kmx-1) :: y_sound_speed_left
-!            y_sound_speed_left = sqrt(gm * y_pressure_left / y_density_left)
-!        end function y_sound_speed_left
-!
-!        function y_sound_speed_right()
-!            implicit none
-!            real, dimension(1:imx-1, 1:jmx, 1:kmx-1) :: y_sound_speed_right
-!            y_sound_speed_right = sqrt(gm * y_pressure_right / y_density_right)
-!        end function y_sound_speed_right
-!
-!        function z_sound_speed_left()
-!            implicit none
-!            real, dimension(1:imx-1, 1:jmx-1, 1:kmx) :: z_sound_speed_left
-!            z_sound_speed_left = sqrt(gm * z_pressure_left / z_density_left)
-!        end function z_sound_speed_left
-!
-!        function z_sound_speed_right()
-!            implicit none
-!            real, dimension(1:imx-1, 1:jmx-1, 1:kmx) :: z_sound_speed_right
-!            z_sound_speed_right = sqrt(gm * z_pressure_right / z_density_right)
-!        end function z_sound_speed_right
 
 end module face_interpolant

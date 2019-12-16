@@ -29,13 +29,10 @@ module plusgs
   use global_sa , only : kappa_sa
   use global_sa , only : cv1_3
   use global_sa , only : cw3_6
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
-  use global_vars, only : R_gas
-  use global_vars, only : gm
-  use global_vars, only : Pr
-  use global_vars, only : tPr
+!  use global_vars, only : R_gas
+!  use global_vars, only : gm
+!  use global_vars, only : Pr
+!  use global_vars, only : tPr
   use global_vars, only : DCCVnX
   use global_vars, only : DCCVnY
   use global_vars, only : DCCVnZ
@@ -50,10 +47,9 @@ module plusgs
   use global_vars, only : xA, yA, zA    !face area
     
 !  use global_vars, only : n_var
-  use global_vars, only : gm
+!  use global_vars, only : gm
   use global_vars, only : sst_n_var
   use global_vars, only : qp
-  use global_vars, only : qp_inf
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -62,18 +58,18 @@ module plusgs
   use global_vars, only : dist
   use global_vars, only : mu
   use global_vars, only : mu_t
-  use global_vars, only : tk_inf
-  use global_vars, only : tkl_inf
-  use global_vars, only : free_stream_tu
+!  use global_vars, only : tk_inf
+!  use global_vars, only : tkl_inf
+!  use global_vars, only : free_stream_tu
   use global_vars, only : tk
   use global_vars, only : tw
-  use global_vars, only : vel_mag
-  use global_vars, only : Minf
+!  use global_vars, only : vel_mag
+!  use global_vars, only : Minf
 
   use global_vars, only : delta_t
-  use global_vars, only : turbulence
-  use global_vars, only : transition
-  use global_vars, only : Reynolds_number
+!  use global_vars, only : turbulence
+!  use global_vars, only : transition
+!  use global_vars, only : Reynolds_number
   use global_vars, only : process_id
 
   use global_vars, only: F_p
@@ -88,7 +84,7 @@ module plusgs
   use global_vars, only: omega_residue
   use global_vars, only: kl_residue
   use global_vars, only: residue
-  use global_vars, only: mu_ref
+!  use global_vars, only: mu_ref
 
   use gradients  , only: gradu_x
   use gradients  , only: gradu_y
@@ -185,6 +181,11 @@ module plusgs
   real, dimension(:), allocatable :: kmax_recv_buf
   !< Array to store data to receive data for Kmax face
   integer :: imx, jmx, kmx, n_var
+  real :: gm, mu_ref, Reynolds_number, free_stream_tu
+  real :: tk_inf
+  real :: tkl_inf
+  real :: tPr, Pr, R_gas
+  real :: MInf
 
   public :: update_with_plusgs
   public :: setup_plusgs
@@ -192,10 +193,12 @@ module plusgs
 
   contains
 
-    subroutine setup_plusgs(control, dims)
+    subroutine setup_plusgs(control, scheme, flow, dims)
       !< Allocate array memory for data communication
       implicit none
       type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
+      type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
       character(len=*), parameter :: &
         errmsg="module: LUSGS, subrouinte setup"
@@ -205,6 +208,16 @@ module plusgs
       kmx = dims%kmx
 
       n_var = control%n_var
+      gm = flow%gm
+      mu_ref = flow%mu_ref
+      Reynolds_number = flow%Reynolds_number
+      free_stream_tu = flow%tu_inf
+      tk_inf = flow%tk_inf
+      tkl_inf = flow%tkl_inf
+      tpr = flow%tpr
+      pr = flow%pr
+      MInf = flow%MInf
+      R_gas = flow%R_gas
 
       ibuf_size = (jmx-1)*(kmx-1)*n_var*1
       jbuf_size = (imx-1)*(kmx-1)*n_var*1
@@ -226,7 +239,7 @@ module plusgs
       call alloc(delQstar, 0, imx, 0, jmx, 0, kmx, 1, n_var)
 
 
-      if(mu_ref==0.0 .or. turbulence=='none') then
+      if(mu_ref==0.0 .or. scheme%turbulence=='none') then
         call alloc(dummy, 0, imx, 0, jmx, 0, kmx)
         dummy = 0.0
       end if
@@ -235,7 +248,7 @@ module plusgs
       else
         mmu => mu
       end if
-      if(trim(turbulence)=='none')then
+      if(trim(scheme%turbulence)=='none')then
         tmu => dummy
       else
         tmu => mu_t
@@ -262,16 +275,17 @@ module plusgs
       call dealloc(dummy)
     end subroutine destroy_plusgs
 
-    subroutine update_with_plusgs()
+    subroutine update_with_plusgs(scheme)
       !< Time-integrate with LU_SGS method
       implicit none
+      type(schemetype), intent(in) :: scheme
 
-      select case(trim(turbulence))
+      select case(trim(scheme%turbulence))
         case('none')
           call update_laminar_variables()
 
         case('sst', 'sst2003')
-          select case(trim(transition))
+          select case(trim(scheme%transition))
             case('none', 'bc')
               call update_SST_variables()
             case('lctm2015')
@@ -922,23 +936,7 @@ module plusgs
         real, dimension(1:7,1:7) :: PrecondInv
 
         ! intermittency
-        real :: Fonset1
-        real :: Fonset2
-        real :: Fonset3
-        real :: Fonset
-        real :: Rev
-        Real :: RT
-        real :: Fturb
-        real :: Re_theta
-        real :: TuL
-        real :: gradtk
-        real :: strain
-        real :: vort
         real :: De, Dp
-        real :: Fpg
-        real :: dvdy
-        real :: lamd
-        real :: intermittency
 
         De = 0.0
         Dp = 0.0
@@ -1577,12 +1575,7 @@ module plusgs
       real :: fv2
       real :: fw
       real :: g
-      real :: Scap
       real :: r
-      real :: S_v
-      real :: D_v
-      real :: P_v
-      real :: lamda
       real :: dist_i
       real :: dist_i_2
       real :: Ji
@@ -1595,10 +1588,8 @@ module plusgs
       real :: Shat
       real :: inv_Shat
       real :: nu
-      real :: nu_t
       real :: glim
       real :: g_6
-      real :: gamma_BC
       real :: dfv1
       real :: dfv2
       real :: dfw
@@ -2272,7 +2263,6 @@ module plusgs
         real :: Fturb
         real :: Re_theta
         real :: TuL
-        real :: gradtk
         real :: strain
         real :: vort
         real :: Dp, De
@@ -2384,6 +2374,9 @@ module plusgs
               v  = Q0(3)
               w  = Q0(4)
               p  = Q0(5)
+              kk = Q0(6)
+              ww = Q0(7)
+              im = Q0(8)
               VMag     = sqrt(u*u + v*v + w*w)
               SoundMag = sqrt(gm*p/r)
               M        = VMag/SoundMag 

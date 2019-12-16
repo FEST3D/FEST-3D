@@ -39,7 +39,7 @@ read_write/write/write_output_tec.f90
 read_write/write/write_output_tec_node.f90 
 wall/wall.f90 
 wall/wall_dist.f90 
-convergence/convergence.f90 
+convergence.f90 
 aux/fclose.f90 
 aux/start_finish.f90 
 aux/bitwise.f90 

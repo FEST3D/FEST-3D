@@ -25,64 +25,23 @@ module global_vars
   integer :: kmin_id            !< Boundary condition number/ID at kmin for particulat processor
   integer :: kmax_id            !< Boundary condition number/ID at kmax for particulat processor
   integer :: layers=3           !< Number of ghost cell layers to transfer with mpi
-
-  ! Time controls
-!  integer :: min_iter=1              !< Minimum iteration value, starting iteration value
-!  integer :: max_iters=1             !< Maximum iteration value, stop after these many iteration
-!  integer :: start_from=0            !< Number of the folder (in time_directories) to load stored state from to restart computation
-!  integer :: checkpoint_iter=0       !< Write interval for output file. Number of iteration after which solver will dump/store a state in a folder in time_directories
-!  integer :: checkpoint_iter_count=0 !< Counter of folder number to write in time_directories/
-!  integer :: current_iter=0          !< Current iteration number
-
-  !write controls
-  integer :: r_count=0                               !< Number of variable to read from the restart file
-  integer :: w_count=0                               !< Number of variable to write in the output file
-!  integer :: res_write_interval                      !< Write resnorm after every "res_write_interval" iteration
-!  integer :: purge_write                             !< Remove unwanted folder. If Purge_write=2, latest two folder in time_direcotires are kept and 0=no purge
-!  integer :: last_iter=0                             !< Last iteration that is stored in the restart file
-!  integer :: write_percision=6                       !< Number of place after decimal. Only used for resnorm file
-!  character(len=FORMAT_LENGTH):: write_data_format   !< write data type. Either ASCII or BINARY
-!  character(len=FORMAT_LENGTH):: write_file_format   !< Write file type. Either vtk or tecplot
-!  character(len=FORMAT_LENGTH)::  read_data_format='ASCII'   !< Read data type in file. Either ASCII or BINARY
-!  character(len=FORMAT_LENGTH)::  read_file_format="vtk"     !< Read file type. Either vtk or tecplot
   character(len=FILE_NAME_LENGTH)::     outfile          !< String to store name of output file
   character(len=FILE_NAME_LENGTH)::      infile          !< String to store the name of restart/load file
   character(len=FILE_NAME_LENGTH):: restartfile          !< Sting to store the name of restart log file
-  character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  r_list !< Read variable list
-  character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  w_list !< Write variable list
-!  character(len=FLOW_TYPE_LENGTH):: previous_flow_type="none"   !< Type of flow:inviscid, laminar, etc, stored in the load file 
-
-  ! solver specific
-!  real :: CFL                  !< Courant–Friedrichs–Lewy (CFL) (Read from input)
-!  real :: tolerance            !< Minimum value of resnorm after which simulation stop
-!  character(len=TOLERANCE_LENGTH) :: tolerance_type="abs" !< Type of tolerance to check:absolute or relative
   integer :: want_to_stop=0    !< 0: continue the solver; 1=Stop the solver
   logical :: Halt = .FALSE.    !< Logical value used to stop the solver in main program file.
 
-  !solver time secific
-  character                                 :: time_stepping_method  !< Either local time stepping or global time stepping
-  character(len=INTERPOLANT_NAME_LENGTH)    :: time_step_accuracy    !< Type of time_integration scheme: RK4, none(firt order explicit) implicit,
-  real                                      :: global_time_step      !< Value of global time step to march the solution with
   real, dimension(:, :, :), allocatable     :: delta_t               !< Local time increment value at each cell center
   real                                      :: sim_clock             !< Simluation clock time
 
-  !scheme
-  character(len=SCHEME_NAME_LENGTH) :: scheme_name         !< Flux Scheme to use: ausm, ldfss0, vanleer, ausmup, ausmp, slau
-  character(len=INTERPOLANT_NAME_LENGTH) :: interpolant    !< Face state reconstruction  method to user: muscl, ppm, none, weno, and wenoNM
 
   !solution specific (used for Ranga_kutta_4th order)
   real, dimension(:, :, :, :), allocatable  :: qp_n
   real, dimension(:, :, :, :), allocatable  :: dEdx_1
   real, dimension(:, :, :, :), allocatable  :: dEdx_2
   real, dimension(:, :, :, :), allocatable  :: dEdx_3
-
-  ! state variables viscous
-!  integer                                           :: n_var=5
-   !< Number of variable to solve for
   real, dimension(:, :, :, :), allocatable, target  :: qp           
    !< Store primitive variable at cell center
-  real, dimension(:)         , allocatable, target  :: qp_inf       
-   !< Store primitive variable at infinity  
   real, dimension(:, :, :)                , pointer :: density      
    !< Rho pointer, point to slice of qp (:,:,:,1)
   real, dimension(:, :, :)                , pointer :: x_speed      
@@ -93,54 +52,8 @@ module global_vars
    !< W pointer, point to slice of qp (:,:,:,4)
   real, dimension(:, :, :)                , pointer :: pressure     
    !< P pointer, point to slice of qp (:,:,:,5)
-  real                                    , pointer :: density_inf  
-   !< Rho pointer, point to slice of qp_inf (1)
-  real                                    , pointer :: x_speed_inf  
-   !< U pointer, point to slice of qp_inf (2)
-  real                                    , pointer :: y_speed_inf  
-   !< V pointer, point to slice of qp_inf (3)
-  real                                    , pointer :: z_speed_inf  
-   !< W pointer, point to slice of qp_inf (4)
-  real                                    , pointer :: pressure_inf 
-   !< P pointer, point to slice of qp_inf (5)
-  real                                              :: MInf
-   !< Free-stream Mach number
   real, dimension(:, :, :), allocatable, target  :: intermittency
    !< Intermiitency pointer
-
-  ! Freestram variable used to read file before inf pointer are linked and allocated
-  real                                              :: free_stream_density  
-   !< Read freestream Density from control file
-  real                                              :: free_stream_x_speed  
-   !< Read freestream U from control file
-  real                                              :: free_stream_y_speed  
-   !< Read freestream V from control file
-  real                                              :: free_stream_z_speed  
-   !< Read freestream W from control file
-  real                                              :: free_stream_pressure 
-   !< Read freestream Pressure from control file
-  real                                              :: free_stream_tk       
-   !< Read freestream turbulent kinetic energy rate from control file
-  real                                              :: free_stream_tw       
-   !< Read freestream turbulent dissipation rate from control file
-  real                                              :: free_stream_te
-   !< Read freestream turbulent dissipation from control file
-  real                                              :: free_stream_tv
-   !< Read freestream turbulent viscosity(SA) from control file
-  real                                              :: free_stream_tkl
-   !< Read freestream kL variable from control file
-  real                                              :: free_stream_tu
-   !< Read freestream turbulence intensity (percentage) from control file
-  real                                              :: free_stream_tgm
-   !< Read freestream turbulence intermittency from control file
-  real                                              :: vel_mag
-   !< Calulated freestream Velocity Magnitude from control file
-  real                                              :: Reynolds_number 
-   !< Calculated free_stream Reynolds_number
-  real                                              :: mu_ratio_inf 
-   !< Read freestream turbulent viscosity to molecular viscosity ratio
-  real                                              :: Turb_intensity_inf 
-   !< Calculate free_stream turbulence intensity 
   real, dimension(:, :, :), allocatable             :: dist 
    !< Store wall distance for each cell center
   real, dimension(:, :, :), allocatable             :: CCnormalX 
@@ -161,21 +74,12 @@ module global_vars
   ! state variable turbulent
   integer                                           :: sst_n_var=2 
   integer                                           :: sst_n_grad=2
-!  real, dimension(:, :, :, :), allocatable, target  :: tqp       !< turbulent primitive
-!  real, dimension(:)         , allocatable, target  :: tqp_inf   !< turbulent primitive at inf
   real, dimension(:, :, :)                , pointer :: tk        !< TKE/mass
   real, dimension(:, :, :)                , pointer :: tw        !< Omega
   real, dimension(:, :, :)                , pointer :: te        !< Dissipation
   real, dimension(:, :, :)                , pointer :: tv        !< SA visocity
   real, dimension(:, :, :)                , pointer :: tkl       !< KL K-KL method
   real, dimension(:, :, :)                , pointer :: tgm       !< Intermittency of LCTM2015
-  real                                    , pointer :: tk_inf    !< TKE/mass at inf
-  real                                    , pointer :: tw_inf    !< Omega at inf
-  real                                    , pointer :: te_inf    !< Dissipation at inf
-  real                                    , pointer :: tv_inf    !< SA viscosity at inf
-  real                                    , pointer :: tkl_inf   !< kl at inf
-  real                                    , pointer :: tgm_inf   !< Intermittency at inf
-
   ! residue variables
   real, dimension(:, :, :, :)             , pointer :: F_p
    !< Flux pointer for face in the I direction
@@ -205,53 +109,6 @@ module global_vars
    !< Store Disspaiton equation residual at each cell-center
   real, dimension(:, :, :)                , pointer :: tv_residue
    !< Store nut equation(SA model) residual at each cell-center
-
-  ! thermal properties
-  real                                              :: gm    !< Gamma commonly 1.4
-  real                                              :: R_gas !< Univarsal gas constant
-  
-  ! Transport properties
-  real                                              :: mu_ref 
-  !< Molecular viscoity reference
-  character(len=FILE_NAME_LENGTH)                   :: mu_variation
-  !< Type of viscosity variaiton: Sutherland or constant
-
-  ! sutherland law variable
-  real                                              :: T_ref
-  !< Reference Temperature of flow for viscosity calculation
-  real                                              :: Sutherland_temp
-  !< Sutherland temperature for viscosity calculation
-
-  ! nondimensional numbers
-  real                                              :: Pr=0.7 !< prandtl number
-  real                                              :: tPr=0.9 !< turbulent Prandtl number
-
-  ! switches
-  logical                                           :: supersonic_flag
-   !< Switch for boundary condition. No longer in use
-  integer                                           :: ilimiter_switch
-   !< Turn on/off application of limiter for MUSCL (higer order face state reconstiion) for I direction faces.
-  integer                                           :: jlimiter_switch
-   !< Turn on/off application of limiter for MUSCL (higer order face state reconstiion) for J direction faces.
-  integer                                           :: klimiter_switch
-   !< Turn on/off application of limiter for MUSCL (higer order face state reconstiion) for K direction faces.
-  integer                                           :: itlimiter_switch
-   !< Turn on/off application of limiter for MUSCL (higer order face turbulent variable state reconstiion) for I direction faces.
-  integer                                           :: jtlimiter_switch
-   !< Turn on/off application of limiter for MUSCL (higer order face turbulent variable state reconstiion) for J direction faces.
-  integer                                           :: ktlimiter_switch
-   !< Turn on/off application of limiter for MUSCL (higer order face turbulent variable state reconstiion) for K direction faces.
-  integer                                           :: iPB_switch
-   !< Turn on/off application of pressure based switching for higher order methods for I direction faces.
-  integer                                           :: jPB_switch
-   !< Turn on/off application of pressure based switching for higher order methods for J direction faces.
-  integer                                           :: kPB_switch
-   !< Turn on/off application of pressure based switching for higher order methods for K direction faces.
-  character(len=8)                                  :: turbulence
-   !< Store Turbulence model name
-  character(len=8)                                  :: transition
-   !< Store Transition model name
-  
   real, dimension(:, :, :), allocatable, target     :: mu
    !< Cell-center molecular viscosity
   real, dimension(:, :, :), allocatable, target     :: mu_t
@@ -262,15 +119,6 @@ module global_vars
    !< Pointer to  turbulent viscosity for KKL turbulence model
   real, dimension(:, :, :)              , pointer   :: sa_mu
    !< Pointer to  turbulent viscosity for SA turbulence model
-
-  !residual specific
-  character(len=STATE_NAME_LENGTH), dimension(:), allocatable :: Res_list
-  integer            :: Res_count       !< No of variable to save
-!  integer            :: Res_itr=3       !< Iteration to save
-  real, dimension(:), allocatable :: Res_abs       !< Absolute value
-  real, dimension(:), allocatable :: Res_rel       !< Relative value
-  real, dimension(:), allocatable :: Res_save      !< Saved iteration for relative
-  real, dimension(:), allocatable :: Res_scale     !< Scaling factor
   real, pointer ::        resnorm     !<             Residual normalized
   real, pointer ::    vis_resnorm     !<  {rho+V+P} equation residual normalized
   real, pointer ::   turb_resnorm     !<  Turbulent residual normalized
@@ -312,22 +160,6 @@ module global_vars
   real          :: energy_resnorm_0s  !<  Energy residual normalized at iter 1 
   real          ::    TKE_resnorm_0s  !<  TKE residual normalized at iter 1 
   real          ::  omega_resnorm_0s  !<  Omega residual normalized at iter 1 
-
-  ! grid variables
-!  integer                                 :: imx
-   !< Maximum number of grid points in the I direction
-!  integer                                 :: jmx
-   !< Maximum number of grid points in the K direction
-!  integer                                 :: kmx
-   !< Maximum number of grid points in the K direction
-  !integer                                 :: imn, jmn, kmn
-!  real, dimension(:, :, :), allocatable  :: grid_x
-   !< X corrdinate of the grid point
-!  real, dimension(:, :, :), allocatable  :: grid_y
-   !< Y corrdinate of the grid point
-!  real, dimension(:, :, :), allocatable  :: grid_z
-   !< Z corrdinate of the grid point
-
   ! geometry variables
   real, dimension(:, :, :,:), allocatable, target :: xn
    !< Store unit face normal vector for all I faces 
@@ -364,7 +196,7 @@ module global_vars
   
 
   ! higher order boundary condtioion
-  integer  :: accur=1                          !< Switch for higher order boundary condition
+!  integer  :: accur=1                          !< Switch for higher order boundary condition
   character(len=4), dimension(6) :: face_names !< Store name of all six boundary faces
   integer,          dimension(6) :: id         !< Store the boundary condition ID of all six faces
   real                           :: c1         !< First coefficient user for higher order boundary condition

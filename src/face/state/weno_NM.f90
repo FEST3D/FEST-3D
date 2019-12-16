@@ -10,17 +10,8 @@ module weno_NM
 
     use vartypes
     use utils, only: alloc, dealloc
-
-!    use global_vars, only : imx
-!    use global_vars, only : jmx
-!    use global_vars, only : kmx
     use global_vars, only : volume
-
     use global_vars, only : qp
-!    use global_vars, only : n_var
-    use global_vars, only : pressure
-    use global_vars, only : pressure_inf
-    use global_vars, only : ilimiter_switch
     use global_vars, only : process_id
 
     implicit none

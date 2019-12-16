@@ -11,12 +11,6 @@ module write_output_vtk
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
 
-!  use global_vars, only : write_data_format
-!  use global_vars, only : write_file_format
-  !use global_vars, only : imx
-  !use global_vars, only : jmx
-  !use global_vars, only : kmx
-  !use grid, only : point
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -30,7 +24,6 @@ module write_output_vtk
   use global_vars, only : te
   use global_vars, only : mu
   use global_vars, only : mu_t
-  use global_vars, only : gm
   use global_vars, only : dist
   use global_vars, only : vis_resnorm
   use global_vars, only : cont_resnorm
@@ -48,13 +41,8 @@ module write_output_vtk
   use global_vars, only : Tv_residue
   use global_vars, only : intermittency
 
-  use global_vars, only : process_id
-  use global_vars, only : turbulence
-  use global_vars, only : mu_ref
-!  use global_vars, only : current_iter
-!  use global_vars, only : max_iters
-  use global_vars, only : w_count
-  use global_vars, only : w_list
+!  use global_vars, only : w_count
+!  use global_vars, only : w_list
 
   use global_sst , only : sst_F1
   use gradients, only : gradu_x
@@ -77,7 +65,6 @@ module write_output_vtk
   use gradients, only : gradtw_z
 
   use utils
-!  use string
 
   implicit none
   private
@@ -88,12 +75,12 @@ module write_output_vtk
 
   contains
 
-    subroutine write_file(nodes,dims, Write_data_format)
+    subroutine write_file(nodes, control, dims)
       !< Write the header and variables in the file "process_xx.dat"
       implicit none
+      type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
-      character(len=*), intent(in) :: Write_data_format
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
       DebugCall("write_file")
@@ -102,12 +89,12 @@ module write_output_vtk
       jmx = dims%jmx
       kmx = dims%kmx
 
-      call write_header(Write_data_format)
+      call write_header(control%Write_data_format)
       call write_grid(nodes)
 
-      do n = 1,w_count
+      do n = 1,control%w_count
 
-        select case (trim(w_list(n)))
+        select case (trim(control%w_list(n)))
 
           case('Velocity')
             call write_velocity()
@@ -208,9 +195,6 @@ module write_output_vtk
           case('Dtwdz')
             call write_scalar(gradtw_z,"dtwdz", 0)
 
-          case('y-mom-residue')
-            call write_scalar(y_mom_residue, 'Y_mom_residue', 1)
-
           case('Intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
           
@@ -219,7 +203,7 @@ module write_output_vtk
             continue
 
           case Default
-            print*, err//trim(w_list(n))//" to file"
+            print*, err//trim(control%w_list(n))//" to file"
 
         end select
       end do

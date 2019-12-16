@@ -14,14 +14,13 @@ module gradients
 !  use global_vars,  only : imx
 !  use global_vars,  only : jmx
 !  use global_vars,  only : kmx
-  use global_vars,  only : mu_ref
-  use global_vars,  only : turbulence 
-  use global_vars,  only : transition 
+!  use global_vars,  only : mu_ref
+!  use global_vars,  only : turbulence 
+!  use global_vars,  only : transition 
   use global_vars,  only : process_id
   use global_vars, only : fixed_wall_temperature
 
   use utils,        only : alloc
-  use utils,        only : turbulence_read_error
   use global_vars, only : qp
 !  use global_vars, only : n_var
   use global_vars, only : x_speed
@@ -51,8 +50,6 @@ module gradients
   use global_vars, only : volume
   use global_vars, only : density
   use global_vars, only : pressure
-  use global_vars, only : R_gas
-  use global_vars, only : gm
 !  use string
   ! layout boundary condition id for face
   use global_vars, only : imin_id
@@ -100,6 +97,7 @@ module gradients
   real, dimension(:, :, :),                 pointer :: gradtgm_x!< Gradient of variable intermittency with respect to direction x
   real, dimension(:, :, :),                 pointer :: gradtgm_y!< Gradient of variable intermittency with respect to direction y
   real, dimension(:, :, :),                 pointer :: gradtgm_z!< Gradient of variable intermittency with respect to direction z
+  real :: R_gas
 
   integer :: imx, jmx, kmx, n_var
 
@@ -110,13 +108,15 @@ module gradients
   contains
 
 
-    subroutine setup_gradients(control, dims)
+    subroutine setup_gradients(control, scheme, flow, dims)
       !< Memoery allocation to the gradient variables and 
       !< setup pointer to the slice to the main gradient variable
       !< based on the various models being used.
 
       implicit none
       type(controltype), intent(in) :: control
+      type(schemetype) , intent(in) :: scheme
+      type(flowtype)   , intent(in) :: flow
       type(extent), intent(in) :: dims
 
       DebugCall("setup_gradients")
@@ -126,10 +126,11 @@ module gradients
         kmx = dims%kmx
 
         n_var = control%n_var
+        R_gas = flow%R_gas
 
-      if(mu_ref/=0)then
+      if(flow%mu_ref/=0)then
 
-        call get_n_grad()
+        call get_n_grad(scheme)
         !call allocate_memory()
         call alloc(gradqp_x, 0, imx, 0, jmx, 0, kmx, 1, n_grad, AErrMsg("gradqp_x"))
         call alloc(gradqp_y, 0, imx, 0, jmx, 0, kmx, 1, n_grad, AErrMsg("gradqp_y"))
@@ -157,7 +158,7 @@ module gradients
         gradT_z(0:imx, 0:jmx, 0:kmx) => gradqp_z(:, :, :, 4)
 
         ! Linking pointer to turbulent gradients
-        select case (trim(turbulence))
+        select case (trim(scheme%turbulence))
           
           case('none')
             !do nothing
@@ -198,13 +199,12 @@ module gradients
             gradtkl_z(0:imx, 0:jmx, 0:kmx) => gradqp_z(:, :, :, 6)
 
           case DEFAULT
-            !call turbulence_read_error()
             Fatal_error
 
         end select
 
         !Transition modeling
-        select case(trim(transition))
+        select case(trim(scheme%transition))
 
           case('lctm2015')
             !call setup_lctm2015_grad()
@@ -226,16 +226,17 @@ module gradients
 
 
 
-    subroutine get_n_grad()
+    subroutine get_n_grad(scheme)
       !< Set number of variables for which
       !< gradient is required based on the
       !< being used
 
       implicit none
+      type(schemetype) , intent(in) :: scheme
 
       DebugCall("get_n_grad")
 
-      select case (trim(turbulence))
+      select case (trim(scheme%turbulence))
         
         case('none')
           !do nothing
@@ -251,14 +252,13 @@ module gradients
           n_grad = 6
 
         case DEFAULT
-          !call turbulence_read_error()
           Fatal_error
 
       end select
 
 
       !Transition modeling
-      select case(trim(transition))
+      select case(trim(scheme%transition))
 
         case('lctm2015')
           n_grad = n_grad + 1
@@ -274,12 +274,15 @@ module gradients
     end subroutine get_n_grad
 
 
-    subroutine evaluate_all_gradients()
+    subroutine evaluate_all_gradients(scheme)
       !< Call to all the required gradients and 
       !< apply boundary condition for ghost cell
       !< gradients
 
       implicit none
+      !type(controltype), intent(in) :: control
+      type(schemetype) , intent(in) :: scheme
+      !type(flowtype)   , intent(in) :: flow
 
       DebugCall('evaluate_all_gradients')
 
@@ -300,7 +303,7 @@ module gradients
        gradqp_z=0.0
       end if
 
-      select case (trim(turbulence))
+      select case (trim(scheme%turbulence))
 
         case ('none')
           !do nothing
@@ -334,13 +337,12 @@ module gradients
           end if
 
         case DEFAULT
-          !call turbulence_read_error()
           Fatal_error
 
       end select
 
 
-      select case(trim(transition))
+      select case(trim(scheme%transition))
         case('lctm2015')
           call compute_gradient_G(gradtgm_x, tgm, 'x')
           call compute_gradient_G(gradtgm_y, tgm, 'y')

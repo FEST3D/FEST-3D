@@ -4,13 +4,6 @@ module scheme
 #include "../../../error.h"
     use vartypes
     use global, only: SCHEME_NAME_LENGTH
-
-!    use global_vars, only : imx
-!    use global_vars, only : jmx
-!    use global_vars, only : kmx
-
-    use global_vars, only : mu_ref
-!    use global_vars, only : n_var
     use global_vars, only : F_p
     use global_vars, only : G_p
     use global_vars, only : H_p
@@ -25,9 +18,9 @@ module scheme
     use global_vars, only : dissipation_residue
     use global_vars, only : tv_residue
     use global_vars, only : residue
-    use global_vars, only : turbulence
+!    use global_vars, only : turbulence
 
-    use global_vars, only : scheme_name
+!    use global_vars, only : scheme_name
 
     use utils, only: alloc, dealloc
     use face_interpolant, only: setup_interpolant_scheme, &
@@ -86,11 +79,6 @@ module scheme
             G_ldfss0 => G, &
             H_ldfss0 => H, &
             residue_ldfss0 => residue
-!   use hlle, only: &
-!           setup_scheme_hlle => setup_scheme, &
-!           destroy_scheme_hlle => destroy_scheme, &
-!           get_residue_hlle => get_residue
-!    include "turbulence_models/include/scheme/import_module.inc"
 
 
     implicit none
@@ -126,18 +114,19 @@ module scheme
 
 
     ! Public members
-    public :: scheme_name
+!    public :: scheme_name
     public :: setup_scheme
-    public :: destroy_scheme
+!    public :: destroy_scheme
     public :: compute_fluxes
     public :: compute_residue
     public :: residue
 
     contains
 
-        subroutine setup_scheme(control, dims)
+        subroutine setup_scheme(control, scheme, dims)
             implicit none
             type(controltype), intent(in) :: control
+            type(schemetype), intent(in) :: scheme
             type(extent), intent(in) :: dims
 
             imx = dims%imx
@@ -146,9 +135,9 @@ module scheme
 
             n_var = control%n_var
 
-            call setup_interpolant_scheme(control, dims)
+            call setup_interpolant_scheme(control, scheme, dims)
 
-            select case (scheme_name)
+            select case (scheme%scheme_name)
                 case ("van_leer")
                     call setup_scheme_van_leer(control, dims)
                     F_p => F_van_leer
@@ -159,7 +148,7 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_van_leer(:, :, :, 5)
-                    select case (turbulence)
+                    select case (scheme%turbulence)
 
                         case ("none")
                             !include nothing
@@ -190,7 +179,7 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausm(:, :, :, 5)
-                    select case (turbulence)
+                    select case (scheme%turbulence)
                         case ("none")
                             !include nothing
                             continue
@@ -219,7 +208,7 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmP(:, :, :, 5)
-                    select case (turbulence)
+                    select case (scheme%turbulence)
                         case ("none")
                             !include nothing
                             continue
@@ -248,7 +237,7 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ausmUP(:, :, :, 5)
-                    select case (turbulence)
+                    select case (scheme%turbulence)
                         case ("none")
                             !include nothing
                             continue
@@ -277,7 +266,7 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_slau(:, :, :, 5)
-                    select case (turbulence)
+                    select case (scheme%turbulence)
                         case ("none")
                             !include nothing
                             continue
@@ -306,7 +295,7 @@ module scheme
                     y_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 3)
                     z_mom_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 4)
                     energy_residue(1:imx-1, 1:jmx-1, 1:kmx-1) => residue_ldfss0(:, :, :, 5)
-                    select case (turbulence)
+                    select case (scheme%turbulence)
                         case ("none")
                             !include nothing
                             continue
@@ -333,85 +322,86 @@ module scheme
 
         end subroutine setup_scheme
 
-        subroutine deallocate_memory()
+!        subroutine deallocate_memory()
+!
+!            implicit none
+!
+!            nullify(F_p)
+!            nullify(G_p)
+!            nullify(H_p)
+!            nullify(mass_residue)
+!            nullify(x_mom_residue)
+!            nullify(y_mom_residue)
+!            nullify(z_mom_residue)
+!            nullify(energy_residue)
+!            nullify(residue)
+!            nullify(TKE_residue)
+!            nullify(omega_residue)
+!            nullify(KL_residue)
+!            nullify(tv_residue)
+!            nullify(dissipation_residue)
+!
+!        end subroutine deallocate_memory
+!
+!        subroutine destroy_scheme()
+!
+!            implicit none
+!
+!            select case (scheme%scheme_name)
+!                case ("van_leer")
+!                    call destroy_scheme_van_leer
+!                case ("ausm")
+!                    call destroy_scheme_ausm()
+!                case ("ausmP")
+!                    call destroy_scheme_ausmP()
+!                case ("ausmUP")
+!                    call destroy_scheme_ausmUP()
+!                case ("slau")
+!                    call destroy_scheme_slau()
+!                case ("ldfss0")
+!                    call destroy_scheme_ldfss0()
+!!               case ("hlle")
+!!                   call destroy_scheme_hlle()
+!                case default
+!                    Fatal_error
+!            end select
+!            
+!            call destroy_interpolant_scheme()
+!            call deallocate_memory()
+!
+!        end subroutine destroy_scheme
 
-            implicit none
-
-            nullify(F_p)
-            nullify(G_p)
-            nullify(H_p)
-            nullify(mass_residue)
-            nullify(x_mom_residue)
-            nullify(y_mom_residue)
-            nullify(z_mom_residue)
-            nullify(energy_residue)
-            nullify(residue)
-            nullify(TKE_residue)
-            nullify(omega_residue)
-            nullify(KL_residue)
-            nullify(tv_residue)
-            nullify(dissipation_residue)
-
-        end subroutine deallocate_memory
-
-        subroutine destroy_scheme()
-
-            implicit none
-
-            select case (scheme_name)
-                case ("van_leer")
-                    call destroy_scheme_van_leer
-                case ("ausm")
-                    call destroy_scheme_ausm()
-                case ("ausmP")
-                    call destroy_scheme_ausmP()
-                case ("ausmUP")
-                    call destroy_scheme_ausmUP()
-                case ("slau")
-                    call destroy_scheme_slau()
-                case ("ldfss0")
-                    call destroy_scheme_ldfss0()
-!               case ("hlle")
-!                   call destroy_scheme_hlle()
-                case default
-                    Fatal_error
-            end select
-            
-            call destroy_interpolant_scheme()
-            call deallocate_memory()
-
-        end subroutine destroy_scheme
-
-        subroutine compute_fluxes
+        subroutine compute_fluxes(scheme, flow)
         
             implicit none
+            type(schemetype), intent(in) :: scheme
+            type(flowtype), intent(in) :: flow
 
-            select case (scheme_name)
+            select case (scheme%scheme_name)
                 case ("van_leer")
-                    call compute_fluxes_van_leer()
+                    call compute_fluxes_van_leer(flow)
                 case ("ausm")
-                    call compute_fluxes_ausm()
+                    call compute_fluxes_ausm(flow)
                 case ("ausmP")
-                    call compute_fluxes_ausmP()
+                    call compute_fluxes_ausmP(flow)
                 case ("ausmUP")
-                    call compute_fluxes_ausmUP()
+                    call compute_fluxes_ausmUP(flow)
                 case ("slau")
-                    call compute_fluxes_slau()
+                    call compute_fluxes_slau(flow)
                 case ("ldfss0")
-                    call compute_fluxes_ldfss0()
-!               case ("hlle")
-!                   call compute_fluxes_hlle()
+                    call compute_fluxes_ldfss0(flow)
                 case default
                     Fatal_error
             end select
             
         end subroutine compute_fluxes
 
-        subroutine compute_residue()
+        subroutine compute_residue(scheme)
             
             implicit none
+            type(schemetype), intent(in) :: scheme
             
-            select case (scheme_name)
+            select case (scheme%scheme_name)
                 case ("van_leer")
                     call get_residue_van_leer()
                 case ("ausm")
@@ -424,9 +414,6 @@ module scheme
                     call get_residue_slau()
                 case ("ldfss0")
                     call get_residue_ldfss0()
-!               case ("hlle")
-!                   call get_residue_hlle()
-                case default
                     Fatal_error
             end select
         

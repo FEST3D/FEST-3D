@@ -11,12 +11,6 @@ module dump_solution
   use vartypes
   use global,      only : FILE_NAME_LENGTH
   use global,      only : RESTART_FILE_UNIT
-!  use global_vars, only : current_iter
-!  use global_vars, only : max_iters
-!  use global_vars, only : last_iter
-!  use global_vars, only : checkpoint_iter
-!  use global_vars, only : checkpoint_iter_count
-!  use global_vars, only : purge_write
   use global_vars, only : sim_clock
   use global_vars, only :     outfile
   use global_vars, only : restartfile
@@ -30,9 +24,8 @@ module dump_solution
   use global_vars, only : energy_resnorm_0
   use global_vars, only :    TKE_resnorm_0
   use global_vars, only :  omega_resnorm_0
-  use global_vars, only :  turbulence
+!  use global_vars, only :  turbulence
   use utils
-!  use string
   use write_output, only : write_file
   use layout,      only : process_id
 
@@ -47,13 +40,14 @@ module dump_solution
 
   contains
 
-    subroutine checkpoint(nodes, control, dims)
+    subroutine checkpoint(nodes, control, scheme, dims)
       !< Create a checkpoint dump file if the time has come
       !-----------------------------------------------------------
 
       implicit none
       type(extent), intent(in) :: dims
       type(controltype), intent(inout) :: control
+      type(schemetype), intent(in) :: scheme
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
 
 
@@ -63,7 +57,7 @@ module dump_solution
           if (mod(control%current_iter, control%checkpoint_iter) == 0 &
              .or. control%current_iter == control%max_iters) then
               call make_dump_dir(control)
-              call dump_data(nodes, control, dims)
+              call dump_data(nodes, control, scheme, dims)
               print*, "writing data at: ", control%current_iter, control%checkpoint_iter_count
               call purge_dump_dir(control)
               control%checkpoint_iter_count = control%checkpoint_iter_count + 1
@@ -119,34 +113,36 @@ module dump_solution
 
     end subroutine make_dump_dir
 
-    subroutine dump_data(nodes, control, dims)
+    subroutine dump_data(nodes, control, scheme, dims)
       !< Call to write save files in the directory
       implicit none
       type(extent), intent(in) :: dims
       type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
 !      character(len=FILE_NAME_LENGTH) :: filename
 
       DebugCall('dump_solution: dump_data')
       write(restartfile, '(A,I2.2)') trim(dump_dirname)//'/restart/process_',process_id
       write(    outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
-      call write_restart_log(control)
+      call write_restart_log(scheme, control)
       call write_file(nodes, control, dims)
 
     end subroutine dump_data
 
-    subroutine write_restart_log(control)
+    subroutine write_restart_log(scheme, control)
       !< Call to write log file in the subdirectory "restart". 
       !< It is useful information while restarting the solver
       implicit none
       type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
       open(RESTART_FILE_UNIT, file=restartfile)
-      select case (turbulence)
+      select case (scheme%turbulence)
           
         case ('none')
           write(RESTART_FILE_UNIT, '(A)') 'viscous'
         case('sst','sst2003', 'kkl', 'ke', 'kw', 'sa', 'saBC', 'des-sst')
-          write(RESTART_FILE_UNIT, '(A)') trim(turbulence)
+          write(RESTART_FILE_UNIT, '(A)') trim(scheme%turbulence)
         case DEFAULT
            Fatal_error
       end select

@@ -9,11 +9,9 @@ module source
 #include "debug.h"
 #include "error.h"
   use vartypes
-  use dump_solution, only : checkpoint
-  use global_vars, only : turbulence
-  use global_vars, only : transition
+!  use global_vars, only : turbulence
+!  use global_vars, only : transition
   use global_vars, only : process_id
-  use utils      , only : turbulence_read_error
   !--- variable required for sst source calculation ---!
   use global_sst   ,only : sigma_k1
   use global_sst   ,only : sigma_k2
@@ -31,24 +29,20 @@ module source
   use global_sst   ,only : gama
   use global_sst   ,only : sst_F1
 
-  use global_vars  ,only : free_stream_tu
-  use global_vars  ,only : Reynolds_number
+!  use global_vars  ,only : free_stream_tu
+!  use global_vars  ,only : Reynolds_number
   use global_vars  ,only : intermittency
-  use global_vars  ,only : vel_mag
+!  use global_vars  ,only : vel_mag
   use global_vars  ,only :  qp
-!  use global_vars  ,only :   imx
-!  use global_vars  ,only :   jmx
-!  use global_vars  ,only :   kmx
-!  use global_vars  ,only :   n_var
   use global_vars  ,only :   volume
   use global_vars  ,only :   density
   use global_vars  ,only :   x_speed
   use global_vars  ,only :   pressure
   use global_vars  ,only :   tk
   use global_vars  ,only :   tw
-  use global_vars  ,only :   tk_inf
-  use global_vars  ,only :   tw_inf
-  use global_vars  ,only :   free_stream_tu
+!  use global_vars  ,only :   tk_inf
+!  use global_vars  ,only :   tw_inf
+!  use global_vars  ,only :   free_stream_tu
   use global_vars  ,only :   mu
 !  use global_vars  ,only :   sst_mu
   use global_vars  ,only :   dist
@@ -140,39 +134,41 @@ module source
   contains
 
     
-    subroutine add_source_term_residue(control, dims)
+    subroutine add_source_term_residue(control,scheme,flow, dims)
       !< Call to add different source terms to the residual of different equations.
 
       implicit none
       type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
+      type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
 
       DebugCall('add_source_term_residue')
 
-      select case (trim(turbulence))
+      select case (trim(scheme%turbulence))
 
         case ('none')
           !do nothing
           continue
 
         case ('sa')
-          select case(trim(transition))
+          select case(trim(scheme%transition))
             case('none')
               call add_sa_source(dims)
             case('bc')
-              call add_saBC_source(dims)
+              call add_saBC_source(flow, dims)
             case DEFAULT
               Fatal_error
           end select
 
         case ('sst', 'sst2003')
-          select case(trim(transition))
+          select case(trim(scheme%transition))
             case('none')
-              call add_sst_source(dims)
+              call add_sst_source(scheme, dims)
             case('lctm2015')
-              call add_sst_source_lctm2015(control, dims)
+              call add_sst_source_lctm2015(control, scheme, dims)
             case('bc')
-              call add_sst_bc_source(dims)
+              call add_sst_bc_source(flow,dims)
             case DEFAULT
               Fatal_error
           end select
@@ -201,10 +197,11 @@ module source
 !        !nothing
 !    end subroutine destroy_source
 
-    subroutine add_sst_source(dims)
+    subroutine add_sst_source(scheme,dims)
       !< Add residual due to source terms of the SST turbulence model
       implicit none
       type(extent), intent(in) :: dims
+      type(schemetype), intent(in) :: scheme
       integer :: i,j,k
 
       real :: CD
@@ -220,7 +217,7 @@ module source
       integer :: limiter
       real :: divergence
       
-      if(trim(turbulence) == 'sst2003')then
+      if(trim(scheme%turbulence) == 'sst2003')then
         limiter = 10
         gama1 = 5.0/9.0
         gama2 = 0.44
@@ -284,10 +281,11 @@ module source
     end subroutine add_sst_source
 
 
-    subroutine add_sst_source_lctm2015(control, dims)
+    subroutine add_sst_source_lctm2015(control, scheme, dims)
       !< Add residual due to source terms of the LCTM2015 transition model
       implicit none
       type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
       integer :: i,j,k
 
@@ -313,24 +311,17 @@ module source
       real :: Fturb
       real :: Re_theta
       real :: TuL
-      real :: gradtk
       real :: strain
       real :: intermittency
       real :: Pk_lim
       real :: Fon_lim
-      real :: dudx
-      real :: dudy
-      real :: dudz
-      real :: duds
-      real :: velmag
-      real :: u,v,w
       real :: lamd
       real :: Fpg
       real :: divergence
       real :: dvdy
       integer :: limiter
 
-      if(trim(turbulence) == 'sst2003')then
+      if(trim(scheme%turbulence) == 'sst2003')then
         limiter = 10
         gama1 = 5.0/9.0
         gama2 = 0.44
@@ -450,10 +441,11 @@ module source
 
 
     ! SST-BC model
-    subroutine add_sst_bc_source(dims)
+    subroutine add_sst_bc_source(flow, dims)
       !< Add residual due to source terms of the SST-BC transition model
       implicit none
       type(extent), intent(in) :: dims
+      type(flowtype), intent(in) :: flow
       integer :: i,j,k
 
       real :: CD
@@ -528,11 +520,11 @@ module source
             chi_2 = 5.0
 
             nu_t = mu_t(i,j,k)/density(i,j,k)
-            nu_cr = chi_2/Reynolds_number
+            nu_cr = chi_2/flow%Reynolds_number
             nu_bc = nu_t/(vmag*dist(i,j,k))
 
             !TuL = min(100.0*sqrt(2.0*tk(i,j,k)/3.0)/(tw(i,j,k)*dist(i,j,k)),100.0)
-            TuL = free_stream_tu !local turbulence intensity might not work for BC model
+            TuL = flow%tu_inf !local turbulence intensity might not work for BC model
             re_v = density(i,j,k)*dist(i,j,k)*dist(i,j,k)*vort/mu(i,j,k)
             re_theta = re_v/2.193
             re_theta_t = (803.73*((TuL + 0.6067)**(-1.027)))
@@ -618,14 +610,6 @@ module source
       real :: P_k
       real :: P_kl
 
-      !change for transition modeling
-      real :: vort
-      real :: Rev
-      real :: Rev1
-      real :: ReThc
-      real :: Tu
-      real :: term1
-
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1
@@ -645,15 +629,15 @@ module source
 
             delv = gradu_x(i,j,k) + gradv_y(i,j,k) + gradw_z(i,j,k)
 
-            Tau11 = mu_t(i,j,k)*(2*S11 - (2/3)*delv) - (2/3)*density(i,j,k)*tk(i,j,k)
+            Tau11 = mu_t(i,j,k)*(2*S11 - (2.0/3.0)*delv) - (2.0/3.0)*density(i,j,k)*tk(i,j,k)
             Tau12 = mu_t(i,j,k)*(2*S12)
             Tau13 = mu_t(i,j,k)*(2*S13)
             Tau21 = mu_t(i,j,k)*(2*S21)
-            Tau22 = mu_t(i,j,k)*(2*S22 - (2/3)*delv) - (2/3)*density(i,j,k)*tk(i,j,k)
+            Tau22 = mu_t(i,j,k)*(2*S22 - (2.0/3.0)*delv) - (2.0/3.0)*density(i,j,k)*tk(i,j,k)
             Tau23 = mu_t(i,j,k)*(2*S23)
             Tau31 = mu_t(i,j,k)*(2*S31)
             Tau32 = mu_t(i,j,k)*(2*S32)
-            Tau33 = mu_t(i,j,k)*(2*S33 - (2/3)*delv) - (2/3)*density(i,j,k)*tk(i,j,k)
+            Tau33 = mu_t(i,j,k)*(2*S33 - (2.0/3.0)*delv) - (2.0/3.0)*density(i,j,k)*tk(i,j,k)
 
             P_k = 0.
             P_k = P_k + Tau11*gradu_x(i,j,k) + Tau12*gradu_y(i,j,k) + Tau13*gradu_z(i,j,k)
@@ -911,10 +895,11 @@ module source
 
     end subroutine add_sa_source
 
-    subroutine add_saBC_source(dims)
+    subroutine add_saBC_source(flow, dims)
       !< Add residual due to source terms of SABC transition model
       implicit none
       type(extent), intent(in) :: dims
+      type(flowtype), intent(in) :: flow
       integer :: i,j,k
 
       real :: CD1
@@ -923,11 +908,8 @@ module source
       real :: fv2
       real :: fw
       real :: g
-      real :: Scap
       real :: r
       real :: S_v
-      real :: D_v
-      real :: P_v
       real :: lamda
       real :: dist_i
       real :: dist_i_2
@@ -968,7 +950,7 @@ module source
       real :: gamma_BC
       real :: tu
 
-      tu = free_stream_tu
+      tu = flow%tu_inf
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1
@@ -1070,7 +1052,7 @@ module source
             chi_2 = 5.0
 
             nu_t = tv(i,j,k)*fv1
-            nu_cr = chi_2/Reynolds_number
+            nu_cr = chi_2/flow%Reynolds_number
             nu_bc = nu_t/(vmag*dist_i)
 
             re_v = dist_i_2*Omega/nu

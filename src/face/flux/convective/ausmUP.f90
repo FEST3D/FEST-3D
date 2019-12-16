@@ -18,10 +18,10 @@ module ausmUP
     use global_vars, only : znx, zny, znz !face unit normal z
     use global_vars, only : xA, yA, zA    !face area
 
-    use global_vars, only : gm
-    use global_vars, only : MInf
+!    use global_vars, only : gm
+!    use global_vars, only : MInf
 !    use global_vars, only : n_var
-    use global_vars, only : turbulence
+!    use global_vars, only : turbulence
     use global_vars, only : process_id
     use global_vars, only : make_F_flux_zero
     use global_vars, only : make_G_flux_zero
@@ -101,13 +101,14 @@ module ausmUP
 
         end subroutine destroy_scheme
 
-        subroutine compute_flux(f_dir)
+        subroutine compute_flux(f_dir, flow)
           !< A generalized subroutine to calculate
           !< flux through the input direction, :x,y, or z
           !< which corresponds to the I,J, or K direction respectively
           !------------------------------------------------------------
 
             implicit none
+            type(flowtype), intent(in) :: flow
             character, intent(in) :: f_dir
             !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
@@ -220,15 +221,15 @@ module ausmUP
 
                 !-- calculated quntaties --
                 ! ---- total enthalpy ----
-                HL = (0.5*(uL*uL + vL*vL + wL*wL)) + ((gm/(gm - 1.))*pL/rL)
-                HR = (0.5*(uR*uR + vR*vR + wR*wR)) + ((gm/(gm - 1.))*pR/rR)
+                HL = (0.5*(uL*uL + vL*vL + wL*wL)) + ((flow%gm/(flow%gm - 1.))*pL/rL)
+                HR = (0.5*(uR*uR + vR*vR + wR*wR)) + ((flow%gm/(flow%gm - 1.))*pR/rR)
 
                 ! ---- face normal velocity ----
                 VnL = uL*nx(i, j, k) + vL*ny(i, j, k) + wL*nz(i, j, k)
                 VnR = uR*nx(i, j, k) + vR*ny(i, j, k) + wR*nz(i, j, k)
 
                 ! ---- speed of sound ----
-                cs = sqrt(2.0*(gm-1.0)*(0.5*(HL + HR))/(gm+1.0))
+                cs = sqrt(2.0*(flow%gm-1.0)*(0.5*(HL + HR))/(flow%gm+1.0))
                 cL = cs*cs/(max(cs, VnL))
                 cR = cs*cs/(max(cs,-VnR))
                 C  = min(cL, CR)
@@ -239,7 +240,7 @@ module ausmUP
                 Mb = sqrt(0.5*((VnL*VnL) + (VnR*VnR))/(C*C))
 
                 ! ---- function at face ----
-                 Mo   = sqrt(min(1.0, max(Mb*Mb, MInf*MInf)))
+                 Mo   = sqrt(min(1.0, max(Mb*Mb, flow%MInf*flow%MInf)))
                  fna  = Mo*(2.0 - Mo)
                  alfa = 3.0*(-4.0 + (5.0*fna*fna))/16.0
 
@@ -329,19 +330,20 @@ module ausmUP
 
         end subroutine compute_flux
 
-        subroutine compute_fluxes()
+        subroutine compute_fluxes(flow)
           !< Call to compute fluxes throught faces in each direction
             
             implicit none
+            type(flowtype), intent(in) :: flow
             
             DebugCall('compute_fluxes')
 
-            call compute_flux('x')
+            call compute_flux('x', flow)
             if (any(isnan(F))) then
               Fatal_error
             end if    
 
-            call compute_flux('y')
+            call compute_flux('y', flow)
             if (any(isnan(G))) then 
               Fatal_error
             end if    
@@ -349,7 +351,7 @@ module ausmUP
             if(kmx==2) then
               H = 0.
             else
-              call compute_flux('z')
+              call compute_flux('z', flow)
             end if
             if (any(isnan(H))) then
               Fatal_error

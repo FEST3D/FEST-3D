@@ -13,12 +13,6 @@ module write_output_tec_node
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
 
-!  use global_vars, only : write_data_format
-!  use global_vars, only : write_file_format
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
-!  use grid, only : point
   use global_vars, only : density 
   use global_vars, only : x_speed 
   use global_vars, only : y_speed 
@@ -30,7 +24,6 @@ module write_output_tec_node
   use global_vars, only : tv
   use global_vars, only : mu 
   use global_vars, only : mu_t 
-  use global_vars, only : gm
   use global_vars, only : dist
   use global_vars, only : vis_resnorm
   use global_vars, only : cont_resnorm
@@ -47,12 +40,8 @@ module write_output_tec_node
   use global_vars, only : TKE_residue
   use global_vars, only : intermittency
 
-  use global_vars, only : turbulence
-  use global_vars, only : mu_ref
-!  use global_vars, only : current_iter
-!  use global_vars, only : max_iters
-  use global_vars, only : w_count
-  use global_vars, only : w_list
+!  use global_vars, only : w_count
+!  use global_vars, only : w_list
 
   use global_sst , only : sst_F1
   use gradients, only : gradu_x
@@ -74,10 +63,8 @@ module write_output_tec_node
   use gradients, only : gradtw_y
   use gradients, only : gradtw_z
   use global_vars, only : process_id
-!  use global_vars, only : checkpoint_iter_count
 
   use utils
-!  use string
 
   implicit none
   private
@@ -88,12 +75,12 @@ module write_output_tec_node
 
   contains
 
-    subroutine write_file(nodes, dims, checkpoint_iter_count)
+    subroutine write_file(nodes, control, dims)
       !< Write output file in the tecplot format with node data
       implicit none
+      type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
-      integer, intent(in) :: checkpoint_iter_count
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
@@ -101,12 +88,12 @@ module write_output_tec_node
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx
-      call write_header(checkpoint_iter_count)
+      call write_header(control)
       call write_grid(nodes)
 
-      do n = 1,w_count
+      do n = 1,control%w_count
 
-        select case (trim(w_list(n)))
+        select case (trim(control%w_list(n)))
         
           case('Velocity')
             call write_scalar(x_speed, "u", -2)
@@ -199,28 +186,13 @@ module write_output_tec_node
 
           case('Intermittency')
             call write_scalar(intermittency, "Intermittency", -2)
-          
-         ! case('Mass_residue')
-         !   call write_scalar(mass_residue, "Mass_residue", 1)
-
-         ! case('X_mom_residue')
-         !   call write_scalar(x_mom_residue, "X_mom_residue", 1)
-
-         ! case('Y_mom_residue')
-         !   call write_scalar(y_mom_residue, "Y_mom_residue", 1)
-
-         ! case('Z_mom_residue')
-         !   call write_scalar(z_mom_residue, "Z_mom_residue", 1)
-
-         ! case('Energy_residue')
-         !   call write_scalar(energy_residue, "Energy_residue", 1)
 
           case('do not write')
             ! do not write
             continue
 
           case Default
-            print*, err//trim(w_list(n))//" to file"
+            print*, err//trim(control%w_list(n))//" to file"
 
         end select
       end do
@@ -229,10 +201,10 @@ module write_output_tec_node
     end subroutine write_file
 
 
-    subroutine write_header(checkpoint_iter_count)
+    subroutine write_header(control)
       !< Write the header in the output file
       implicit none
-      integer, intent(in) :: checkpoint_iter_count
+      type(controltype), intent(in) :: control
       integer :: n
       integer :: total
 
@@ -240,9 +212,9 @@ module write_output_tec_node
       write(OUT_FILE_UNIT,'(a)') "variables = x y z "
 
       total=3
-      do n = 1,w_count
+      do n = 1,control%w_count
 
-        select case (trim(w_list(n)))
+        select case (trim(control%w_list(n)))
         
           case('Velocity')
             write(OUT_FILE_UNIT, '(a)') " u v w "
@@ -253,7 +225,7 @@ module write_output_tec_node
             continue
 
           case Default
-            write(OUT_FILE_UNIT, '(a)') trim(w_list(n))//" "
+            write(OUT_FILE_UNIT, '(a)') trim(control%w_list(n))//" "
             total = total+1
 
         end select
@@ -264,7 +236,7 @@ module write_output_tec_node
       write(OUT_FILE_UNIT,*) "Varlocation=([1-3]=Nodal)"
       write(OUT_FILE_UNIT,'(a,i2.2,a)') "Varlocation=([4-",total,"]=Nodal)"
       write(OUT_FILE_UNIT,"(a,i4.4)") "STRANDID=",1
-      write(OUT_FILE_UNIT,"(a,i4.4)") "SOLUTIONTIME=",checkpoint_iter_count
+      write(OUT_FILE_UNIT,"(a,i4.4)") "SOLUTIONTIME=",control%checkpoint_iter_count
 
 
     end subroutine write_header

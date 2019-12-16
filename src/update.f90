@@ -27,27 +27,15 @@ module update
   use gradients  ,only :   gradw_x
   use gradients  ,only :   gradw_y
   use gradients  ,only :   gradw_z
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
-  use global_vars, only : R_gas
-  use global_vars, only : Pr
-  use global_vars, only : tPr
+!  use global_vars, only : R_gas
+!  use global_vars, only : Pr
+!  use global_vars, only : tPr
 
   use global_vars, only : volume
-  use global_vars, only : xnx, xny, xnz !face unit normal x
-  use global_vars, only : ynx, yny, ynz !face unit normal y
-  use global_vars, only : znx, zny, znz !face unit normal z
-  use global_vars, only : xA, yA, zA    !face area
     
-!  use global_vars, only : n_var
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
-  use global_vars, only : gm
+!  use global_vars, only : gm
   use global_vars, only : sst_n_var
   use global_vars, only : qp
-  use global_vars, only : qp_inf
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -56,14 +44,14 @@ module update
   use global_vars, only : dist
   use global_vars, only : mu
   use global_vars, only : mu_t
-  use global_vars, only : tk_inf
-  use global_vars, only : tkl_inf
+!  use global_vars, only : tk_inf
+!  use global_vars, only : tkl_inf
 
-  use global_vars, only : time_stepping_method
-  use global_vars, only : time_step_accuracy
-  use global_vars, only : global_time_step
+!  use global_vars, only : time_stepping_method
+!  use global_vars, only : time_step_accuracy
+!  use global_vars, only : global_time_step
   use global_vars, only : delta_t
-  use global_vars, only : turbulence
+!  use global_vars, only : turbulence
   use global_vars, only : process_id
 
   use global_vars, only: F_p
@@ -78,7 +66,7 @@ module update
   use global_vars, only: omega_residue
   use global_vars, only: kl_residue
   use global_vars, only: residue
-  use global_vars, only: mu_ref
+!  use global_vars, only: mu_ref
 
   use geometry   , only: CellCenter
 
@@ -88,8 +76,8 @@ module update
 !  use string
 
   !subroutine for residual calculation
-  use face_interpolant,               only: interpolant
-  use global_vars,                    only : mu_ref
+!  use face_interpolant,               only: interpolant
+!  use global_vars,                    only : mu_ref
   use interface1,                      only: apply_interface
   use bc_primitive,                   only: populate_ghost_primitive
   use face_interpolant,               only: compute_face_interpolant
@@ -137,17 +125,19 @@ module update
 
     ! Public methods
     public :: setup_update
-    public :: destroy_update
+!    public :: destroy_update
     public :: get_next_solution
 
     contains
 
 
-      subroutine setup_update(control, dims)
+      subroutine setup_update(control, scheme,flow, dims)
         !< Allocate memory to variables required based 
         !< on the time-integration scheme.
         implicit none
         type(controltype), intent(in) :: control
+        type(schemetype), intent(in) :: scheme
+        type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
 
         imx = dims%imx
@@ -161,160 +151,127 @@ module update
         call alloc(R ,1,n_var)
         call alloc(aux,-2,imx+2,-2,jmx+2,-2,kmx+2,1,n_var)
 
-        select case (time_step_accuracy)
+        select case (scheme%time_step_accuracy)
           case ("none")
             ! Do nothing
             continue
           case ("RK2", "RK4")
             call alloc(U_store,-2,imx+2,-2,jmx+2,-2,kmx+2,1,n_var)
             call alloc(R_store, 1,imx-1, 1,jmx-1, 1,kmx-1,1,n_var)
-          case ("TVDRK2", "TVDRK3", "TVDRK4")
+          case ("TVDRK2", "TVDRK3")
             call alloc(U_store,-2,imx+2,-2,jmx+2,-2,kmx+2,1,n_var)
           case ("implicit")
-            call setup_lusgs(control, dims)
+            call setup_lusgs(control, scheme, flow, dims)
           case ("plusgs")
-            call setup_plusgs(control, dims)
+            call setup_plusgs(control, scheme, flow, dims)
           case default
             Fatal_error
         end select
 
       end subroutine setup_update
 
+!
+!      subroutine destroy_update()
+!        !< Dellocate memory from all variables
+!        implicit none
+!
+!        select case (time_step_accuracy)
+!          case ("none")
+!            ! Do nothing
+!            continue
+!          case ("RK2", "RK4")
+!            call dealloc(U_store)
+!            call dealloc(R_store)
+!          case ("TVDRK2","TVDRK3")
+!            call dealloc(U_store)
+!          case ("implicit")
+!            call destroy_lusgs()
+!          case ("plusgs")
+!            call destroy_plusgs()
+!          case default
+!            Fatal_error
+!        end select
+!        call dealloc(u1)
+!        call dealloc(u2)
+!        call dealloc(R)
+!        call dealloc(aux)
+!
+!      end subroutine destroy_update
 
-      subroutine destroy_update()
-        !< Dellocate memory from all variables
-        implicit none
 
-        select case (time_step_accuracy)
-          case ("none")
-            ! Do nothing
-            continue
-          case ("RK2", "RK4")
-            call dealloc(U_store)
-            call dealloc(R_store)
-          case ("TVDRK2","TVDRK3", "TVDRK4")
-            call dealloc(U_store)
-          case ("implicit")
-            call destroy_lusgs()
-          case ("plusgs")
-            call destroy_plusgs()
-          case default
-            Fatal_error
-        end select
-        call dealloc(u1)
-        call dealloc(u2)
-        call dealloc(R)
-        call dealloc(aux)
-
-      end subroutine destroy_update
-
-
-      subroutine get_next_solution(control, dims)
+      subroutine get_next_solution(control, scheme, flow, dims)
         !< Get solution at next time-step using scheme
         !< given in the input file.
         implicit none
         type(controltype), intent(in) :: control
+        type(schemetype), intent(in) :: scheme
+        type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
         real :: CFL 
         CFL = control%CFL
-        print*, "CFL", control%CFL
-        select case (trim(time_step_accuracy))
+        select case (trim(scheme%time_step_accuracy))
             case ("none")
-              call get_total_conservative_Residue(control, dims)
-              call compute_time_step(CFL) ! has to be after get_..._Residue()
-              call update_with("conservative", 1. ,1., .FALSE.) 
-              !call update_with("primitive", 1. ,1., .FALSE.) 
-              !call update_laminar_variables_primitive(1. ,1., .FALSE.) 
-              !if(turbulence/='none')then
-              !  call update_turbulent_variables_primitive(1. ,1., .FALSE.) 
-              !end if
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call compute_time_step(CFL, scheme, flow) ! has to be after get_..._Residue()
+              call update_with(scheme, flow, "conservative", 1. ,1., .FALSE.) 
             case ("RK4")
               R_store=0.
               U_store = qp
-              call get_total_conservative_Residue(control, dims)
-              call compute_time_step(CFL)
-              call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
-              !call update_laminar_variables_primitive(0.5, 1., .FALSE., .True., R_store, U_store) 
-              !call update_turbulent_variables_primitive(0.5, 1., .FALSE., .True., R_store, U_store) 
-              call get_total_conservative_Residue(control, dims)
-              call update_with("conservative", 0.5  , 2., .FALSE., R_store, U_store) 
-              !call update_laminar_variables_primitive(0.5, 2., .FALSE., .True., R_store, U_store) 
-              !call update_turbulent_variables_primitive(0.5, 2., .FALSE., .True., R_store, U_store) 
-              call get_total_conservative_Residue(control, dims)
-              call update_with("conservative", 1.0  , 2., .FALSE., R_store, U_store) 
-              !call update_laminar_variables_primitive(1.0, 2., .FALSE., .True., R_store, U_store) 
-              !call update_turbulent_variables_primitive(1.0, 2., .FALSE., .True., R_store, U_store) 
-              call get_total_conservative_Residue(control, dims)
-              call update_with("conservative", 1./6., 1., .TRUE. , R_store, U_store) 
-              !call update_laminar_variables_primitive(1./6., 1., .TRUE., .FALSE., R_store, U_store) 
-              !call update_turbulent_variables_primitive(1./6., 1., .TRUE., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call compute_time_step(CFL, scheme, flow) ! has to be after get_..._Residue()
+              call update_with(scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call update_with(scheme, flow, "conservative", 0.5  , 2., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call update_with(scheme, flow, "conservative", 1.0  , 2., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call update_with(scheme, flow, "conservative", 1./6., 1., .TRUE. , R_store, U_store) 
             case("RK2")
               R_store=0.
               U_store = qp
-              call get_total_conservative_Residue(control, dims)
-              call compute_time_step(CFL)
-              call update_with("conservative", 0.5  , 1., .FALSE., R_store, U_store) 
-              call get_total_conservative_Residue(control, dims)
-              call update_with("conservative", 0.5  , 1., .TRUE., R_store, U_store) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call compute_time_step(CFL, scheme, flow) ! has to be after get_..._Residue()
+              call update_with(scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call update_with(scheme, flow, "conservative", 0.5  , 1., .TRUE., R_store, U_store) 
             case ("TVDRK3")
               U_store = qp
-              call get_total_conservative_Residue(control, dims)
-              call compute_time_step(CFL)
-              call update_with("conservative", 1.0  , 1.) 
-              call get_total_conservative_Residue(control, dims)
-              call update_with("conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call compute_time_step(CFL, scheme, flow) ! has to be after get_..._Residue()
+              call update_with(scheme, flow, "conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call update_with(scheme, flow, "conservative", 1.0  , 1.) 
               qp = 0.75*U_store + 0.25*qp
-              call get_total_conservative_Residue(control, dims)
-              call update_with("conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call update_with(scheme, flow, "conservative", 1.0  , 1.) 
               qp = (1./3.)*U_store + (2./3.)*qp
             case ("TVDRK2")
               U_store = qp
-              call get_total_conservative_Residue(control, dims)
-              call compute_time_step(CFL)
-              call update_with("conservative", 1.0  , 1.) 
-              call get_total_conservative_Residue(control, dims)
-              call update_with("conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call compute_time_step(CFL, scheme, flow) ! has to be after get_..._Residue()
+              call update_with(scheme, flow, "conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call update_with(scheme, flow, "conservative", 1.0  , 1.) 
               qp = 0.5*U_store + 0.5*qp
-            case ("TVDRK4")
-              U_store = qp
-              call get_total_conservative_Residue(control, dims)
-              call compute_time_step(CFL)
-              call update_laminar_variables_conservative(0.25, un=U_store) 
-              if(turbulence/='none')then
-                call update_turbulent_variables_conservative(1.0, un=U_store)
-              end if
-              call get_total_conservative_Residue(control, dims)
-              call update_laminar_variables_conservative(0.333333, un=U_store) 
-              !if(turbulence/='none')then
-              !  call update_turbulent_variables_conservative(0.333333, un=U_store)
-              !end if
-              call get_total_conservative_Residue(control, dims)
-              call update_laminar_variables_conservative(0.5, un=U_store) 
-              !if(turbulence/='none')then
-              !  call update_turbulent_variables_conservative(0.5, un=U_store)
-              !end if
-              call get_total_conservative_Residue(control, dims)
-              call update_laminar_variables_conservative(1.00, un=U_store) 
-              !if(turbulence/='none')then
-              !  call update_turbulent_variables_conservative(1.00, un=U_store)
-              !end if
             case ("implicit")
-              call get_total_conservative_Residue(control, dims)
-              call compute_time_step(CFL) ! has to be after get_..._Residue()
-              call update_with_lusgs()
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call compute_time_step(CFL, scheme, flow) ! has to be after get_..._Residue()
+              call update_with_lusgs(scheme)
             case ("plusgs")
-              call get_total_conservative_Residue(control, dims)
-              call compute_time_step(CFL) ! has to be after get_..._Residue()
-              call update_with_plusgs()
+              call get_total_conservative_Residue(control, scheme, flow, dims)
+              call compute_time_step(CFL, scheme, flow) ! has to be after get_..._Residue()
+              call update_with_plusgs(scheme)
             case default
               Fatal_error
         end select
       end subroutine get_next_solution
 
-      subroutine update_with(type, time_factor, store_factor, use, Rn, un)
+      subroutine update_with(scheme, flow, type, time_factor, store_factor, use, Rn, un)
         !< A generalized scheme to updat the solution explicitly using
         !< any RK method and even first order euler explicit.
         implicit none
+        type(schemetype), intent(in) :: scheme
+        type(flowtype), intent(in) :: flow
         character(len=*), intent(in) :: type
         real, intent(in), optional :: time_factor ! time factor
         real, intent(in), optional :: store_factor
@@ -365,19 +322,19 @@ module update
                   R(2) = -1*(u1(2)/u1(1))*mass_residue(i,j,k) + x_mom_residue(i,j,k)/u1(1)
                   R(3) = -1*(u1(3)/u1(1))*mass_residue(i,j,k) + y_mom_residue(i,j,k)/u1(1)
                   R(4) = -1*(u1(4)/u1(1))*mass_residue(i,j,k) + z_mom_residue(i,j,k)/u1(1)
-                  R(5) = 0.5*(gm-1.)*(sum(u1(2:4)**2)*mass_residue(i,j,k)) &
-                         -(gm-1.)*u1(2)*x_mom_residue(i,j,k)               &
-                         -(gm-1.)*u1(3)*y_mom_residue(i,j,k)               &
-                         -(gm-1.)*u1(4)*z_mom_residue(i,j,k)               &
-                         +(gm-1.)*energy_residue(i,j,k)
+                  R(5) = 0.5*(flow%gm-1.)*(sum(u1(2:4)**2)*mass_residue(i,j,k)) &
+                         -(flow%gm-1.)*u1(2)*x_mom_residue(i,j,k)               &
+                         -(flow%gm-1.)*u1(3)*y_mom_residue(i,j,k)               &
+                         -(flow%gm-1.)*u1(4)*z_mom_residue(i,j,k)               &
+                         +(flow%gm-1.)*energy_residue(i,j,k)
             
-                  select case(turbulence)
+                  select case(scheme%turbulence)
                     case('none')
                       !do nothing
                       continue
                     case('sst', 'sst2003')
                       beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
-                      R(5) = R(5) - (gm-1.)*TKE_residue(i,j,k)
+                      R(5) = R(5) - (flow%gm-1.)*TKE_residue(i,j,k)
                       R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
                              +(1./(1.+bstar*u1(6)*delta_t(i,j,k)))*TKE_residue(i,j,k)/u1(1)
                       R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
@@ -385,7 +342,7 @@ module update
                     case('kkl')
                       eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
                       fphi = (1+cd1*eta)/(1+eta**4)
-                      R(5) = R(5) - (gm-1.)*TKE_residue(i,j,k)
+                      R(5) = R(5) - (flow%gm-1.)*TKE_residue(i,j,k)
                       R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
                              + (1./(1.+((2.5*((cmu**0.75)*u1(1)*(u1(6)**1.5)/max(u1(7),1.e-20))&
                              +(2*mu(i,j,k)/dist(i,j,k)**2))*delta_t(i,j,k))))*TKE_residue(i,j,k)/u1(1)
@@ -411,7 +368,7 @@ module update
                     Fatal_error
                   else !update
                     qp(i,j,k,1:5) = u2(1:5)
-                    select case(trim(turbulence))
+                    select case(trim(scheme%turbulence))
                      case('sst', 'sst2003', 'kkl')
                        if(u2(6)>0.) qp(i,j,k,6) = u2(6)
                        if(u2(7)>0.) qp(i,j,k,7) = u2(7)
@@ -435,7 +392,7 @@ module update
                   ! getting conservative variable
                   u1(1)  = Quse(i,j,k,1)
                   u1(2:) = Quse(i,j,k,2:)*u1(1)
-                  select case(turbulence)
+                  select case(scheme%turbulence)
                     case('sst', 'sst2003', 'kkl')
                       KE = 0.0!u1(6)
                     case('sa','saBC')
@@ -443,12 +400,12 @@ module update
                     case DEFAULT
                       KE = 0.
                   end select
-                  u1(5) = (u1(5)/(gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1) + KE
+                  u1(5) = (u1(5)/(flow%gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1) + KE
 
                  ! get R
                   R(1:n_var) = residue(i,j,k,1:n_var) 
                   ! point implicit destruction term
-                  select case(trim(turbulence))
+                  select case(trim(scheme%turbulence))
                     case('none')
                       !do nothing
                       continue
@@ -493,7 +450,7 @@ module update
                 ! getting primitve variable back variable
                   u2(1)  = u2(1)
                   u2(2:) = u2(2:)/u2(1)
-                  select case(turbulence)
+                  select case(scheme%turbulence)
                     case('sst', 'sst2003', 'kkl')
                       KE = 0.0!u2(6)
                     case('sa', 'saBC')
@@ -502,7 +459,7 @@ module update
                     case DEFAULT
                       KE = 0.
                   end select
-                  u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) - KE)
+                  u2(5) = (flow%gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) - KE)
 
                   !check solution for non pyhysical results
                   if((u2(1) < 0.) .or. (u2(5)) < 0. .or. any(isnan(u2)))then
@@ -512,7 +469,7 @@ module update
                     Fatal_error
                   else !update
                     qp(i,j,k,1:5) = u2(1:5)
-                    select case(trim(turbulence))
+                    select case(trim(scheme%turbulence))
                      case('sst', 'sst2003', 'kkl')
                        if(u2(6)>=0.) then
                          qp(i,j,k,6) = u2(6)
@@ -551,9 +508,7 @@ module update
       end subroutine update_with
 
 
-      subroutine get_total_conservative_Residue(control, dims)
-        !< Main loop of whole code. Find residual
-        !< 
+      subroutine get_total_conservative_Residue(control, scheme, flow, dims)
         !< For each iteration it apply boundary conditions,
         !< use higher order method to reconstruct state at
         !< face, evalute fluxes at each face, calculate 
@@ -562,441 +517,441 @@ module update
         !< terms.
         implicit none
         type(controltype), intent(in) :: control
+        type(schemetype), intent(in) :: scheme
+        type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
 
-!        call send_recv(3) ! parallel call-argument:no of layers 
         call apply_interface(control, dims)
-        call populate_ghost_primitive(control, dims)
-        call compute_face_interpolant()
-        call reconstruct_boundary_state(interpolant, control, dims)
-        call compute_fluxes()
-        if (mu_ref /= 0.0) then
-          call evaluate_all_gradients()
-          call calculate_viscosity()
-          call compute_viscous_fluxes(F_p, G_p, H_p, control, dims)
-!          call compute_turbulent_fluxes(F_p, G_p, H_p)
+        call populate_ghost_primitive(control, scheme, flow, dims)
+        call compute_face_interpolant(scheme, flow)
+        call reconstruct_boundary_state(control, scheme, dims)
+        call compute_fluxes(scheme, flow)
+        if (flow%mu_ref /= 0.0) then
+          call evaluate_all_gradients(scheme)
+          call calculate_viscosity(scheme, flow)
+          call compute_viscous_fluxes(F_p, G_p, H_p, control, scheme, flow, dims)
         end if
-        call compute_residue()
-        call add_source_term_residue(control, dims)
+        call compute_residue(scheme)
+        call add_source_term_residue(control, scheme, flow, dims)
 
       end subroutine get_total_conservative_Residue
-
-
-      subroutine update_laminar_variables_primitive(time_factor, store_factor, use, tostore, Rn, un)
-        !< Update first five primitive variables in time
-        implicit none
-        real,    intent(in), optional :: time_factor
-        real,    intent(in), optional :: store_factor
-        logical, intent(in), optional :: use
-        logical, intent(in), optional :: tostore
-        real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
-        real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
-
-        !local variables
-        real                              :: TF       = 1.0     !time factor
-        real                              :: SF       = 1.0     !store factor
-        real                              :: SFU      = 1.0     !store factor to use inside ijk loop
-        integer                           :: R_switch = 0       !R_store use switch based on TU
-        Logical                           :: TU       = .FALSE. !to use R_store or not
-        Logical                           :: TS       = .FALSE. !to store R_store or not
-        real, dimension(:,:,:,:), pointer :: Quse
-        real, dimension(:,:,:,:), pointer :: Rstore
-        real, dimension(5)                :: Res
-        real                              :: t1 !temp variable 1/density
-        integer                           :: i,j,k
-
-        if(present(time_factor)) TF=time_factor
-        if(present(store_factor)) SF=store_factor
-        if(present(use)) TU=use
-        if(present(tostore)) TS=tostore
-        if(TU)then
-          R_switch=1
-          SFU=SF
-        else
-          R_switch=0
-          SFU=1.0
-        end if
-
-        !check if user want to update from particular solution
-        if(present(un))then
-          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>un(:,:,:,:)
-        else
-          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>qp(:,:,:,:)
-        end if
-        if(present(Rn))then
-          Rstore=>Rn
-        else
-          Rstore=>aux!making it point to junk values 
-          R_switch=0 !but never used as switch is zero
-        end if
-
-
-        !--- Start update---!
-        do k = 1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
-        
-              u1(1:5) = Quse(i,j,k,1:5)
-              t1      = 1.0/u1(1)
-              Res(1:5)= Residue(i,j,k,1:5)
-        
-              ! finding primitive residue
-              R(1) = Res(1)
-              R(2) = (-1*(u1(2)*Res(1)) + Res(2))*t1
-              R(3) = (-1*(u1(3)*Res(1)) + Res(3))*t1
-              R(4) = (-1*(u1(4)*Res(1)) + Res(4))*t1
-              R(5) = 0.5*(gm-1.)*(u1(2)*u1(2)+u1(3)*u1(3)+u1(4)*u1(4))*Res(1) &
-                     -(gm-1.)*u1(2)*Res(2)               &
-                     -(gm-1.)*u1(3)*Res(3)               &
-                     -(gm-1.)*u1(4)*Res(4)               &
-                     +(gm-1.)*Res(5)
-        
-                    
-             !store residue
-              aux(i,j,k,1:5)=R(1:5)
-             
-        
-             !update
-             u2(1:5) = u1(1:5) - (SFU*R(1:5)+R_switch*Rstore(i,j,k,1:5))&
-                                *(TF*delta_t(i,j,k)/volume(i,j,k))
-        
-             qp(i,j,k,1:5) = u2(1:5)
-            end do
-          end do
-        end do
-        if(present(Rn) .and. TS) then
-          Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) = Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) &
-                                      + SF*aux(1:imx-1,1:jmx-1,1:kmx-1,1:5)
-        end if
-        
-        if(any(qp(:,:,:,1)<0.) .and. any(qp(:,:,:,5)<0))then
-          Fatal_error
-        end if
-        nullify(Rstore)
-        nullify(Quse)
-
-      end subroutine update_laminar_variables_primitive
-
-      subroutine update_laminar_variables_conservative(time_factor, store_factor, use, tostore, Rn, un)
-        !< Update first five conservative variables in time
-        implicit none
-        real,    intent(in), optional :: time_factor
-        real,    intent(in), optional :: store_factor
-        logical, intent(in), optional :: use
-        logical, intent(in), optional :: tostore
-        real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
-        real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
-
-        !local variables
-        real                              :: TF       = 1.0     !time factor
-        real                              :: SF       = 1.0     !store factor
-        real                              :: SFU      = 1.0     !store factor to use inside ijk loop
-        integer                           :: R_switch = 0       !R_store use switch based on TU
-        Logical                           :: TU       = .FALSE. !to use R_store or not
-        Logical                           :: TS       = .FALSE. !to store R_store or not
-        real, dimension(:,:,:,:), pointer :: Quse
-        real, dimension(:,:,:,:), pointer :: Rstore
-        integer                           :: i,j,k
-
-        if(present(time_factor)) TF=time_factor
-        if(present(store_factor)) SF=store_factor
-        if(present(use)) TU=use
-        if(present(tostore)) TS=tostore
-        if(TU)then
-          R_switch=1
-          SFU=SF
-        else
-          R_switch=0
-          SFU=1.0
-        end if
-
-        !check if user want to update from particular solution
-        if(present(un))then
-          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>un(:,:,:,:)
-        else
-          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>qp(:,:,:,:)
-        end if
-        if(present(Rn))then
-          Rstore=>Rn
-        else
-          Rstore=>aux!making it point to junk values 
-          R_switch=0 !but never used as switch is zero
-        end if
-
-
-        !--- Start update---!
-
-        do k = 1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
-
-              ! getting conservative variable
-              u1(1)  = Quse(i,j,k,1)
-              u1(2:) = Quse(i,j,k,2:)*u1(1)
-              u1(5) = (u1(5)/(gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1)
-
-             ! get R
-              R(1:5) = residue(i,j,k,1:5)                                                              
-
-             !store conservative variables
-             aux(i,j,k,1:n_var)=u1(1:n_var)
-
-             !update
-             u2(1:5) = u1(1:5) - (SFU*R(1:5)+R_switch*Rstore(i,j,k,1:5))&
-                                *(TF*delta_t(i,j,k)/volume(i,j,k))
-        
-
-              ! getting primitve variable back variable
-              u2(1)  = u2(1)
-              u2(2:) = u2(2:)/u2(1)
-              u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) )
-
-              qp(i,j,k,1:5) = u2(1:5)
-
-            end do
-          end do
-        end do
-
-        if(present(Rn) .and. TS) then
-          Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) = Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) &
-                                      + SF*aux(1:imx-1,1:jmx-1,1:kmx-1,1:5)
-        end if
-        
-        if(any(qp(:,:,:,1)<0.) .and. any(qp(:,:,:,5)<0))then
-          Fatal_error
-        end if
-        nullify(Rstore)
-        nullify(Quse)
-
-      end subroutine update_laminar_variables_conservative
-
-
-      subroutine update_turbulent_variables_primitive(time_factor, store_factor, use, tostore, Rn, un)
-        !< Update primitive turbulence variables in time
-        implicit none
-        !arguments
-        real,    intent(in), optional :: time_factor ! time factor
-        real,    intent(in), optional :: store_factor
-        logical, intent(in), optional :: use
-        logical, intent(in), optional :: tostore
-        real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
-        real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
-
-        !local variables
-        real                              :: TF       = 1.0     !time factor
-        real                              :: SF       = 1.0     !store factor
-        real                              :: SFU      = 1.0     !store factor to use in ijk loop
-        integer                           :: R_switch = 0       !R_store use switch based on TU
-        Logical                           :: TU       = .FALSE. !to use R_store or not
-        Logical                           :: TS       = .FALSE. !to store R_store or not
-        real, dimension(:,:,:,:), pointer :: Quse
-        real, dimension(:,:,:,:), pointer :: Rstore
-        integer                           :: i,j,k
-        real                              :: beta
-
-        if(present(time_factor)) TF=time_factor
-        if(present(store_factor)) SF=store_factor
-        if(present(use)) TU=use
-        if(present(tostore)) TS=tostore
-        if(TU)then
-          R_switch=1
-          SFU=SF
-        else
-          R_switch=0
-          SFU=1.0
-        end if
-
-        !check if user want to update from particular solution
-        if(present(un))then
-          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>un(:,:,:,:)
-        else
-          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>qp(:,:,:,:)
-        end if
-        if(present(Rn))then
-          Rstore=>Rn
-        else
-          Rstore=>aux!making it point to junk values 
-          R_switch=0 !but never used as switch is zero
-        end if
-
-
-        !--- Start update---!
-
-        select case(turbulence)
-          case('none')
-            !do nothing
-            continue
-          
-          case('sst', 'sst2003')
-            do k = 1,kmx-1
-              do j = 1,jmx-1
-                do i = 1,imx-1
-                  !update primitive variable
-                  u1(6:n_var) = Quse(i,j,k,6:n_var)
-                  beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
-                  R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
-                         +(1./(1.+bstar*u1(6)*delta_t(i,j,k)))*TKE_residue(i,j,k)/u1(1)
-                  R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
-                         +(1./(1.+2.*beta*u1(6)*delta_t(i,j,k)))*omega_residue(i,j,k)/u1(1)
-                  !store residue
-                  aux(i,j,k,6:n_var)=R(6:n_var)
-                  !update
-                  qp(i,j,k,6:n_var) = u1(6:n_var) - (SFU*R(6:n_var)+R_switch*Rstore(i,j,k,6:n_var))&
-                                              *(TF*delta_t(i,j,k)/volume(i,j,k))
-                end do
-              end do
-            end do
-          case('kkl')
-            do k = 1,kmx-1
-              do j = 1,jmx-1
-                do i = 1,imx-1
-                  u1(6:n_var) = Quse(i,j,k,6:n_var)
-                  eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
-                  fphi = (1+cd1*eta)/(1+eta**4)
-                  R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
-                         + (1./(1.+((2.5*((cmu**0.75)*u1(1)*(u1(6)**1.5)/max(u1(7),1.e-20))&
-                         +(2*mu(i,j,k)/dist(i,j,k)**2))*delta_t(i,j,k))))*TKE_residue(i,j,k)/u1(1)
-                  R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
-                         +(1./(1.+(6*mu(i,j,k)*fphi/dist(i,j,k)**2)*delta_t(i,j,k)))*kl_residue(i,j,k)/u1(1)
-                  !store residue
-                  aux(i,j,k,6:n_var)=R(6:n_var)
-                  !update
-                  qp(i,j,k,6:n_var) = u1(6:n_var) - (SFU*R(6:n_var)+R_switch*Rstore(i,j,k,6:n_var))&
-                                              *(TF*delta_t(i,j,k)/volume(i,j,k))
-                  qp(i,j,k,6:n_var) = max(1e-10,qp(i,j,k,6:n_var))
-                end do
-              end do
-            end do
-          case DEFAULT
-            Fatal_error
-        end select
-
-        !--- end update ---!
-        
-        if(present(Rn) .and. TS) then
-          Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) = Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) &
-                                          + SF*aux(1:imx-1,1:jmx-1,1:kmx-1,6:n_var)
-        end if
-        
-        !if(any(qp(:,:,:,6)<0.) .and. any(qp(:,:,:,n_var)<0))then
-        !  Fatal_error
-        !end if
-        nullify(Rstore)
-
-      end subroutine update_turbulent_variables_primitive
-
-      subroutine update_turbulent_variables_conservative(time_factor, store_factor, use, tostore, Rn, un)
-        !< Update conservative turbulence variables in time
-        implicit none
-        !arguments
-        real,    intent(in), optional :: time_factor
-        real,    intent(in), optional :: store_factor
-        logical, intent(in), optional :: use
-        logical, intent(in), optional :: tostore
-        real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
-        real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
-
-        !local variables
-        real                              :: TF       = 1.0     !time factor
-        real                              :: SF       = 1.0     !store factor
-        real                              :: SFU      = 1.0     !store factor to use inside ijk loop
-        integer                           :: R_switch = 0       !R_store use switch based on TU
-        Logical                           :: TU       = .FALSE. !to use R_store or not
-        Logical                           :: TS       = .FALSE. !to store R_store or not
-        real, dimension(:,:,:,:), pointer :: Quse
-        real, dimension(:,:,:,:), pointer :: Rstore
-        real                              :: beta
-        integer                           :: i,j,k
-
-        if(present(time_factor)) TF=time_factor
-        if(present(store_factor)) SF=store_factor
-        if(present(use)) TU=use
-        if(present(tostore)) TS=tostore
-        if(TU)then
-          R_switch=1
-          SFU=SF
-        else
-          R_switch=0
-          SFU=1.0
-        end if
-
-        !check if user want to update from particular solution
-        if(present(un))then
-          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>un(:,:,:,:)
-        else
-          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>qp(:,:,:,:)
-        end if
-        if(present(Rn))then
-          Rstore=>Rn
-        else
-          Rstore=>aux!making it point to junk values 
-          R_switch=0 !but never used as switch is zero
-        end if
-
-
-        !--- Start update---!
-
-        select case(turbulence)
-          case('none')
-            !do nothing
-            continue
-          
-          case('sst', 'sst2003')
-            do k = 1,kmx-1
-              do j = 1,jmx-1
-                do i = 1,imx-1
-                  u1(1:n_var) = aux(i,j,k,1:n_var)
-                  !get R
-                  R(6:n_var) = residue(i,j,k,6:n_var) 
-                  !point implicit
-                  beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
-                  R(6) = R(6)/(1+(beta*qp(i,j,k,7)*delta_t(i,j,k)))
-                  R(7) = R(7)/(1+(2*beta*qp(i,j,k,7)*delta_t(i,j,k)))
-                  !update
-                  u2(6:n_var) = u1(6:n_var) - (SFU*R(6:n_var)&
-                                              +R_switch*Rstore(i,j,k,6:n_var))&
-                                             *(TF*delta_t(i,j,k)/volume(i,j,k))
-                  if(u2(6)>0.) qp(i,j,k,6) = u2(6)/aux(i,j,k,1)
-                  if(u2(7)>0.) qp(i,j,k,7) = u2(7)/aux(i,j,k,1)
-                end do
-              end do
-            end do
-          case('kkl')
-            do k = 1,kmx-1
-              do j = 1,jmx-1
-                do i = 1,imx-1
-                  u1(6:n_var) = aux(i,j,k,6:n_var)
-                  !get R
-                  R(6:n_var) = residue(i,j,k,6:n_var) 
-                  !point implicit
-                  eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
-                  fphi = (1+cd1*eta)/(1+eta**4)
-                  R(6) = R(6)/(1.+((2.5*((cmu**0.75)*sqrt(u1(1))*(u1(6)**1.5)/max(u1(7),1.e-20))&
-                         +(2*mu(i,j,k)/(dist(i,j,k)**2)))*delta_t(i,j,k)))
-                  R(7) = R(7)/(1.+(6*mu(i,j,k)*fphi/(dist(i,j,k)**2))*delta_t(i,j,k))
-                  !update
-                  u2(6:n_var) = u1(6:n_var) - (R(6:n_var)+(R_switch*SF*Rstore(i,j,k,6:n_var)))&
-                                             *(TF*delta_t(i,j,k)/volume(i,j,k))
-                  qp(i,j,k,6:n_var) = max(1.e-10, u2(6:n_var)/aux(i,j,k,1))
-                end do
-              end do
-            end do
-          case DEFAULT
-            Fatal_error
-        end select
-
-        !--- end update ---!
-        
-        if(present(Rn)) then
-          Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) = Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) &
-                                          + SF*residue(1:imx-1,1:jmx-1,1:kmx-1,6:n_var)
-        end if
-        
-        if(any(qp(1:imx-1,1:jmx-1,1:kmx-1,6:n_var)<0.))then
-          Fatal_error
-        end if
-        nullify(Rstore)
-
-      end subroutine update_turbulent_variables_conservative
-
+!
+!
+!      subroutine update_laminar_variables_primitive(time_factor, store_factor, use, tostore, Rn, un)
+!        !< Update first five primitive variables in time
+!        implicit none
+!        real,    intent(in), optional :: time_factor
+!        real,    intent(in), optional :: store_factor
+!        logical, intent(in), optional :: use
+!        logical, intent(in), optional :: tostore
+!        real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
+!        real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
+!
+!        !local variables
+!        real                              :: TF       = 1.0     !time factor
+!        real                              :: SF       = 1.0     !store factor
+!        real                              :: SFU      = 1.0     !store factor to use inside ijk loop
+!        integer                           :: R_switch = 0       !R_store use switch based on TU
+!        Logical                           :: TU       = .FALSE. !to use R_store or not
+!        Logical                           :: TS       = .FALSE. !to store R_store or not
+!        real, dimension(:,:,:,:), pointer :: Quse
+!        real, dimension(:,:,:,:), pointer :: Rstore
+!        real, dimension(5)                :: Res
+!        real                              :: t1 !temp variable 1/density
+!        integer                           :: i,j,k
+!
+!        if(present(time_factor)) TF=time_factor
+!        if(present(store_factor)) SF=store_factor
+!        if(present(use)) TU=use
+!        if(present(tostore)) TS=tostore
+!        if(TU)then
+!          R_switch=1
+!          SFU=SF
+!        else
+!          R_switch=0
+!          SFU=1.0
+!        end if
+!
+!        !check if user want to update from particular solution
+!        if(present(un))then
+!          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>un(:,:,:,:)
+!        else
+!          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>qp(:,:,:,:)
+!        end if
+!        if(present(Rn))then
+!          Rstore=>Rn
+!        else
+!          Rstore=>aux!making it point to junk values 
+!          R_switch=0 !but never used as switch is zero
+!        end if
+!
+!
+!        !--- Start update---!
+!        do k = 1,kmx-1
+!          do j = 1,jmx-1
+!            do i = 1,imx-1
+!        
+!              u1(1:5) = Quse(i,j,k,1:5)
+!              t1      = 1.0/u1(1)
+!              Res(1:5)= Residue(i,j,k,1:5)
+!        
+!              ! finding primitive residue
+!              R(1) = Res(1)
+!              R(2) = (-1*(u1(2)*Res(1)) + Res(2))*t1
+!              R(3) = (-1*(u1(3)*Res(1)) + Res(3))*t1
+!              R(4) = (-1*(u1(4)*Res(1)) + Res(4))*t1
+!              R(5) = 0.5*(gm-1.)*(u1(2)*u1(2)+u1(3)*u1(3)+u1(4)*u1(4))*Res(1) &
+!                     -(gm-1.)*u1(2)*Res(2)               &
+!                     -(gm-1.)*u1(3)*Res(3)               &
+!                     -(gm-1.)*u1(4)*Res(4)               &
+!                     +(gm-1.)*Res(5)
+!        
+!                    
+!             !store residue
+!              aux(i,j,k,1:5)=R(1:5)
+!             
+!        
+!             !update
+!             u2(1:5) = u1(1:5) - (SFU*R(1:5)+R_switch*Rstore(i,j,k,1:5))&
+!                                *(TF*delta_t(i,j,k)/volume(i,j,k))
+!        
+!             qp(i,j,k,1:5) = u2(1:5)
+!            end do
+!          end do
+!        end do
+!        if(present(Rn) .and. TS) then
+!          Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) = Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) &
+!                                      + SF*aux(1:imx-1,1:jmx-1,1:kmx-1,1:5)
+!        end if
+!        
+!        if(any(qp(:,:,:,1)<0.) .and. any(qp(:,:,:,5)<0))then
+!          Fatal_error
+!        end if
+!        nullify(Rstore)
+!        nullify(Quse)
+!
+!      end subroutine update_laminar_variables_primitive
+!
+!      subroutine update_laminar_variables_conservative(time_factor, store_factor, use, tostore, Rn, un)
+!        !< Update first five conservative variables in time
+!        implicit none
+!        real,    intent(in), optional :: time_factor
+!        real,    intent(in), optional :: store_factor
+!        logical, intent(in), optional :: use
+!        logical, intent(in), optional :: tostore
+!        real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
+!        real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
+!
+!        !local variables
+!        real                              :: TF       = 1.0     !time factor
+!        real                              :: SF       = 1.0     !store factor
+!        real                              :: SFU      = 1.0     !store factor to use inside ijk loop
+!        integer                           :: R_switch = 0       !R_store use switch based on TU
+!        Logical                           :: TU       = .FALSE. !to use R_store or not
+!        Logical                           :: TS       = .FALSE. !to store R_store or not
+!        real, dimension(:,:,:,:), pointer :: Quse
+!        real, dimension(:,:,:,:), pointer :: Rstore
+!        integer                           :: i,j,k
+!
+!        if(present(time_factor)) TF=time_factor
+!        if(present(store_factor)) SF=store_factor
+!        if(present(use)) TU=use
+!        if(present(tostore)) TS=tostore
+!        if(TU)then
+!          R_switch=1
+!          SFU=SF
+!        else
+!          R_switch=0
+!          SFU=1.0
+!        end if
+!
+!        !check if user want to update from particular solution
+!        if(present(un))then
+!          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>un(:,:,:,:)
+!        else
+!          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>qp(:,:,:,:)
+!        end if
+!        if(present(Rn))then
+!          Rstore=>Rn
+!        else
+!          Rstore=>aux!making it point to junk values 
+!          R_switch=0 !but never used as switch is zero
+!        end if
+!
+!
+!        !--- Start update---!
+!
+!        do k = 1,kmx-1
+!          do j = 1,jmx-1
+!            do i = 1,imx-1
+!
+!              ! getting conservative variable
+!              u1(1)  = Quse(i,j,k,1)
+!              u1(2:) = Quse(i,j,k,2:)*u1(1)
+!              u1(5) = (u1(5)/(gm-1.) + 0.5*sum(u1(2:4)**2))/u1(1)
+!
+!             ! get R
+!              R(1:5) = residue(i,j,k,1:5)                                                              
+!
+!             !store conservative variables
+!             aux(i,j,k,1:n_var)=u1(1:n_var)
+!
+!             !update
+!             u2(1:5) = u1(1:5) - (SFU*R(1:5)+R_switch*Rstore(i,j,k,1:5))&
+!                                *(TF*delta_t(i,j,k)/volume(i,j,k))
+!        
+!
+!              ! getting primitve variable back variable
+!              u2(1)  = u2(1)
+!              u2(2:) = u2(2:)/u2(1)
+!              u2(5) = (gm-1.)*u2(1)*(u2(5) - (0.5*sum(u2(2:4)**2)) )
+!
+!              qp(i,j,k,1:5) = u2(1:5)
+!
+!            end do
+!          end do
+!        end do
+!
+!        if(present(Rn) .and. TS) then
+!          Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) = Rn(1:imx-1,1:jmx-1,1:kmx-1,1:5) &
+!                                      + SF*aux(1:imx-1,1:jmx-1,1:kmx-1,1:5)
+!        end if
+!        
+!        if(any(qp(:,:,:,1)<0.) .and. any(qp(:,:,:,5)<0))then
+!          Fatal_error
+!        end if
+!        nullify(Rstore)
+!        nullify(Quse)
+!
+!      end subroutine update_laminar_variables_conservative
+!
+!
+!      subroutine update_turbulent_variables_primitive(time_factor, store_factor, use, tostore, Rn, un)
+!        !< Update primitive turbulence variables in time
+!        implicit none
+!        !arguments
+!        real,    intent(in), optional :: time_factor ! time factor
+!        real,    intent(in), optional :: store_factor
+!        logical, intent(in), optional :: use
+!        logical, intent(in), optional :: tostore
+!        real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
+!        real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
+!
+!        !local variables
+!        real                              :: TF       = 1.0     !time factor
+!        real                              :: SF       = 1.0     !store factor
+!        real                              :: SFU      = 1.0     !store factor to use in ijk loop
+!        integer                           :: R_switch = 0       !R_store use switch based on TU
+!        Logical                           :: TU       = .FALSE. !to use R_store or not
+!        Logical                           :: TS       = .FALSE. !to store R_store or not
+!        real, dimension(:,:,:,:), pointer :: Quse
+!        real, dimension(:,:,:,:), pointer :: Rstore
+!        integer                           :: i,j,k
+!        real                              :: beta
+!
+!        if(present(time_factor)) TF=time_factor
+!        if(present(store_factor)) SF=store_factor
+!        if(present(use)) TU=use
+!        if(present(tostore)) TS=tostore
+!        if(TU)then
+!          R_switch=1
+!          SFU=SF
+!        else
+!          R_switch=0
+!          SFU=1.0
+!        end if
+!
+!        !check if user want to update from particular solution
+!        if(present(un))then
+!          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>un(:,:,:,:)
+!        else
+!          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>qp(:,:,:,:)
+!        end if
+!        if(present(Rn))then
+!          Rstore=>Rn
+!        else
+!          Rstore=>aux!making it point to junk values 
+!          R_switch=0 !but never used as switch is zero
+!        end if
+!
+!
+!        !--- Start update---!
+!
+!        select case(turbulence)
+!          case('none')
+!            !do nothing
+!            continue
+!          
+!          case('sst', 'sst2003')
+!            do k = 1,kmx-1
+!              do j = 1,jmx-1
+!                do i = 1,imx-1
+!                  !update primitive variable
+!                  u1(6:n_var) = Quse(i,j,k,6:n_var)
+!                  beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
+!                  R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
+!                         +(1./(1.+bstar*u1(6)*delta_t(i,j,k)))*TKE_residue(i,j,k)/u1(1)
+!                  R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
+!                         +(1./(1.+2.*beta*u1(6)*delta_t(i,j,k)))*omega_residue(i,j,k)/u1(1)
+!                  !store residue
+!                  aux(i,j,k,6:n_var)=R(6:n_var)
+!                  !update
+!                  qp(i,j,k,6:n_var) = u1(6:n_var) - (SFU*R(6:n_var)+R_switch*Rstore(i,j,k,6:n_var))&
+!                                              *(TF*delta_t(i,j,k)/volume(i,j,k))
+!                end do
+!              end do
+!            end do
+!          case('kkl')
+!            do k = 1,kmx-1
+!              do j = 1,jmx-1
+!                do i = 1,imx-1
+!                  u1(6:n_var) = Quse(i,j,k,6:n_var)
+!                  eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
+!                  fphi = (1+cd1*eta)/(1+eta**4)
+!                  R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
+!                         + (1./(1.+((2.5*((cmu**0.75)*u1(1)*(u1(6)**1.5)/max(u1(7),1.e-20))&
+!                         +(2*mu(i,j,k)/dist(i,j,k)**2))*delta_t(i,j,k))))*TKE_residue(i,j,k)/u1(1)
+!                  R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
+!                         +(1./(1.+(6*mu(i,j,k)*fphi/dist(i,j,k)**2)*delta_t(i,j,k)))*kl_residue(i,j,k)/u1(1)
+!                  !store residue
+!                  aux(i,j,k,6:n_var)=R(6:n_var)
+!                  !update
+!                  qp(i,j,k,6:n_var) = u1(6:n_var) - (SFU*R(6:n_var)+R_switch*Rstore(i,j,k,6:n_var))&
+!                                              *(TF*delta_t(i,j,k)/volume(i,j,k))
+!                  qp(i,j,k,6:n_var) = max(1e-10,qp(i,j,k,6:n_var))
+!                end do
+!              end do
+!            end do
+!          case DEFAULT
+!            Fatal_error
+!        end select
+!
+!        !--- end update ---!
+!        
+!        if(present(Rn) .and. TS) then
+!          Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) = Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) &
+!                                          + SF*aux(1:imx-1,1:jmx-1,1:kmx-1,6:n_var)
+!        end if
+!        
+!        !if(any(qp(:,:,:,6)<0.) .and. any(qp(:,:,:,n_var)<0))then
+!        !  Fatal_error
+!        !end if
+!        nullify(Rstore)
+!
+!      end subroutine update_turbulent_variables_primitive
+!
+!      subroutine update_turbulent_variables_conservative(time_factor, store_factor, use, tostore, Rn, un)
+!        !< Update conservative turbulence variables in time
+!        implicit none
+!        !arguments
+!        real,    intent(in), optional :: time_factor
+!        real,    intent(in), optional :: store_factor
+!        logical, intent(in), optional :: use
+!        logical, intent(in), optional :: tostore
+!        real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(in)   , optional, target :: un
+!        real, dimension( 1:imx-1, 1:jmx-1, 1:kmx-1,1:n_var), intent(inout), optional, target :: Rn
+!
+!        !local variables
+!        real                              :: TF       = 1.0     !time factor
+!        real                              :: SF       = 1.0     !store factor
+!        real                              :: SFU      = 1.0     !store factor to use inside ijk loop
+!        integer                           :: R_switch = 0       !R_store use switch based on TU
+!        Logical                           :: TU       = .FALSE. !to use R_store or not
+!        Logical                           :: TS       = .FALSE. !to store R_store or not
+!        real, dimension(:,:,:,:), pointer :: Quse
+!        real, dimension(:,:,:,:), pointer :: Rstore
+!        real                              :: beta
+!        integer                           :: i,j,k
+!
+!        if(present(time_factor)) TF=time_factor
+!        if(present(store_factor)) SF=store_factor
+!        if(present(use)) TU=use
+!        if(present(tostore)) TS=tostore
+!        if(TU)then
+!          R_switch=1
+!          SFU=SF
+!        else
+!          R_switch=0
+!          SFU=1.0
+!        end if
+!
+!        !check if user want to update from particular solution
+!        if(present(un))then
+!          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>un(:,:,:,:)
+!        else
+!          Quse(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var)=>qp(:,:,:,:)
+!        end if
+!        if(present(Rn))then
+!          Rstore=>Rn
+!        else
+!          Rstore=>aux!making it point to junk values 
+!          R_switch=0 !but never used as switch is zero
+!        end if
+!
+!
+!        !--- Start update---!
+!
+!        select case(turbulence)
+!          case('none')
+!            !do nothing
+!            continue
+!          
+!          case('sst', 'sst2003')
+!            do k = 1,kmx-1
+!              do j = 1,jmx-1
+!                do i = 1,imx-1
+!                  u1(1:n_var) = aux(i,j,k,1:n_var)
+!                  !get R
+!                  R(6:n_var) = residue(i,j,k,6:n_var) 
+!                  !point implicit
+!                  beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
+!                  R(6) = R(6)/(1+(beta*qp(i,j,k,7)*delta_t(i,j,k)))
+!                  R(7) = R(7)/(1+(2*beta*qp(i,j,k,7)*delta_t(i,j,k)))
+!                  !update
+!                  u2(6:n_var) = u1(6:n_var) - (SFU*R(6:n_var)&
+!                                              +R_switch*Rstore(i,j,k,6:n_var))&
+!                                             *(TF*delta_t(i,j,k)/volume(i,j,k))
+!                  if(u2(6)>0.) qp(i,j,k,6) = u2(6)/aux(i,j,k,1)
+!                  if(u2(7)>0.) qp(i,j,k,7) = u2(7)/aux(i,j,k,1)
+!                end do
+!              end do
+!            end do
+!          case('kkl')
+!            do k = 1,kmx-1
+!              do j = 1,jmx-1
+!                do i = 1,imx-1
+!                  u1(6:n_var) = aux(i,j,k,6:n_var)
+!                  !get R
+!                  R(6:n_var) = residue(i,j,k,6:n_var) 
+!                  !point implicit
+!                  eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
+!                  fphi = (1+cd1*eta)/(1+eta**4)
+!                  R(6) = R(6)/(1.+((2.5*((cmu**0.75)*sqrt(u1(1))*(u1(6)**1.5)/max(u1(7),1.e-20))&
+!                         +(2*mu(i,j,k)/(dist(i,j,k)**2)))*delta_t(i,j,k)))
+!                  R(7) = R(7)/(1.+(6*mu(i,j,k)*fphi/(dist(i,j,k)**2))*delta_t(i,j,k))
+!                  !update
+!                  u2(6:n_var) = u1(6:n_var) - (R(6:n_var)+(R_switch*SF*Rstore(i,j,k,6:n_var)))&
+!                                             *(TF*delta_t(i,j,k)/volume(i,j,k))
+!                  qp(i,j,k,6:n_var) = max(1.e-10, u2(6:n_var)/aux(i,j,k,1))
+!                end do
+!              end do
+!            end do
+!          case DEFAULT
+!            Fatal_error
+!        end select
+!
+!        !--- end update ---!
+!        
+!        if(present(Rn)) then
+!          Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) = Rn(1:imx-1,1:jmx-1,1:kmx-1,6:n_var) &
+!                                          + SF*residue(1:imx-1,1:jmx-1,1:kmx-1,6:n_var)
+!        end if
+!        
+!        if(any(qp(1:imx-1,1:jmx-1,1:kmx-1,6:n_var)<0.))then
+!          Fatal_error
+!        end if
+!        nullify(Rstore)
+!
+!      end subroutine update_turbulent_variables_conservative
+!
 end module update

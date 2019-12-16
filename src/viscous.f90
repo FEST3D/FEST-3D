@@ -5,10 +5,6 @@ module viscous
 #include "error.inc"
   use vartypes
   use global     , only: FILE_NAME_LENGTH
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
-
   use global_vars, only : xnx, xny, xnz !face unit normal x
   use global_vars, only : ynx, yny, ynz !face unit normal y
   use global_vars, only : znx, zny, znz !face unit normal z
@@ -17,14 +13,13 @@ module viscous
   use geometry   , only : CellCenter
   
   use global_vars, only : process_id
-  use global_vars, only : gm
-!  use global_vars, only : n_var
-  use global_vars, only : R_gas
-  use global_vars, only : mu_ref
-  use global_vars, only : T_ref
-  use global_vars, only : Pr
-  use global_vars, only : tPr
-  use global_vars, only : Sutherland_temp
+!  use global_vars, only : gm
+!  use global_vars, only : R_gas
+!  use global_vars, only : mu_ref
+!  use global_vars, only : T_ref
+!  use global_vars, only : Pr
+!  use global_vars, only : tPr
+!  use global_vars, only : Sutherland_temp
   use global_vars, only : density
   use global_vars, only : x_speed
   use global_vars, only : y_speed
@@ -64,8 +59,8 @@ module viscous
   use gradients  , only : gradtgm_z
   use global_vars, only : mu
   use global_vars, only : mu_t
-  use global_vars, only : turbulence
-  use global_vars, only : transition
+!  use global_vars, only : turbulence
+!  use global_vars, only : transition
   use global_sst , only : sst_F1
   use global_sst , only : sigma_k1
   use global_sst , only : sigma_k2
@@ -86,13 +81,15 @@ module viscous
 
   contains
 
-    subroutine compute_viscous_fluxes(F, G, H, control, dims)
+    subroutine compute_viscous_fluxes(F, G, H, control, scheme, flow, dims)
       !< Call to all viscous flux subroutine based on 
       !< the drection and turbulence/transition model being
       !< used
 
         implicit none
         type(controltype), intent(in) :: control
+        type(schemetype), intent(in) :: scheme
+        type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
         real, dimension(:, :, :, :), pointer :: F, G, H
 
@@ -100,15 +97,15 @@ module viscous
         jmx = dims%jmx
         kmx = dims%kmx
 
-        call compute_viscous_fluxes_laminar(F, 'x')
-        call compute_viscous_fluxes_laminar(G, 'y')
+        call compute_viscous_fluxes_laminar(F, 'x', scheme, flow)
+        call compute_viscous_fluxes_laminar(G, 'y', scheme, flow)
         !if(kmx==2)then
         !  continue
         !else
-          call compute_viscous_fluxes_laminar(H, 'z')
+          call compute_viscous_fluxes_laminar(H, 'z', scheme, flow)
         !end if
         
-        select case(trim(turbulence))
+        select case(trim(scheme%turbulence))
           case('none')
             !do nothing
             continue
@@ -138,7 +135,7 @@ module viscous
         end select
 
 
-        select case(trim(transition))
+        select case(trim(scheme%transition))
           case('lctm2015')
             call compute_viscous_fluxes_lctm2015(F, 'x', control%n_var)
             call compute_viscous_fluxes_lctm2015(G, 'y', control%n_var)
@@ -167,11 +164,13 @@ module viscous
 
     end subroutine compute_viscous_fluxes
 
-    subroutine compute_viscous_fluxes_laminar(F, direction)
+    subroutine compute_viscous_fluxes_laminar(F, direction, scheme, flow)
       !< Compute viscous fluxes for first five Navier-Stokes equation
       implicit none
       character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
+      type(schemetype), intent(in) :: scheme
+      type(flowtype), intent(in) :: flow
       ! local variables
       real :: dudx, dudy, dudz
       real :: dvdx, dvdy, dvdz
@@ -282,8 +281,8 @@ module viscous
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
           ! Finding the temperature of left and right element to the face i,j,k
-          T_LE = pressure(i-ii, j-jj, k-kk) / (density(i-ii, j-jj, k-kk) * R_gas)
-          T_RE = pressure(i, j, k) / (density(i, j, k) * R_gas)
+          T_LE = pressure(i-ii, j-jj, k-kk) / (density(i-ii, j-jj, k-kk) * flow%R_gas)
+          T_RE = pressure(i, j, k) / (density(i, j, k) * flow%R_gas)
 
           ! difference in state across face
           delu = x_speed(i, j, k) - x_speed(i-ii, j-jj, k-kk)
@@ -316,7 +315,7 @@ module viscous
           !--- end of ODD-EVEN coupling correction ---!
 
           mu_f  = 0.5*(mu(i-ii, j-jj, k-kk) + mu(i,j,k))
-          if(trim(turbulence)/='none') then
+          if(trim(scheme%turbulence)/='none') then
             mut_f = 0.5*(mu_t(i-ii, j-jj, k-kk) + mu_t(i, j, k))
           else
             mut_f = 0.0 
@@ -340,7 +339,7 @@ module viscous
 
           ! Pr: Prandtl Number and tPr: Turbulent Prandtl number
           ! Qx, Qy, Qz: Conduction fluxes
-          K_heat = (mu_f/Pr + mut_f/tPr)* gm * R_gas / (gm - 1)
+          K_heat = (mu_f/flow%Pr + mut_f/flow%tPr)* flow%gm * flow%R_gas / (flow%gm - 1)
           Qx = K_heat*dTdx
           Qy = K_heat*dTdy
           Qz = K_heat*dTdz

@@ -9,7 +9,7 @@ module bc
   use global_vars, only: jmax_id
   use global_vars, only: kmin_id
   use global_vars, only: kmax_id
-  use global_vars, only: accur
+!  use global_vars, only: accur
   use global_vars, only: c1
   use global_vars, only: c2
   use global_vars, only: c3
@@ -18,9 +18,6 @@ module bc
   use global_vars, only: make_F_flux_zero
   use global_vars, only: make_G_flux_zero
   use global_vars, only: make_H_flux_zero
-!  use global_vars, only: imx
-!  use global_vars, only: jmx
-!  use global_vars, only: kmx
   use global_vars, only: PbcId
   use utils, only: alloc
   use utils, only: dealloc
@@ -40,9 +37,11 @@ module bc
 
   contains
 
-    subroutine setup_bc(dims)
+    subroutine setup_bc(scheme, flow, dims)
       !< Initialization and allocate memory of boundary condition variables
       implicit none
+      type(schemetype), intent(in) :: scheme
+      type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
       !check for periodic bc
       if(PbcId(1)>=0) imin_id=-10
@@ -66,10 +65,10 @@ module bc
       id(5) =  kmin_id
       id(6) =  kmax_id
 
-      c2 = 1 + accur
-      c3 = 0.5*accur
+      c2 = 1 + scheme%accur
+      c3 = 0.5*scheme%accur
       c1 = c2-c3
-      call read_fixed_values()
+      call read_fixed_values(scheme, flow)
 
       call alloc(make_F_flux_zero, 1,dims%imx)
       call alloc(make_G_flux_zero, 1,dims%jmx)

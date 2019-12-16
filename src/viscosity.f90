@@ -10,30 +10,23 @@ module viscosity
   !-----------------------------------------------------
 
   use vartypes
-  use global_vars , only : turbulence
-  use global_vars , only : transition
+!  use global_vars , only : turbulence
+!  use global_vars , only : transition
   use global_vars , only : mu
-  use global_vars , only : mu_ref
-  use global_vars , only : Sutherland_temp
-  use global_vars , only : T_ref
-  use global_vars , only : R_gas
-  use global_vars , only : mu_variation
+!  use global_vars , only : mu_ref
+!  use global_vars , only : Sutherland_temp
+!  use global_vars , only : T_ref
+!  use global_vars , only : R_gas
+!  use global_vars , only : mu_variation
   use global_vars , only : process_id
 
   use global_vars , only : pressure
   use global_vars , only : density
-  !use global_vars  , only : sst_mu
-  !use global_vars  , only : kkl_mu
-  !use global_vars  , only : sa_mu
   use global_vars  , only : mu_t
   use global_vars  , only : tw
   use global_vars  , only : tk
   use global_vars  , only : tkl
   use global_vars  , only : tv
-
-!  use global_vars , only : imx
-!  use global_vars , only : jmx
-!  use global_vars , only : kmx
 
   use global_vars  , only : id
   use global_vars  , only : face_names
@@ -78,14 +71,16 @@ module viscosity
   integer :: imx, jmx, kmx
 
   public :: setup_viscosity
-  public :: destroy_viscosity
+!  public :: destroy_viscosity
   public :: calculate_viscosity
 
   contains
 
-    subroutine calculate_viscosity()
+    subroutine calculate_viscosity(scheme, flow)
       !< Calculate molecular and turbulent viscosity
       implicit none
+      type(schemetype), intent(in) :: scheme
+      type(flowtype), intent(in) :: flow
       integer :: i,j,k
       real :: T ! molecular viscosity
       real :: c ! kkl eddy viscosity
@@ -119,17 +114,17 @@ module viscosity
       real :: xi
 
       !--- calculate_molecular_viscosity ---!
-      if (mu_ref/=0.) then
-        select case (trim(mu_variation))
+      if (flow%mu_ref/=0.) then
+        select case (trim(flow%mu_variation))
           case ('sutherland_law')
             ! apply_sutherland_law
             do k = 0,kmx
               do j = 0,jmx
                 do i = 0,imx
-                  T = pressure(i,j,k)/(density(i,j,k)*R_gas)
-                  mu(i,j,k) = mu_ref * ((T/T_ref)**(1.5)) &
-                            *((T_ref + Sutherland_temp)&
-                            /(T + Sutherland_temp))
+                  T = pressure(i,j,k)/(density(i,j,k)*flow%R_gas)
+                  mu(i,j,k) = flow%mu_ref * ((T/flow%T_ref)**(1.5)) &
+                            *((flow%T_ref + flow%Sutherland_temp)&
+                            /(T + flow%Sutherland_temp))
                 end do
               end do
             end do
@@ -141,7 +136,7 @@ module viscosity
 
           case DEFAULT
             print*,"mu_variation not recognized:"
-            print*, "   found '",trim(mu_variation),"'"
+            print*, "   found '",trim(flow%mu_variation),"'"
             print*, "accepted values: 1) sutherland_law"
             print*, "                 2) constant"
             Fatal_error
@@ -150,8 +145,8 @@ module viscosity
       !--- end molecular viscosity calculation---!
 
       !--- calculate_turbulent_viscosity  ---!
-      if (turbulence/='none') then
-        select case (trim(turbulence))
+      if (scheme%turbulence/='none') then
+        select case (trim(scheme%turbulence))
 
           case ('none')
             !do nothing
@@ -268,7 +263,7 @@ module viscosity
               end do
             end do
 
-            select case(trim(transition))
+            select case(trim(scheme%transition))
               case('lctm2015')
                 do k = 0,kmx
                   do j = 0,jmx
@@ -390,7 +385,7 @@ module viscosity
               end do
             end do
 
-            select case(trim(transition))
+            select case(trim(scheme%transition))
               case('lctm2015')
                 do k = 0,kmx
                   do j = 0,jmx
@@ -534,7 +529,6 @@ module viscosity
             !--- end of kkl eddy viscosity calculation ---!
 
           case DEFAULT 
-            !call turbulence_read_error()
             Fatal_error
 
         end select
@@ -547,10 +541,12 @@ module viscosity
 
     end subroutine calculate_viscosity
 
-    subroutine setup_viscosity(mu, mu_t, dims)
+    subroutine setup_viscosity(mu, mu_t, scheme,flow, dims)
       !< Allocate and pointer for molecular and turbulent viscosity
       implicit none
       type(extent), intent(in) :: dims
+      type(schemetype), intent(in) :: scheme
+      type(flowtype), intent(in) :: flow
       real, dimension(:,:,:), allocatable, intent(out) :: mu
       real, dimension(:,:,:), allocatable, intent(out) :: mu_t
 
@@ -558,39 +554,29 @@ module viscosity
       jmx = dims%jmx
       kmx = dims%kmx
       !setup_molecular_viscosity()
-      if (mu_ref/=0.) then
+      if (flow%mu_ref/=0.) then
         call alloc(mu, -2, imx+2, -2, jmx+2, -2, kmx+2)
-        mu = mu_ref !intialize
+        mu = flow%mu_ref !intialize
       end if
 
       !--- setup_turbulent_viscosity ---!
-      if (turbulence/='none') then
+      if (scheme%turbulence/='none') then
         call alloc(mu_t, -2,imx+2, -2,jmx+2, -2,kmx+2)
 
 
-        select case (trim(turbulence))
+        select case (trim(scheme%turbulence))
 
-          case ('none')
+          case ('none', 'sa', 'saBC', 'kkl')
             !do nothing
             continue
 
-          case ('sa', 'saBC')
-            !sa_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
-            continue
-
           case ('sst', 'sst2003')
-            !sst_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
             !-- sst blending funciton F1 --!
             call alloc(sst_F1, -2,imx+2, -2,jmx+2, -2,kmx+2)
             sst_F1=0.
             !-- sst blnding function setup compete--!
 
-          case ('kkl')
-            !kkl_mu(-2:imx+2,-2:jmx+2,-2:kmx+2) => mu_t(:,:,:)
-            continue
-
           case DEFAULT 
-            !call turbulence_read_error()
             Fatal_error
 
         end select
@@ -599,45 +585,44 @@ module viscosity
 
     end subroutine setup_viscosity
 
-    subroutine destroy_viscosity()
-      !< Deallocate and nullify viscosity (turbulent/molecular)
-
-      ! destroy_molecular_viscosity ---!
-      if (mu_ref/=0.) then
-        call dealloc(mu)
-      end if
-
-      !--- destroy_turbulent_viscosity ---!
-      if (turbulence/='none') then
-        select case (trim(turbulence))
-
-          case ('none')
-            !do nothing
-            continue
-
-          case('sa', 'saBC')
-            !nullify(sa_mu)
-            continue
-
-          case ('sst', 'sst2003')
-            !nullify(sst_mu)
-            !-- blending funciton F1 --!
-            call dealloc(sst_F1)
-            !--- sst blending funciton destoryed--!
-
-          case ('kkl')
-            !nullify(kkl_mu)
-            continue
-
-          case DEFAULT 
-            !call turbulence_read_error()
-            Fatal_error
-
-        end select
-        call dealloc(mu_t)
-      end if
-      !--- end of turublent viscosity destruction ---!
-
-    end subroutine destroy_viscosity
+!    subroutine destroy_viscosity()
+!      !< Deallocate and nullify viscosity (turbulent/molecular)
+!
+!      ! destroy_molecular_viscosity ---!
+!      if (mu_ref/=0.) then
+!        call dealloc(mu)
+!      end if
+!
+!      !--- destroy_turbulent_viscosity ---!
+!      if (turbulence/='none') then
+!        select case (trim(turbulence))
+!
+!          case ('none')
+!            !do nothing
+!            continue
+!
+!          case('sa', 'saBC')
+!            !nullify(sa_mu)
+!            continue
+!
+!          case ('sst', 'sst2003')
+!            !nullify(sst_mu)
+!            !-- blending funciton F1 --!
+!            call dealloc(sst_F1)
+!            !--- sst blending funciton destoryed--!
+!
+!          case ('kkl')
+!            !nullify(kkl_mu)
+!            continue
+!
+!          case DEFAULT 
+!            Fatal_error
+!
+!        end select
+!        call dealloc(mu_t)
+!      end if
+!      !--- end of turublent viscosity destruction ---!
+!
+!    end subroutine destroy_viscosity
 
 end module viscosity

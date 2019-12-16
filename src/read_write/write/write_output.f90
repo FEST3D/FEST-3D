@@ -9,10 +9,7 @@ module write_output
   use global                 ,only : OUT_FILE_UNIT
   use global_vars            ,only : outfile
   use global_vars            ,only : outfile
-!  use global_vars            ,only : write_data_format
-!  use global_vars            ,only : write_file_format
   use utils
-!  use string
   use write_output_vtk       ,only : write_file_vtk     => write_file
   use write_output_tec       ,only : write_file_tec => write_file
   use write_output_tec_node  ,only : write_file_tec_nodal => write_file
@@ -84,13 +81,13 @@ module write_output
       select case (control%write_file_format)
 
         case ('vtk')
-          call write_file_vtk(nodes, dims, control%write_data_format)
+          call write_file_vtk(nodes, control, dims)
 
         case ('tecplot')
-          call write_file_tec(nodes, dims, control%checkpoint_iter_count)
+          call write_file_tec(nodes, control, dims)
 
         case ('tecplot_nodal')
-          call write_file_tec_nodal(nodes, dims, control%checkpoint_iter_count)
+          call write_file_tec_nodal(nodes, control, dims)
 
         case DEFAULT
           Fatal_error

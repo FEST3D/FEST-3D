@@ -13,9 +13,6 @@ module read_output
   use global_vars, only :      infile
   use global_vars, only : restartfile
 
-!  use global_vars, only : read_data_format
-!  use global_vars, only : read_file_format
-!  use global_vars, only : start_from
   use global_vars, only : process_id
   use global_vars, only :        resnorm_0
   use global_vars, only :    vis_resnorm_0
@@ -27,9 +24,6 @@ module read_output
   use global_vars, only : energy_resnorm_0
   use global_vars, only :    TKE_resnorm_0
   use global_vars, only :  omega_resnorm_0
-!  use global_vars, only : previous_flow_type
-!  use global_vars, only : last_iter
-  use global_vars, only : mu_ref
 
   use read_output_vtk, only : read_file_vtk => read_file
   use read_output_tec, only : read_file_tec => read_file
@@ -40,37 +34,34 @@ module read_output
 
   implicit none
   private
-  integer :: i,j,k
-  real    :: speed_inf
   !< Free-stream velocity magnitude
   character(len=8) :: file_format
   !< Read file format
   character(len=16) :: data_format
   !< Read file data type
-  character(len=16) :: read_flow_type
-  !< Previous flow type 
 
   public :: read_file
 
   contains
 
-    subroutine read_file(control, dims)
+    subroutine read_file(control, scheme, dims)
       !< Read restart file
       implicit none
       type(extent), intent(in) :: dims
       type(controltype), intent(inout) :: control
+      type(schemetype) , intent(in) :: scheme
       call setup_file(control)
       call open_file(infile, control)
       call read_restart_file(control)
-      call verify_read_control(control)
+      call verify_read_control(control, scheme)
         
       select case (control%read_file_format)
         
         case ('vtk')
-          call read_file_vtk(dims)
+          call read_file_vtk(control, dims)
         
         case ('tecplot')
-          call read_file_tec(dims)
+          call read_file_tec(control, dims)
         
         case DEFAULT
           Fatal_error

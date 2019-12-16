@@ -10,10 +10,6 @@ module read_output_tec
   use global     , only : IN_FILE_UNIT
   use global     , only : OUTIN_FILE_UNIT
   use global     , only : outin_file
-
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
   use global_vars, only : density 
   use global_vars, only : x_speed 
   use global_vars, only : y_speed 
@@ -29,10 +25,8 @@ module read_output_tec
   use global_vars, only : dist
   use global_vars, only : intermittency
 
-  use global_vars, only : turbulence
-  use global_vars, only : mu_ref
-  use global_vars, only : r_count
-  use global_vars, only : r_list
+!  use global_vars, only : r_count
+!  use global_vars, only : r_list
 
   use global_vars, only : process_id
 
@@ -47,21 +41,22 @@ module read_output_tec
 
   contains
 
-    subroutine read_file(dims)
+    subroutine read_file(control, dims)
       !< Read all the variable for the tecplot restart file
       implicit none
+      type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       integer :: n
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx
 
-      call read_header()
+      call read_header(control)
       call read_grid()
 
-      do n = 1,r_count
+      do n = 1,control%r_count
 
-        select case (trim(r_list(n)))
+        select case (trim(control%r_list(n)))
         
           case('Velocity')
             call read_scalar(x_speed, "u", -2)
@@ -96,7 +91,7 @@ module read_output_tec
             call skip_scalar()
 
           case Default
-            Print*, "read error: list var : "//trim(r_list(n))
+            Print*, "read error: list var : "//trim(control%r_list(n))
 
         end select
       end do
@@ -104,15 +99,16 @@ module read_output_tec
     end subroutine read_file
 
 
-    subroutine read_header()
+    subroutine read_header(control)
       !< Skip read the header in the tecplot file
       implicit none
+      type(controltype), intent(in) :: control
       integer :: n
 
       DebugCall('read_output_tec: read_header')
       read(IN_FILE_UNIT, *) !"variables = x y z "
 
-      do n = 1,r_count
+      do n = 1,control%r_count
         read(IN_FILE_UNIT, *) !trim(w_list(n))
       end do
 

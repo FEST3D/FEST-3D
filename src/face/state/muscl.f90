@@ -24,24 +24,18 @@ module muscl
     use vartypes
     use utils, only: alloc, dealloc
 
-!    use global_vars, only : imx
-!    use global_vars, only : jmx
-!    use global_vars, only : kmx
-!    use global_vars, only : process_id
-
     use global_vars, only : qp
-!    use global_vars, only : n_var
     use global_vars, only : pressure
-    use global_vars, only : pressure_inf
-    use global_vars, only : ilimiter_switch
-    use global_vars, only : jlimiter_switch
-    use global_vars, only : klimiter_switch
-    use global_vars, only : itlimiter_switch
-    use global_vars, only : jtlimiter_switch
-    use global_vars, only : ktlimiter_switch
-    use global_vars, only : iPB_switch
-    use global_vars, only : jPB_switch
-    use global_vars, only : kPB_switch
+!    use global_vars, only : pressure_inf
+!    use global_vars, only : ilimiter_switch
+!    use global_vars, only : jlimiter_switch
+!    use global_vars, only : klimiter_switch
+!    use global_vars, only : itlimiter_switch
+!    use global_vars, only : jtlimiter_switch
+!    use global_vars, only : ktlimiter_switch
+!    use global_vars, only : iPB_switch
+!    use global_vars, only : jPB_switch
+!    use global_vars, only : kPB_switch
 
     implicit none
     private
@@ -151,12 +145,13 @@ module muscl
         end subroutine destroy_scheme
 
 
-        subroutine pressure_based_switching(f_dir)
+        subroutine pressure_based_switching(f_dir, flow)
           !< Pressure based switching. 
           !< User x,y, or z for I,J,or K face respectively
           !----------------------------------------------
 
             implicit none
+            type(flowtype), intent(in) :: flow
             character, intent(in) :: f_dir
             !< Character can be x or y or z
             integer :: i, j, k, i_end, j_end, k_end
@@ -208,7 +203,7 @@ module muscl
               do i = 1, imx - 1
                 pd2 = abs(pressure(i + i_f*1, j + j_f*1, k + k_f*1) - &
                           pressure(i - i_f*1, j - j_f*1, k - k_f*1))
-                pdif(i, j, k) = 1 - (pd2/(pd2 + pressure_inf))
+                pdif(i, j, k) = 1 - (pd2/(pd2 + flow%pressure_inf))
               end do
              end do
             end do
@@ -347,26 +342,26 @@ module muscl
         end subroutine compute_face_state
         
         
-        subroutine compute_muscl_states()
+        subroutine compute_muscl_states(scheme, flow)
             !< Implement MUSCL scheme to get left and right states at
             !< each face. The computation is done through all cells
             !< and first level ghost cells
             !---------------------------------------------------------
+            implicit none
+            type(schemetype), intent(in) :: scheme
+            type(flowtype), intent(in) ::flow
             
-            !call compute_xi_face_states()
-            call compute_face_state('x', ilimiter_switch, itlimiter_switch)
-            if(iPB_switch==1)then
-              call pressure_based_switching('x')
+            call compute_face_state('x', scheme%ilimiter_switch, scheme%itlimiter_switch)
+            if(scheme%iPB_switch==1)then
+              call pressure_based_switching('x', flow)
             end if
-            !call compute_eta_face_states()
-            call compute_face_state('y', jlimiter_switch, jtlimiter_switch)
-            if(jPB_switch==1)then
-              call pressure_based_switching('y')
+            call compute_face_state('y', scheme%jlimiter_switch, scheme%jtlimiter_switch)
+            if(scheme%jPB_switch==1)then
+              call pressure_based_switching('y', flow)
             end if
-            !call compute_zeta_face_states()
-            call compute_face_state('z', klimiter_switch, ktlimiter_switch)
-            if(kPB_switch==1)then
-              call pressure_based_switching('z')
+            call compute_face_state('z', scheme%klimiter_switch, scheme%ktlimiter_switch)
+            if(scheme%kPB_switch==1)then
+              call pressure_based_switching('z', flow)
             end if
 
         end subroutine compute_muscl_states

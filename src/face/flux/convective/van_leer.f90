@@ -8,19 +8,14 @@ module van_leer
 #include "../../../error.h"
     use vartypes
     use utils, only: alloc, dealloc
-
-!    use global_vars, only : imx
-!    use global_vars, only : jmx
-!    use global_vars, only : kmx
-
     use global_vars, only : xnx, xny, xnz !face unit normal x
     use global_vars, only : ynx, yny, ynz !face unit normal y
     use global_vars, only : znx, zny, znz !face unit normal z
     use global_vars, only : xA, yA, zA    !face area
 
-    use global_vars, only : gm
+!    use global_vars, only : gm
 !    use global_vars, only : n_var
-    use global_vars, only : turbulence
+!   use global_vars, only : turbulence
     use global_vars, only : process_id
     use global_vars, only : make_F_flux_zero
     use global_vars, only : make_G_flux_zero
@@ -89,13 +84,14 @@ module van_leer
 
         end subroutine destroy_scheme
 
-        subroutine compute_flux(f_dir)
+        subroutine compute_flux(f_dir, flow)
           !< A generalized subroutine to calculate
           !< flux through the input-argument direction, :x,y, or z
           !< which corresponds to the I,J, or K direction respectively
           !------------------------------------------------------------
 
             implicit none
+            type(flowtype), intent(in) :: flow
             character, intent(in) :: f_dir
             !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
@@ -155,9 +151,9 @@ module van_leer
             do k = 1, kmx - 1 + k_f
              do j = 1, jmx - 1 + j_f 
               do i = 1, imx - 1 + i_f
-                sound_speed_avg = 0.5 * (sqrt(gm * f_qp_left(i, j, k,5) / &
+                sound_speed_avg = 0.5 * (sqrt(flow%gm * f_qp_left(i, j, k,5) / &
                                             f_qp_left(i, j, k,1) ) + &
-                                          sqrt(gm * f_qp_right(i, j, k,5) / &
+                                          sqrt(flow%gm * f_qp_right(i, j, k,5) / &
                                             f_qp_right(i, j, k,1) ) )
                 
                 ! Compute '+' direction quantities
@@ -211,7 +207,7 @@ module van_leer
                             ((0.5 * (f_qp_left(i, j, k,2) ** 2. + &
                                      f_qp_left(i, j, k,3) ** 2. + &
                                      f_qp_left(i, j, k,4) ** 2.)) + &
-                            ((gm / (gm - 1.)) * f_qp_left(i, j, k,5) / &
+                            ((flow%gm / (flow%gm - 1.)) * f_qp_left(i, j, k,5) / &
                              f_qp_left(i, j, k,1)))
 
 
@@ -227,7 +223,7 @@ module van_leer
                             ((0.5 * (f_qp_right(i, j, k,2) ** 2. + &
                                      f_qp_right(i, j, k,3) ** 2. + &
                                      f_qp_right(i, j, k,4) ** 2.)) + &
-                            ((gm / (gm - 1.)) * f_qp_right(i, j, k,5) / &
+                            ((flow%gm / (flow%gm - 1.)) * f_qp_right(i, j, k,5) / &
                              f_qp_right(i, j, k,1)))
          
                 !turbulent fluxes
@@ -248,24 +244,25 @@ module van_leer
 
         end subroutine compute_flux
 
-        subroutine compute_fluxes()
+        subroutine compute_fluxes(flow)
           !< Call to compute fluxes throught faces in each direction
             
             implicit none
+            type(flowtype), intent(in) :: flow
             
             DebugCall('compute_fluxes')
 
-            call compute_flux('x')
+            call compute_flux('x', flow)
             if (any(isnan(F))) then
               Fatal_error
             end if    
 
-            call compute_flux('y')
+            call compute_flux('y', flow)
             if (any(isnan(G))) then 
               Fatal_error
             end if    
             
-            call compute_flux('z')
+            call compute_flux('z', flow)
             if (any(isnan(H))) then
               Fatal_error
             end if
