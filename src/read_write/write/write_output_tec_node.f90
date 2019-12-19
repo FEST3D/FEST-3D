@@ -9,9 +9,9 @@ module write_output_tec_node
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global     , only : OUT_FILE_UNIT
-  use global     , only : OUTIN_FILE_UNIT
-  use global     , only : outin_file
+!  use global     , only : OUT_FILE_UNIT
+!  use global     , only : OUTIN_FILE_UNIT
+!  use global     , only : outin_file
 
   use global_vars, only : density 
   use global_vars, only : x_speed 
@@ -68,6 +68,7 @@ module write_output_tec_node
 
   implicit none
   private
+  integer :: OUT_FILE_UNIT
   integer :: i,j,k
   character(len=*), parameter :: format="(35e25.15)"
   integer :: imx, jmx, kmx
@@ -75,9 +76,10 @@ module write_output_tec_node
 
   contains
 
-    subroutine write_file(nodes, control, dims)
+    subroutine write_file(file_handler, nodes, control, dims)
       !< Write output file in the tecplot format with node data
       implicit none
+      integer, intent(in) :: file_handler
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
@@ -85,6 +87,9 @@ module write_output_tec_node
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
       DebugCall("write_file")
+      
+      OUT_FILE_UNIT = file_handler
+
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx

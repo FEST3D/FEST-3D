@@ -1,7 +1,7 @@
   !< Start and stop the solver
 module start_finish
   !< Start and stop the solver
-  use fclose, only: close_all_files
+!  use fclose, only: close_all_files
   use solver, only: destroy_solver
   use solver, only: setup_solver
 #include "../mpi.inc"
@@ -18,7 +18,7 @@ module start_finish
       implicit none
       integer :: ierr
 
-      call close_all_files()
+!      call close_all_files()
       call destroy_solver()
       call MPI_FINALIZE(ierr)
       stop
@@ -30,7 +30,7 @@ module start_finish
       implicit none
       integer :: ierr
 
-      call close_all_files()
+!      call close_all_files()
       call destroy_solver()
       call MPI_FINALIZE(ierr)
 

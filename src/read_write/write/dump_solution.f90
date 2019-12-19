@@ -9,11 +9,11 @@ module dump_solution
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global,      only : FILE_NAME_LENGTH
-  use global,      only : RESTART_FILE_UNIT
+!  use global,      only : FILE_NAME_LENGTH
+!  use global,      only : RESTART_FILE_UNIT
   use global_vars, only : sim_clock
-  use global_vars, only :     outfile
-  use global_vars, only : restartfile
+!  use global_vars, only :     outfile
+!  use global_vars, only : restartfile
   use global_vars, only :        resnorm_0
   use global_vars, only :    vis_resnorm_0
   use global_vars, only :   turb_resnorm_0
@@ -40,11 +40,12 @@ module dump_solution
 
   contains
 
-    subroutine checkpoint(nodes, control, scheme, dims)
+    subroutine checkpoint(files, nodes, control, scheme, dims)
       !< Create a checkpoint dump file if the time has come
       !-----------------------------------------------------------
 
       implicit none
+      type(filetype), intent(inout) :: files
       type(extent), intent(in) :: dims
       type(controltype), intent(inout) :: control
       type(schemetype), intent(in) :: scheme
@@ -57,7 +58,7 @@ module dump_solution
           if (mod(control%current_iter, control%checkpoint_iter) == 0 &
              .or. control%current_iter == control%max_iters) then
               call make_dump_dir(control)
-              call dump_data(nodes, control, scheme, dims)
+              call dump_data(files, nodes, control, scheme, dims)
               print*, "writing data at: ", control%current_iter, control%checkpoint_iter_count
               call purge_dump_dir(control)
               control%checkpoint_iter_count = control%checkpoint_iter_count + 1
@@ -113,9 +114,10 @@ module dump_solution
 
     end subroutine make_dump_dir
 
-    subroutine dump_data(nodes, control, scheme, dims)
+    subroutine dump_data(files, nodes, control, scheme, dims)
       !< Call to write save files in the directory
       implicit none
+      type(filetype), intent(inout) :: files
       type(extent), intent(in) :: dims
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
@@ -123,50 +125,52 @@ module dump_solution
 !      character(len=FILE_NAME_LENGTH) :: filename
 
       DebugCall('dump_solution: dump_data')
-      write(restartfile, '(A,I2.2)') trim(dump_dirname)//'/restart/process_',process_id
-      write(    outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
-      call write_restart_log(scheme, control)
-      call write_file(nodes, control, dims)
+      write(files%restartfile, '(A,I2.2)') trim(dump_dirname)//'/restart/process_',process_id
+      write(files%outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
+      call write_restart_log(files, scheme, control)
+      call write_file(files, nodes, control, dims)
 
     end subroutine dump_data
 
-    subroutine write_restart_log(scheme, control)
+    subroutine write_restart_log(files, scheme, control)
       !< Call to write log file in the subdirectory "restart". 
       !< It is useful information while restarting the solver
       implicit none
+      type(filetype), intent(in) :: files
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
-      open(RESTART_FILE_UNIT, file=restartfile)
+      open(files%RESTART_FILE_UNIT, file=files%restartfile)
       select case (scheme%turbulence)
           
         case ('none')
-          write(RESTART_FILE_UNIT, '(A)') 'viscous'
+          write(files%RESTART_FILE_UNIT, '(A)') 'viscous'
         case('sst','sst2003', 'kkl', 'ke', 'kw', 'sa', 'saBC', 'des-sst')
-          write(RESTART_FILE_UNIT, '(A)') trim(scheme%turbulence)
+          write(files%RESTART_FILE_UNIT, '(A)') trim(scheme%turbulence)
         case DEFAULT
            Fatal_error
       end select
-      call write_initial_resnorm(control%current_iter, control%last_iter)
-      close(RESTART_FILE_UNIT)
+      call write_initial_resnorm(files, control%current_iter, control%last_iter)
+      close(files%RESTART_FILE_UNIT)
 
     end subroutine write_restart_log
 
-    subroutine write_initial_resnorm(current_iter, last_iter)
+    subroutine write_initial_resnorm(files, current_iter, last_iter)
       !< Writing Initial resnorom in the log file to 
       !< maintian continuity of resnorm while restrarting
       implicit none
+      type(filetype), intent(in) :: files
       integer, intent(in) :: current_iter, last_iter
-      write(RESTART_FILE_UNIT, '(I0)')    current_iter+last_iter
-      write(RESTART_FILE_UNIT, '(f0.16)')        resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)')    vis_resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)')   turb_resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)')   cont_resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)')  x_mom_resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)')  y_mom_resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)')  z_mom_resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)') energy_resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)')    TKE_resnorm_0
-      write(RESTART_FILE_UNIT, '(f0.16)')  omega_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(I0)')    current_iter+last_iter
+      write(files%RESTART_FILE_UNIT, '(f0.16)')        resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)')    vis_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)')   turb_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)')   cont_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)')  x_mom_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)')  y_mom_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)')  z_mom_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)') energy_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)')    TKE_resnorm_0
+      write(files%RESTART_FILE_UNIT, '(f0.16)')  omega_resnorm_0
     end subroutine write_initial_resnorm
 
 end module dump_solution

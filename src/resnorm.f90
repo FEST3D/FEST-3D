@@ -16,8 +16,8 @@ module resnorm
   !----------------------------------------------------
 
   use vartypes
-  use global,      only: RESNORM_FILE_UNIT
-  use global,      only: resnorm_file
+!  use global,      only: RESNORM_FILE_UNIT
+!  use global,      only: resnorm_file
 
 !  use global_vars, only: Res_abs
 !  use global_vars, only: Res_rel
@@ -31,7 +31,7 @@ module resnorm
   use utils,      only: alloc
   use layout,     only: process_id
   use layout,     only: total_process
-  use fclose,     only: close_file
+!  use fclose,     only: close_file
 
 #include "error.inc"
 #include "mpi.inc"
@@ -51,20 +51,22 @@ module resnorm
 
   contains
 
-    subroutine setup_resnorm(control, scheme, flow)
+    subroutine setup_resnorm(files, control, scheme, flow)
       !< Allocate memory, setup scale and file to write
       implicit none
+      type(filetype), intent(in) :: files
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
       call allocate_memory(control)
       call setup_scale(scheme, flow)
-      call setup_file(control)
+      call setup_file(files, control)
     end subroutine setup_resnorm
 
-    subroutine find_resnorm(control, scheme, dims)
+    subroutine find_resnorm(file_handler, control, scheme, dims)
       !< Find the normalized residual for each processor
       implicit none
+      integer, intent(in) :: file_handler
       type(controltype), intent(in) :: control
       type(schemetype) , intent(in) :: scheme
       type(extent), intent(in) :: dims
@@ -76,7 +78,7 @@ module resnorm
               control%current_iter==Res_itr .or.               &
               control%current_iter==1)      .and.              &
               process_id  ==0)      then
-        call write_resnorm(control, scheme)
+        call write_resnorm(file_handler, control, scheme)
       end if
     end subroutine find_resnorm
 
@@ -87,22 +89,23 @@ module resnorm
 !      call close_file(RESNORM_FILE_UNIT)
 !    end subroutine destroy_resnorm
 
-    subroutine setup_file(control)
+    subroutine setup_file(files, control)
       !< Open the residual file to write
       implicit none
+      type(filetype), intent(in) :: files
       type(controltype), intent(in) :: control
       integer :: i
       if(process_id==0)then
         if(control%start_from==0)then
-          open(RESNORM_FILE_UNIT,file=resnorm_file)
+          open(files%RESNORM_FILE_UNIT,file=files%resnorm_file)
         else
-          open(RESNORM_FILE_UNIT,file=resnorm_file, status='old', position='append', action='write')
+          open(files%RESNORM_FILE_UNIT,file=files%resnorm_file, status='old', position='append', action='write')
         end if
-        write(RESNORM_FILE_UNIT, '(A,2x)', advance='no') "Iteration"
+        write(files%RESNORM_FILE_UNIT, '(A,2x)', advance='no') "Iteration"
         do i=1,control%Res_count
-          write(RESNORM_FILE_UNIT, '(A,2x)', advance='no') trim(control%Res_list(i))
+          write(files%RESNORM_FILE_UNIT, '(A,2x)', advance='no') trim(control%Res_list(i))
         end do
-        write(RESNORM_FILE_UNIT, *)
+        write(files%RESNORM_FILE_UNIT, *)
       end if
     end subroutine setup_file
 
@@ -221,9 +224,10 @@ module resnorm
       Res_rel = Res_abs/Res_save
     end subroutine get_relative_resnorm
 
-    subroutine write_resnorm(control, scheme)
+    subroutine write_resnorm(RESNORM_FILE_UNIT, control, scheme)
       !< Writing the residual in the file to save.
       implicit none
+      integer, intent(in) :: RESNORM_FILE_UNIT
       type(controltype), intent(in) :: control
       type(schemetype) , intent(in) :: scheme
       integer :: i

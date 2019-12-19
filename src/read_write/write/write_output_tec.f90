@@ -6,9 +6,9 @@ module write_output_tec
   !---------------------------------------------------------
 #include "../../debug.h"
 #include "../../error.h"
-  use global     , only : OUT_FILE_UNIT
-  use global     , only : OUTIN_FILE_UNIT
-  use global     , only : outin_file
+!  use global     , only : OUT_FILE_UNIT
+!  use global     , only : OUTIN_FILE_UNIT
+!  use global     , only : outin_file
   use vartypes
 
   use global_vars, only : density 
@@ -69,6 +69,7 @@ module write_output_tec
 
   implicit none
   private
+  integer :: OUT_FILE_UNIT
   integer :: i,j,k
   character(len=*), parameter :: format="(1ES28.15E4)"
   integer :: imx, jmx, kmx
@@ -76,9 +77,10 @@ module write_output_tec
 
   contains
 
-    subroutine write_file(nodes, control, dims)
+    subroutine write_file(file_handler, nodes, control, dims)
       !< Write the header and variables in the file "process_xx.dat".
       implicit none
+      integer, intent(in) :: file_handler
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
@@ -86,6 +88,9 @@ module write_output_tec
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
       DebugCall("write_file")
+
+      OUT_FILE_UNIT = file_handler
+
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx

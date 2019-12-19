@@ -4,6 +4,7 @@ integer function test_grid() result(r)
    use grid,  only : setup_grid
    !use geometry, only: setup_geometry
     
+   type(filetype) :: files
    type(nodetype), dimension(:,:,:), allocatable :: points
    type(extent) :: dims
    character(len=*), parameter :: prefix="../../tests/files/"
@@ -12,7 +13,11 @@ integer function test_grid() result(r)
    !type(facetype), dimension(:,:,:), allocatable :: Iface, Jface, Kface
 
    r = 1
-   call setup_grid(prefix//"grid.txt", prefix//"mapping.txt", prefix//"periodic.txt", points, dims)
+   files%gridfile = prefix//"grid.txt"
+   files%mapfile = prefix//"mapping.txt"
+   files%periodicfile = prefix//"periodic.txt"
+   !call setup_grid(prefix//"grid.txt", prefix//"mapping.txt", prefix//"periodic.txt", points, dims)
+   call setup_grid(files, points, dims)
    !call setup_geometry(cell, Iface, Jface, Kface, points, dims)
    if( dims%imx==5 .and.dims%jmx==2 .and. dims%kmx==2)then
      if (points(1,1,1)%x==-0.002 .and. points(5,1,1)%x==0.002)then

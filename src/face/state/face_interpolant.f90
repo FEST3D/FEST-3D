@@ -3,7 +3,7 @@ module face_interpolant
 #include "../../debug.h"
 #include "../../error.h"
     use vartypes
-    use global, only: INTERPOLANT_NAME_LENGTH
+!    use global, only: INTERPOLANT_NAME_LENGTH
     use global_vars, only : qp
 !    use global_vars, only : gm
 !    use global_vars, only : turbulence

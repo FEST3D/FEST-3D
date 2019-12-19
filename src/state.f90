@@ -13,8 +13,6 @@ module state
 #include "error.h"
 
     use vartypes
-    use global, only: FILE_NAME_LENGTH, STATE_FILE_UNIT, OUT_FILE_UNIT, &
-            DESCRIPTION_STRING_LENGTH, STRING_BUFFER_LENGTH
     use global_vars, only : qp
     use global_vars, only : density
     use global_vars, only : x_speed
@@ -27,7 +25,6 @@ module state
     use global_vars, only : tv
     use global_vars, only : tkl
     use global_vars, only : tgm
-    use global_vars, only : infile
     use utils,       only: alloc, dealloc
     use read_output, only: read_file
 
@@ -59,11 +56,6 @@ module state
             z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 4)
             pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 5)
 
-!            density_inf => qp_inf(1)
-!            x_speed_inf => qp_inf(2)
-!            y_speed_inf => qp_inf(3)
-!            z_speed_inf => qp_inf(4)
-!            pressure_inf => qp_inf(5)
 
             select case (trim(scheme%turbulence))
 
@@ -74,24 +66,17 @@ module state
                 case ("sst", "sst2003", "bsl", "des-sst", "kw")
                     tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
                     tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-!                    tk_inf => qp_inf(6)
-!                    tw_inf => qp_inf(7)
 
                 case ("kkl")
                     tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
                     tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-!                    tk_inf => qp_inf(6)
-!                    tkl_inf => qp_inf(7)
 
                 case ("sa", "saBC")
                     tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-!                    tv_inf => qp_inf(6)
 
                 case ("ke")
                     tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
                     te(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-!                    tk_inf => qp_inf(6)
-!                    te_inf => qp_inf(7)
 
                 case ("les")
                   continue
@@ -230,7 +215,7 @@ module state
 
 
 
-        subroutine setup_state(control, scheme, flow, dims)
+        subroutine setup_state(files, control, scheme, flow, dims)
             !< Setup the state module.
             !< This subroutine should be run before the state variables
             !< are initilized. This subroutine allocates the memory for 
@@ -239,6 +224,7 @@ module state
             !-----------------------------------------------------------
 
             implicit none
+            type(filetype), intent(inout) :: files
             type(controltype), intent(inout) :: control
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(inout) :: flow
@@ -256,7 +242,7 @@ module state
             call allocate_memory()
             call link_aliases(scheme)
             call init_infinity_values(scheme, flow)
-            call initstate(control, scheme, flow, dims)
+            call initstate(files, control, scheme, flow, dims)
 
         end subroutine setup_state
 
@@ -374,7 +360,7 @@ module state
 
 
 
-        subroutine initstate(control, scheme, flow, dims)
+        subroutine initstate(files, control, scheme, flow, dims)
             !< Initialize the state.
             !< If load file(start_from) is 0, then the state should be 
             !< set to the infinity values. Otherwise, read the state_file
@@ -382,6 +368,7 @@ module state
             !-----------------------------------------------------------
 
             implicit none
+            type(filetype), intent(inout) :: files
             type(extent), intent(in) :: dims
             type(controltype), intent(inout) :: control
             type(schemetype), intent(in) :: scheme
@@ -395,12 +382,12 @@ module state
                 ! Set the state to the infinity values
                 call init_state_with_infinity_values(scheme, flow)
             else
-                write(infile,'(a,i4.4,a,i2.2)') &
+                write(files%infile,'(a,i4.4,a,i2.2)') &
                   "time_directories/",control%start_from,"/process_",process_id
                 ! Set the state to the infinity values so if some
                 ! variable are not restart variable they get free_stream value
                 call init_state_with_infinity_values(scheme, flow)
-                call read_file(control, scheme, dims)
+                call read_file(files, control, scheme, dims)
 
             end if
 

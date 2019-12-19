@@ -27,14 +27,7 @@ module update
   use gradients  ,only :   gradw_x
   use gradients  ,only :   gradw_y
   use gradients  ,only :   gradw_z
-!  use global_vars, only : R_gas
-!  use global_vars, only : Pr
-!  use global_vars, only : tPr
-
   use global_vars, only : volume
-    
-!  use global_vars, only : gm
-  use global_vars, only : sst_n_var
   use global_vars, only : qp
   use global_vars, only : density
   use global_vars, only : x_speed
@@ -44,14 +37,7 @@ module update
   use global_vars, only : dist
   use global_vars, only : mu
   use global_vars, only : mu_t
-!  use global_vars, only : tk_inf
-!  use global_vars, only : tkl_inf
-
-!  use global_vars, only : time_stepping_method
-!  use global_vars, only : time_step_accuracy
-!  use global_vars, only : global_time_step
   use global_vars, only : delta_t
-!  use global_vars, only : turbulence
   use global_vars, only : process_id
 
   use global_vars, only: F_p
@@ -66,18 +52,13 @@ module update
   use global_vars, only: omega_residue
   use global_vars, only: kl_residue
   use global_vars, only: residue
-!  use global_vars, only: mu_ref
 
   use geometry   , only: CellCenter
 
   use utils, only: alloc
   use utils, only:  dealloc 
 
-!  use string
-
   !subroutine for residual calculation
-!  use face_interpolant,               only: interpolant
-!  use global_vars,                    only : mu_ref
   use interface1,                      only: apply_interface
   use bc_primitive,                   only: populate_ghost_primitive
   use face_interpolant,               only: compute_face_interpolant

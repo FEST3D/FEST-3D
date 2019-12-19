@@ -5,10 +5,7 @@ module grid
     !-------------------------------------------------------------------
     
     use vartypes
-    use global, only: STRING_BUFFER_LENGTH, GRID_FILE_UNIT
-!    use global_vars, only : imx
-!    use global_vars, only : jmx
-!    use global_vars, only : kmx
+!    use global, only: STRING_BUFFER_LENGTH, GRID_FILE_UNIT
     use global_vars, only : imin_id
     use global_vars, only : jmin_id
     use global_vars, only : kmin_id
@@ -32,6 +29,8 @@ module grid
 #include "mpi.inc"
 #include "debug.h"
     private
+!    integer, parameter :: STRING_BUFFER_LENGTH = 128
+!    !< User to define a string of medium length
 
 !    type, public :: location
 !      real :: x
@@ -153,40 +152,38 @@ module grid
 
         end subroutine destroy_grid
 
-        subroutine setup_grid(gridfile, mapfile, periodicfile, nodes, dims)
+        subroutine setup_grid(files, nodes, dims)
             !< Read the grid file and initialize the grid
             !-----------------------------------------------------------
 
             implicit none
-            character(len=*), intent(in) :: gridfile
-            character(len=*), intent(in) :: mapfile
-            character(len=*), intent(in) :: periodicfile
+            type(filetype), intent(in) :: files
+            !character(len=*), intent(in) :: gridfile
+            !character(len=*), intent(in) :: mapfile
+            !character(len=*), intent(in) :: periodicfile
             type(nodetype), dimension(:,:,:), allocatable, intent(out) :: nodes
             type(extent), intent(out) :: dims
             
             DebugCall('setup_grid')
 
-            open(GRID_FILE_UNIT, file=gridfile)
-            call extract_grid_size(dims)
+            open(files%GRID_FILE_UNIT, file=files%gridfile)
+            call extract_grid_size(files%GRID_FILE_UNIT, dims)
             call allocate_memory(nodes, dims)
             !read interface mapping
-            call read_interface_map(mapfile, periodicfile, dims)
+            call read_interface_map(files, dims)
 
             ! ghost grid exchange
-            call populate_grid_points(nodes, dims)
+            call populate_grid_points(files%GRID_FILE_UNIT, nodes, dims)
 
-            close(GRID_FILE_UNIT)
+            close(files%GRID_FILE_UNIT)
 
             ! populate ghost grid points
             call ghost_grid(nodes, dims)
 
-            !point%x = nodes%x
-            !point%y = nodes%y
-            !point%z = nodes%z
         
         end subroutine setup_grid
         
-        subroutine extract_grid_size(dims)
+        subroutine extract_grid_size(file_handler, dims)
             !< Extract the grid size from the grid file header
             !
             ! We assume that the grid could be in 1 or 2 dimensions. If
@@ -196,13 +193,14 @@ module grid
             !-----------------------------------------------------------
 
             implicit none
+            integer, intent(in) :: file_handler
             character(len=STRING_BUFFER_LENGTH) :: header
             type(extent), intent(out) :: dims
             integer :: ios  ! io operation status
 
             DebugCall('extract_grid_size')
 
-            read(GRID_FILE_UNIT, '(A)', iostat=ios) header
+            read(file_handler, '(A)', iostat=ios) header
             if (ios /= 0) then
                 print *, 'Error while reading grid file header.'
                 print *, 'Current buffer length is set to: ', &
@@ -261,11 +259,12 @@ module grid
 !            end if
 !        end subroutine extract_grid_point
 
-        subroutine populate_grid_points(nodes, dims)
+        subroutine populate_grid_points(file_handler, nodes, dims)
             !< Use the grid file to populate the grid points.
             !-----------------------------------------------------------
 
             implicit none
+            integer, intent(in) :: file_handler
             type(extent), intent(in) :: dims
             type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(out) :: nodes
             character(len=STRING_BUFFER_LENGTH) :: line
@@ -279,7 +278,7 @@ module grid
             do k = 1, dims%kmx
                 do j = 1, dims%jmx
                     do i = 1, dims%imx
-                        read(GRID_FILE_UNIT, '(A)', iostat=ios) line
+                        read(file_handler, '(A)', iostat=ios) line
                         if (ios /= 0) then
                             print *, 'Error while reading grid line.'
                             print *, 'Current grid point: ', i, j, k

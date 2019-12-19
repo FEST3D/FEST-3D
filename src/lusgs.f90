@@ -44,7 +44,6 @@ module lusgs
   use global_vars, only : xA, yA, zA    !face area
     
 !  use global_vars, only : gm
-  use global_vars, only : sst_n_var
   use global_vars, only : qp
   use global_vars, only : density
   use global_vars, only : x_speed

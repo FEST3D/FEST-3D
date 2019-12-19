@@ -29,10 +29,6 @@ module plusgs
   use global_sa , only : kappa_sa
   use global_sa , only : cv1_3
   use global_sa , only : cw3_6
-!  use global_vars, only : R_gas
-!  use global_vars, only : gm
-!  use global_vars, only : Pr
-!  use global_vars, only : tPr
   use global_vars, only : DCCVnX
   use global_vars, only : DCCVnY
   use global_vars, only : DCCVnZ
@@ -46,9 +42,6 @@ module plusgs
   use global_vars, only : znx, zny, znz !face unit normal z
   use global_vars, only : xA, yA, zA    !face area
     
-!  use global_vars, only : n_var
-!  use global_vars, only : gm
-  use global_vars, only : sst_n_var
   use global_vars, only : qp
   use global_vars, only : density
   use global_vars, only : x_speed

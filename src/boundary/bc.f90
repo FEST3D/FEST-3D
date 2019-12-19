@@ -37,9 +37,10 @@ module bc
 
   contains
 
-    subroutine setup_bc(scheme, flow, dims)
+    subroutine setup_bc(files, scheme, flow, dims)
       !< Initialization and allocate memory of boundary condition variables
       implicit none
+      type(filetype), intent(in) :: files
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
@@ -68,7 +69,7 @@ module bc
       c2 = 1 + scheme%accur
       c3 = 0.5*scheme%accur
       c1 = c2-c3
-      call read_fixed_values(scheme, flow)
+      call read_fixed_values(files, scheme, flow)
 
       call alloc(make_F_flux_zero, 1,dims%imx)
       call alloc(make_G_flux_zero, 1,dims%jmx)

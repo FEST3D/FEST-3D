@@ -3,8 +3,8 @@ module wall
  !< Detect all the grid points on the wall boundary condition
  !< and store them in a single file
   use vartypes
-  use global     , only : surface_node_points
-  use global     , only : NODESURF_FILE_UNIT
+!  use global     , only : surface_node_points
+!  use global     , only : NODESURF_FILE_UNIT
 !  use global_vars, only : imx
 !  use global_vars, only : jmx
 !  use global_vars, only : kmx
@@ -67,10 +67,11 @@ module wall
 
   contains 
 
-    subroutine write_surfnode(nodes, dims)
+    subroutine write_surfnode(files, nodes, dims)
       !< Extract and write the wall surface node points
       !< in a file shared by all the MPI processes
       implicit none
+      type(filetype), intent(in) :: files
       type(extent), intent(in) :: dims
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
       integer :: count
@@ -80,7 +81,7 @@ module wall
       jmx = dims%jmx
       kmx = dims%kmx
 
-      call setup_surface()
+      call setup_surface(files)
       call surface_points(nodes)
       call MPI_GATHER(n_wall, 1, MPI_Integer, n_wall_buf, 1, &
                       MPI_integer,0, MPI_COMM_WORLD, ierr)
@@ -189,20 +190,21 @@ module wall
 
     
 
-    subroutine setup_surface()
+    subroutine setup_surface(files)
       !< Open MPI_shared write file, allocate memory and
       !< setup pointers
 
       implicit none
+      type(filetype), intent(in) :: files
       integer :: stat
 
       DebugCall('setup_surface')
       if(process_id==0)then
-      open(NODESURF_FILE_UNIT, file=surface_node_points, iostat=stat)
-      if(stat==0) close(NODESURF_FILE_UNIT, status='delete')
+      open(files%NODESURF_FILE_UNIT, file=files%surface_node_points, iostat=stat)
+      if(stat==0) close(files%NODESURF_FILE_UNIT, status='delete')
       end if
       call mpi_barrier(MPI_COMM_WORLD,ierr)
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, surface_node_points, &
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, files%surface_node_points, &
                         MPI_MODE_WRONLY + MPI_MODE_CREATE + MPI_MODE_EXCL, &
                         MPI_INFO_NULL, thisfile, ierr)
       call find_wall()

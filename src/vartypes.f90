@@ -1,6 +1,12 @@
 module vartypes
-  use global
+  !use global
     implicit none
+    integer, parameter :: FILE_NAME_LENGTH = 64
+    !< Length of string used for defining any filename
+    integer, parameter :: STRING_BUFFER_LENGTH = 128
+    !< User to define a string of medium length
+    integer, parameter :: FORMAT_LENGTH = 16
+    !< Length of string used for file format: tecplot or vtk
 
     type, public :: nodetype
         real :: x
@@ -37,8 +43,8 @@ module vartypes
 
     
     type, public :: filetype
-        integer :: FILE_NAME_LENGTH = 64
-        !< Length of string used for defining any filename
+!        integer :: FILE_NAME_LENGTH = 64
+!        !< Length of string used for defining any filename
         integer ::      CONFIG_FILE_UNIT = 16
         !< Handler unit for config.md file
         integer ::        GRID_FILE_UNIT = 17
@@ -104,6 +110,16 @@ module vartypes
         !< FILENAME string: Detailed multiblock mapping file with indicies and direction information at interface
         character(len=FILE_NAME_LENGTH) :: periodicfile='system/mesh/layout/periodic.txt'
         !< FILENAME string: Multiblock periodic boundary condition detials
+        character(len=FILE_NAME_LENGTH) :: gridfile
+        !< FILENAME string: Grid file
+        character(len=FILE_NAME_LENGTH) :: bcfile
+        !< FILENAME string: single block boundary condition detials
+        character(len=FILE_NAME_LENGTH) :: outfile
+        !< FILENAME string: single block solution output file
+        character(len=FILE_NAME_LENGTH) :: infile
+        !< FILENAME string: single block solution input file
+        character(len=FILE_NAME_LENGTH) :: restartfile
+        !< FILENAME string: single block restart file
     end type filetype
 
 
@@ -140,40 +156,40 @@ module vartypes
         !< Read file type. Either vtk or tecplot
         real :: tolerance
         !< Minimum value of resnorm after which simulation stop
-        character(len=TOLERANCE_LENGTH) :: tolerance_type="abs"
+        character(len=STRING_BUFFER_LENGTH) :: tolerance_type="abs"
         !< Type of tolerance to check:absolute or relative
         integer, public :: DEBUG_LEVEL = 1
         !< Debug level is an input from the control file.
         !< 5-> important calls only, and, 
         !< 1-> all the calls
-        character(len=FLOW_TYPE_LENGTH):: previous_flow_type="none" 
+        character(len=STRING_BUFFER_LENGTH):: previous_flow_type="none" 
         !< Type of flow:inviscid, laminar, etc, stored in the load file 
         integer                                           :: n_var=5
         ! Freestram variable used to read file before inf pointer are linked and allocated
-        character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  r_list 
+        character(len=STRING_BUFFER_LENGTH), dimension(:), allocatable ::  r_list 
         !< Read variable list
-        character(len=STATE_NAME_LENGTH), dimension(:), allocatable ::  w_list 
+        character(len=STRING_BUFFER_LENGTH), dimension(:), allocatable ::  w_list 
         !< Write variable list
         integer :: r_count=0                               
         !< Number of variable to read from the restart file
         integer :: w_count=0                               
         !< Number of variable to write in the output file
-        character(len=STATE_NAME_LENGTH), dimension(:), allocatable :: Res_list
+        character(len=STRING_BUFFER_LENGTH), dimension(:), allocatable :: Res_list
         !< Write residual variable list
         integer            :: Res_count       
         !< No of residual variable to save
     end type controltype
 
     type, public :: schemetype
-      character(len=SCHEME_NAME_LENGTH) :: scheme_name    
+      character(len=STRING_BUFFER_LENGTH) :: scheme_name    
       !< Flux Scheme to use: ausm, ldfss0, vanleer, ausmup, ausmp, slau
-      character(len=INTERPOLANT_NAME_LENGTH) :: interpolant
+      character(len=STRING_BUFFER_LENGTH) :: interpolant
       !< Face state reconstruction  method to user: muscl, ppm, none, weno, and wenoNM
       real                                      :: global_time_step   
       !< Value of global time step to march the solution with
       character                                 :: time_stepping_method
       !< Either local time stepping or global time stepping
-      character(len=INTERPOLANT_NAME_LENGTH)    :: time_step_accuracy 
+      character(len=STRING_BUFFER_LENGTH)    :: time_step_accuracy 
       !< Type of time_integration scheme: RK4, none(firt order explicit) implicit,
       integer                                           :: ilimiter_switch
        !< Turn on/off application of limiter for MUSCL (higer order face state reconstiion) for I direction faces.

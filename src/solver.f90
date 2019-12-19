@@ -4,16 +4,13 @@ module solver
   !-------------------------------------------------
 
   use vartypes
-  use global, only: STOP_FILE_UNIT
-  use global, only: stop_file
-  use global, only: mapfile
-  use global, only: periodicfile
+!  use global, only: STOP_FILE_UNIT
+!  use global, only: stop_file
+!  use global, only: mapfile
+!  use global, only: periodicfile
   use global_vars, only : want_to_stop
   use global_vars, only : Halt
   use global_vars, only : sim_clock
-!  use global_vars, only : turbulence
-!  use global_vars, only: r_list
-!  use global_vars, only: w_list
   use global_vars, only: mu_t
   use global_vars, only: mu
 
@@ -30,8 +27,7 @@ module solver
 
   use wall_dist,     only: setup_wall_dist, destroy_wall_dist, find_wall_dist
   use viscous,       only: compute_viscous_fluxes
-  use layout,        only: process_id, grid_file_buf, bc_file, &
-                           get_process_data, read_layout_file, total_process
+  use layout,        only: process_id, get_process_data, read_layout_file, total_process
   use interface1,    only : setup_interface
   use interface1,    only : destroy_interface
   use resnorm,       only : find_resnorm, setup_resnorm!, destroy_resnorm
@@ -81,35 +77,35 @@ module solver
 
             DebugCall('setup_solver: Start')
             call get_process_data() ! parallel calls
-            call read_layout_file(process_id) ! reads layout file calls
+            call read_layout_file(files, process_id) ! reads layout file calls
             
-            call read_input_and_controls(control, scheme, flow)
-            call setup_grid(grid_file_buf, mapfile, periodicfile, nodes, dims)
+            call read_input_and_controls(files, control, scheme, flow)
+            call setup_grid(files, nodes, dims)
             call setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, dims)
             call setup_viscosity(mu, mu_t, scheme, flow, dims)
-            call setup_state(control, scheme, flow, dims)
+            call setup_state(files, control, scheme, flow, dims)
             call setup_gradients(control,scheme,flow,dims)
             !call setup_source
-            call setup_bc(scheme, flow, dims)
+            call setup_bc(files, scheme, flow, dims)
             call setup_time(control,dims)
             call setup_update(control,scheme,flow, dims)
             call setup_interface(control,dims)
             call setup_scheme(control, scheme, dims)
             if(scheme%turbulence /= 'none') then
-              call write_surfnode(nodes, dims)
-              call setup_wall_dist(dims)
+              call write_surfnode(files, nodes, dims)
+              call setup_wall_dist(files, dims)
               call mpi_barrier(MPI_COMM_WORLD,ierr)
               call find_wall_dist(nodes, dims)
             end if
             call setupCC(scheme, dims)
-            call setup_resnorm(control, scheme, flow)
+            call setup_resnorm(files, control, scheme, flow)
             call initmisc()
             control%checkpoint_iter_count = 0
-            call checkpoint(nodes, control, scheme, dims)  ! Create an initial dump file
+            call checkpoint(files, nodes, control, scheme, dims)  ! Create an initial dump file
             control%current_iter=1
             DebugCall('setup_solver: checkpoint')
             if(process_id==0)then
-              open(STOP_FILE_UNIT, file=stop_file)
+              open(files%STOP_FILE_UNIT, file=files%stop_file)
             end if
             DebugCall('Setup solver complete')
 
@@ -179,13 +175,13 @@ module solver
             !if((mod(control%current_iter,control%res_write_interval)==0 .or. &
             !        control%current_iter==Res_itr .or.               &
             !        control%current_iter==1))      then
-              call find_resnorm(control, scheme, dims)
+              call find_resnorm(files%RESNORM_FILE_UNIT, control, scheme, dims)
             !end if
-            call checkpoint(nodes, control, scheme, dims)
+            call checkpoint(files, nodes, control, scheme, dims)
             control%current_iter = control%current_iter + 1
             if(process_id==0)then
-              REWIND(STOP_FILE_UNIT)
-              read(STOP_FILE_UNIT,*) want_to_stop
+              REWIND(files%STOP_FILE_UNIT)
+              read(files%STOP_FILE_UNIT,*) want_to_stop
             end if
             call MPI_BCAST(want_to_stop,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
             !if (want_to_stop==1) max_iters=current_iter-1

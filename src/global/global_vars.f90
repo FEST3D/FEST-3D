@@ -3,14 +3,6 @@ module global_vars
   !< Contains all the public/global variables used by more than one module
   !----------------------------------------------
 
-  use global, only : INTERPOLANT_NAME_LENGTH
-  use global, only : FORMAT_LENGTH
-  use global, only : SCHEME_NAME_LENGTH
-  use global, only : FILE_NAME_LENGTH
-  use global, only : STATE_NAME_LENGTH
-  use global, only : FLOW_TYPE_LENGTH
-  use global, only : TOLERANCE_LENGTH
-
   implicit none
   public
 
@@ -25,9 +17,6 @@ module global_vars
   integer :: kmin_id            !< Boundary condition number/ID at kmin for particulat processor
   integer :: kmax_id            !< Boundary condition number/ID at kmax for particulat processor
   integer :: layers=3           !< Number of ghost cell layers to transfer with mpi
-  character(len=FILE_NAME_LENGTH)::     outfile          !< String to store name of output file
-  character(len=FILE_NAME_LENGTH)::      infile          !< String to store the name of restart/load file
-  character(len=FILE_NAME_LENGTH):: restartfile          !< Sting to store the name of restart log file
   integer :: want_to_stop=0    !< 0: continue the solver; 1=Stop the solver
   logical :: Halt = .FALSE.    !< Logical value used to stop the solver in main program file.
 
@@ -35,11 +24,6 @@ module global_vars
   real                                      :: sim_clock             !< Simluation clock time
 
 
-  !solution specific (used for Ranga_kutta_4th order)
-  real, dimension(:, :, :, :), allocatable  :: qp_n
-  real, dimension(:, :, :, :), allocatable  :: dEdx_1
-  real, dimension(:, :, :, :), allocatable  :: dEdx_2
-  real, dimension(:, :, :, :), allocatable  :: dEdx_3
   real, dimension(:, :, :, :), allocatable, target  :: qp           
    !< Store primitive variable at cell center
   real, dimension(:, :, :)                , pointer :: density      
@@ -72,8 +56,6 @@ module global_vars
   !< Store Derivative of Cell-Center CCVn with respect to z
 
   ! state variable turbulent
-  integer                                           :: sst_n_var=2 
-  integer                                           :: sst_n_grad=2
   real, dimension(:, :, :)                , pointer :: tk        !< TKE/mass
   real, dimension(:, :, :)                , pointer :: tw        !< Omega
   real, dimension(:, :, :)                , pointer :: te        !< Dissipation
@@ -113,11 +95,11 @@ module global_vars
    !< Cell-center molecular viscosity
   real, dimension(:, :, :), allocatable, target     :: mu_t
    !< Cell-center turbulent viscosity
-  real, dimension(:, :, :)              , pointer   :: sst_mu
+!  real, dimension(:, :, :)              , pointer   :: sst_mu
    !< Pointer to  turbulent viscosity for SST turbulence model
-  real, dimension(:, :, :)              , pointer   :: kkl_mu
+!  real, dimension(:, :, :)              , pointer   :: kkl_mu
    !< Pointer to  turbulent viscosity for KKL turbulence model
-  real, dimension(:, :, :)              , pointer   :: sa_mu
+!  real, dimension(:, :, :)              , pointer   :: sa_mu
    !< Pointer to  turbulent viscosity for SA turbulence model
   real, pointer ::        resnorm     !<             Residual normalized
   real, pointer ::    vis_resnorm     !<  {rho+V+P} equation residual normalized

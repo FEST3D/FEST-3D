@@ -1,7 +1,8 @@
   !< Change the full string to particular case: upper or lower.
 module str_case
   !< Change the full string to particular case: upper or lower.
-  use global, only: STRING_BUFFER_LENGTH
+!  use global, only: STRING_BUFFER_LENGTH
+  use vartypes
   implicit none
   private
   

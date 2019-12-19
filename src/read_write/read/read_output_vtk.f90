@@ -7,9 +7,9 @@ module read_output_vtk
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global     , only :    IN_FILE_UNIT
-  use global     , only : OUTIN_FILE_UNIT
-  use global     , only : outin_file
+!  use global     , only :    IN_FILE_UNIT
+!  use global     , only : OUTIN_FILE_UNIT
+!  use global     , only : outin_file
 
   use global_vars, only : process_id
   use global_vars, only : density
@@ -33,6 +33,7 @@ module read_output_vtk
 
   implicit none
   private
+  integer :: IN_FILE_UNIT
   integer :: imx, jmx, kmx
   integer :: i,j,k
 
@@ -40,12 +41,16 @@ module read_output_vtk
 
   contains
 
-    subroutine read_file(control, dims)
+    subroutine read_file(file_handler, control, dims)
       !< Read all the variable for the vtk restart file
       implicit none
+      integer, intent(in) :: file_handler
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       integer :: n
+
+      IN_FILE_UNIT = file_handler
+
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx

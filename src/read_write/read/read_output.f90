@@ -8,10 +8,10 @@ module read_output
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global     , only :      IN_FILE_UNIT
-  use global     , only : RESTART_FILE_UNIT
-  use global_vars, only :      infile
-  use global_vars, only : restartfile
+!  use global     , only :      IN_FILE_UNIT
+!  use global     , only : RESTART_FILE_UNIT
+!  use global_vars, only :      infile
+!  use global_vars, only : restartfile
 
   use global_vars, only : process_id
   use global_vars, only :        resnorm_0
@@ -44,30 +44,31 @@ module read_output
 
   contains
 
-    subroutine read_file(control, scheme, dims)
+    subroutine read_file(files, control, scheme, dims)
       !< Read restart file
       implicit none
+      type(filetype), intent(inout) :: files
       type(extent), intent(in) :: dims
       type(controltype), intent(inout) :: control
       type(schemetype) , intent(in) :: scheme
       call setup_file(control)
-      call open_file(infile, control)
-      call read_restart_file(control)
+      call open_file(files,  control)
+      call read_restart_file(files%RESTART_FILE_UNIT, control)
       call verify_read_control(control, scheme)
         
       select case (control%read_file_format)
         
         case ('vtk')
-          call read_file_vtk(control, dims)
+          call read_file_vtk(files%IN_FILE_UNIT, control, dims)
         
         case ('tecplot')
-          call read_file_tec(control, dims)
+          call read_file_tec(files%IN_FILE_UNIT, control, dims)
         
         case DEFAULT
           Fatal_error
       end select
 
-      call close_file()
+      call close_file(files)
     end subroutine read_file
 
 
@@ -98,33 +99,35 @@ module read_output
 
     end subroutine setup_file
 
-    subroutine open_file(filename, control)
+    subroutine open_file(files, control)
       !< Open file from the restart folder 
       implicit none
+      type(filetype), intent(inout) :: files
       type(controltype), intent(in) :: control
-      character(len=*), intent(in) :: filename 
       DebugCall('open_file')
 
-      write(restartfile, '(A,I4.4,A,I2.2)') 'time_directories/',control%start_from,&
+      write(files%restartfile, '(A,I4.4,A,I2.2)') 'time_directories/',control%start_from,&
                           '/restart/process_', process_id
-      open(IN_FILE_UNIT, file=trim(filename)//trim(file_format))!, form=trim(data_format))
-      open(RESTART_FILE_UNIT, file=restartfile, status='old')
+      open(files%IN_FILE_UNIT, file=trim(files%infile)//trim(file_format))!, form=trim(data_format))
+      open(files%RESTART_FILE_UNIT, file=files%restartfile, status='old')
 
     end subroutine open_file
 
-    subroutine close_file()
+    subroutine close_file(files)
       !< Close the file after reading 
       implicit none
+      type(filetype), intent(in) :: files
 
       DebugCall('close_files')
-      close(IN_FILE_UNIT)
-      close(RESTART_FILE_UNIT)
+      close(files%IN_FILE_UNIT)
+      close(files%RESTART_FILE_UNIT)
 
     end subroutine close_file
 
-    subroutine read_restart_file(control)
+    subroutine read_restart_file(RESTART_FILE_UNIT, control)
       !< Read the sub-directory log file in the restart folder
       implicit none
+      integer, intent(in) :: RESTART_FILE_UNIT
       type(controltype), intent(inout) :: control
       read(RESTART_FILE_UNIT, *) control%previous_flow_type
 

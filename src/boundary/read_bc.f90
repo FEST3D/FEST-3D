@@ -7,8 +7,8 @@ module read_bc
   !-----------------------------------------------------
 #include "../error.inc"
   use vartypes
-  use global     , only: BOUNDARY_CONDITIONS_FILE_UNIT
-  use global     , only: STRING_BUFFER_LENGTH
+!  use global     , only: BOUNDARY_CONDITIONS_FILE_UNIT
+!  use global     , only: STRING_BUFFER_LENGTH
 !  use global_vars, only: density_inf
 !  use global_vars, only: x_speed_inf
 !  use global_vars, only: y_speed_inf
@@ -34,7 +34,7 @@ module read_bc
   use global_vars, only: fixed_wall_temperature
   use global_vars, only: process_id
 !  use global_vars, only: turbulence
-  use layout     , only: bc_file
+!  use layout     , only: bc_file
 
   implicit none
   private
@@ -46,40 +46,42 @@ module read_bc
 
   contains
 
-    subroutine read_fixed_values(scheme, flow)
+    subroutine read_fixed_values(files, scheme, flow)
       !< Read fixed values for each block face
       implicit none
+      type(filetype), intent(in) :: files
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) ::flow
       integer :: count=0
 
       call fill_fixed_values(scheme, flow)
 
-      open(unit=BOUNDARY_CONDITIONS_FILE_UNIT, file=bc_file)
-            read(BOUNDARY_CONDITIONS_FILE_UNIT, *)
-            read(BOUNDARY_CONDITIONS_FILE_UNIT, *)
-            read(BOUNDARY_CONDITIONS_FILE_UNIT, *)
+      open(unit=files%BOUNDARY_CONDITIONS_FILE_UNIT, file=files%bcfile)
+            read(files%BOUNDARY_CONDITIONS_FILE_UNIT, *)
+            read(files%BOUNDARY_CONDITIONS_FILE_UNIT, *)
+            read(files%BOUNDARY_CONDITIONS_FILE_UNIT, *)
       do while(count<6)
-        read(BOUNDARY_CONDITIONS_FILE_UNIT, "(A)") buf
+        read(files%BOUNDARY_CONDITIONS_FILE_UNIT, "(A)") buf
         if(buf(1:1)=='#')then
           count=count+1
-          call get_fixed_values(scheme,flow, count)
+          call get_fixed_values(files, scheme,flow, count)
         end if
       end do
-      close(BOUNDARY_CONDITIONS_FILE_UNIT)
+      close(files%BOUNDARY_CONDITIONS_FILE_UNIT)
 
     end subroutine read_fixed_values
 
-    subroutine get_fixed_values(scheme, flow, count)
+    subroutine get_fixed_values(files, scheme, flow, count)
       !< Extract fixed value from the bc_**.md file
       implicit none
+      type(filetype), intent(in) :: files
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
       integer, intent(in) :: count
       real :: fix_val
       integer :: ios
       do while(.true.)
-        read(BOUNDARY_CONDITIONS_FILE_UNIT,"(A)") buf
+        read(files%BOUNDARY_CONDITIONS_FILE_UNIT,"(A)") buf
         if(buf(1:2) == '- ') then 
           read(buf(index(buf(3:), ' ')+3:), *, iostat=ios) fix_val
           select case(buf(3:index(buf(3:), " ")+1))

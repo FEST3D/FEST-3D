@@ -4,7 +4,7 @@ module viscous
   !-----------------------------------------------------------------
 #include "error.inc"
   use vartypes
-  use global     , only: FILE_NAME_LENGTH
+!  use global     , only: FILE_NAME_LENGTH
   use global_vars, only : xnx, xny, xnz !face unit normal x
   use global_vars, only : ynx, yny, ynz !face unit normal y
   use global_vars, only : znx, zny, znz !face unit normal z

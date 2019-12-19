@@ -2,9 +2,9 @@
 module mapping
   !< Setup the indicies map at interface between two blocks
   use vartypes
-  use global, only: MAP_FILE_UNIT
+!  use global, only: MAP_FILE_UNIT
  ! use global, only: mapfile
-  use global, only: PERIODIC_FILE_UNIT
+!  use global, only: PERIODIC_FILE_UNIT
 !  use global, only: periodicfile
 
   use global_vars, only: total_process
@@ -12,7 +12,7 @@ module mapping
   use global_vars, only: PbcId
 
 !  use string
-  use fclose     , only: close_file
+!  use fclose     , only: close_file
 
   !map variablews
 !  use global_vars, only: imx
@@ -85,11 +85,12 @@ module mapping
 
     contains
 
-      subroutine read_interface_map(mapfile, periodicfile, dims)
+      subroutine read_interface_map(files, dims)
         !< Read mapping file in the system/mesh/layout/mapping.txt
         implicit none
-        character(len=*), intent(in) :: mapfile
-        character(len=*), intent(in) :: periodicfile
+        type(filetype), intent(in) :: files
+!        character(len=*), intent(in) :: mapfile
+!        character(len=*), intent(in) :: periodicfile
         type(extent), intent(in) :: dims
         integer :: ios
         integer :: max_call
@@ -134,10 +135,10 @@ module mapping
 
         !--- reading map file  ---!
 
-        open(MAP_FILE_UNIT, file=mapfile, status='old', action='read')
-        read(MAP_FILE_UNIT,*) ! ignore header
+        open(files%MAP_FILE_UNIT, file=files%mapfile, status='old', action='read')
+        read(files%MAP_FILE_UNIT,*) ! ignore header
         do i=1,max_call
-          read(MAP_FILE_UNIT,*, iostat=ios) b1,f1,s11,e11,s12,e12,&
+          read(files%MAP_FILE_UNIT,*, iostat=ios) b1,f1,s11,e11,s12,e12,&
                                             b2,f2,s21,e21,s22,e22,switch,class
           if(is_iostat_end(ios)) EXIT
           if(b1==process_id)then
@@ -195,10 +196,10 @@ module mapping
           end if
         end do
 
-        call close_file(MAP_FILE_UNIT)
+        close(files%MAP_FILE_UNIT)
         call change_map_to_particular_range()
 
-        call read_periodic_bc_file(periodicfile)
+        call read_periodic_bc_file(files)
       end subroutine read_interface_map
 
       subroutine change_map_to_particular_range()
@@ -277,10 +278,11 @@ module mapping
       end subroutine change_map_to_particular_range
           
 
-      subroutine read_periodic_bc_file(periodicfile)
+      subroutine read_periodic_bc_file(files)
         !< Read periodic.md file in the system/mesh/layout/periodic.md
         implicit none
-        character(len=*), intent(in) :: periodicfile
+        type(filetype), intent(in) :: files
+        !character(len=*), intent(in) :: periodicfile
         integer :: ios
         integer :: max_call
         integer :: i
@@ -288,17 +290,17 @@ module mapping
         integer :: f1, f2
         integer :: class
 
-        open(PERIODIC_FILE_UNIT, file=periodicfile, status='old', action='read')
-        read(PERIODIC_FILE_UNIT,*) !ignore first line (header)
+        open(files%PERIODIC_FILE_UNIT, file=files%periodicfile, status='old', action='read')
+        read(files%PERIODIC_FILE_UNIT,*) !ignore first line (header)
         max_call = total_process*6
         do i=1,max_call
-          read(PERIODIC_FILE_UNIT,*, iostat=ios) b1,b2,f1,f2, class
+          read(files%PERIODIC_FILE_UNIT,*, iostat=ios) b1,b2,f1,f2, class
           if(is_iostat_end(ios)) EXIT
           if(b1==process_id)then
             PbcId(f1) = b2
           end if
         end do
-        close(PERIODIC_FILE_UNIT)
+        close(files%PERIODIC_FILE_UNIT)
       end subroutine read_periodic_bc_file
 
 end module mapping

@@ -2,15 +2,9 @@
 module source
   !< Add source's contribution to the residual
   !-----------------------------------------------------------------
-  !170609  - jatinder Pal Singh Sandhu
-  ! AIM: to add source term residue to already calculate residuals
-  !      if requires
-  !-----------------------------------------------------------------
 #include "debug.h"
 #include "error.h"
   use vartypes
-!  use global_vars, only : turbulence
-!  use global_vars, only : transition
   use global_vars, only : process_id
   !--- variable required for sst source calculation ---!
   use global_sst   ,only : sigma_k1
@@ -28,11 +22,7 @@ module source
   use global_sst   ,only : sigma_k
   use global_sst   ,only : gama
   use global_sst   ,only : sst_F1
-
-!  use global_vars  ,only : free_stream_tu
-!  use global_vars  ,only : Reynolds_number
   use global_vars  ,only : intermittency
-!  use global_vars  ,only : vel_mag
   use global_vars  ,only :  qp
   use global_vars  ,only :   volume
   use global_vars  ,only :   density
@@ -40,11 +30,7 @@ module source
   use global_vars  ,only :   pressure
   use global_vars  ,only :   tk
   use global_vars  ,only :   tw
-!  use global_vars  ,only :   tk_inf
-!  use global_vars  ,only :   tw_inf
-!  use global_vars  ,only :   free_stream_tu
   use global_vars  ,only :   mu
-!  use global_vars  ,only :   sst_mu
   use global_vars  ,only :   dist
   use gradients  ,only :   gradu_x
   use gradients  ,only :   gradu_y
@@ -120,9 +106,8 @@ module source
   use global_vars, only : CCnormalZ
 
   use CC         , only : find_DCCVn
-    use utils,       only: alloc, dealloc
-    use layout,      only: process_id
-!    use string
+  use utils,       only: alloc, dealloc
+  use layout,      only: process_id
 
   implicit none
   private

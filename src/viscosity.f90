@@ -10,14 +10,7 @@ module viscosity
   !-----------------------------------------------------
 
   use vartypes
-!  use global_vars , only : turbulence
-!  use global_vars , only : transition
   use global_vars , only : mu
-!  use global_vars , only : mu_ref
-!  use global_vars , only : Sutherland_temp
-!  use global_vars , only : T_ref
-!  use global_vars , only : R_gas
-!  use global_vars , only : mu_variation
   use global_vars , only : process_id
 
   use global_vars , only : pressure

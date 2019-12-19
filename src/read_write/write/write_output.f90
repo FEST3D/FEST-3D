@@ -6,9 +6,9 @@ module write_output
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global                 ,only : OUT_FILE_UNIT
-  use global_vars            ,only : outfile
-  use global_vars            ,only : outfile
+!  use global                 ,only : OUT_FILE_UNIT
+!  use global_vars            ,only : outfile
+!  use global_vars            ,only : outfile
   use utils
   use write_output_vtk       ,only : write_file_vtk     => write_file
   use write_output_tec       ,only : write_file_tec => write_file
@@ -48,53 +48,58 @@ module write_output
 
     end subroutine setup_file
 
-    subroutine open_file(filename)
+    subroutine open_file(file_handler, filename)
       !< Open the file to write the solution
       implicit none
+      integer, intent(in) :: file_handler
       character(len=*), intent(in) :: filename 
-      DebugCall('write_output_vtk: open_file')
+      DebugCall('write_output: open_file')
 
-      open(OUT_FILE_UNIT, file=trim(filename)//trim(file_format)//'.part', form=trim(data_format))
+      open(file_handler, file=trim(filename)//trim(file_format)//'.part', form=trim(data_format))
 
     end subroutine open_file
 
-    subroutine close_file(filename)
+    subroutine close_file(file_handler, filename)
       !< Close the file after writing solution.
       implicit none
-
+      integer, intent(in) :: file_handler
       character(len=*), intent(in) :: filename 
       DebugCall('write_output_vtk: close_file')
       call rename(trim(filename)//trim(file_format)//'.part', trim(filename)//trim(file_format))
-      close(OUT_FILE_UNIT)
+      close(file_handler)
     end subroutine close_file
 
-    subroutine write_file(nodes, control, dims)
+    subroutine write_file(files, nodes, control, dims)
       !< Writing output in the file according to the input file type
       implicit none
+      type(filetype), intent(in) :: files
       type(extent), intent(in) :: dims
       type(controltype), intent(in) :: control
       type(nodetype), dimension(-2:dims%imx+3, -2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
+      integer:: file_handler
+
+      file_handler = files%OUT_FILE_UNIT
 
       call setup_file(control)
-      call open_file(outfile)
+      call open_file(file_handler, files%outfile)
 
       select case (control%write_file_format)
 
         case ('vtk')
-          call write_file_vtk(nodes, control, dims)
+          call write_file_vtk(file_handler, nodes, control, dims)
 
         case ('tecplot')
-          call write_file_tec(nodes, control, dims)
+          call write_file_tec(file_handler, nodes, control, dims)
 
         case ('tecplot_nodal')
-          call write_file_tec_nodal(nodes, control, dims)
+          call write_file_tec_nodal(file_handler, nodes, control, dims)
 
         case DEFAULT
           Fatal_error
 
       end select
 
-      call close_file(outfile)
+      call close_file(file_handler, files%outfile)
 
     end subroutine write_file
 

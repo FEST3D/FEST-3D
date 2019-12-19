@@ -7,9 +7,9 @@ module read_output_tec
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global     , only : IN_FILE_UNIT
-  use global     , only : OUTIN_FILE_UNIT
-  use global     , only : outin_file
+!  use global     , only : IN_FILE_UNIT
+!  use global     , only : OUTIN_FILE_UNIT
+!  use global     , only : outin_file
   use global_vars, only : density 
   use global_vars, only : x_speed 
   use global_vars, only : y_speed 
@@ -35,18 +35,22 @@ module read_output_tec
 
   implicit none
   private
+  integer :: IN_FILE_UNIT
   integer :: imx, jmx, kmx
   integer :: i,j,k
   public :: read_file
 
   contains
 
-    subroutine read_file(control, dims)
+    subroutine read_file(file_handler, control, dims)
       !< Read all the variable for the tecplot restart file
       implicit none
+      integer, intent(in) :: file_handler
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       integer :: n
+
+      IN_FILE_UNIT = file_handler
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx

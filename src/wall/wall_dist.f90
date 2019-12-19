@@ -4,10 +4,10 @@ module wall_dist
   !< Calculate the distance from the wall 
   !< for each cell-center in the domain
   use vartypes
-  use global,  only: NODESURF_FILE_UNIT
-  use global,  only: WALL_DIST_FILE_UNIT
-  use global,  only: wall_dist_file
-  use global,  only: surface_node_points
+!  use global,  only: NODESURF_FILE_UNIT
+!  use global,  only: WALL_DIST_FILE_UNIT
+!  use global,  only: wall_dist_file
+!  use global,  only: surface_node_points
 
 !  use global_vars, only : imx
 !  use global_vars, only : jmx
@@ -39,18 +39,19 @@ module wall_dist
 
   contains
 
-    subroutine setup_wall_dist(dims)
+    subroutine setup_wall_dist(files, dims)
       !< Allocate memory to the wall_distance variables
       !< and read the surface node file
 
       implicit none
+      type(filetype), intent(in) :: files
       type(extent), intent(in) :: dims
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx
 
       DebugCall('setup_wall_dist')
-      call setup_nodefile()
+      call setup_nodefile(files)
       call alloc(wall_x, 1, n_surfnodes,&
                 "ERROR: unale to allocate memory to 'Dist' variable " )
       call alloc(wall_y, 1, n_surfnodes,&
@@ -59,7 +60,7 @@ module wall_dist
                 "ERROR: unale to allocate memory to 'Dist' variable " )
       call alloc(dist, -2, imx+2, -2, jmx+2, -2, kmx+2, &
                 "ERROR: unale to allocate memory to 'Dist' variable " )
-      call read_destroy_nodefile
+      call read_destroy_nodefile(files)
 
     end subroutine setup_wall_dist
 
@@ -80,28 +81,30 @@ module wall_dist
     end subroutine destroy_wall_dist
 
 
-    subroutine setup_nodefile()
+    subroutine setup_nodefile(files)
       !< Open and read first line of surface_node_point file
       implicit none
+      type(filetype), intent(in) :: files
       integer :: ios
-      open(NODESURF_FILE_UNIT, file=surface_node_points, status='old', IOSTAT=ios)
+      open(files%NODESURF_FILE_UNIT, file=files%surface_node_points, status='old', IOSTAT=ios)
       if(ios/=0) then
         print*, "!!! -->file containg surface nodepoints not found"
         Fatal_error
       end if
-      read(NODESURF_FILE_UNIT, *) n_surfnodes
+      read(files%NODESURF_FILE_UNIT, *) n_surfnodes
 
     end subroutine setup_nodefile
 
 
-    subroutine read_destroy_nodefile()
+    subroutine read_destroy_nodefile(files)
       !< Read, and close surface_node_point file
       implicit none
+      type(filetype), intent(in) :: files
       integer :: i
       do i = 1, n_surfnodes
-        read(NODESURF_FILE_UNIT, *) wall_x(i), wall_y(i), wall_z(i)
+        read(files%NODESURF_FILE_UNIT, *) wall_x(i), wall_y(i), wall_z(i)
       end do
-      close(NODESURF_FILE_UNIT)
+      close(files%NODESURF_FILE_UNIT)
     end subroutine read_destroy_nodefile
 
     subroutine find_wall_dist(nodes, dims)

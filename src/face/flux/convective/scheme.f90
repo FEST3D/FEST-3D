@@ -3,7 +3,7 @@ module scheme
 #include "../../../debug.h"
 #include "../../../error.h"
     use vartypes
-    use global, only: SCHEME_NAME_LENGTH
+!    use global, only: SCHEME_NAME_LENGTH
     use global_vars, only : F_p
     use global_vars, only : G_p
     use global_vars, only : H_p
