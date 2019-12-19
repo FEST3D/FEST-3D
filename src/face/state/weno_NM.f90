@@ -11,7 +11,7 @@ module weno_NM
     use vartypes
     use utils, only: alloc, dealloc
     use global_vars, only : volume
-    use global_vars, only : qp
+!    use global_vars, only : qp
     use global_vars, only : process_id
 
     implicit none
@@ -108,11 +108,12 @@ module weno_NM
         end subroutine destroy_scheme
 
 
-        subroutine compute_face_states(dir)
+        subroutine compute_face_states(qp, dir)
           !< Subroutine to calculate state at the face, generalized for
           !< all direction : I,J, and K.
             implicit none
 
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
             character(len=*), intent(in) :: dir
             integer :: i, j, k, l
             integer :: i_f=0, j_f=0, k_f=0
@@ -217,12 +218,14 @@ module weno_NM
         end subroutine compute_face_states
 
 
-        subroutine compute_weno_NM_states()
+        subroutine compute_weno_NM_states(qp)
           !< Call Weno scheme for all the three direction I,J, and K
 
-            call compute_face_states('x')
-            call compute_face_states('y')
-            call compute_face_states('z')
+            implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
+            call compute_face_states(qp, 'x')
+            call compute_face_states(qp, 'y')
+            call compute_face_states(qp, 'z')
 
         end subroutine compute_weno_NM_states
 

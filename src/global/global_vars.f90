@@ -24,20 +24,20 @@ module global_vars
   real                                      :: sim_clock             !< Simluation clock time
 
 
-  real, dimension(:, :, :, :), allocatable, target  :: qp           
-   !< Store primitive variable at cell center
-  real, dimension(:, :, :)                , pointer :: density      
-   !< Rho pointer, point to slice of qp (:,:,:,1)
-  real, dimension(:, :, :)                , pointer :: x_speed      
-   !< U pointer, point to slice of qp (:,:,:,2) 
-  real, dimension(:, :, :)                , pointer :: y_speed      
-   !< V pointer, point to slice of qp (:,:,:,3) 
-  real, dimension(:, :, :)                , pointer :: z_speed      
-   !< W pointer, point to slice of qp (:,:,:,4)
-  real, dimension(:, :, :)                , pointer :: pressure     
-   !< P pointer, point to slice of qp (:,:,:,5)
-  real, dimension(:, :, :), allocatable, target  :: intermittency
-   !< Intermiitency pointer
+!  real, dimension(:, :, :, :), allocatable, target  :: qp           
+!   !< Store primitive variable at cell center
+!  real, dimension(:, :, :)                , pointer :: density      
+!   !< Rho pointer, point to slice of qp (:,:,:,1)
+!  real, dimension(:, :, :)                , pointer :: x_speed      
+!   !< U pointer, point to slice of qp (:,:,:,2) 
+!  real, dimension(:, :, :)                , pointer :: y_speed      
+!   !< V pointer, point to slice of qp (:,:,:,3) 
+!  real, dimension(:, :, :)                , pointer :: z_speed      
+!   !< W pointer, point to slice of qp (:,:,:,4)
+!  real, dimension(:, :, :)                , pointer :: pressure     
+!   !< P pointer, point to slice of qp (:,:,:,5)
+!  real, dimension(:, :, :), allocatable, target  :: intermittency
+!   !< Intermiitency pointer
   real, dimension(:, :, :), allocatable             :: dist 
    !< Store wall distance for each cell center
   real, dimension(:, :, :), allocatable             :: CCnormalX 
@@ -55,13 +55,13 @@ module global_vars
   real, dimension(:, :, :), allocatable             :: DCCVnZ
   !< Store Derivative of Cell-Center CCVn with respect to z
 
-  ! state variable turbulent
-  real, dimension(:, :, :)                , pointer :: tk        !< TKE/mass
-  real, dimension(:, :, :)                , pointer :: tw        !< Omega
-  real, dimension(:, :, :)                , pointer :: te        !< Dissipation
-  real, dimension(:, :, :)                , pointer :: tv        !< SA visocity
-  real, dimension(:, :, :)                , pointer :: tkl       !< KL K-KL method
-  real, dimension(:, :, :)                , pointer :: tgm       !< Intermittency of LCTM2015
+!  ! state variable turbulent
+!  real, dimension(:, :, :)                , pointer :: tk        !< TKE/mass
+!  real, dimension(:, :, :)                , pointer :: tw        !< Omega
+!  real, dimension(:, :, :)                , pointer :: te        !< Dissipation
+!  real, dimension(:, :, :)                , pointer :: tv        !< SA visocity
+!  real, dimension(:, :, :)                , pointer :: tkl       !< KL K-KL method
+!  real, dimension(:, :, :)                , pointer :: tgm       !< Intermittency of LCTM2015
   ! residue variables
   real, dimension(:, :, :, :)             , pointer :: F_p
    !< Flux pointer for face in the I direction

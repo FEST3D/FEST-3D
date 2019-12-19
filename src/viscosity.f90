@@ -13,13 +13,13 @@ module viscosity
   use global_vars , only : mu
   use global_vars , only : process_id
 
-  use global_vars , only : pressure
-  use global_vars , only : density
+!  use global_vars , only : pressure
+!  use global_vars , only : density
   use global_vars  , only : mu_t
-  use global_vars  , only : tw
-  use global_vars  , only : tk
-  use global_vars  , only : tkl
-  use global_vars  , only : tv
+!  use global_vars  , only : tw
+!  use global_vars  , only : tk
+!  use global_vars  , only : tkl
+!  use global_vars  , only : tv
 
   use global_vars  , only : id
   use global_vars  , only : face_names
@@ -61,7 +61,7 @@ module viscosity
   implicit none
   private
 
-  integer :: imx, jmx, kmx
+!  integer :: imx, jmx, kmx
 
   public :: setup_viscosity
 !  public :: destroy_viscosity
@@ -69,11 +69,13 @@ module viscosity
 
   contains
 
-    subroutine calculate_viscosity(scheme, flow)
+    subroutine calculate_viscosity(qp, scheme, flow, dims)
       !< Calculate molecular and turbulent viscosity
       implicit none
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer :: i,j,k
       real :: T ! molecular viscosity
       real :: c ! kkl eddy viscosity
@@ -105,6 +107,17 @@ module viscosity
       ! sa variables
       real :: fv1
       real :: xi
+      real :: pressure
+      real :: density
+      real :: tk
+      real :: tkl
+      real :: tw
+      real :: tv
+      integer :: imx, jmx, kmx
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
       !--- calculate_molecular_viscosity ---!
       if (flow%mu_ref/=0.) then
@@ -114,7 +127,9 @@ module viscosity
             do k = 0,kmx
               do j = 0,jmx
                 do i = 0,imx
-                  T = pressure(i,j,k)/(density(i,j,k)*flow%R_gas)
+                  pressure = qp(i,j,k,5)
+                  density  = qp(i,j,k,1)
+                  T = pressure/(density*flow%R_gas)
                   mu(i,j,k) = flow%mu_ref * ((T/flow%T_ref)**(1.5)) &
                             *((flow%T_ref + flow%Sutherland_temp)&
                             /(T + flow%Sutherland_temp))
@@ -150,11 +165,13 @@ module viscosity
             do k = 0,kmx
               do j = 0,jmx
                 do i = 0,imx
+                  tv = qp(i,j,k,6)
+                  density = qp(i,j,k,1)
                   ! xsi 
-                   xi = tv(i,j,k)*density(i,j,k)/mu(i,j,k)
+                   xi = tv*density/mu(i,j,k)
                   !calculation fo fv1 function
                   fv1 = (xi**3)/((xi**3) + (cv1**3))
-                  mu_t(i,j,k) = density(i,j,k)*tv(i,j,k)*fv1
+                  mu_t(i,j,k) = density*tv*fv1
                 end do
               end do
             end do
@@ -214,10 +231,13 @@ module viscosity
             do k = 0,kmx
               do j = 0,jmx
                 do i = 0,imx
+                  density = qp(i,j,k,1)
+                  tk = qp(i,j,k,6)
+                  tw = qp(i,j,k,7)
 
                   ! calculate_arg2()
-                  var1 = sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))
-                  var2 = 500*(mu(i,j,k)/density(i,j,k))/((dist(i,j,k)**2)*tw(i,j,k))
+                  var1 = sqrt(tk)/(bstar*tw*dist(i,j,k))
+                  var2 = 500*(mu(i,j,k)/density)/((dist(i,j,k)**2)*tw)
                   arg2 = max(2*var1, var2)
 
                   ! calculate_f2()
@@ -235,19 +255,19 @@ module viscosity
 
                   strain = sqrt(SijSij)
 
-                  NUM = density(i,j,k)*a1*tk(i,j,k)
-                  DENOM = max(max((a1*tw(i,j,k)), strain*F),1.0e-10)
+                  NUM = density*a1*tk
+                  DENOM = max(max((a1*tw), strain*F),1.0e-10)
                   mu_t(i,j,k) = NUM/DENOM
                   !-- end eddy visocisyt calculation --!
                   !-- calculating blending function F1 --!
-                  CD = max(2*density(i,j,k)*sigma_w2*(                             & 
+                  CD = max(2*density*sigma_w2*(                             & 
                                                       gradtk_x(i,j,k)*gradtw_x(i,j,k)&
                                                     + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
                                                     + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
-                                                     )/tw(i,j,k),                  &
+                                                     )/tw,                  &
                            1.0e-10)
 
-                  right = 4*(density(i,j,k)*sigma_w2*tk(i,j,k))/(CD*(dist(i,j,k)**2))
+                  right = 4*(density*sigma_w2*tk)/(CD*(dist(i,j,k)**2))
                   left = max(var1, var2)
                   arg1 = min(left, right)
                   sst_F1(i,j,k) = tanh(arg1**4)
@@ -262,7 +282,7 @@ module viscosity
                   do j = 0,jmx
                     do i = 0,imx
                       !modified blending function (Menter 2015)
-                      var1 = density(i,j,k)*dist(i,j,k)*sqrt(tk(i,j,k))/mu(i,j,k)
+                      var1 = density*dist(i,j,k)*sqrt(tk)/mu(i,j,k)
                       var2 = exp(-(var1/120)**8)
                       sst_F1(i,j,k) = max(sst_F1(i,j,k),var2)
                     end do
@@ -340,9 +360,12 @@ module viscosity
               do j = 0,jmx
                 do i = 0,imx
 
+                  density = qp(i,j,k,1)
+                  tk = qp(i,j,k,6)
+                  tw = qp(i,j,k,7)
                   ! calculate_arg2()
-                  var1 = sqrt(tk(i,j,k))/(bstar*tw(i,j,k)*dist(i,j,k))
-                  var2 = 500*(mu(i,j,k)/density(i,j,k))/((dist(i,j,k)**2)*tw(i,j,k))
+                  var1 = sqrt(tk)/(bstar*tw*dist(i,j,k))
+                  var2 = 500*(mu(i,j,k)/density)/((dist(i,j,k)**2)*tw)
                   arg2 = max(2*var1, var2)
 
                   ! calculate_f2()
@@ -357,19 +380,19 @@ module viscosity
 
                   vort = sqrt(wijwij)
 
-                  NUM = density(i,j,k)*a1*tk(i,j,k)
-                  DENOM = max(max((a1*tw(i,j,k)), vort*F),1.e-20)
+                  NUM = density*a1*tk
+                  DENOM = max(max((a1*tw), vort*F),1.e-20)
                   mu_t(i,j,k) = NUM/DENOM
                   !-- end eddy visocisyt calculation --!
                   !-- calculating blending function F1 --!
-                  CD = max(2*density(i,j,k)*sigma_w2*(                             & 
+                  CD = max(2*density*sigma_w2*(                             & 
                                                       gradtk_x(i,j,k)*gradtw_x(i,j,k)&
                                                     + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
                                                     + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
-                                                     )/tw(i,j,k),                  &
+                                                     )/tw,                  &
                            1e-20)
 
-                  right = 4*(density(i,j,k)*sigma_w2*tk(i,j,k))/(CD*(dist(i,j,k)**2))
+                  right = 4*(density*sigma_w2*tk)/(CD*(dist(i,j,k)**2))
                   left = max(var1, var2)
                   arg1 = min(left, right)
                   sst_F1(i,j,k) = tanh(arg1**4)
@@ -384,7 +407,7 @@ module viscosity
                   do j = 0,jmx
                     do i = 0,imx
                       !modified blending function (Menter 2015)
-                      var1 = density(i,j,k)*dist(i,j,k)*sqrt(tk(i,j,k))/mu(i,j,k)
+                      var1 = density*dist(i,j,k)*sqrt(tk)/mu(i,j,k)
                       var2 = exp(-(var1/120)**8)
                       sst_F1(i,j,k) = max(sst_F1(i,j,k),var2)
                     end do
@@ -464,9 +487,11 @@ module viscosity
             do k = 0,kmx
               do j = 0,jmx
                 do i = 0,imx
-                  mu_t(i,j,k) = c*density(i,j,k)*tkl(i,j,k)&
-                    /(max(sqrt(tk(i,j,k)),1.e-20))
-                  if(tkl(i,j,k)<1.e-14 .or. tk(i,j,k)<1.e-14) &
+                  density = qp(i,j,k,1)
+                  tk  = qp(i,j,k,6)
+                  tkl = qp(i,j,k,7)
+                  mu_t(i,j,k) = c*density*tkl/(max(sqrt(tk),1.e-20))
+                  if(tkl<1.e-14 .or. tk<1.e-14) &
                     mu_t(i,j,k) =0.0 
                 end do
               end do
@@ -542,6 +567,7 @@ module viscosity
       type(flowtype), intent(in) :: flow
       real, dimension(:,:,:), allocatable, intent(out) :: mu
       real, dimension(:,:,:), allocatable, intent(out) :: mu_t
+      integer :: imx, jmx, kmx
 
       imx = dims%imx
       jmx = dims%jmx

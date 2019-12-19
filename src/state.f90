@@ -13,18 +13,18 @@ module state
 #include "error.h"
 
     use vartypes
-    use global_vars, only : qp
-    use global_vars, only : density
-    use global_vars, only : x_speed
-    use global_vars, only : y_speed
-    use global_vars, only : z_speed
-    use global_vars, only : pressure
-    use global_vars, only : tk
-    use global_vars, only : tw
-    use global_vars, only : te
-    use global_vars, only : tv
-    use global_vars, only : tkl
-    use global_vars, only : tgm
+!    use global_vars, only : qp
+!    use global_vars, only : density
+!    use global_vars, only : x_speed
+!    use global_vars, only : y_speed
+!    use global_vars, only : z_speed
+!    use global_vars, only : pressure
+!    use global_vars, only : tk
+!    use global_vars, only : tw
+!    use global_vars, only : te
+!    use global_vars, only : tv
+!    use global_vars, only : tkl
+!    use global_vars, only : tgm
     use utils,       only: alloc, dealloc
     use read_output, only: read_file
 
@@ -41,71 +41,71 @@ module state
 
     contains
 
-
-        subroutine link_aliases(scheme)
-          !< Setup state variable pointers
-
-            implicit none
-            type(schemetype), intent(in) :: scheme
-
-            DebugCall("link_aliases")
-
-            density(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 1)
-            x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 2)
-            y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 3)
-            z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 4)
-            pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 5)
-
-
-            select case (trim(scheme%turbulence))
-
-                case ("none")
-                    !include nothing
-                    continue
-                
-                case ("sst", "sst2003", "bsl", "des-sst", "kw")
-                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-                    tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-
-                case ("kkl")
-                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-                    tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-
-                case ("sa", "saBC")
-                    tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-
-                case ("ke")
-                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-                    te(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-
-                case ("les")
-                  continue
-                  ! todo
-
-                case DEFAULT
-                  Fatal_error
-
-            end select
-
-
-            ! Transition modeling
-            select case(trim(scheme%transition))
-
-              case('lctm2015')
-                tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, n_var)
-!                tgm_inf => qp_inf(n_var)
-
-              case('bc', 'none')
-                !do nothing
-                continue
-
-              case DEFAULT
-                Fatal_error
-
-            end Select
-
-        end subroutine link_aliases
-
+!
+!        subroutine link_aliases(scheme)
+!          !< Setup state variable pointers
+!
+!            implicit none
+!            type(schemetype), intent(in) :: scheme
+!
+!            DebugCall("link_aliases")
+!
+!            density(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 1)
+!            x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 2)
+!            y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 3)
+!            z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 4)
+!            pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 5)
+!
+!
+!            select case (trim(scheme%turbulence))
+!
+!                case ("none")
+!                    !include nothing
+!                    continue
+!                
+!                case ("sst", "sst2003", "bsl", "des-sst", "kw")
+!                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+!                    tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
+!
+!                case ("kkl")
+!                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+!                    tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
+!
+!                case ("sa", "saBC")
+!                    tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+!
+!                case ("ke")
+!                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+!                    te(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
+!
+!                case ("les")
+!                  continue
+!                  ! todo
+!
+!                case DEFAULT
+!                  Fatal_error
+!
+!            end select
+!
+!
+!            ! Transition modeling
+!            select case(trim(scheme%transition))
+!
+!              case('lctm2015')
+!                tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, n_var)
+!!                tgm_inf => qp_inf(n_var)
+!
+!              case('bc', 'none')
+!                !do nothing
+!                continue
+!
+!              case DEFAULT
+!                Fatal_error
+!
+!            end Select
+!
+!        end subroutine link_aliases
+!
 
 
 !        subroutine unlink_aliases()
@@ -185,21 +185,20 @@ module state
 
 
 
-        subroutine allocate_memory()
-            !< Allocate memory to the state variables
-            !-----------------------------------------------------------
-            implicit none
-
-            DebugCall("allocate_memory")
-
-            ! The state of the system is defined by the primitive 
-            ! variables (density, velocity and pressure) at the grid
-            ! cell centers. 
-            call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, AErrMsg("qp"))
-!            call alloc(qp_inf, 1, n_var, AErrMsg("qp_inf"))
-
-        end subroutine allocate_memory
-
+!        subroutine allocate_memory(qp)
+!            !< Allocate memory to the state variables
+!            !-----------------------------------------------------------
+!            implicit none
+!
+!            DebugCall("allocate_memory")
+!
+!            ! The state of the system is defined by the primitive 
+!            ! variables (density, velocity and pressure) at the grid
+!            ! cell centers. 
+!            call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, AErrMsg("qp"))
+!
+!        end subroutine allocate_memory
+!
 
 
 !        subroutine deallocate_memory()
@@ -215,7 +214,7 @@ module state
 
 
 
-        subroutine setup_state(files, control, scheme, flow, dims)
+        subroutine setup_state(files, qp, control, scheme, flow, dims)
             !< Setup the state module.
             !< This subroutine should be run before the state variables
             !< are initilized. This subroutine allocates the memory for 
@@ -228,7 +227,8 @@ module state
             type(controltype), intent(inout) :: control
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(inout) :: flow
-            type(extent), intent(in) :: dims
+            type(extent), intent(inout) :: dims
+            real, dimension(:,:,:,:), allocatable, intent(inout), target :: qp
 
             DebugCall("setup_state")
 
@@ -239,10 +239,12 @@ module state
             kmx = dims%kmx
 
             call set_n_var_value(control, scheme)
-            call allocate_memory()
-            call link_aliases(scheme)
+            dims%n_var = control%n_var
+            !call allocate_memory(qp)
+            call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, AErrMsg("qp"))
+            !call link_aliases(scheme)
             call init_infinity_values(scheme, flow)
-            call initstate(files, control, scheme, flow, dims)
+            call initstate(files, qp, control, scheme, flow, dims)
 
         end subroutine setup_state
 
@@ -360,7 +362,7 @@ module state
 
 
 
-        subroutine initstate(files, control, scheme, flow, dims)
+        subroutine initstate(files, qp, control, scheme, flow, dims)
             !< Initialize the state.
             !< If load file(start_from) is 0, then the state should be 
             !< set to the infinity values. Otherwise, read the state_file
@@ -373,6 +375,7 @@ module state
             type(controltype), intent(inout) :: control
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(in) :: flow
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
             
             DebugCall("initstate")
 
@@ -380,14 +383,14 @@ module state
 
             if (control%start_from .eq. 0) then
                 ! Set the state to the infinity values
-                call init_state_with_infinity_values(scheme, flow)
+                call init_state_with_infinity_values(qp, scheme, flow, dims)
             else
                 write(files%infile,'(a,i4.4,a,i2.2)') &
                   "time_directories/",control%start_from,"/process_",process_id
                 ! Set the state to the infinity values so if some
                 ! variable are not restart variable they get free_stream value
-                call init_state_with_infinity_values(scheme, flow)
-                call read_file(files, control, scheme, dims)
+                call init_state_with_infinity_values(qp, scheme, flow, dims)
+                call read_file(files, qp, control, scheme, dims)
 
             end if
 
@@ -395,21 +398,28 @@ module state
 
 
 
-        subroutine init_state_with_infinity_values(scheme, flow)
+        subroutine init_state_with_infinity_values(qp, scheme, flow, dims)
             !< Initialize the state based on the infinity values
             !-----------------------------------------------------------
             
             implicit none
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(in) :: flow
+            type(extent), intent(in) :: dims
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
             
             DebugCall("init_state_with_infinity_values")
 
-            density(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%density_inf
-            x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%x_speed_inf
-            y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%y_speed_inf
-            z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%z_speed_inf
-            pressure(-2:imx+2, -2:jmx+2, -2:kmx+2)= flow%pressure_inf
+            !density = density_inf
+            qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1) = flow%density_inf
+            !x_speed = x_speed_inf
+            qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 2) = flow%x_speed_inf
+            !y_speed = y_speed_inf
+            qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 3) = flow%y_speed_inf
+            !z_speed = z_speed_inf
+            qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 4) = flow%z_speed_inf
+            !pressure = pressure_inf
+            qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 5)= flow%pressure_inf
 
             select case (trim(scheme%turbulence))
 
@@ -418,19 +428,26 @@ module state
                     continue
                 
                 case ("sst", "sst2003", "bsl", "des-sst", "kw")
-                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%tk_inf
-                    tw(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%tw_inf
+                    !tk = tk_inf
+                    qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 6) = flow%tk_inf
+                    !tw = tw_inf
+                    qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 7) = flow%tw_inf
 
                 case ("kkl")
-                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%tk_inf
-                    tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%tkl_inf
+                    !tk = tk_inf
+                    qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 6) = flow%tk_inf
+                    !tkl = tkl_inf
+                    qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 7) = flow%tkl_inf
 
                 case ("sa", "saBC")
-                    tv(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%tv_inf
+                    !tv = tv_inf
+                    qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 6) = flow%tv_inf
 
                 case ("ke")
-                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%tk_inf
-                    te(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%te_inf
+                    !tk = tk_inf
+                    qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 6) = flow%tk_inf
+                    !te = te_inf
+                    qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 7) = flow%te_inf
 
                 case ("les")
                   continue
@@ -446,7 +463,8 @@ module state
             select case(trim(scheme%transition))
 
               case('lctm2015')
-                tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) = flow%tgm_inf
+                !tgm = tgm_inf
+                qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 8) = flow%tgm_inf
 
               case('bc', 'none')
                 !do nothing

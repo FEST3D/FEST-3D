@@ -29,16 +29,16 @@ module bc_primitive
 !  use global_vars, only: mu_ref
 !  use global_vars, only: R_gas
 !  use global_vars, only: sutherland_temp
-  use global_vars, only: pressure
-  use global_vars, only: density
-  use global_vars, only: x_speed
-  use global_vars, only: y_speed
-  use global_vars, only: z_speed
-  use global_vars, only: tk
-  use global_vars, only: tw
-  use global_vars, only: tkl
-  use global_vars, only: tv
-  use global_vars, only: tgm
+!  use global_vars, only: pressure
+!  use global_vars, only: density
+!  use global_vars, only: x_speed
+!  use global_vars, only: y_speed
+!  use global_vars, only: z_speed
+!  use global_vars, only: tk
+!  use global_vars, only: tw
+!  use global_vars, only: tkl
+!  use global_vars, only: tv
+!  use global_vars, only: tgm
 !  use global_vars, only: accur
 !  use global_vars, only: imx
 !  use global_vars, only: jmx
@@ -73,7 +73,7 @@ module bc_primitive
 !  use global_vars, only: z_speed_inf
 !  use global_vars, only: density_inf
 !  use global_vars, only: pressure_inf
-  use global_vars, only: qp
+!  use global_vars, only: qp
 !  use global_vars, only: current_iter
 
   use global_sst , only: beta1
@@ -87,7 +87,7 @@ module bc_primitive
   private
 
   integer                        :: face_num
-  integer                        :: current_iter, imx, jmx, kmx
+  integer                        :: current_iter, imx, jmx, kmx, n_var
   !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
   character(len=32) :: turbulence, transition
   real :: gm, R_gas, mu_ref,  T_ref, Sutherland_temp
@@ -102,27 +102,48 @@ module bc_primitive
   real :: tv_inf
   real :: tgm_inf
   real :: tkl_inf
+  real, dimension(:, :, :, :), pointer :: qp
+  real, dimension(:, :, :), pointer :: density      
+   !< Rho pointer, point to slice of qp (:,:,:,1)
+  real, dimension(:, :, :), pointer :: x_speed      
+   !< U pointer, point to slice of qp (:,:,:,2) 
+  real, dimension(:, :, :), pointer :: y_speed      
+   !< V pointer, point to slice of qp (:,:,:,3) 
+  real, dimension(:, :, :), pointer :: z_speed      
+   !< W pointer, point to slice of qp (:,:,:,4)
+  real, dimension(:, :, :), pointer :: pressure     
+   !< P pointer, point to slice of qp (:,:,:,5)
+  ! state variable turbulent
+  real, dimension(:, :, :), pointer :: tk        !< TKE/mass
+  real, dimension(:, :, :), pointer :: tw        !< Omega
+  real, dimension(:, :, :), pointer :: te        !< Dissipation
+  real, dimension(:, :, :), pointer :: tv        !< SA visocity
+  real, dimension(:, :, :), pointer :: tkl       !< KL K-KL method
+  real, dimension(:, :, :), pointer :: tgm       !< Intermittency of LCTM2015
 
   public :: populate_ghost_primitive
 
 
   contains
 
-    subroutine populate_ghost_primitive(control, scheme, flow, dims)
+    subroutine populate_ghost_primitive(state, control, scheme, flow, dims)
       !< Populate the state variables in the ghost cell
       !< with particular value based on the boundary conditio 
       !< being applied at that face
       implicit none
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
+      !< state variables
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
-      type(extent), intent(in) :: dims
       integer :: i
       character(len=4) :: face
 
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx
+      n_var = dims%n_var
       current_iter = control%current_iter
       turbulence = trim(scheme%turbulence)
       transition = trim(scheme%transition)
@@ -143,11 +164,60 @@ module bc_primitive
       tgm_inf      =  flow%tgm_inf     
       tkl_inf      =  flow%tkl_inf     
      
-     
-     
-     
-     
-     
+      qp(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var) => state(:, :, :, :)
+      density(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 1)
+      x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 2)
+      y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 3)
+      z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 4)
+      pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 5)
+
+
+      select case (trim(scheme%turbulence))
+
+          case ("none")
+              !include nothing
+              continue
+          
+          case ("sst", "sst2003", "bsl", "des-sst", "kw")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("kkl")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("sa", "saBC")
+              tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+
+          case ("ke")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              te(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("les")
+            continue
+            ! todo
+
+          case DEFAULT
+            Fatal_error
+
+      end select
+
+
+      ! Transition modeling
+      select case(trim(scheme%transition))
+
+        case('lctm2015')
+          tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, n_var)
+!          tgm_inf => qp_inf(n_var)
+
+        case('bc', 'none')
+          !do nothing
+          continue
+
+        case DEFAULT
+          Fatal_error
+
+      end Select
      
       
       do i = 1,6
@@ -429,7 +499,7 @@ module bc_primitive
           case DEFAULT
             continue
         end select
-        call flow_tangency(face, dims)
+        call flow_tangency(qp, face, dims)
       end subroutine slip_wall
 
 

@@ -22,14 +22,12 @@ module source
   use global_sst   ,only : sigma_k
   use global_sst   ,only : gama
   use global_sst   ,only : sst_F1
-  use global_vars  ,only : intermittency
-  use global_vars  ,only :  qp
+!  use global_vars  ,only : intermittency
+!  use global_vars  ,only :  qp
   use global_vars  ,only :   volume
-  use global_vars  ,only :   density
-  use global_vars  ,only :   x_speed
-  use global_vars  ,only :   pressure
-  use global_vars  ,only :   tk
-  use global_vars  ,only :   tw
+!  use global_vars  ,only :   density
+!  use global_vars  ,only :   tk
+!  use global_vars  ,only :   tw
   use global_vars  ,only :   mu
   use global_vars  ,only :   dist
   use gradients  ,only :   gradu_x
@@ -51,8 +49,8 @@ module source
   use gradients  ,only :   gradtgm_y
   use gradients  ,only :   gradtgm_z
   use global_vars  ,only :   residue
-  use global_vars  ,only :   TKE_residue
-  use global_vars  ,only : omega_residue
+!  use global_vars  ,only :   TKE_residue
+!  use global_vars  ,only : omega_residue
   use global_vars  ,only : xn
   use global_vars  ,only : yn
   use global_vars  ,only : zn
@@ -74,7 +72,7 @@ module source
   use global_kkl, only : eta
 
   !variables required by sa source term calculation
-  use global_vars,only : tv
+!  use global_vars,only : tv
   use global_sa , only : cb1
   use global_sa , only : cb2
   use global_sa , only : cw1
@@ -93,10 +91,10 @@ module source
   use global_vars, only : ynx, yny, ynz !face unit normal y
   use global_vars, only : znx, zny, znz !face unit normal z
   use global_vars, only : xA, yA, zA    !face area
-  use global_vars  ,only : tkl
+!  use global_vars  ,only : tkl
   use global_vars  ,only : mu_t
-  use global_vars  ,only : KL_residue
-  use global_vars  ,only : tv_residue
+!  use global_vars  ,only : KL_residue
+!  use global_vars  ,only : tv_residue
 
   use global_vars, only : DCCVnX
   use global_vars, only : DCCVnY
@@ -119,7 +117,7 @@ module source
   contains
 
     
-    subroutine add_source_term_residue(control,scheme,flow, dims)
+    subroutine add_source_term_residue(qp, control,scheme,flow, dims)
       !< Call to add different source terms to the residual of different equations.
 
       implicit none
@@ -127,6 +125,7 @@ module source
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
 
       DebugCall('add_source_term_residue')
 
@@ -139,9 +138,9 @@ module source
         case ('sa')
           select case(trim(scheme%transition))
             case('none')
-              call add_sa_source(dims)
+              call add_sa_source(qp, dims)
             case('bc')
-              call add_saBC_source(flow, dims)
+              call add_saBC_source(qp, flow, dims)
             case DEFAULT
               Fatal_error
           end select
@@ -149,17 +148,17 @@ module source
         case ('sst', 'sst2003')
           select case(trim(scheme%transition))
             case('none')
-              call add_sst_source(scheme, dims)
+              call add_sst_source(qp, scheme, dims)
             case('lctm2015')
-              call add_sst_source_lctm2015(control, scheme, dims)
+              call add_sst_source_lctm2015(qp, control, scheme, dims)
             case('bc')
-              call add_sst_bc_source(flow,dims)
+              call add_sst_bc_source(qp, flow,dims)
             case DEFAULT
               Fatal_error
           end select
 
         case ('kkl')
-          call add_kkl_source(dims)
+          call add_kkl_source(qp, dims)
 
         case DEFAULT
           Fatal_error
@@ -182,11 +181,12 @@ module source
 !        !nothing
 !    end subroutine destroy_source
 
-    subroutine add_sst_source(scheme,dims)
+    subroutine add_sst_source(qp, scheme,dims)
       !< Add residual due to source terms of the SST turbulence model
       implicit none
       type(extent), intent(in) :: dims
       type(schemetype), intent(in) :: scheme
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer :: i,j,k
 
       real :: CD
@@ -201,6 +201,9 @@ module source
       real :: lamda
       integer :: limiter
       real :: divergence
+      real :: density
+      real :: tk
+      real :: tw
       
       if(trim(scheme%turbulence) == 'sst2003')then
         limiter = 10
@@ -215,6 +218,10 @@ module source
         do j = 1,dims%jmx-1
           do i = 1,dims%imx-1
 
+            density = qp(i,j,k,1)
+            tk      = qp(i,j,k,6)
+            tw      = qp(i,j,k,7)
+
             ! __ vorticity __
             vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
                             + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
@@ -222,10 +229,10 @@ module source
                              )&
                        )
 
-            CD = 2*density(i,j,k)*sigma_w2*(gradtk_x(i,j,k)*gradtw_x(i,j,k)&
-                                          + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
-                                          + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
-                                           )/tw(i,j,k)
+            CD = 2*density*sigma_w2*(gradtk_x(i,j,k)*gradtw_x(i,j,k)&
+                                   + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
+                                   + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
+                                    )/tw
             CD = max(CD, 10.0**(-limiter))
             F1 = sst_F1(i,j,k)
 
@@ -238,14 +245,14 @@ module source
 
 
             ! ____ Dissipation term ___
-            D_k = bstar*density(i,j,k)*tw(i,j,k)*tk(i,j,k)
-            D_w = beta*density(i,j,k)*tw(i,j,k)**2
+            D_k = bstar*density*tw*tk
+            D_w = beta*density*tw**2
 
             ! ____ PRODUCTION term____ 
             divergence = gradu_x(i,j,k) + gradv_y(i,j,k) + gradw_z(i,j,k)
-            P_k = mu_t(i,j,k)*(vort**2) -((2.0/3.0)*density(i,j,k)*tk(i,j,k)*divergence)
+            P_k = mu_t(i,j,k)*(vort**2) -((2.0/3.0)*density*tk*divergence)
             P_k = min(P_k,limiter*D_k)
-            P_w = (density(i,j,k)*gama/mu_t(i,j,k))*P_k
+            P_w = (density*gama/mu_t(i,j,k))*P_k
 
             ! ____ cross diffusion term ___
             lamda = (1. - F1)*CD
@@ -256,8 +263,8 @@ module source
             S_k = S_k * volume(i, j, k)
             S_w = S_w * volume(i, j, k)
 
-            TKE_residue(i, j, k)   = TKE_residue(i, j, k) - S_k
-            omega_residue(i, j, k) = omega_residue(i, j, k) - S_w
+            residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
+            residue(i, j, k, 7) = residue(i, j, k, 7) - S_w
 
           end do
         end do
@@ -266,12 +273,13 @@ module source
     end subroutine add_sst_source
 
 
-    subroutine add_sst_source_lctm2015(control, scheme, dims)
+    subroutine add_sst_source_lctm2015(qp, control, scheme, dims)
       !< Add residual due to source terms of the LCTM2015 transition model
       implicit none
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer :: i,j,k
 
       real :: CD
@@ -305,6 +313,9 @@ module source
       real :: divergence
       real :: dvdy
       integer :: limiter
+      real :: density
+      real :: tk
+      real :: tw
 
       if(trim(scheme%turbulence) == 'sst2003')then
         limiter = 10
@@ -315,13 +326,16 @@ module source
       end if
 
       !for pressure gradient calculation
-      call find_DCCVn(dims)
+      call find_DCCVn(qp, dims)
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1
           do i = 1,dims%imx-1
 
-            intermittency = qp(i,j,k,control%n_var)
+            density       = qp(i,j,k,1)
+            tk            = qp(i,j,k,6)
+            tw            = qp(i,j,k,7)
+            intermittency = qp(i,j,k,8)
 
             ! __ vorticity __
             vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
@@ -339,10 +353,10 @@ module source
                                )&
                          )
 
-            CD = 2*density(i,j,k)*sigma_w2*(gradtk_x(i,j,k)*gradtw_x(i,j,k)&
-                                          + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
-                                          + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
-                                           )/tw(i,j,k)
+            CD = 2*density*sigma_w2*(gradtk_x(i,j,k)*gradtw_x(i,j,k)&
+                                   + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
+                                   + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
+                                    )/tw
             CD = max(CD, 10.0**(-limiter))
             F1 = sst_F1(i,j,k)
 
@@ -355,34 +369,24 @@ module source
 
 
             ! ____ Dissipation term ___
-            D_k = bstar*density(i,j,k)*tw(i,j,k)*tk(i,j,k)
-            D_w = beta*density(i,j,k)*tw(i,j,k)**2
+            D_k = bstar*density*tw*tk
+            D_w = beta*density*tw**2
 
             ! ____ PRODUCTION term____ 
             divergence = gradu_x(i,j,k) + gradv_y(i,j,k) + gradw_z(i,j,k)
-            P_k = mu_t(i,j,k)*(vort*strain) - ((2.0/3.0)*density(i,j,k)*tk(i,j,k)*divergence)
+            P_k = mu_t(i,j,k)*(vort*strain) - ((2.0/3.0)*density*tk*divergence)
             P_k = min(P_k, limiter*D_k)
-            P_w = (density(i,j,k)*gama/mu_t(i,j,k))*P_k
+            P_w = (density*gama/mu_t(i,j,k))*P_k
 
             ! ____ cross diffusion term ___
             lamda = (1. - F1)*CD
 
             ! ____Transition modeling  ____
               ! --pressure gradient 
-!            u = qp(i,j,k,2)
-!            v = qp(i,j,k,3)
-!            w = qp(i,j,k,4)
-!            velmag = sqrt((u**2) + (v**2) + (w**2))
-!            dudx = 0.5*((2.0*u*gradu_x(i,j,k)) + (2.0*v*gradv_x(i,j,k)) + (2.0*w*gradw_x(i,j,k)))/velmag
-!            dudy = 0.5*((2.0*u*gradu_y(i,j,k)) + (2.0*v*gradv_y(i,j,k)) + (2.0*w*gradw_y(i,j,k)))/velmag
-!            dudz = 0.5*((2.0*u*gradu_z(i,j,k)) + (2.0*v*gradv_z(i,j,k)) + (2.0*w*gradw_z(i,j,k)))/velmag
-!            duds = (((u/velmag)*dudx) + ((v/velmag)*dudy) + ((w/velmag)*dudz))
-!            !lamd =(-7.57e-3)*(duds*dist(i,j,k)*dist(i,j,k)*density(i,j,k)/mu(i,j,k)) + 0.0128
-!            lamd =(+7.57e-3)*(duds*dist(i,j,k)*dist(i,j,k)*density(i,j,k)/mu(i,j,k)) + 0.0128
             dvdy = DCCVnX(i,j,k)*CCnormalX(i,j,k) &
                  + DCCVnY(i,j,k)*CCnormalY(i,j,k) &
                  + DCCVnZ(i,j,k)*CCnormalZ(i,j,k)
-            lamd =(-7.57e-3)*(dvdy*dist(i,j,k)*dist(i,j,k)*density(i,j,k)/mu(i,j,k)) + 0.0128
+            lamd =(-7.57e-3)*(dvdy*dist(i,j,k)*dist(i,j,k)*density/mu(i,j,k)) + 0.0128
             lamd = min(max(lamd, -1.0), 1.0)
             if(lamd>=0.0)then
                 Fpg = min(1.0 + 14.68*lamd, 1.5)
@@ -391,18 +395,18 @@ module source
             end if
             Fpg = max(Fpg, 0.0)
               ! --gradient
-            TuL = min(100.0*sqrt(2.0*tk(i,j,k)/3.0)/(tw(i,j,k)*dist(i,j,k)),100.0)
+            TuL = min(100.0*sqrt(2.0*tk/3.0)/(tw*dist(i,j,k)),100.0)
             Re_theta = 100.0 + 1000.0*exp(-TuL*Fpg)
             !Re_theta = 100.0 + 1000.0*exp(-TuL)
-            Rev = density(i,j,k)*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
-            RT = density(i,j,k)*tk(i,j,k)/(mu(i,j,k)*tw(i,j,k))
+            Rev = density*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
+            RT = density*tk/(mu(i,j,k)*tw)
             Fturb = exp(-(0.5*Rt)**4)
             Fonset1 = Rev/(2.2*Re_theta)
             Fonset2 = min(Fonset1, 2.0)
             Fonset3 = max(1.0 - (RT/3.5)**3, 0.0)
             Fonset  = max(Fonset2 - Fonset3, 0.0)
-            P_gm = 100*density(i,j,k)*strain*intermittency*(1.0 - intermittency)*Fonset
-            D_gm = 0.06*density(i,j,k)*vort*intermittency*Fturb*((50.0*intermittency) - 1.0)
+            P_gm = 100*density*strain*intermittency*(1.0 - intermittency)*Fonset
+            D_gm = 0.06*density*vort*intermittency*Fturb*((50.0*intermittency) - 1.0)
 
             Fon_lim = min(max((Rev/(2.2*1100.0))-1.0, 0.0), 3.0)
             Pk_lim = 5*max(intermittency - 0.2,0.0)*(1.0 - intermittency)*Fon_lim*max(3*mu(i,j,k) - mu_t(i,j,k), 0.0)*strain*vort
@@ -414,9 +418,9 @@ module source
             S_w = S_w * volume(i, j, k)
             S_gm= S_gm* Volume(i, j, k)
 
-            TKE_residue(i, j, k)   = TKE_residue(i, j, k) - S_k
-            omega_residue(i, j, k) = omega_residue(i, j, k) - S_w
-            residue(i,j,k,control%n_var) = residue(i,j,k,control%n_var) -S_gm
+            residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
+            residue(i, j, k, 7) = residue(i, j, k, 7) - S_w
+            residue(i, j, k, 8) = residue(i, j, k, 8) - S_gm
 
           end do
         end do
@@ -426,11 +430,12 @@ module source
 
 
     ! SST-BC model
-    subroutine add_sst_bc_source(flow, dims)
+    subroutine add_sst_bc_source(qp, flow, dims)
       !< Add residual due to source terms of the SST-BC transition model
       implicit none
       type(extent), intent(in) :: dims
       type(flowtype), intent(in) :: flow
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer :: i,j,k
 
       real :: CD
@@ -458,23 +463,29 @@ module source
       real :: term_exponential
       real :: gamma_BC
       real :: vmag
+      real :: density
+      real :: tk
+      real :: tw
 
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1
           do i = 1,dims%imx-1
 
+            density = qp(i,j,k,1)
+            tk      = qp(i,j,k,6)
+            tw      = qp(i,j,k,7)
             ! __ vorticity __
-            vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
-                            + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
-                            + (gradv_x(i,j,k)- gradu_y(i,j,k))**2 &
-                             )&
+            vort = sqrt( ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
+                        + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
+                        + (gradv_x(i,j,k)- gradu_y(i,j,k))**2 &
+                         )&
                        )
 
-            CD = 2*density(i,j,k)*sigma_w2*(gradtk_x(i,j,k)*gradtw_x(i,j,k)&
-                                          + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
-                                          + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
-                                           )/tw(i,j,k)
+            CD = 2*density*sigma_w2*(gradtk_x(i,j,k)*gradtw_x(i,j,k)&
+                                   + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
+                                   + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
+                                    )/tw
             !CD = max(CD, 1e-20)
             F1 = sst_F1(i,j,k)
 
@@ -487,13 +498,13 @@ module source
 
 
             ! ____ Dissipation term ___
-            D_k = bstar*density(i,j,k)*tw(i,j,k)*tk(i,j,k)
-            D_w = beta*density(i,j,k)*tw(i,j,k)**2
+            D_k = bstar*density*tw*tk
+            D_w = beta*density*tw**2
 
             ! ____ PRODUCTION term____ 
             P_k = mu_t(i,j,k)*(vort**2)
             P_k = min(P_k,20.0*D_k)
-            P_w = (density(i,j,k)*gama/mu_t(i,j,k))*P_k
+            P_w = (density*gama/mu_t(i,j,k))*P_k
 
             ! ____ cross diffusion term ___
             lamda = (1. - F1)*CD
@@ -504,17 +515,14 @@ module source
             chi_1 = 0.002
             chi_2 = 5.0
 
-            nu_t = mu_t(i,j,k)/density(i,j,k)
+            nu_t = mu_t(i,j,k)/density
             nu_cr = chi_2/flow%Reynolds_number
             nu_bc = nu_t/(vmag*dist(i,j,k))
 
-            !TuL = min(100.0*sqrt(2.0*tk(i,j,k)/3.0)/(tw(i,j,k)*dist(i,j,k)),100.0)
             TuL = flow%tu_inf !local turbulence intensity might not work for BC model
-            re_v = density(i,j,k)*dist(i,j,k)*dist(i,j,k)*vort/mu(i,j,k)
+            re_v = density*dist(i,j,k)*dist(i,j,k)*vort/mu(i,j,k)
             re_theta = re_v/2.193
             re_theta_t = (803.73*((TuL + 0.6067)**(-1.027)))
-            !re_theta_t = 100.0 + 1000.0*exp(-TuL)
-            !re_theta_t = 163.0 + exp(6.91 - TuL)
 
             term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t))
             term2 = sqrt(max(nu_BC-nu_cr,0.0)/nu_cr)
@@ -529,8 +537,8 @@ module source
             S_k = S_k * volume(i, j, k)
             S_w = S_w * volume(i, j, k)
 
-            TKE_residue(i, j, k)   = TKE_residue(i, j, k) - S_k
-            omega_residue(i, j, k) = omega_residue(i, j, k) - S_w
+            residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
+            residue(i, j, k, 7) = residue(i, j, k, 7) - S_w
 
           end do
         end do
@@ -539,10 +547,11 @@ module source
     end subroutine add_sst_bc_source
 
 
-    subroutine add_kkl_source(dims)
+    subroutine add_kkl_source(qp, dims)
       !< Add residual due to source terms of the k-kL turbulence model
       implicit none
       type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer :: i,j,k
 
       real :: Tau11
@@ -594,11 +603,18 @@ module source
       real :: D_kl
       real :: P_k
       real :: P_kl
+      real :: density
+      real :: tk
+      real :: tkl
 
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1
           do i = 1,dims%imx-1
+
+            density = qp(i,j,k,1)
+            tk      = qp(i,j,k,6)
+            tkl     = qp(i,j,k,7)
 
             S11 = 0.5*(gradu_x(i,j,k) + gradu_x(i,j,k))
             S12 = 0.5*(gradu_y(i,j,k) + gradv_x(i,j,k))
@@ -614,21 +630,21 @@ module source
 
             delv = gradu_x(i,j,k) + gradv_y(i,j,k) + gradw_z(i,j,k)
 
-            Tau11 = mu_t(i,j,k)*(2*S11 - (2.0/3.0)*delv) - (2.0/3.0)*density(i,j,k)*tk(i,j,k)
+            Tau11 = mu_t(i,j,k)*(2*S11 - (2.0/3.0)*delv) - (2.0/3.0)*density*tk
             Tau12 = mu_t(i,j,k)*(2*S12)
             Tau13 = mu_t(i,j,k)*(2*S13)
             Tau21 = mu_t(i,j,k)*(2*S21)
-            Tau22 = mu_t(i,j,k)*(2*S22 - (2.0/3.0)*delv) - (2.0/3.0)*density(i,j,k)*tk(i,j,k)
+            Tau22 = mu_t(i,j,k)*(2*S22 - (2.0/3.0)*delv) - (2.0/3.0)*density*tk
             Tau23 = mu_t(i,j,k)*(2*S23)
             Tau31 = mu_t(i,j,k)*(2*S31)
             Tau32 = mu_t(i,j,k)*(2*S32)
-            Tau33 = mu_t(i,j,k)*(2*S33 - (2.0/3.0)*delv) - (2.0/3.0)*density(i,j,k)*tk(i,j,k)
+            Tau33 = mu_t(i,j,k)*(2*S33 - (2.0/3.0)*delv) - (2.0/3.0)*density*tk
 
             P_k = 0.
             P_k = P_k + Tau11*gradu_x(i,j,k) + Tau12*gradu_y(i,j,k) + Tau13*gradu_z(i,j,k)
             P_k = P_k + Tau21*gradv_x(i,j,k) + Tau22*gradv_y(i,j,k) + Tau23*gradv_z(i,j,k)
             P_k = P_k + Tau31*gradw_x(i,j,k) + Tau32*gradw_y(i,j,k) + Tau33*gradw_z(i,j,k)
-            D_k = (cmu**0.75)*density(i,j,k)*(tk(i,j,k)**2.5)/max(tkl(i,j,k),1.e-20)
+            D_k = (cmu**0.75)*density*(tk**2.5)/max(tkl,1.e-20)
             P_k = min(P_k, 20*D_k)
 
             ! calculation of Lvk
@@ -720,26 +736,26 @@ module source
 
             fp = min(max(P_k/D_k, 0.5),1.0)
             ! Lvk limiter
-            Lvk = max(Lvk, tkl(i,j,k)/max((tk(i,j,k)*c11),1.e-20))
+            Lvk = max(Lvk, tkl/max((tk*c11),1.e-20))
             Lvk = min(Lvk, c12*kappa*dist(i,j,k)*fp)
 
-            eta = density(i,j,k)*dist(i,j,k)*sqrt(0.3*tk(i,j,k))/(20*mu(i,j,k))
+            eta = density*dist(i,j,k)*sqrt(0.3*tk)/(20*mu(i,j,k))
             fphi = (1 + cd1*eta)/(1 + eta**4)
             cphi2 = zeta3
-            cphi1 = (zeta1 - zeta2*((tkl(i,j,k)/max(tk(i,j,k)*Lvk,1.e-20))**2))
+            cphi1 = (zeta1 - zeta2*((tkl/max(tk*Lvk,1.e-20))**2))
 
-            P_kl = cphi1*tkl(i,j,k)*P_k/max(tk(i,j,k),1.e-20)
-            D_kl = cphi2*density(i,j,k)*(tk(i,j,k)**1.5)
+            P_kl = cphi1*tkl*P_k/max(tk,1.e-20)
+            D_kl = cphi2*density*(tk**1.5)
 
 
-            S_k  = P_k  - D_k  - 2*mu(i,j,k)*tk(i,j,k)/(dist(i,j,k)**2)       !Source term TKE
-            S_kl = P_kl - D_kl - 6*mu(i,j,k)*tkl(i,j,k)*fphi/(dist(i,j,k)**2) !source term KL
+            S_k  = P_k  - D_k  - 2*mu(i,j,k)*tk/(dist(i,j,k)**2)       !Source term TKE
+            S_kl = P_kl - D_kl - 6*mu(i,j,k)*tkl*fphi/(dist(i,j,k)**2) !source term KL
 
             S_k  = S_k  * volume(i, j, k)
             S_kl = S_kl * volume(i, j, k)
 
-            TKE_residue(i, j, k)   = TKE_residue(i, j, k) - S_k
-            KL_residue(i, j, k)    = KL_residue(i, j, k) - S_kl
+            residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
+            residue(i, j, k, 7) = residue(i, j, k, 7) - S_kl
 
           end do
         end do
@@ -748,10 +764,11 @@ module source
     end subroutine add_kkl_source
 
 
-    subroutine add_sa_source(dims)
+    subroutine add_sa_source(qp, dims)
       !< Add residual due to source terms of SA turbulence model
       implicit none
       type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer :: i,j,k
 
       real :: CD1
@@ -776,17 +793,22 @@ module source
       real, dimension(6) :: RhoFace
       real, dimension(6) :: Area
       real, dimension(6,3) :: Normal
+      real :: density
+      real :: tv
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1
           do i = 1,dims%imx-1
 
-            RhoFace(1) = density(i-1,j  ,k  )+density(i,j,k)
-            RhoFace(2) = density(i  ,j-1,k  )+density(i,j,k)
-            RhoFace(3) = density(i  ,j  ,k-1)+density(i,j,k)
-            RhoFace(4) = density(i+1,j  ,k  )+density(i,j,k)
-            RhoFace(5) = density(i  ,j+1,k  )+density(i,j,k)
-            RhoFace(6) = density(i  ,j  ,k+1)+density(i,j,k)
+            density = qp(i,j,k,1)
+            tv      = qp(i,j,k,6)
+
+            RhoFace(1) = qp(i-1,j  ,k  ,1)+density
+            RhoFace(2) = qp(i  ,j-1,k  ,1)+density
+            RhoFace(3) = qp(i  ,j  ,k-1,1)+density
+            RhoFace(4) = qp(i+1,j  ,k  ,1)+density
+            RhoFace(5) = qp(i  ,j+1,k  ,1)+density
+            RhoFace(6) = qp(i  ,j  ,k+1,1)+density
 
             Area(1) = xA(i,j,k)
             Area(2) = yA(i,j,k)
@@ -808,7 +830,7 @@ module source
                          +(RhoFace(4))*Normal(4,1)*Area(4) &
                          +(RhoFace(5))*Normal(5,1)*Area(5) &
                          +(RhoFace(6))*Normal(6,1)*Area(6) &
-                        )/(2*volume(i,j,k))
+                        )/(2.0*volume(i,j,k))
 
             gradrho_y = (-(RhoFace(1))*Normal(1,2)*Area(1) &
                          -(RhoFace(2))*Normal(2,2)*Area(2) &
@@ -816,7 +838,7 @@ module source
                          +(RhoFace(4))*Normal(4,2)*Area(4) &
                          +(RhoFace(5))*Normal(5,2)*Area(5) &
                          +(RhoFace(6))*Normal(6,2)*Area(6) &
-                        )/(2*volume(i,j,k))
+                        )/(2.0*volume(i,j,k))
 
             gradrho_z = (-(RhoFace(1))*Normal(1,3)*Area(1) &
                          -(RhoFace(2))*Normal(2,3)*Area(2) &
@@ -824,7 +846,7 @@ module source
                          +(RhoFace(4))*Normal(4,3)*Area(4) &
                          +(RhoFace(5))*Normal(5,3)*Area(5) &
                          +(RhoFace(6))*Normal(6,3)*Area(6) &
-                        )/(2*volume(i,j,k))
+                        )/(2.0*volume(i,j,k))
 
 
             ! __ vorticity __
@@ -847,32 +869,33 @@ module source
                      )
 
             kd2  = (kappa_sa*dist(i,j,k))**2
-            nu   = mu(i,j,k)/density(i,j,k)
-            xi   = tv(i,j,k)/nu
+            nu   = mu(i,j,k)/density
+            xi   = tv/nu
 
             ! ___ functions ___
             fv1  = (xi**3)/((xi**3) + (cv1**3))
             fv2  = 1.0 - xi/(1.0 + (xi*fv1))
 
             ! ___ Shear stress for production ___
-            scap = max(vort + (tv(i,j,k)*fv2/(kd2)), 0.3*vort)
+            scap = max(vort + (tv*fv2/(kd2)), 0.3*vort)
 
             ! ___ wall function ___
-            r    = min(tv(i,j,k)/(Scap*kd2), 10.0)
+            r    = min(tv/(Scap*kd2), 10.0)
             g    = r + cw2*((r**6) - r)
             fw   = g*( (1.0+(cw3**6))/((g**6)+(cw3**6)) )**(1.0/6.0)
 
             ! ____ Dissipation term ___
-            D_v = density(i,j,k)*cw1*fw*((tv(i,j,k)/dist(i,j,k))**2)
+            D_v = density*cw1*fw*((tv/dist(i,j,k))**2)
 
             ! ____ PRODUCTION term____
-            P_v = density(i,j,k)*cb1*Scap*tv(i,j,k)
+            P_v = density*cb1*Scap*tv
 
             ! ____ cross diffusion term ___
-            lamda = density(i,j,k)*CD1/sigma_sa - CD2*(nu+tv(i,j,k))/sigma_sa
+            lamda = density*CD1/sigma_sa - CD2*(nu+tv)/sigma_sa
 
             S_v = (P_v - D_v  + lamda)*volume(i,j,k)
-            tv_residue(i, j, k)   = tv_residue(i, j, k) - S_v
+
+            residue(i, j, k, 6)   = residue(i, j, k, 6) - S_v
 
           end do
         end do
@@ -880,11 +903,12 @@ module source
 
     end subroutine add_sa_source
 
-    subroutine add_saBC_source(flow, dims)
+    subroutine add_saBC_source(qp, flow, dims)
       !< Add residual due to source terms of SABC transition model
       implicit none
       type(extent), intent(in) :: dims
       type(flowtype), intent(in) :: flow
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer :: i,j,k
 
       real :: CD1
@@ -934,6 +958,8 @@ module source
       real :: term_exponential
       real :: gamma_BC
       real :: tu
+      real :: tv
+      real :: density
 
       tu = flow%tu_inf
 
@@ -942,17 +968,19 @@ module source
           do i = 1,dims%imx-1
 
             !Local_vel_mag
-            u = qp(i,j,k,2)
-            v = qp(i,j,k,3)
-            w = qp(i,j,k,4)
+            density= qp(i,j,k,1)
+            u      = qp(i,j,k,2)
+            v      = qp(i,j,k,3)
+            w      = qp(i,j,k,4)
+            tv     = qp(i,j,k,6)
             vmag = sqrt(u*u + v*v + w*w)
 
-            RhoFace(1) = density(i-1,j  ,k  )+density(i,j,k)
-            RhoFace(2) = density(i  ,j-1,k  )+density(i,j,k)
-            RhoFace(3) = density(i  ,j  ,k-1)+density(i,j,k)
-            RhoFace(4) = density(i+1,j  ,k  )+density(i,j,k)
-            RhoFace(5) = density(i  ,j+1,k  )+density(i,j,k)
-            RhoFace(6) = density(i  ,j  ,k+1)+density(i,j,k)
+            RhoFace(1) = qp(i-1,j  ,k  ,1)+density
+            RhoFace(2) = qp(i  ,j-1,k  ,1)+density
+            RhoFace(3) = qp(i  ,j  ,k-1,1)+density
+            RhoFace(4) = qp(i+1,j  ,k  ,1)+density
+            RhoFace(5) = qp(i  ,j+1,k  ,1)+density
+            RhoFace(6) = qp(i  ,j  ,k+1,1)+density
 
             Area(1) = xA(i,j,k)
             Area(2) = yA(i,j,k)
@@ -1015,8 +1043,8 @@ module source
             dist_i = dist(i,j,k)
             dist_i_2 = dist_i*dist_i
             k2 = kappa_sa*kappa_sa
-            nu   = mu(i,j,k)/density(i,j,k)
-            Ji   = tv(i,j,k)/nu
+            nu   = mu(i,j,k)/density
+            Ji   = tv/nu
             Ji_2 = Ji*Ji
             Ji_3 = Ji_2*ji
 
@@ -1028,7 +1056,7 @@ module source
             ! ___ Shear stress for production ___
             S = Omega
             inv_k2_d2 = 1.0/(k2*dist_i_2)
-            Shat      = S + tv(i,j,k)*fv2*inv_k2_d2
+            Shat      = S + tv*fv2*inv_k2_d2
             Shat      = max(Shat, 1.0e-10)
             inv_Shat  = 1.0/Shat
 
@@ -1036,7 +1064,7 @@ module source
             chi_1 = 0.002
             chi_2 = 5.0
 
-            nu_t = tv(i,j,k)*fv1
+            nu_t = tv*fv1
             nu_cr = chi_2/flow%Reynolds_number
             nu_bc = nu_t/(vmag*dist_i)
 
@@ -1050,23 +1078,22 @@ module source
             term2 = sqrt(max(nu_BC-nu_cr,0.0)/nu_cr)
             term_exponential = (term1 + term2)
             gamma_BC = 1.0 - exp(-term_exponential)
-!            intermittency(i,j,k) = gamma_BC
 
-            Production = gamma_BC*cb1*Shat*tv(i,j,k)*volume(i,j,k)
+            Production = gamma_BC*cb1*Shat*tv*volume(i,j,k)
 
             ! ___ Destruction term___ !
-            r    = min(tv(i,j,k)*inv_Shat*inv_k2_d2, 10.0)
+            r    = min(tv*inv_Shat*inv_k2_d2, 10.0)
             g    = r + cw2*((r**6) - r)
             g_6  = g**6
             glim = ((1.0+cw3_6)/(g_6+cw3_6))**(1.0/6.0)
             fw   = g*glim
-            Destruction = (cw1*fw*tv(i,j,k)*tv(i,j,k)/dist_i_2)*(volume(i,j,k))
+            Destruction = (cw1*fw*tv*tv/dist_i_2)*(volume(i,j,k))
 
             ! ____ cross diffusion term ___
-            lamda = (density(i,j,k)*CD1/sigma_sa - CD2*(nu+tv(i,j,k))/sigma_sa)*volume(i,j,k)
+            lamda = (density*CD1/sigma_sa - CD2*(nu+tv)/sigma_sa)*volume(i,j,k)
 
             S_v = (Production - Destruction  + lamda)
-            tv_residue(i, j, k)   = tv_residue(i, j, k) - S_v
+            residue(i, j, k, 6)   = residue(i, j, k, 6) - S_v
 
           end do
         end do

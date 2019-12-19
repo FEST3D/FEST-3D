@@ -19,6 +19,7 @@ module vartypes
       integer :: imx
       integer :: jmx
       integer :: kmx
+      integer :: n_var
     end type extent
 
 

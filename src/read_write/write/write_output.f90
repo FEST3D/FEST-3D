@@ -69,13 +69,15 @@ module write_output
       close(file_handler)
     end subroutine close_file
 
-    subroutine write_file(files, nodes, control, dims)
+    subroutine write_file(files, qp, nodes, control, scheme,  dims)
       !< Writing output in the file according to the input file type
       implicit none
       type(filetype), intent(in) :: files
       type(extent), intent(in) :: dims
       type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
       type(nodetype), dimension(-2:dims%imx+3, -2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer:: file_handler
 
       file_handler = files%OUT_FILE_UNIT
@@ -86,13 +88,13 @@ module write_output
       select case (control%write_file_format)
 
         case ('vtk')
-          call write_file_vtk(file_handler, nodes, control, dims)
+          call write_file_vtk(file_handler, qp, nodes, control, scheme, dims)
 
         case ('tecplot')
-          call write_file_tec(file_handler, nodes, control, dims)
+          call write_file_tec(file_handler, qp, nodes, control, scheme, dims)
 
         case ('tecplot_nodal')
-          call write_file_tec_nodal(file_handler, nodes, control, dims)
+          call write_file_tec_nodal(file_handler, qp, nodes, control, scheme, dims)
 
         case DEFAULT
           Fatal_error

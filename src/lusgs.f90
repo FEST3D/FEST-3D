@@ -27,9 +27,6 @@ module lusgs
   use global_sa , only : kappa_sa
   use global_sa , only : cv1_3
   use global_sa , only : cw3_6
-!  use global_vars, only : R_gas
-!  use global_vars, only : Pr
-!  use global_vars, only : tPr
   use global_vars, only : DCCVnX
   use global_vars, only : DCCVnY
   use global_vars, only : DCCVnZ
@@ -44,25 +41,19 @@ module lusgs
   use global_vars, only : xA, yA, zA    !face area
     
 !  use global_vars, only : gm
-  use global_vars, only : qp
-  use global_vars, only : density
-  use global_vars, only : x_speed
-  use global_vars, only : y_speed
-  use global_vars, only : z_speed
-  use global_vars, only : pressure
+!  use global_vars, only : qp
+!  use global_vars, only : density
+!  use global_vars, only : x_speed
+!  use global_vars, only : y_speed
+!  use global_vars, only : z_speed
+!  use global_vars, only : pressure
   use global_vars, only : dist
   use global_vars, only : mu
   use global_vars, only : mu_t
-!  use global_vars, only : tk_inf
-!  use global_vars, only : tkl_inf
-!  use global_vars, only : free_stream_tu
-  use global_vars, only : tk
-  use global_vars, only : tw
+!  use global_vars, only : tk
+!  use global_vars, only : tw
 
   use global_vars, only : delta_t
-!  use global_vars, only : turbulence
-!  use global_vars, only : transition
-!  use global_vars, only : Reynolds_number
   use global_vars, only : process_id
 
   use global_vars, only: F_p
@@ -182,7 +173,7 @@ module lusgs
 
   public :: update_with_lusgs
   public :: setup_lusgs
-  public :: destroy_lusgs
+!  public :: destroy_lusgs
 
   contains
 
@@ -245,51 +236,53 @@ module lusgs
       end if
     end subroutine setup_lusgs
 
-    subroutine destroy_lusgs()
-      !< unallocate the memory required by LU-SGS module
-      implicit none
-      call dealloc(imin_send_buf)
-      call dealloc(jmin_send_buf)
-      call dealloc(kmin_send_buf)
-      call dealloc(imin_recv_buf)
-      call dealloc(jmin_recv_buf)
-      call dealloc(kmin_recv_buf)
-      call dealloc(imax_send_buf)
-      call dealloc(jmax_send_buf)
-      call dealloc(kmax_send_buf)
-      call dealloc(imax_recv_buf)
-      call dealloc(jmax_recv_buf)
-      call dealloc(kmax_recv_buf)
-      call dealloc(delQ)
-      call dealloc(delQstar)
-      call dealloc(dummy)
-    end subroutine destroy_lusgs
+!    subroutine destroy_lusgs()
+!      !< unallocate the memory required by LU-SGS module
+!      implicit none
+!      call dealloc(imin_send_buf)
+!      call dealloc(jmin_send_buf)
+!      call dealloc(kmin_send_buf)
+!      call dealloc(imin_recv_buf)
+!      call dealloc(jmin_recv_buf)
+!      call dealloc(kmin_recv_buf)
+!      call dealloc(imax_send_buf)
+!      call dealloc(jmax_send_buf)
+!      call dealloc(kmax_send_buf)
+!      call dealloc(imax_recv_buf)
+!      call dealloc(jmax_recv_buf)
+!      call dealloc(kmax_recv_buf)
+!      call dealloc(delQ)
+!      call dealloc(delQstar)
+!      call dealloc(dummy)
+!    end subroutine destroy_lusgs
 
-    subroutine update_with_lusgs(scheme)
+    subroutine update_with_lusgs(qp, scheme, dims)
       !< Time-integrate with LU_SGS method
       implicit none
       type(schemetype), intent(in) :: scheme
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
 
       DebugCall("Update_with_lusgs")
       select case(trim(scheme%turbulence))
         case('none')
-          call update_laminar_variables()
+          call update_laminar_variables(qp, dims)
 
         case('sst', 'sst2003')
           select case(trim(scheme%transition))
             case('none', 'bc')
-              call update_SST_variables()
+              call update_SST_variables(qp, dims)
             case('lctm2015')
-              call update_lctm2015()
+              call update_lctm2015(qp, dims)
             case DEFAULT
               Fatal_error
           end select
 
         case('kkl')
-          call update_KKL_variables()
+          call update_KKL_variables(qp, dims)
 
         case('sa', 'saBC')
-          call update_SA_variables()
+          call update_SA_variables(qp, dims)
 
         case Default
           Fatal_error
@@ -300,10 +293,12 @@ module lusgs
     end subroutine update_with_lusgs
 
 
-    subroutine update_laminar_variables()
+    subroutine update_laminar_variables(qp, dims)
       !< Update laminar flow with LU-SGS scheme
       implicit none
       integer :: i,j,k
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
         real, dimension(1:5)     :: deltaU
         real                     :: D
         real, dimension(1:5)     :: conservativeQ
@@ -352,9 +347,9 @@ module lusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -461,9 +456,9 @@ module lusgs
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -564,9 +559,9 @@ module lusgs
           end do
         end do
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -784,9 +779,11 @@ module lusgs
     end function SpectralRadius
 
 
-    subroutine update_SST_variables()
+    subroutine update_SST_variables(qp, dims)
       !< Update the RANS (SST) equation with LU-SGS
       implicit none
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout):: qp
       integer :: i,j,k
         real, dimension(1:7)     :: deltaU
         real, dimension(1:7)     :: D
@@ -841,9 +838,9 @@ module lusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -961,9 +958,9 @@ module lusgs
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -1076,9 +1073,9 @@ module lusgs
         end do
 
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -1280,9 +1277,11 @@ module lusgs
 
     end function SSTFlux 
 
-    subroutine update_KKL_variables()
+    subroutine update_KKL_variables(qp, dims)
       !< Update the RANS (k-kL) equation with LU-SGS
       implicit none
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout):: qp
       integer :: i,j,k
         real, dimension(1:7)     :: deltaU
         real, dimension(1:7)     :: D
@@ -1331,9 +1330,9 @@ module lusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -1443,9 +1442,9 @@ module lusgs
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -1550,9 +1549,9 @@ module lusgs
           end do
         end do
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -1746,9 +1745,11 @@ module lusgs
     end function KKLFlux 
 
 
-    subroutine update_SA_variables()
+    subroutine update_SA_variables(qp, dims)
       !< Update the RANS (SA) equation with LU-SGS
       implicit none
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       integer :: i,j,k
         real, dimension(1:6)     :: deltaU
         real, dimension(1:6)     :: D
@@ -1815,6 +1816,7 @@ module lusgs
       real :: dShat
       real :: dr
       real :: dg
+      real :: density
 
 
 
@@ -1822,9 +1824,12 @@ module lusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
+
+              density = qp(i,j,k,1)
+
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -1927,7 +1932,7 @@ module lusgs
               dist_i = dist(i,j,k)
               dist_i_2 = dist_i*dist_i
               k2 = kappa_sa*kappa_sa
-              nu   = mu(i,j,k)/density(i,j,k)
+              nu   = mu(i,j,k)/density
               Ji   = Q0(6)/nu
               Ji_2 = Ji*Ji
               Ji_3 = Ji_2*ji
@@ -1972,13 +1977,13 @@ module lusgs
           end do
         end do
 
-        !call apply_interface(delQstar, 1)
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
+              density = qp(i,j,k,1)
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -2079,7 +2084,7 @@ module lusgs
               dist_i = dist(i,j,k)
               dist_i_2 = dist_i*dist_i
               k2 = kappa_sa*kappa_sa
-              nu   = mu(i,j,k)/density(i,j,k)
+              nu   = mu(i,j,k)/density
               Ji   = Q0(6)/nu
               Ji_2 = Ji*Ji
               Ji_3 = Ji_2*ji
@@ -2122,9 +2127,9 @@ module lusgs
           end do
         end do
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -2308,9 +2313,11 @@ module lusgs
     end function SAFlux 
 
 
-    subroutine update_lctm2015()
+    subroutine update_lctm2015(qp, dims)
       !< Update the RANS (LCTM2015 transition model with SST2003) equation with LU-SGS
       implicit none
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       integer :: i,j,k
         real, dimension(1:8)     :: deltaU
         real, dimension(1:8)     :: D
@@ -2368,6 +2375,7 @@ module lusgs
         real :: strain
         real :: vort
         real :: Dp, De
+        real :: density
         Dp = 0.0
         De = 0.0
 
@@ -2376,9 +2384,10 @@ module lusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
+              density = qp(i,j,k,1)
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -2495,17 +2504,17 @@ module lusgs
                                 + 2*(gradw_z(i,j,k))**2 &
                                  )&
                            )
-              TuL = min(100.0*sqrt(2.0*tk(i,j,k)/3.0)/(tw(i,j,k)*dist(i,j,k)),100.0)
+              TuL = min(100.0*sqrt(2.0*qp(i,j,k,6)/3.0)/(qp(i,j,k,7)*dist(i,j,k)),100.0)
               Re_theta = 100.0 + 1000.0*exp(-TuL)
-              Rev = density(i,j,k)*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
-              RT = density(i,j,k)*tk(i,j,k)/(mu(i,j,k)*tw(i,j,k))
+              Rev = density*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
+              RT = density*qp(i,j,k,6)/(mu(i,j,k)*qp(i,j,k,7))
               Fturb = exp(-(0.5*Rt)**4)
               Fonset1 = Rev/(2.2*Re_theta)
               Fonset2 = min(Fonset1, 2.0)
               Fonset3 = max(1.0 - (RT/3.5)**3, 0.0)
               Fonset  = max(Fonset2 - Fonset3, 0.0)
-              Dp = 100*density(i,j,k)*strain*Fonset*(1.0-2.0*Q0(8))
-              De = 0.06*vort*Fturb*density(i,j,k)*(2.0*50.0*Q0(8) - 1.0)
+              Dp = 100*density*strain*Fonset*(1.0-2.0*Q0(8))
+              De = 0.06*vort*Fturb*density*(2.0*50.0*Q0(8) - 1.0)
               D(8) = (D(8) + (-Dp + DE )*volume(i,j,k))
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
@@ -2522,9 +2531,10 @@ module lusgs
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
+              density = qp(i,j,k,1)
               C0  = CellCenter(i  ,j  ,k  ,:)
               C1  = CellCenter(i-1,j  ,k  ,:)
               C2  = CellCenter(i  ,j-1,k  ,:)
@@ -2640,17 +2650,17 @@ module lusgs
                                 + 2*(gradw_z(i,j,k))**2 &
                                  )&
                            )
-              TuL = min(100.0*sqrt(2.0*tk(i,j,k)/3.0)/(tw(i,j,k)*dist(i,j,k)),100.0)
+              TuL = min(100.0*sqrt(2.0*qp(i,j,k,6)/3.0)/(qp(i,j,k,7)*dist(i,j,k)),100.0)
               Re_theta = 100.0 + 1000.0*exp(-TuL)
-              Rev = density(i,j,k)*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
-              RT = density(i,j,k)*tk(i,j,k)/(mu(i,j,k)*tw(i,j,k))
+              Rev = density*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
+              RT = density*qp(i,j,k,6)/(mu(i,j,k)*qp(i,j,k,7))
               Fturb = exp(-(0.5*Rt)**4)
               Fonset1 = Rev/(2.2*Re_theta)
               Fonset2 = min(Fonset1, 2.0)
               Fonset3 = max(1.0 - (RT/3.5)**3, 0.0)
               Fonset  = max(Fonset2 - Fonset3, 0.0)
-              Dp = 100*density(i,j,k)*strain*Fonset*(1.0-2.0*Q0(8))
-              De = 0.06*vort*Fturb*density(i,j,k)*(2.0*50.0*Q0(8) - 1.0)
+              Dp = 100*density*strain*Fonset*(1.0-2.0*Q0(8))
+              De = 0.06*vort*Fturb*density*(2.0*50.0*Q0(8) - 1.0)
               D(8) = (D(8) + (-Dp + DE )*volume(i,j,k))
 
               delQ(i,j,k,1:8) = delQstar(i,j,k,1:8) &
@@ -2662,9 +2672,9 @@ module lusgs
           end do
         end do
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -2883,484 +2893,4 @@ module lusgs
     end function lctm2015flux
 
 
-    subroutine apply_interface(qp, layers)
-      implicit none
-      integer, intent(in):: layers
-      real, dimension(0:imx,0:jmx,0:kmx,1:n_var), intent(inout):: qp
-      integer:: i,j,k,n,l
-      integer:: status(MPI_STATUS_SIZE)
-      integer:: ierr
-      integer:: tag=1
-      integer:: count=0
-
-
-      !--- IMIN ---!
-      DebugCall('apply_interface')
-      if(imin_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                imin_send_buf(count) = qp(l,j,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
-                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(1)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do k=Pklo(1),Pkhi(1),PkDir(1)
-                do j=Pjlo(1),Pjhi(1),PjDir(1)
-                  count=count+1
-                 qp(1-l,j,k,n) = imin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do j=Pjlo(1),Pjhi(1),PjDir(1)
-                do k=Pklo(1),Pkhi(1),PkDir(1)
-                  count=count+1
-                  qp(1-l,j,k,n) = imin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-      !--- IMAX ---!
-      if(imax_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                imax_send_buf(count) = qp(imx-l,j,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
-                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(2)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do k=Pklo(2),Pkhi(2),PkDir(2)
-                do j=Pjlo(2),Pjhi(2),PjDir(2)
-                  count=count+1
-                   qp(imx+l-1,j,k,n) = imax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do j=Pjlo(2),Pjhi(2),Pjdir(2)
-                do k=Pklo(2),Pkhi(2),PkDir(2)
-                  count=count+1
-                   qp(imx+l-1,j,k,n) = imax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-
-
-      !--- JMIN ---!
-      if(jmin_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                jmin_send_buf(count) = qp(i,l,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmin_id,tag,&
-                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmin_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(3)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do k=Pklo(3),Pkhi(3),PkDir(3)
-                do i=Pilo(3),Pihi(3),PiDir(3)
-                  count=count+1
-                  qp(i,1-l,k,n) = jmin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do i=Pilo(3),Pihi(3),PiDir(3)
-                do k=Pklo(3),Pkhi(3),PkDir(3)
-                  count=count+1
-                  qp(i,1-l,k,n) = jmin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-      !--- JMAX ---!
-      if(jmax_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                jmax_send_buf(count) = qp(i,jmx-l,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmax_id,tag,&
-                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmax_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(4)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do k=Pklo(4),Pkhi(4),PkDir(4)
-                do i=Pilo(4),Pihi(4),PiDir(4)
-                  count=count+1
-                  qp(i,jmx+l-1,k,n) = jmax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do i=Pilo(4),Pihi(4),PiDir(4)
-                do k=Pklo(4),Pkhi(4),PkDir(4)
-                  count=count+1
-                  qp(i,jmx+l-1,k,n) = jmax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-      !--- KMIN ---!
-      if(kmin_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                kmin_send_buf(count) = qp(i,j,l,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmin_id,tag,&
-                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmin_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(5)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do j=Pjlo(5),Pjhi(5),PjDir(5)
-                do i=Pilo(5),Pihi(5),PiDir(5)
-                  count=count+1
-                  qp(i,j,1-l,n) = kmin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do i=Pilo(5),Pihi(5),PiDir(5)
-                do j=Pjlo(5),Pjhi(5),PjDir(5)
-                  count=count+1
-                  qp(i,j,1-l,n) = kmin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-      !--- KMAX ---!
-      if(kmax_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                kmax_send_buf(count) = qp(i,j,kmx-l,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmax_id,tag,&
-                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmax_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(6)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do j=Pjlo(6),Pjhi(6),PjDir(6)
-                do i=Pilo(6),Pihi(6),PiDir(6)
-                  count=count+1
-                  qp(i,j,kmx+l-1,n) = kmax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do i=Pilo(6),Pihi(6),PiDir(6)
-                do j=Pjlo(6),Pjhi(6),PjDir(6)
-                  count=count+1
-                  qp(i,j,kmx+l-1,n) = kmax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-      call apply_periodic_bc(delQstar, 1)
-    end subroutine apply_interface
-
-    subroutine apply_periodic_bc(qp, layers)
-      implicit none
-      integer, intent(in) :: layers
-      real, dimension(0:imx,0:jmx,0:kmx,1:n_var), intent(inout) :: qp
-      integer:: i,j,k,n,l
-      integer:: status(MPI_STATUS_SIZE)
-      integer:: ierr
-      integer:: tag=1
-      integer:: count=0
-
-      DebugCall('apply_periodic_boundary_condition')
-      if(PbcId(1)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                imin_send_buf(count) = qp(l,j,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(1),tag,&
-                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(1),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                qp(1-l,j,k,n) = imin_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-      if(PbcId(2)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                imax_send_buf(count) = qp(imx-l,j,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(2),tag,&
-                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(2),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                 qp(imx+l-1,j,k,n) = imax_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-      !--- JMIN ---!
-      if(PbcId(3)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                jmin_send_buf(count) = qp(i,l,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(3),tag,&
-                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(3),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                qp(i,1-l,k,n) = jmin_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-      !--- JMAX ---!
-      if(PbcId(4)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                jmax_send_buf(count) = qp(i,jmx-l,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(4),tag,&
-                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(4),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                qp(i,jmx+l-1,k,n) = jmax_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-      !--- KMIN ---!
-      if(PbcId(5)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                kmin_send_buf(count) = qp(i,j,l,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(5),tag,&
-                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(5),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                qp(i,j,1-l,n) = kmin_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-      !--- KMAX ---!
-      if(PbcId(6)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                kmax_send_buf(count) = qp(i,j,kmx-l,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(6),tag,&
-                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(6),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                qp(i,j,kmx+l-1,n) = kmax_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-
-    end subroutine apply_periodic_bc
 end module lusgs

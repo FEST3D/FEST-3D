@@ -24,19 +24,6 @@ module muscl
     use vartypes
     use utils, only: alloc, dealloc
 
-    use global_vars, only : qp
-    use global_vars, only : pressure
-!    use global_vars, only : pressure_inf
-!    use global_vars, only : ilimiter_switch
-!    use global_vars, only : jlimiter_switch
-!    use global_vars, only : klimiter_switch
-!    use global_vars, only : itlimiter_switch
-!    use global_vars, only : jtlimiter_switch
-!    use global_vars, only : ktlimiter_switch
-!    use global_vars, only : iPB_switch
-!    use global_vars, only : jPB_switch
-!    use global_vars, only : kPB_switch
-
     implicit none
     private
 
@@ -69,7 +56,7 @@ module muscl
     integer :: imx, jmx, kmx, n_var
     ! Public members
     public :: setup_scheme
-    public :: destroy_scheme
+!    public :: destroy_scheme
     public :: compute_muscl_states
     public :: x_qp_left, x_qp_right
     public :: y_qp_left, y_qp_right
@@ -127,30 +114,31 @@ module muscl
         end subroutine setup_scheme
 
 
-        subroutine destroy_scheme()
-          !< Deallocate all the array used 
+!        subroutine destroy_scheme()
+!          !< Deallocate all the array used 
+!
+!            implicit none
+!
+!            DebugCall('destroy_muscl')
+!
+!            call dealloc(x_qp_left)
+!            call dealloc(x_qp_right)
+!            call dealloc(y_qp_left)
+!            call dealloc(y_qp_right)
+!            call dealloc(z_qp_left)
+!            call dealloc(z_qp_right)
+!            call dealloc(pdif)
+!
+!        end subroutine destroy_scheme
 
-            implicit none
 
-            DebugCall('destroy_muscl')
-
-            call dealloc(x_qp_left)
-            call dealloc(x_qp_right)
-            call dealloc(y_qp_left)
-            call dealloc(y_qp_right)
-            call dealloc(z_qp_left)
-            call dealloc(z_qp_right)
-            call dealloc(pdif)
-
-        end subroutine destroy_scheme
-
-
-        subroutine pressure_based_switching(f_dir, flow)
+        subroutine pressure_based_switching(qp, f_dir, flow)
           !< Pressure based switching. 
           !< User x,y, or z for I,J,or K face respectively
           !----------------------------------------------
 
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
             type(flowtype), intent(in) :: flow
             character, intent(in) :: f_dir
             !< Character can be x or y or z
@@ -201,8 +189,8 @@ module muscl
             do k = 1, kmx - 1
              do j = 1, jmx - 1
               do i = 1, imx - 1
-                pd2 = abs(pressure(i + i_f*1, j + j_f*1, k + k_f*1) - &
-                          pressure(i - i_f*1, j - j_f*1, k - k_f*1))
+                pd2 = abs(qp(i + i_f*1, j + j_f*1, k + k_f*1, 5) - &  !pressure
+                          qp(i - i_f*1, j - j_f*1, k - k_f*1, 5))
                 pdif(i, j, k) = 1 - (pd2/(pd2 + flow%pressure_inf))
               end do
              end do
@@ -238,10 +226,11 @@ module muscl
         end subroutine pressure_based_switching
 
 
-        subroutine compute_face_state(f_dir, lam_switch, turb_switch)
+        subroutine compute_face_state(qp, f_dir, lam_switch, turb_switch)
           !< Subroutine to calculate state at the face, generalized for
           !< all direction : I,J, and K.
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
             ! Character can be x or y or z
             character, intent(in) :: f_dir
             !< Input direction x,y,or, z for which subroutine is called
@@ -342,26 +331,27 @@ module muscl
         end subroutine compute_face_state
         
         
-        subroutine compute_muscl_states(scheme, flow)
+        subroutine compute_muscl_states(qp, scheme, flow)
             !< Implement MUSCL scheme to get left and right states at
             !< each face. The computation is done through all cells
             !< and first level ghost cells
             !---------------------------------------------------------
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(in) ::flow
             
-            call compute_face_state('x', scheme%ilimiter_switch, scheme%itlimiter_switch)
+            call compute_face_state(qp, 'x', scheme%ilimiter_switch, scheme%itlimiter_switch)
             if(scheme%iPB_switch==1)then
-              call pressure_based_switching('x', flow)
+              call pressure_based_switching(qp, 'x', flow)
             end if
-            call compute_face_state('y', scheme%jlimiter_switch, scheme%jtlimiter_switch)
+            call compute_face_state(qp, 'y', scheme%jlimiter_switch, scheme%jtlimiter_switch)
             if(scheme%jPB_switch==1)then
-              call pressure_based_switching('y', flow)
+              call pressure_based_switching(qp, 'y', flow)
             end if
-            call compute_face_state('z', scheme%klimiter_switch, scheme%ktlimiter_switch)
+            call compute_face_state(qp, 'z', scheme%klimiter_switch, scheme%ktlimiter_switch)
             if(scheme%kPB_switch==1)then
-              call pressure_based_switching('z', flow)
+              call pressure_based_switching(qp, 'z', flow)
             end if
 
         end subroutine compute_muscl_states

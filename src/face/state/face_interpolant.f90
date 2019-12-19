@@ -3,16 +3,8 @@ module face_interpolant
 #include "../../debug.h"
 #include "../../error.h"
     use vartypes
-!    use global, only: INTERPOLANT_NAME_LENGTH
-    use global_vars, only : qp
-!    use global_vars, only : gm
-!    use global_vars, only : turbulence
-
-!    use global_vars, only : interpolant
-
     use utils, only: alloc, dealloc
     use muscl, only: setup_scheme_muscl => setup_scheme, &
-            destroy_scheme_muscl => destroy_scheme, &
             compute_muscl_states, &
             x_qp_left_muscl => x_qp_left, &
             x_qp_right_muscl => x_qp_right, &
@@ -21,7 +13,6 @@ module face_interpolant
             z_qp_left_muscl => z_qp_left, &
             z_qp_right_muscl => z_qp_right
     use ppm, only: setup_scheme_ppm => setup_scheme, &
-            destroy_scheme_ppm => destroy_scheme, &
             compute_ppm_states, &
             x_qp_left_ppm => x_qp_left, &
             x_qp_right_ppm => x_qp_right, &
@@ -30,7 +21,6 @@ module face_interpolant
             z_qp_left_ppm => z_qp_left, &
             z_qp_right_ppm => z_qp_right
     use weno, only: setup_scheme_weno => setup_scheme, &
-            destroy_scheme_weno => destroy_scheme, &
             compute_weno_states, &
              x_qp_left_weno => x_qp_left, &
             x_qp_right_weno => x_qp_right, &
@@ -39,7 +29,6 @@ module face_interpolant
              z_qp_left_weno => z_qp_left, &
             z_qp_right_weno => z_qp_right
     use weno_NM, only: setup_scheme_weno_NM => setup_scheme, &
-            destroy_scheme_weno_NM => destroy_scheme, &
             compute_weno_NM_states, &
              x_qp_left_weno_NM => x_qp_left, &
             x_qp_right_weno_NM => x_qp_right, &
@@ -47,8 +36,6 @@ module face_interpolant
             y_qp_right_weno_NM => y_qp_right, &
              z_qp_left_weno_NM => z_qp_left, &
             z_qp_right_weno_NM => z_qp_right
-    !include "turbulence_models/include/face_interpolant/import_module.inc"
-
     implicit none
     private
 
@@ -118,8 +105,8 @@ module face_interpolant
     ! Public members
 !    public :: interpolant
     public :: setup_interpolant_scheme
-    public :: extrapolate_cell_averages_to_faces
-    public :: destroy_interpolant_scheme
+!    public :: extrapolate_cell_averages_to_faces
+!    public :: destroy_interpolant_scheme
     public :: compute_face_interpolant
 !    public :: x_sound_speed_left
 !    public :: x_sound_speed_right
@@ -414,15 +401,15 @@ module face_interpolant
             call link_aliases()
         end subroutine setup_interpolant_scheme
 
-        subroutine deallocate_memory()
-            implicit none
-            call dealloc(x_qp_left)
-            call dealloc(x_qp_right)
-            call dealloc(y_qp_left)
-            call dealloc(y_qp_right)
-            call dealloc(z_qp_left)
-            call dealloc(z_qp_right)
-        end subroutine deallocate_memory
+!        subroutine deallocate_memory()
+!            implicit none
+!            call dealloc(x_qp_left)
+!            call dealloc(x_qp_right)
+!            call dealloc(y_qp_left)
+!            call dealloc(y_qp_right)
+!            call dealloc(z_qp_left)
+!            call dealloc(z_qp_right)
+!        end subroutine deallocate_memory
 
 !        subroutine unlink_aliases()
 !            implicit none
@@ -472,30 +459,31 @@ module face_interpolant
 !            include "turbulence_models/include/face_interpolant/unlink_aliases.inc" 
 !        end subroutine unlink_aliases
 
-        subroutine destroy_interpolant_scheme(scheme)
-            implicit none
-            type(schemetype), intent(in) :: scheme
-            !call unlink_aliases()
-            call deallocate_memory()
-            select case (scheme%interpolant)
-                case ("none")
-                    ! Do nothing
-                    continue
-                case ("ppm")
-                    call destroy_scheme_ppm()
-                case ("muscl")
-                    call destroy_scheme_muscl()
-                case ("weno")
-                    call destroy_scheme_weno()
-                case ("weno_NM")
-                    call destroy_scheme_weno_NM()
-                case default
-                    Fatal_error
-            end select
-        end subroutine destroy_interpolant_scheme
+!        subroutine destroy_interpolant_scheme(scheme)
+!            implicit none
+!            type(schemetype), intent(in) :: scheme
+!            !call unlink_aliases()
+!            call deallocate_memory()
+!            select case (scheme%interpolant)
+!                case ("none")
+!                    ! Do nothing
+!                    continue
+!                case ("ppm")
+!                    call destroy_scheme_ppm()
+!                case ("muscl")
+!                    call destroy_scheme_muscl()
+!                case ("weno")
+!                    call destroy_scheme_weno()
+!                case ("weno_NM")
+!                    call destroy_scheme_weno_NM()
+!                case default
+!                    Fatal_error
+!            end select
+!        end subroutine destroy_interpolant_scheme
 
-        subroutine extrapolate_cell_averages_to_faces()
+        subroutine extrapolate_cell_averages_to_faces(qp)
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
 
             DebugCall('extrapolate_cell_averages_to_faces')
 
@@ -507,15 +495,16 @@ module face_interpolant
             z_qp_right(:, :, :, :) = qp(1:imx-1, 1:jmx-1, 0:kmx+1, 1:n_var)
         end subroutine extrapolate_cell_averages_to_faces
 
-        subroutine compute_face_interpolant(scheme, flow)
+        subroutine compute_face_interpolant(qp, scheme, flow)
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(in) :: flow
             select case (scheme%interpolant)
                 case ("none")
-                    call extrapolate_cell_averages_to_faces()
+                    call extrapolate_cell_averages_to_faces(qp)
                 case ("ppm")
-                    call compute_ppm_states(scheme, flow)
+                    call compute_ppm_states(qp, scheme, flow)
                     x_qp_left(:, :, :, :) = x_qp_left_ppm(:, :, :, :)
                     x_qp_right(:, :, :, :) = x_qp_right_ppm(:, :, :, :)
                     y_qp_left(:, :, :, :) = y_qp_left_ppm(:, :, :, :)
@@ -523,7 +512,7 @@ module face_interpolant
                     z_qp_left(:, :, :, :) = z_qp_left_ppm(:, :, :, :)
                     z_qp_right(:, :, :, :) = z_qp_right_ppm(:, :, :, :)
                 case ("muscl")
-                    call compute_muscl_states(scheme, flow)
+                    call compute_muscl_states(qp, scheme, flow)
                     x_qp_left = x_qp_left_muscl
                     x_qp_right = x_qp_right_muscl
                     y_qp_left = y_qp_left_muscl
@@ -537,7 +526,7 @@ module face_interpolant
                     !z_qp_left( :, :, :, 6:) = qp(1:imx-1, 1:jmx-1, -1:kmx, 6:n_var)
                     !z_qp_right(:, :, :, 6:) = qp(1:imx-1, 1:jmx-1, 0:kmx+1, 6:n_var)
                 case ("weno")
-                    call compute_weno_states()
+                    call compute_weno_states(qp)
                     x_qp_left  =  x_qp_left_weno
                     x_qp_right = x_qp_right_weno
                     y_qp_left  =  y_qp_left_weno
@@ -551,7 +540,7 @@ module face_interpolant
                     z_qp_left( :, :, :, 6:) = qp(1:imx-1, 1:jmx-1, -1:kmx, 6:n_var)
                     z_qp_right(:, :, :, 6:) = qp(1:imx-1, 1:jmx-1, 0:kmx+1, 6:n_var)
                 case ("weno_NM")
-                    call compute_weno_NM_states()
+                    call compute_weno_NM_states(qp)
                     x_qp_left  =  x_qp_left_weno_NM
                     x_qp_right = x_qp_right_weno_NM
                     y_qp_left  =  y_qp_left_weno_NM

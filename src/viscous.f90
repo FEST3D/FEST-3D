@@ -13,23 +13,17 @@ module viscous
   use geometry   , only : CellCenter
   
   use global_vars, only : process_id
-!  use global_vars, only : gm
-!  use global_vars, only : R_gas
-!  use global_vars, only : mu_ref
-!  use global_vars, only : T_ref
-!  use global_vars, only : Pr
-!  use global_vars, only : tPr
-!  use global_vars, only : Sutherland_temp
-  use global_vars, only : density
-  use global_vars, only : x_speed
-  use global_vars, only : y_speed
-  use global_vars, only : z_speed
-  use global_vars, only : pressure
-  use global_vars, only : tk
-  use global_vars, only : tw
-  use global_vars, only : tkl
-  use global_vars, only : tv
-  use global_vars, only : tgm
+!  use global_vars, only : qp
+!  use global_vars, only : density
+!  use global_vars, only : x_speed
+!  use global_vars, only : y_speed
+!  use global_vars, only : z_speed
+!  use global_vars, only : pressure
+!  use global_vars, only : tk
+!  use global_vars, only : tw
+!  use global_vars, only : tkl
+!  use global_vars, only : tv
+!  use global_vars, only : tgm
   use gradients  , only : gradu_x
   use gradients  , only : gradu_y
   use gradients  , only : gradu_z
@@ -81,7 +75,7 @@ module viscous
 
   contains
 
-    subroutine compute_viscous_fluxes(F, G, H, control, scheme, flow, dims)
+    subroutine compute_viscous_fluxes(F, G, H, qp, control, scheme, flow, dims)
       !< Call to all viscous flux subroutine based on 
       !< the drection and turbulence/transition model being
       !< used
@@ -91,18 +85,19 @@ module viscous
         type(schemetype), intent(in) :: scheme
         type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
+        real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
         real, dimension(:, :, :, :), pointer :: F, G, H
 
         imx = dims%imx
         jmx = dims%jmx
         kmx = dims%kmx
 
-        call compute_viscous_fluxes_laminar(F, 'x', scheme, flow)
-        call compute_viscous_fluxes_laminar(G, 'y', scheme, flow)
+        call compute_viscous_fluxes_laminar(F, qp, 'x', scheme, flow, dims)
+        call compute_viscous_fluxes_laminar(G, qp, 'y', scheme, flow, dims)
         !if(kmx==2)then
         !  continue
         !else
-          call compute_viscous_fluxes_laminar(H, 'z', scheme, flow)
+          call compute_viscous_fluxes_laminar(H, qp, 'z', scheme, flow, dims)
         !end if
         
         select case(trim(scheme%turbulence))
@@ -111,24 +106,24 @@ module viscous
             continue
 
           case('sa', 'saBC')
-            call compute_viscous_fluxes_sa(F, 'x')
-            call compute_viscous_fluxes_sa(G, 'y')
-            call compute_viscous_fluxes_sa(H, 'z')
+            call compute_viscous_fluxes_sa(F, qp, 'x', dims)
+            call compute_viscous_fluxes_sa(G, qp, 'y', dims)
+            call compute_viscous_fluxes_sa(H, qp, 'z', dims)
           case('sst', 'sst2003')
-            call compute_viscous_fluxes_sst(F, 'x')
-            call compute_viscous_fluxes_sst(G, 'y')
+            call compute_viscous_fluxes_sst(F, qp, 'x', dims)
+            call compute_viscous_fluxes_sst(G, qp, 'y', dims)
             if(kmx==2)then
               continue
             else
-              call compute_viscous_fluxes_sst(H, 'z')
+              call compute_viscous_fluxes_sst(H, qp, 'z', dims)
             end if
           case('kkl')
-            call compute_viscous_fluxes_kkl(F, 'x')
-            call compute_viscous_fluxes_kkl(G, 'y')
+            call compute_viscous_fluxes_kkl(F, qp, 'x', dims)
+            call compute_viscous_fluxes_kkl(G, qp, 'y', dims)
             !if(kmx==2)then
             !  continue
             !else
-              call compute_viscous_fluxes_kkl(H, 'z')
+              call compute_viscous_fluxes_kkl(H, qp, 'z', dims)
             !end if
           case DEFAULT
             Fatal_error
@@ -137,12 +132,12 @@ module viscous
 
         select case(trim(scheme%transition))
           case('lctm2015')
-            call compute_viscous_fluxes_lctm2015(F, 'x', control%n_var)
-            call compute_viscous_fluxes_lctm2015(G, 'y', control%n_var)
+            call compute_viscous_fluxes_lctm2015(F, qp, 'x', dims)
+            call compute_viscous_fluxes_lctm2015(G, qp, 'y', dims)
             if(kmx==2)then
               continue
             else
-              call compute_viscous_fluxes_lctm2015(H, 'z', control%n_var)
+              call compute_viscous_fluxes_lctm2015(H, qp, 'z', dims)
             end if
           case('none', 'bc')
             !do nothing
@@ -164,13 +159,15 @@ module viscous
 
     end subroutine compute_viscous_fluxes
 
-    subroutine compute_viscous_fluxes_laminar(F, direction, scheme, flow)
+    subroutine compute_viscous_fluxes_laminar(F, qp, direction, scheme, flow, dims)
       !< Compute viscous fluxes for first five Navier-Stokes equation
       implicit none
       character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables
       real :: dudx, dudy, dudz
       real :: dvdx, dvdy, dvdz
@@ -225,7 +222,7 @@ module viscous
           fnx => xnx
           fny => xny
           fnz => xnz
-          fA(-2:imx+3, -2:jmx+2, -2:kmx+2)   => xA
+          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
         case('y')
           ii  =  0
@@ -234,7 +231,7 @@ module viscous
           fnx => ynx
           fny => yny
           fnz => ynz
-          fA(-2:imx+2, -2:jmx+3, -2:kmx+2)   => yA
+          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
         case('z')
           ii  =  0
@@ -243,7 +240,7 @@ module viscous
           fnx => znx
           fny => zny
           fnz => znz
-          fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
+          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
         case Default
           Fatal_error
@@ -254,9 +251,9 @@ module viscous
       !---------------------------------------------------------------------
       ! Calculating the fluxes at the faces
       !--------------------------------------------------------------------
-      do k = 1, kmx - 1 + kk
-       do j = 1, jmx - 1 + jj
-        do i = 1, imx - 1 + ii
+      do k = 1, dims%kmx - 1 + kk
+       do j = 1, dims%jmx - 1 + jj
+        do i = 1, dims%imx - 1 + ii
 
           !--- FACE Gradients ---!
           ! Gradients at face as average of gradients at cell centres
@@ -281,13 +278,13 @@ module viscous
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
           ! Finding the temperature of left and right element to the face i,j,k
-          T_LE = pressure(i-ii, j-jj, k-kk) / (density(i-ii, j-jj, k-kk) * flow%R_gas)
-          T_RE = pressure(i, j, k) / (density(i, j, k) * flow%R_gas)
+          T_LE = qp(i-ii, j-jj, k-kk, 5) / (qp(i-ii, j-jj, k-kk, 1) * flow%R_gas)
+          T_RE = qp(i, j, k, 5) / (qp(i, j, k, 1) * flow%R_gas)
 
           ! difference in state across face
-          delu = x_speed(i, j, k) - x_speed(i-ii, j-jj, k-kk)
-          delv = y_speed(i, j, k) - y_speed(i-ii, j-jj, k-kk)
-          delw = z_speed(i, j, k) - z_speed(i-ii, j-jj, k-kk)
+          delu = qp(i, j, k, 2) - qp(i-ii, j-jj, k-kk, 2) !x_speed
+          delv = qp(i, j, k, 3) - qp(i-ii, j-jj, k-kk, 3) !y_speed
+          delw = qp(i, j, k, 4) - qp(i-ii, j-jj, k-kk, 4) !z_speed
           delT = T_RE - T_LE
 
           !normal_comp   = ( delta(phi) - (grad(phi).dot.delR) )/magnitudeR
@@ -349,9 +346,9 @@ module viscous
           ny    = fny(i,j,k)
           nz    = fnz(i,j,k)
           area  =  fA(i,j,k)
-          uface = 0.5 * (x_speed(i-ii, j-jj, k-kk) + x_speed(i, j, k))
-          vface = 0.5 * (y_speed(i-ii, j-jj, k-kk) + y_speed(i, j, k))
-          wface = 0.5 * (z_speed(i-ii, j-jj, k-kk) + z_speed(i, j, k))
+          uface = 0.5 * (qp(i-ii, j-jj, k-kk, 2) + qp(i, j, k, 2))
+          vface = 0.5 * (qp(i-ii, j-jj, k-kk, 3) + qp(i, j, k, 3))
+          wface = 0.5 * (qp(i-ii, j-jj, k-kk, 4) + qp(i, j, k, 4))
 
           ! adding viscous fluxes to stored convective flux
           F(i, j, k, 2) = F(i, j, k, 2) - ((Tau_xx*nx + Tau_xy*ny + Tau_xz*nz)*area)
@@ -373,11 +370,13 @@ module viscous
     end subroutine compute_viscous_fluxes_laminar
 
 
-    subroutine compute_viscous_fluxes_sst(F, direction)
+    subroutine compute_viscous_fluxes_sst(F, qp, direction, dims)
       !< Compute viscous fluxes for additianal equations due to SST turbulence model
       implicit none
       character(len=*), intent(in) :: direction !< face direction
       real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables
       real :: tkface
       real :: rhoface
@@ -421,7 +420,7 @@ module viscous
           fnx => xnx
           fny => xny
           fnz => xnz
-          fA(-2:imx+3, -2:jmx+2, -2:kmx+2)   => xA
+          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
         case('y')
           ii  =  0
@@ -430,7 +429,7 @@ module viscous
           fnx => ynx
           fny => yny
           fnz => ynz
-          fA(-2:imx+2, -2:jmx+3, -2:kmx+2)   => yA
+          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
         case('z')
           ii  =  0
@@ -439,7 +438,7 @@ module viscous
           fnx => znx
           fny => zny
           fnz => znz
-          fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
+          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
         case Default
           Fatal_error
@@ -450,9 +449,9 @@ module viscous
       !---------------------------------------------------------------------
       ! Calculating the turbulent viscous fluxes at the faces
       !--------------------------------------------------------------------
-      do k = 1, kmx - 1 + kk
-       do j = 1, jmx - 1 + jj
-        do i = 1, imx - 1 + ii
+      do k = 1, dims%kmx - 1 + kk
+       do j = 1, dims%jmx - 1 + jj
+        do i = 1, dims%imx - 1 + ii
 
           !--- FACE Gradients ---!
           ! Gradients at face as average of gradients at cell centres
@@ -471,8 +470,8 @@ module viscous
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
           ! difference in state across face
-          deltk = tk(i, j, k) - tk(i-ii, j-jj, k-kk)
-          deltw = tw(i, j, k) - tw(i-ii, j-jj, k-kk)
+          deltk = qp(i, j, k, 6) - qp(i-ii, j-jj, k-kk, 6) !TKE
+          deltw = qp(i, j, k, 7) - qp(i-ii, j-jj, k-kk, 7) !Omega
 
           !normal_comp   = ( delta(phi) - (grad(phi).dot.delR) )/magnitudeR
           !new grad(phi) =  grad(phi) + correction(normal_comp.dot.delR/magnitudeR)
@@ -495,8 +494,8 @@ module viscous
           sigma_wf = sigma_w1*F1 + sigma_w2*(1.0 - F1)
 
           total_mu = mu_f + mut_f
-          rhoface  = 0.5 * (density(i-ii, j-jj, k-kk) + density(i, j, k))
-          tkface   = 0.5 * (     tk(i-ii, j-jj, k-kk) +      tk(i, j, k))
+          rhoface  = 0.5 * (qp(i-ii, j-jj, k-kk, 1) + qp(i, j, k, 1)) !Density
+          tkface   = 0.5 * (qp(i-ii, j-jj, k-kk, 6) + qp(i, j, k, 6)) !TKE
           ! k in reynolds stress
           Tau_xx = -2.0*rhoface*tkface/3.0
           Tau_yy = Tau_xx
@@ -522,11 +521,13 @@ module viscous
     end subroutine compute_viscous_fluxes_sst
 
 
-    subroutine compute_viscous_fluxes_kkl(F, direction)
+    subroutine compute_viscous_fluxes_kkl(F, qp, direction, dims)
       !< Compute viscous fluxes for additianal equations due to k-kL turbulence model
       implicit none
       character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables
       real :: tkface
       real :: rhoface
@@ -570,7 +571,7 @@ module viscous
           fnx => xnx
           fny => xny
           fnz => xnz
-          fA(-2:imx+3, -2:jmx+2, -2:kmx+2)   => xA
+          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
         case('y')
           ii  =  0
@@ -579,7 +580,7 @@ module viscous
           fnx => ynx
           fny => yny
           fnz => ynz
-          fA(-2:imx+2, -2:jmx+3, -2:kmx+2)   => yA
+          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
         case('z')
           ii  =  0
@@ -588,7 +589,7 @@ module viscous
           fnx => znx
           fny => zny
           fnz => znz
-          fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
+          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
         case Default
           Fatal_error
@@ -599,9 +600,9 @@ module viscous
       !---------------------------------------------------------------------
       ! Calculating the turbulent viscous fluxes at the faces
       !--------------------------------------------------------------------
-      do k = 1, kmx - 1 + kk
-       do j = 1, jmx - 1 + jj
-        do i = 1, imx - 1 + ii
+      do k = 1, dims%kmx - 1 + kk
+       do j = 1, dims%jmx - 1 + jj
+        do i = 1, dims%imx - 1 + ii
 
           !--- FACE Gradients ---!
           ! Gradients at face as average of gradients at cell centres
@@ -620,8 +621,8 @@ module viscous
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
           ! difference in state across face
-          deltk  =  tk(i, j, k) -  tk(i-ii, j-jj, k-kk)
-          deltkl = tkl(i, j, k) - tkl(i-ii, j-jj, k-kk)
+          deltk  = qp(i, j, k, 6) - qp(i-ii, j-jj, k-kk, 6)   !TKE
+          deltkl = qp(i, j, k, 7) - qp(i-ii, j-jj, k-kk, 7)   !Kl
 
           !normal_comp   = ( delta(phi) - (grad(phi).dot.delR) )/magnitudeR
           !new grad(phi) =  grad(phi) + correction(normal_comp.dot.delR/magnitudeR)
@@ -641,8 +642,8 @@ module viscous
           mut_f    = 0.5*(mu_t(i-ii, j-jj, k-kk) + mu_t(i, j, k))
 
           total_mu = mu_f + mut_f
-          rhoface  = 0.5 * (density(i-ii, j-jj, k-kk) + density(i, j, k))
-          tkface   = 0.5 * (     tk(i-ii, j-jj, k-kk) +      tk(i, j, k))
+          rhoface  = 0.5 * (qp(i-ii, j-jj, k-kk, 1) + qp(i, j, k, 1))
+          tkface   = 0.5 * (qp(i-ii, j-jj, k-kk, 6) + qp(i, j, k, 6))
           ! k in reynolds stress
           Tau_xx = -2.0*rhoface*tkface/3.0
           Tau_yy = Tau_xx
@@ -669,11 +670,13 @@ module viscous
     end subroutine compute_viscous_fluxes_kkl
 
 
-    subroutine compute_viscous_fluxes_sa(F, direction)
+    subroutine compute_viscous_fluxes_sa(F, qp, direction, dims)
       !< Compute viscous fluxes for additianal equations due to SA turbulence model
       implicit none
       character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables
       real :: rhoface
       real :: normal_comp
@@ -708,7 +711,7 @@ module viscous
           fnx => xnx
           fny => xny
           fnz => xnz
-          fA(-2:imx+3, -2:jmx+2, -2:kmx+2)   => xA
+          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
         case('y')
           ii  =  0
@@ -717,7 +720,7 @@ module viscous
           fnx => ynx
           fny => yny
           fnz => ynz
-          fA(-2:imx+2, -2:jmx+3, -2:kmx+2)   => yA
+          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
         case('z')
           ii  =  0
@@ -726,7 +729,7 @@ module viscous
           fnx => znx
           fny => zny
           fnz => znz
-          fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
+          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
         case Default
           Fatal_error
@@ -737,9 +740,9 @@ module viscous
       !---------------------------------------------------------------------
       ! Calculating the turbulent viscous fluxes at the faces
       !--------------------------------------------------------------------
-      do k = 1, kmx - 1 + kk
-       do j = 1, jmx - 1 + jj
-        do i = 1, imx - 1 + ii
+      do k = 1, dims%kmx - 1 + kk
+       do j = 1, dims%jmx - 1 + jj
+        do i = 1, dims%imx - 1 + ii
 
           !--- FACE Gradients ---!
           ! Gradients at face as average of gradients at cell centres
@@ -756,7 +759,7 @@ module viscous
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
           ! difference in state across face
-          deltv = tv(i, j, k) - tv(i-ii, j-jj, k-kk)
+          deltv = qp(i, j, k, 6) - qp(i-ii, j-jj, k-kk, 6)
 
           !normal_comp   = ( delta(phi) - (grad(phi).dot.delR) )/magnitudeR
           !new grad(phi) =  grad(phi) + correction(normal_comp.dot.delR/magnitudeR)
@@ -766,9 +769,9 @@ module viscous
           dtvdz       =  dtvdz + (normal_comp * delz / d_LR)
           !--- end of ODD-EVEN coupling correction ---!
 
-          rhoface  = 0.5 * (density(i-ii, j-jj, k-kk) + density(i, j, k))
+          rhoface  = 0.5 * (qp(i-ii, j-jj, k-kk, 1) + qp(i, j, k, 1))
           mu_f     = 0.5*(mu(i-ii, j-jj, k-kk) + mu(i, j, k))
-          mut_f    = 0.5*(tv(i-ii, j-jj, k-kk) + tv(i, j, k))*rhoface
+          mut_f    = 0.5*(qp(i-ii, j-jj, k-kk, 6) + qp(i, j, k, 6))*rhoface
 
           ! calling some element from memory and keep them handy for calculation
           nx    = fnx(i,j,k)
@@ -785,12 +788,13 @@ module viscous
     end subroutine compute_viscous_fluxes_sa
 
 
-    subroutine compute_viscous_fluxes_lctm2015(F, direction, n_var)
+    subroutine compute_viscous_fluxes_lctm2015(F, qp, direction, dims)
       !< Compute viscous fluxes for additianal equations due to LCTM2015 transition model
       implicit none
-      integer, intent(in) :: n_var
       character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables
       real :: rhoface
       real :: normal_comp
@@ -825,7 +829,7 @@ module viscous
           fnx => xnx
           fny => xny
           fnz => xnz
-          fA(-2:imx+3, -2:jmx+2, -2:kmx+2)   => xA
+          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
         case('y')
           ii  =  0
@@ -834,7 +838,7 @@ module viscous
           fnx => ynx
           fny => yny
           fnz => ynz
-          fA(-2:imx+2, -2:jmx+3, -2:kmx+2)   => yA
+          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
         case('z')
           ii  =  0
@@ -843,7 +847,7 @@ module viscous
           fnx => znx
           fny => zny
           fnz => znz
-          fA(-2:imx+2, -2:jmx+2, -2:kmx+3)   => zA
+          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
         case Default
           Fatal_error
@@ -854,9 +858,9 @@ module viscous
       !---------------------------------------------------------------------
       ! Calculating the turbulent viscous fluxes at the faces
       !--------------------------------------------------------------------
-      do k = 1, kmx - 1 + kk
-       do j = 1, jmx - 1 + jj
-        do i = 1, imx - 1 + ii
+      do k = 1, dims%kmx - 1 + kk
+       do j = 1, dims%jmx - 1 + jj
+        do i = 1, dims%imx - 1 + ii
 
           !--- FACE Gradients ---!
           ! Gradients at face as average of gradients at cell centres
@@ -873,7 +877,7 @@ module viscous
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
           ! difference in state across face
-          deltgm = tgm(i, j, k) - tgm(i-ii, j-jj, k-kk)
+          deltgm = qp(i, j, k, 8) - qp(i-ii, j-jj, k-kk, 8)
 
           !normal_comp   = ( delta(phi) - (grad(phi).dot.delR) )/magnitudeR
           !new grad(phi) =  grad(phi) + correction(normal_comp.dot.delR/magnitudeR)
@@ -883,7 +887,7 @@ module viscous
           dtgmdz       =  dtgmdz + (normal_comp * delz / d_LR)
           !--- end of ODD-EVEN coupling correction ---!
 
-          rhoface  = 0.5 * (density(i-ii, j-jj, k-kk) + density(i, j, k))
+          rhoface  = 0.5 * (qp(i-ii, j-jj, k-kk, 1) + qp(i, j, k, 1))
           mu_f     = 0.5*(mu(i-ii, j-jj, k-kk) + mu(i, j, k))
           mut_f    = 0.5*(mu_t(i-ii, j-jj, k-kk) + mu_t(i, j, k))
 
@@ -894,7 +898,7 @@ module viscous
           area  =  fA(i,j,k)
 
           ! adding viscous fluxes to stored convective flux
-          F(i, j, k, n_var) = F(i, j, k, n_var) - (area*((mu_f + mut_f)*(dtgmdx*nx + dtgmdy*ny + dtgmdz*nz)))
+          F(i, j, k, dims%n_var) = F(i, j, k, dims%n_var) - (area*((mu_f + mut_f)*(dtgmdx*nx + dtgmdy*ny + dtgmdz*nz)))
          
         end do
        end do

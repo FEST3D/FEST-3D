@@ -6,7 +6,7 @@ module interface1
 !  use global_vars, only: jmx
 !  use global_vars, only: kmx
 !  use global_vars, only: n_var
-  use global_vars, only: qp
+!  use global_vars, only: qp
   use global_vars, only: imin_id
   use global_vars, only: jmin_id
   use global_vars, only: kmin_id
@@ -69,7 +69,7 @@ module interface1
   !< Array to store data to receive data for Kmax face
 
   public :: setup_interface
-  public :: destroy_interface
+!  public :: destroy_interface
   public :: apply_interface
 
   contains
@@ -107,30 +107,31 @@ module interface1
     end subroutine setup_interface
 
 
-    subroutine destroy_interface()
-      !< Deallocate all the memory being used  for data communication between processors
-      implicit none
-      call dealloc(imin_send_buf)
-      call dealloc(jmin_send_buf)
-      call dealloc(kmin_send_buf)
-      call dealloc(imin_recv_buf)
-      call dealloc(jmin_recv_buf)
-      call dealloc(kmin_recv_buf)
-      call dealloc(imax_send_buf)
-      call dealloc(jmax_send_buf)
-      call dealloc(kmax_send_buf)
-      call dealloc(imax_recv_buf)
-      call dealloc(jmax_recv_buf)
-      call dealloc(kmax_recv_buf)
-    end subroutine destroy_interface
+!    subroutine destroy_interface()
+!      !< Deallocate all the memory being used  for data communication between processors
+!      implicit none
+!      call dealloc(imin_send_buf)
+!      call dealloc(jmin_send_buf)
+!      call dealloc(kmin_send_buf)
+!      call dealloc(imin_recv_buf)
+!      call dealloc(jmin_recv_buf)
+!      call dealloc(kmin_recv_buf)
+!      call dealloc(imax_send_buf)
+!      call dealloc(jmax_send_buf)
+!      call dealloc(kmax_send_buf)
+!      call dealloc(imax_recv_buf)
+!      call dealloc(jmax_recv_buf)
+!      call dealloc(kmax_recv_buf)
+!    end subroutine destroy_interface
 
 
-    subroutine apply_interface(control, dims)
+    subroutine apply_interface(qp, control, dims)
       !< MPISEND_RECV call to exchange interface infromation between
       !< connected blocks.
       implicit none
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2,1:dims%n_var) :: qp
       integer:: i,j,k,n,l
       integer:: status(MPI_STATUS_SIZE)
       integer:: ierr
@@ -588,16 +589,17 @@ module interface1
           end do
         end if
       end if
-      call apply_periodic_bc(control, dims)
+      call apply_periodic_bc(qp, control, dims)
     end subroutine apply_interface
 
 
-    subroutine apply_periodic_bc(control, dims)
+    subroutine apply_periodic_bc(qp, control, dims)
       !<If a block is connected to another block in perodic
       !<fashion, this subroutine will take care of that boundary condition.
       implicit none
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2,1:dims%n_var) :: qp
       integer:: i,j,k,n,l
       integer:: status(MPI_STATUS_SIZE)
       integer:: ierr

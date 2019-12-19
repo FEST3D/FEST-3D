@@ -40,7 +40,7 @@ module dump_solution
 
   contains
 
-    subroutine checkpoint(files, nodes, control, scheme, dims)
+    subroutine checkpoint(files, qp, nodes, control, scheme, dims)
       !< Create a checkpoint dump file if the time has come
       !-----------------------------------------------------------
 
@@ -50,6 +50,7 @@ module dump_solution
       type(controltype), intent(inout) :: control
       type(schemetype), intent(in) :: scheme
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
+      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
 
 
       DebugCall('checkpoint')
@@ -58,7 +59,7 @@ module dump_solution
           if (mod(control%current_iter, control%checkpoint_iter) == 0 &
              .or. control%current_iter == control%max_iters) then
               call make_dump_dir(control)
-              call dump_data(files, nodes, control, scheme, dims)
+              call dump_data(files, qp, nodes, control, scheme, dims)
               print*, "writing data at: ", control%current_iter, control%checkpoint_iter_count
               call purge_dump_dir(control)
               control%checkpoint_iter_count = control%checkpoint_iter_count + 1
@@ -114,7 +115,7 @@ module dump_solution
 
     end subroutine make_dump_dir
 
-    subroutine dump_data(files, nodes, control, scheme, dims)
+    subroutine dump_data(files, qp, nodes, control, scheme, dims)
       !< Call to write save files in the directory
       implicit none
       type(filetype), intent(inout) :: files
@@ -122,13 +123,14 @@ module dump_solution
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
+      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
 !      character(len=FILE_NAME_LENGTH) :: filename
 
       DebugCall('dump_solution: dump_data')
       write(files%restartfile, '(A,I2.2)') trim(dump_dirname)//'/restart/process_',process_id
       write(files%outfile, '(A,I2.2)') trim(dump_dirname)//'/process_',process_id
       call write_restart_log(files, scheme, control)
-      call write_file(files, nodes, control, dims)
+      call write_file(files, qp, nodes, control, scheme, dims)
 
     end subroutine dump_data
 

@@ -44,13 +44,14 @@ module read_output
 
   contains
 
-    subroutine read_file(files, control, scheme, dims)
+    subroutine read_file(files, qp, control, scheme, dims)
       !< Read restart file
       implicit none
       type(filetype), intent(inout) :: files
       type(extent), intent(in) :: dims
       type(controltype), intent(inout) :: control
       type(schemetype) , intent(in) :: scheme
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
       call setup_file(control)
       call open_file(files,  control)
       call read_restart_file(files%RESTART_FILE_UNIT, control)
@@ -59,10 +60,10 @@ module read_output
       select case (control%read_file_format)
         
         case ('vtk')
-          call read_file_vtk(files%IN_FILE_UNIT, control, dims)
+          call read_file_vtk(files%IN_FILE_UNIT, qp, control, scheme, dims)
         
         case ('tecplot')
-          call read_file_tec(files%IN_FILE_UNIT, control, dims)
+          call read_file_tec(files%IN_FILE_UNIT, qp, control, scheme, dims)
         
         case DEFAULT
           Fatal_error

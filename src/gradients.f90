@@ -10,28 +10,20 @@ module gradients
 #include "error.h"
 #include "debug.h"
    use vartypes
-
-!  use global_vars,  only : imx
-!  use global_vars,  only : jmx
-!  use global_vars,  only : kmx
-!  use global_vars,  only : mu_ref
-!  use global_vars,  only : turbulence 
-!  use global_vars,  only : transition 
   use global_vars,  only : process_id
   use global_vars, only : fixed_wall_temperature
 
   use utils,        only : alloc
-  use global_vars, only : qp
-!  use global_vars, only : n_var
-  use global_vars, only : x_speed
-  use global_vars, only : y_speed
-  use global_vars, only : z_speed
-  use global_vars, only : tk
-  use global_vars, only : tw
-  use global_vars, only : tv
-  use global_vars, only : te
-  use global_vars, only : tkl
-  use global_vars, only : tgm
+!  use global_vars, only : qp
+!  use global_vars, only : x_speed
+!  use global_vars, only : y_speed
+!  use global_vars, only : z_speed
+!  use global_vars, only : tk
+!  use global_vars, only : tw
+!  use global_vars, only : tv
+!  use global_vars, only : te
+!  use global_vars, only : tkl
+!  use global_vars, only : tgm
   use global_vars, only : xn
   use global_vars, only : yn
   use global_vars, only : zn
@@ -48,9 +40,8 @@ module gradients
   use global_vars, only : yA
   use global_vars, only : zA
   use global_vars, only : volume
-  use global_vars, only : density
-  use global_vars, only : pressure
-!  use string
+!  use global_vars, only : density
+!  use global_vars, only : pressure
   ! layout boundary condition id for face
   use global_vars, only : imin_id
   use global_vars, only : imax_id
@@ -274,31 +265,51 @@ module gradients
     end subroutine get_n_grad
 
 
-    subroutine evaluate_all_gradients(scheme)
+    subroutine evaluate_all_gradients(qp, Temp, scheme)
       !< Call to all the required gradients and 
       !< apply boundary condition for ghost cell
       !< gradients
 
       implicit none
-      !type(controltype), intent(in) :: control
+      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in), Target :: qp
+      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(in) :: Temp
       type(schemetype) , intent(in) :: scheme
-      !type(flowtype)   , intent(in) :: flow
+      real, dimension(:, :, :), pointer :: x_speed      
+       !< U pointer, point to slice of qp (:,:,:,2) 
+      real, dimension(:, :, :), pointer :: y_speed      
+       !< V pointer, point to slice of qp (:,:,:,3) 
+      real, dimension(:, :, :), pointer :: z_speed      
+       !< W pointer, point to slice of qp (:,:,:,4)
+      real, dimension(:, :, :), pointer :: tk   !< TKE/mass
+      real, dimension(:, :, :), pointer :: tw   !< Omega
+      real, dimension(:, :, :), pointer :: tv   !< SA visocity
+      real, dimension(:, :, :), pointer :: tkl  !< KL K-KL method
+      real, dimension(:, :, :), pointer :: tgm  !< Intermittency of LCTM2015
 
       DebugCall('evaluate_all_gradients')
 
-      call compute_gradient_G(gradu_x, x_speed, 'x')
+      x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 2)
+      y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 3)
+      z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 4)
+
+      !call compute_gradient_G(gradu_x, x_speed, 'x')
+      call compute_gradient_G(gradu_x, qp(:,:,:,2), 'x')
       call compute_gradient_G(gradv_x, y_speed, 'x')
       call compute_gradient_G(gradw_x, z_speed, 'x')
-      call compute_gradient_T(gradT_x         , 'x')
-      call compute_gradient_G(gradu_y, x_speed, 'y')
+!      call compute_gradient_T(gradT_x         , 'x')
+      call compute_gradient_G(gradT_x, Temp,    'x')
+      !call compute_gradient_G(gradu_y, x_speed, 'y')
+      call compute_gradient_G(gradu_y, qp(:,:,:,2), 'y')
       call compute_gradient_G(gradv_y, y_speed, 'y')
       call compute_gradient_G(gradw_y, z_speed, 'y')
-      call compute_gradient_T(gradT_y         , 'y')
+      !call compute_gradient_T(gradT_y         , 'y')
+      call compute_gradient_G(gradT_y, Temp   , 'y')
       if(kmx>2) then
       call compute_gradient_G(gradu_z, x_speed, 'z')
       call compute_gradient_G(gradv_z, y_speed, 'z')
       call compute_gradient_G(gradw_z, z_speed, 'z')
-      call compute_gradient_T(gradT_z         , 'z')
+      !call compute_gradient_T(gradT_z         , 'z')
+      call compute_gradient_G(gradT_z, Temp   , 'z')
       else
        gradqp_z=0.0
       end if
@@ -310,6 +321,7 @@ module gradients
           continue
 
         case ('sa', 'saBC')
+          tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
           call compute_gradient_G(gradtv_x, tv, 'x')
           call compute_gradient_G(gradtv_y, tv, 'y')
           if(kmx>2)then
@@ -317,6 +329,8 @@ module gradients
           end if
 
         case ('sst', 'sst2003')
+          tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+          tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
           call compute_gradient_G(gradtk_x, tk, 'x')
           call compute_gradient_G(gradtw_x, tw, 'x')
           call compute_gradient_G(gradtk_y, tk, 'y')
@@ -327,6 +341,8 @@ module gradients
           end if
 
         case ('kkl')
+          tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
+          tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
           call compute_gradient_G(gradtk_x , tk , 'x')
           call compute_gradient_G(gradtkl_x, tkl, 'x')
           call compute_gradient_G(gradtk_y , tk , 'y')
@@ -344,6 +360,7 @@ module gradients
 
       select case(trim(scheme%transition))
         case('lctm2015')
+          tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 8)
           call compute_gradient_G(gradtgm_x, tgm, 'x')
           call compute_gradient_G(gradtgm_y, tgm, 'y')
           if(kmx>2)then
@@ -359,7 +376,7 @@ module gradients
 
       end Select
 
-      call apply_gradient_bc()
+      call apply_gradient_bc(qp)
 
     end subroutine evaluate_all_gradients
 
@@ -423,86 +440,87 @@ module gradients
 
     end subroutine compute_gradient_G
 
-    subroutine compute_gradient_T(grad, dir)
-      !< Calculate gradient of temperature
+!    subroutine compute_gradient_T(grad, dir)
+!      !< Calculate gradient of temperature
+!
+!      implicit none
+!
+!      real, dimension( 0:imx  , 0:jmx  , 0:kmx  ), intent(out) :: grad
+!      !< Output gradient of termperature
+!      character(len=*)                           , intent(in) :: dir
+!      !< Direction with respect to which gradients are calculated
+!      
+!      real, dimension(6)               :: T
+!      real                             :: cell_T
+!      real, dimension(:,:,:), pointer  :: nx
+!      real, dimension(:,:,:), pointer  :: ny
+!      real, dimension(:,:,:), pointer  :: nz
+!
+!      integer :: i
+!      integer :: j
+!      integer :: k
+!
+!      DebugCall('compute_gradient_T')
+!
+!      select case(dir)
+!        case('x')
+!          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
+!          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
+!          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
+!        case('y')
+!          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
+!          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
+!          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
+!        case('z')
+!          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
+!          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
+!          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
+!        case DEFAULT
+!          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
+!          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
+!          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
+!          print*, "ERROR: gradient direction error"
+!      end select
+!      grad = 0.0
+!
+!      do k=0,kmx
+!        do j=0,jmx
+!          do i=0,imx
+!
+!            cell_T = (pressure(i,j,k)/density(i,j,k))/R_gas
+!
+!            T(1)   = (pressure(i-1,j,k)/density(i-1,j,k))/R_gas + cell_T
+!            T(2)   = (pressure(i,j-1,k)/density(i,j-1,k))/R_gas + cell_T
+!            T(3)   = (pressure(i,j,k-1)/density(i,j,k-1))/R_gas + cell_T
+!            T(4)   = (pressure(i+1,j,k)/density(i+1,j,k))/R_gas + cell_T
+!            T(5)   = (pressure(i,j+1,k)/density(i,j+1,k))/R_gas + cell_T
+!            T(6)   = (pressure(i,j,k+1)/density(i,j,k+1))/R_gas + cell_T
+!
+!            grad(i,j,k) =(-T(1)*nx(i,j,k)*xA(i,j,k) &
+!                          -T(2)*ny(i,j,k)*yA(i,j,k) &
+!                          -T(3)*nz(i,j,k)*zA(i,j,k) &
+!                          +T(4)*nx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
+!                          +T(5)*ny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
+!                          +T(6)*nz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
+!                         )/(2*volume(i,j,k))
+!          end do
+!        end do
+!      end do
+!      if(any(isnan(grad)))then
+!        Fatal_error
+!      end if
+!
+!    end subroutine compute_gradient_T
 
-      implicit none
 
-      real, dimension( 0:imx  , 0:jmx  , 0:kmx  ), intent(out) :: grad
-      !< Output gradient of termperature
-      character(len=*)                           , intent(in) :: dir
-      !< Direction with respect to which gradients are calculated
-      
-      real, dimension(6)               :: T
-      real                             :: cell_T
-      real, dimension(:,:,:), pointer  :: nx
-      real, dimension(:,:,:), pointer  :: ny
-      real, dimension(:,:,:), pointer  :: nz
-
-      integer :: i
-      integer :: j
-      integer :: k
-
-      DebugCall('compute_gradient_T')
-
-      select case(dir)
-        case('x')
-          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
-          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
-          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
-        case('y')
-          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
-          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
-          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
-        case('z')
-          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
-          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
-          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
-        case DEFAULT
-          nx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
-          ny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
-          nz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
-          print*, "ERROR: gradient direction error"
-      end select
-      grad = 0.0
-
-      do k=0,kmx
-        do j=0,jmx
-          do i=0,imx
-
-            cell_T = (pressure(i,j,k)/density(i,j,k))/R_gas
-
-            T(1)   = (pressure(i-1,j,k)/density(i-1,j,k))/R_gas + cell_T
-            T(2)   = (pressure(i,j-1,k)/density(i,j-1,k))/R_gas + cell_T
-            T(3)   = (pressure(i,j,k-1)/density(i,j,k-1))/R_gas + cell_T
-            T(4)   = (pressure(i+1,j,k)/density(i+1,j,k))/R_gas + cell_T
-            T(5)   = (pressure(i,j+1,k)/density(i,j+1,k))/R_gas + cell_T
-            T(6)   = (pressure(i,j,k+1)/density(i,j,k+1))/R_gas + cell_T
-
-            grad(i,j,k) =(-T(1)*nx(i,j,k)*xA(i,j,k) &
-                          -T(2)*ny(i,j,k)*yA(i,j,k) &
-                          -T(3)*nz(i,j,k)*zA(i,j,k) &
-                          +T(4)*nx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                          +T(5)*ny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                          +T(6)*nz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                         )/(2*volume(i,j,k))
-          end do
-        end do
-      end do
-      if(any(isnan(grad)))then
-        Fatal_error
-      end if
-
-    end subroutine compute_gradient_T
-
-
-    subroutine apply_gradient_bc()
+    subroutine apply_gradient_bc(qp)
       !< Call same subroutine for all the face
       !< Apply/set value of all gradient in the ghost cells
       !< gradqp_G = (qp_I - qp_G)*Area_W*unit_normal_G/(volume_G)
       !< volume_G = volume_I
       !-----------------------------------------------------------
       implicit none
+      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in), Target :: qp
       real, dimension(n_grad) :: qp_I
       real, dimension(n_grad) :: qp_G
       real    :: T_I
@@ -536,8 +554,8 @@ module gradients
               c_x  = xA(i,j,k)*nx/volume(i,j,k)
               c_y  = xA(i,j,k)*ny/volume(i,j,k)
               c_z  = xA(i,j,k)*nz/volume(i,j,k)
-              T_I  = pressure(i  ,j,k)/(R_gas*density(i  ,j,k))
-              T_G  = pressure(i-1,j,k)/(R_gas*density(i-1,j,k))
+              T_I  = qp(i  ,j,k,5)/(R_gas*qp(i  ,j,k,1))
+              T_G  = qp(i-1,j,k,5)/(R_gas*qp(i-1,j,k,1))
               qp_I = qp(i  ,j,k,2:n_var)
               qp_G = qp(i-1,j,k,2:n_var)
 
@@ -576,8 +594,8 @@ module gradients
               c_x  = xA(i,j,k)*nx/volume(i-1,j,k)
               c_y  = xA(i,j,k)*ny/volume(i-1,j,k)
               c_z  = xA(i,j,k)*nz/volume(i-1,j,k)
-              T_I  = pressure(i-1,j,k)/(R_gas*density(i-1,j,k))
-              T_G  = pressure(i  ,j,k)/(R_gas*density(i  ,j,k))
+              T_I  = qp(i-1,j,k,5)/(R_gas*qp(i-1,j,k,1))
+              T_G  = qp(i  ,j,k,5)/(R_gas*qp(i  ,j,k,1))
               qp_I = qp(i-1,j,k,2:n_var)
               qp_G = qp(i  ,j,k,2:n_var)
 
@@ -616,8 +634,8 @@ module gradients
               c_x  = yA(i,j,k)*nx/volume(i,j,k)
               c_y  = yA(i,j,k)*ny/volume(i,j,k)
               c_z  = yA(i,j,k)*nz/volume(i,j,k)
-              T_I  = pressure(i,j  ,k)/(R_gas*density(i,j  ,k))
-              T_G  = pressure(i,j-1,k)/(R_gas*density(i,j-1,k))
+              T_I  = qp(i,j  ,k, 5)/(R_gas*qp(i,j  ,k,1))
+              T_G  = qp(i,j-1,k, 5)/(R_gas*qp(i,j-1,k,1))
               qp_I = qp(i,j  ,k,2:n_var)
               qp_G = qp(i,j-1,k,2:n_var)
 
@@ -655,8 +673,8 @@ module gradients
               c_x  = yA(i,j,k)*nx/volume(i,j,k)
               c_y  = yA(i,j,k)*ny/volume(i,j,k)
               c_z  = yA(i,j,k)*nz/volume(i,j,k)
-              T_I  = pressure(i,j-1,k)/(R_gas*density(i,j-1,k))
-              T_G  = pressure(i,j  ,k)/(R_gas*density(i,j  ,k))
+              T_I  = qp(i,j-1,k,5)/(R_gas*qp(i,j-1,k,1))
+              T_G  = qp(i,j  ,k,5)/(R_gas*qp(i,j  ,k,1))
               qp_I = qp(i,j-1,k,2:n_var)
               qp_G = qp(i,j  ,k,2:n_var)
 
@@ -695,8 +713,8 @@ module gradients
               c_x  = zA(i,j,k)*nx/volume(i,j,k)
               c_y  = zA(i,j,k)*ny/volume(i,j,k)
               c_z  = zA(i,j,k)*nz/volume(i,j,k)
-              T_I  = pressure(i,j,k  )/(R_gas*density(i,j,k  ))
-              T_G  = pressure(i,j,k-1)/(R_gas*density(i,j,k-1))
+              T_I  = qp(i,j,k  ,5)/(R_gas*qp(i,j,k  ,1))
+              T_G  = qp(i,j,k-1,5)/(R_gas*qp(i,j,k-1,1))
               qp_I = qp(i,j,k  ,2:n_var)
               qp_G = qp(i,j,k-1,2:n_var)
 
@@ -734,8 +752,8 @@ module gradients
               c_x  = zA(i,j,k)*nx/volume(i,j,k)
               c_y  = zA(i,j,k)*ny/volume(i,j,k)
               c_z  = zA(i,j,k)*nz/volume(i,j,k)
-              T_I  = pressure(i,j,k-1)/(R_gas*density(i,j,k-1))
-              T_G  = pressure(i,j,k  )/(R_gas*density(i,j,k  ))
+              T_I  = qp(i,j,k-1,5)/(R_gas*qp(i,j,k-1,1))
+              T_G  = qp(i,j,k  ,5)/(R_gas*qp(i,j,k  ,1))
               qp_I = qp(i,j,k-1,2:n_var)
               qp_G = qp(i,j,k  ,2:n_var)
 

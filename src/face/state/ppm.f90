@@ -8,8 +8,8 @@ module ppm
 
     use vartypes
     use utils, only: alloc, dealloc
-    use global_vars, only : qp
-    use global_vars, only : pressure
+!    use global_vars, only : qp
+!    use global_vars, only : pressure
 !    use global_vars, only : pressure_inf
 !    use global_vars, only : ilimiter_switch
 !    use global_vars, only : jlimiter_switch
@@ -55,7 +55,7 @@ module ppm
 
     ! Public members
     public :: setup_scheme
-    public :: destroy_scheme
+!    public :: destroy_scheme
     public :: compute_ppm_states
 !   public :: output_data
     public :: x_qp_left, x_qp_right
@@ -113,30 +113,31 @@ module ppm
 
         end subroutine setup_scheme
 
-        subroutine destroy_scheme()
-          !< Deallocate all the array used 
-
-            implicit none
-
-            DebugCall('destroy_ppm')
-
-            call dealloc(x_qp_face_estimate)
-            call dealloc(y_qp_face_estimate)
-            call dealloc(z_qp_face_estimate)
-            call dealloc(x_qp_left)
-            call dealloc(x_qp_right)
-            call dealloc(y_qp_left)
-            call dealloc(y_qp_right)
-            call dealloc(z_qp_left)
-            call dealloc(z_qp_right)
-            call dealloc(pdif)
-
-        end subroutine destroy_scheme
-
-        subroutine compute_face_estimates(f_dir)
+!        subroutine destroy_scheme()
+!          !< Deallocate all the array used 
+!
+!            implicit none
+!
+!            DebugCall('destroy_ppm')
+!
+!            call dealloc(x_qp_face_estimate)
+!            call dealloc(y_qp_face_estimate)
+!            call dealloc(z_qp_face_estimate)
+!            call dealloc(x_qp_left)
+!            call dealloc(x_qp_right)
+!            call dealloc(y_qp_left)
+!            call dealloc(y_qp_right)
+!            call dealloc(z_qp_left)
+!            call dealloc(z_qp_right)
+!            call dealloc(pdif)
+!
+!        end subroutine destroy_scheme
+!
+        subroutine compute_face_estimates(qp, f_dir)
           !< Subroutine to calculate state at the face, generalized for
 
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
             character, intent(in) :: f_dir
             integer :: i, j, k 
             integer :: i_f, j_f, k_f ! Flags to determine face direction
@@ -178,11 +179,12 @@ module ppm
 
         end subroutine compute_face_estimates
 
-        subroutine remove_extrema(f_dir)
+        subroutine remove_extrema(qp, f_dir)
           !< Remove extrema from the state estimated. 
           !< Limiting the value in case of PPM
 
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
             character, intent(in) :: f_dir
             integer :: i, j, k, l
             integer :: i_f, j_f, k_f ! Flags to determine face direction
@@ -242,12 +244,13 @@ module ppm
 
         end subroutine remove_extrema
 
-        subroutine pressure_based_switching(f_dir, flow)
+        subroutine pressure_based_switching(qp, f_dir, flow)
           !< Pressure based switching. 
           !< User x,y, or z for I,J,or K face respectively
           !----------------------------------------------
 
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
             type(flowtype), intent(in) :: flow
             ! Character can be x or y or z
             character, intent(in) :: f_dir
@@ -298,8 +301,8 @@ module ppm
             do k = 1, kmx - 1
              do j = 1, jmx - 1
               do i = 1, imx - 1
-                pd2 = abs(pressure(i + i_f*1, j + j_f*1, k + k_f*1) - &
-                          pressure(i - i_f*1, j - j_f*1, k - k_f*1))
+                pd2 = abs(qp(i + i_f*1, j + j_f*1, k + k_f*1, 5) - &
+                          qp(i - i_f*1, j - j_f*1, k - k_f*1, 5))
                 pdif(i, j, k) = 1 - (pd2/(pd2 + flow%pressure_inf))
               end do
              end do
@@ -368,41 +371,42 @@ module ppm
 
         end subroutine init_left_and_right_zeta_estimates
      
-        subroutine compute_ppm_states(scheme, flow)
+        subroutine compute_ppm_states(qp, scheme, flow)
           !< Call PPM face-state reconstruction for each face
           !< with optional call for remove extrema based on
           !< input limter switch and call pressure based switching
           !< based on input pressure based switch
 
             implicit none
+            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(in) :: flow
 
-            call compute_face_estimates('x')
+            call compute_face_estimates(qp, 'x')
             call init_left_and_right_xi_estimates()
             if(scheme%ilimiter_switch==1)then
-              call remove_extrema('x')
+              call remove_extrema(qp, 'x')
             end if
             if (scheme%iPB_switch==1)then
-              call pressure_based_switching('x', flow)
+              call pressure_based_switching(qp, 'x', flow)
             end if
 
-            call compute_face_estimates('y')
+            call compute_face_estimates(qp, 'y')
             call init_left_and_right_eta_estimates()
             if(scheme%jlimiter_switch==1)then
-              call remove_extrema('y')
+              call remove_extrema(qp, 'y')
             end if
             if (scheme%jPB_switch==1)then
-              call pressure_based_switching('y', flow)
+              call pressure_based_switching(qp, 'y', flow)
             end if
 
-            call compute_face_estimates('z')
+            call compute_face_estimates(qp, 'z')
             call init_left_and_right_zeta_estimates()
             if(scheme%klimiter_switch==1)then
-              call remove_extrema('z')
+              call remove_extrema(qp, 'z')
             end if
             if (scheme%kPB_switch==1)then
-              call pressure_based_switching('z', flow)
+              call pressure_based_switching(qp, 'z', flow)
             end if
 
         end subroutine compute_ppm_states

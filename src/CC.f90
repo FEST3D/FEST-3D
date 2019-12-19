@@ -25,9 +25,9 @@ module CC
   use global_vars, only: DCCVnY
   use global_vars, only: DCCVnZ
   use global_vars, only: dist
-  use global_vars, only: x_speed
-  use global_vars, only: y_speed
-  use global_vars, only: z_speed
+!  use global_vars, only: x_speed
+!  use global_vars, only: y_speed
+!  use global_vars, only: z_speed
  ! use global_vars, only: transition
  ! use global_vars, only: turbulence
 
@@ -97,18 +97,21 @@ module CC
     end subroutine find_CCnormal
 
 
-    subroutine find_CCVn()
+    subroutine find_CCVn(qp, dims)
       !< Taking a dot product between Cell-center velocity and unit normal
       implicit none
-      CCVn = CCnormalX*x_speed + CCnormalY*y_speed + CCnormalZ*z_speed
+      type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx,-2:dims%jmx,-2:dims%kmx,-2:dims%n_var), intent(in) :: qp
+      CCVn = CCnormalX*qp(:,:,:,2) + CCnormalY*qp(:,:,:,3) + CCnormalZ*qp(:,:,:,4) ! (nx,ny,nz).(u,v,w)
     end subroutine find_CCVn
 
 
-    subroutine find_DCCVn(dims)
+    subroutine find_DCCVn(qp, dims)
       !< Find gradient of the dot product between cell velocity and unit normal
       implicit none
       type(extent), intent(in) :: dims
-      call find_CCVn()
+      real, dimension(-2:dims%imx,-2:dims%jmx,-2:dims%kmx,-2:dims%n_var), intent(in) :: qp
+      call find_CCVn(qp, dims)
       call compute_gradient(DCCVnX, dist, 'x', dims)
       call compute_gradient(DCCVnY, dist, 'y', dims)
       call compute_gradient(DCCVnZ, dist, 'z', dims)

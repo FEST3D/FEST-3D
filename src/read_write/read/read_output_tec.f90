@@ -10,20 +10,19 @@ module read_output_tec
 !  use global     , only : IN_FILE_UNIT
 !  use global     , only : OUTIN_FILE_UNIT
 !  use global     , only : outin_file
-  use global_vars, only : density 
-  use global_vars, only : x_speed 
-  use global_vars, only : y_speed 
-  use global_vars, only : z_speed 
-  use global_vars, only : pressure 
-  use global_vars, only : tk 
-  use global_vars, only : tw 
-  use global_vars, only : tkl
-  use global_vars, only : tv
-  use global_vars, only : tgm
+!  use global_vars, only : density 
+!  use global_vars, only : x_speed 
+!  use global_vars, only : y_speed 
+!  use global_vars, only : z_speed 
+!  use global_vars, only : pressure 
+!  use global_vars, only : tk 
+!  use global_vars, only : tw 
+!  use global_vars, only : tkl
+!  use global_vars, only : tv
+!  use global_vars, only : tgm
   use global_vars, only : mu 
   use global_vars, only : mu_t 
   use global_vars, only : dist
-  use global_vars, only : intermittency
 
 !  use global_vars, only : r_count
 !  use global_vars, only : r_list
@@ -38,16 +37,40 @@ module read_output_tec
   integer :: IN_FILE_UNIT
   integer :: imx, jmx, kmx
   integer :: i,j,k
+  real, dimension(:, :, :), pointer :: density      
+   !< Rho pointer, point to slice of qp (:,:,:,1)
+  real, dimension(:, :, :), pointer :: x_speed      
+   !< U pointer, point to slice of qp (:,:,:,2) 
+  real, dimension(:, :, :), pointer :: y_speed      
+   !< V pointer, point to slice of qp (:,:,:,3) 
+  real, dimension(:, :, :), pointer :: z_speed      
+   !< W pointer, point to slice of qp (:,:,:,4)
+  real, dimension(:, :, :), pointer :: pressure     
+   !< P pointer, point to slice of qp (:,:,:,5)
+  real, dimension(:, :, :), pointer :: tk        
+  !< TKE, point to slice of qp (:,:,:,6)
+  real, dimension(:, :, :), pointer :: tw        
+  !< Omega, point to slice of qp (:,:,:,7)
+  real, dimension(:, :, :), pointer :: te        
+  !< Dissipation, point to slice of qp (:,:,:,7)
+  real, dimension(:, :, :), pointer :: tv        
+  !< SA visocity, point to slice of qp (:,:,:,6)
+  real, dimension(:, :, :), pointer :: tkl       
+  !< KL K-KL method, point to slice of qp (:,:,:,7)
+  real, dimension(:, :, :), pointer :: tgm       
+  !< Intermittency of LCTM2015, point to slice of qp (:,:,:,8)
   public :: read_file
 
   contains
 
-    subroutine read_file(file_handler, control, dims)
+    subroutine read_file(file_handler, state, control, scheme, dims)
       !< Read all the variable for the tecplot restart file
       implicit none
       integer, intent(in) :: file_handler
       type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
+      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
       integer :: n
 
       IN_FILE_UNIT = file_handler
@@ -55,6 +78,53 @@ module read_output_tec
       jmx = dims%jmx
       kmx = dims%kmx
 
+      density(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 1)
+      x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 2)
+      y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 3)
+      z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 4)
+      pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 5)
+
+      select case (trim(scheme%turbulence))
+          case ("none")
+              !include nothing
+              continue
+          
+          case ("sst", "sst2003", "bsl", "des-sst", "kw")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("kkl")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("sa", "saBC")
+              tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+
+          case ("ke")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              te(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("les")
+            continue
+            ! todo
+
+          case DEFAULT
+            Fatal_error
+      end select
+
+      ! Transition modeling
+      select case(trim(scheme%transition))
+        case('lctm2015')
+          tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 8)
+!          tgm_inf => qp_inf(n_var)
+
+        case('bc', 'none')
+          !do nothing
+          continue
+
+        case DEFAULT
+          Fatal_error
+      end Select
       call read_header(control)
       call read_grid()
 
@@ -87,9 +157,6 @@ module read_output_tec
 
           case('tgm')
             call read_scalar(tgm, 'tgm', -2)
-
-          case('Intermittency')
-            call read_scalar(intermittency, 'Intermittency', -2)
 
           case('do not read')
             call skip_scalar()

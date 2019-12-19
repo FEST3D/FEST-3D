@@ -29,7 +29,7 @@ module solver
   use viscous,       only: compute_viscous_fluxes
   use layout,        only: process_id, get_process_data, read_layout_file, total_process
   use interface1,    only : setup_interface
-  use interface1,    only : destroy_interface
+!  use interface1,    only : destroy_interface
   use resnorm,       only : find_resnorm, setup_resnorm!, destroy_resnorm
   use dump_solution, only : checkpoint
   use viscosity    , only : setup_viscosity
@@ -59,6 +59,10 @@ module solver
     type(schemetype), public :: scheme
     type(flowtype) :: flow
     type(filetype) :: files
+    real, dimension(:, :, :, :), allocatable :: qp           
+     !< Store primitive variable at cell center
+    real, dimension(:, :, :   ), allocatable :: Temp
+     !< Store Temperature variable at cell center
 
     ! Public methods
     public :: setup_solver
@@ -83,7 +87,8 @@ module solver
             call setup_grid(files, nodes, dims)
             call setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, dims)
             call setup_viscosity(mu, mu_t, scheme, flow, dims)
-            call setup_state(files, control, scheme, flow, dims)
+            call setup_state(files, qp, control, scheme, flow, dims)
+            allocate(Temp(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2))
             call setup_gradients(control,scheme,flow,dims)
             !call setup_source
             call setup_bc(files, scheme, flow, dims)
@@ -101,7 +106,7 @@ module solver
             call setup_resnorm(files, control, scheme, flow)
             call initmisc()
             control%checkpoint_iter_count = 0
-            call checkpoint(files, nodes, control, scheme, dims)  ! Create an initial dump file
+            call checkpoint(files, qp, nodes, control, scheme, dims)  ! Create an initial dump file
             control%current_iter=1
             DebugCall('setup_solver: checkpoint')
             if(process_id==0)then
@@ -171,13 +176,14 @@ module solver
             if (process_id==0) then
               print*, control%current_iter
             end if
-            call get_next_solution(control, scheme, flow, dims)
+
+            call get_next_solution(qp, Temp, control, scheme, flow, dims)
             !if((mod(control%current_iter,control%res_write_interval)==0 .or. &
             !        control%current_iter==Res_itr .or.               &
             !        control%current_iter==1))      then
               call find_resnorm(files%RESNORM_FILE_UNIT, control, scheme, dims)
             !end if
-            call checkpoint(files, nodes, control, scheme, dims)
+            call checkpoint(files, qp, nodes, control, scheme, dims)
             control%current_iter = control%current_iter + 1
             if(process_id==0)then
               REWIND(files%STOP_FILE_UNIT)

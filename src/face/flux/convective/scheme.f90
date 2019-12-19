@@ -23,8 +23,7 @@ module scheme
 !    use global_vars, only : scheme_name
 
     use utils, only: alloc, dealloc
-    use face_interpolant, only: setup_interpolant_scheme, &
-            destroy_interpolant_scheme
+    use face_interpolant, only: setup_interpolant_scheme
     use van_leer, only: &
             setup_scheme_van_leer => setup_scheme, &
             destroy_scheme_van_leer => destroy_scheme, &
