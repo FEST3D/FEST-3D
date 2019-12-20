@@ -8,19 +8,6 @@ module time
   use global_vars, only : znx, zny, znz !face unit normal z
   use global_vars, only : xA, yA, zA    !face area
   use global_vars, only : volume
-    
-!  use global_vars, only : n_var
-!  use global_vars, only : qp
-!  use global_vars, only : density
-!  use global_vars, only : x_speed
-!  use global_vars, only : y_speed
-!  use global_vars, only : z_speed
-!  use global_vars, only : pressure
-!  use global_vars, only : gm
-!  use global_vars, only : Pr
-!  use global_vars, only : tPr
-!  use global_vars, only : R_gas
-!  use global_vars, only : mu_ref
   use global_vars, only : mu
   use global_vars, only : mu_t
   use global_vars, only : total_process
@@ -29,7 +16,6 @@ module time
   use global_vars, only : sim_clock
 
   use utils, only: alloc
-  use utils, only:  dealloc 
   use face_interpolant, only: &
           x_qp_left, x_qp_right, &
           y_qp_left, y_qp_right, &
@@ -98,7 +84,7 @@ module time
             call alloc(total_time, 1, total_process)
             CALL CPU_TIME(t2)
             CALL SYSTEM_CLOCK(COUNT=nb_ticks_final)
-            call dealloc(delta_t)
+            !call dealloc(delta_t)
 
             nb_ticks = nb_ticks_final - nb_ticks_initial
             IF (nb_ticks_final < nb_ticks_initial) &
@@ -116,7 +102,7 @@ module time
             call MPI_GATHER(cpu_time_elapsed, 1, MPI_DOUBLE_PRECISION, &
             total_time, 1, MPI_DOUBLE_PRECISION, 0,MPI_COMM_WORLD, ierr)
             if(process_id==0) print*, "Total CPU time    : ", trim(write_time(sum(total_time)))
-            call dealloc(total_time)
+            !call dealloc(total_time)
 
         end subroutine destroy_time
 

@@ -12,14 +12,7 @@ module viscosity
   use vartypes
   use global_vars , only : mu
   use global_vars , only : process_id
-
-!  use global_vars , only : pressure
-!  use global_vars , only : density
   use global_vars  , only : mu_t
-!  use global_vars  , only : tw
-!  use global_vars  , only : tk
-!  use global_vars  , only : tkl
-!  use global_vars  , only : tv
 
   use global_vars  , only : id
   use global_vars  , only : face_names
@@ -54,7 +47,6 @@ module viscosity
   use copy_bc       , only : copy1
 
   use utils       , only :   alloc
-  use utils       , only : dealloc
 
 #include "error.inc"
 

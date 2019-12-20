@@ -4,7 +4,6 @@ module viscous
   !-----------------------------------------------------------------
 #include "error.inc"
   use vartypes
-!  use global     , only: FILE_NAME_LENGTH
   use global_vars, only : xnx, xny, xnz !face unit normal x
   use global_vars, only : ynx, yny, ynz !face unit normal y
   use global_vars, only : znx, zny, znz !face unit normal z
@@ -13,17 +12,6 @@ module viscous
   use geometry   , only : CellCenter
   
   use global_vars, only : process_id
-!  use global_vars, only : qp
-!  use global_vars, only : density
-!  use global_vars, only : x_speed
-!  use global_vars, only : y_speed
-!  use global_vars, only : z_speed
-!  use global_vars, only : pressure
-!  use global_vars, only : tk
-!  use global_vars, only : tw
-!  use global_vars, only : tkl
-!  use global_vars, only : tv
-!  use global_vars, only : tgm
   use gradients  , only : gradu_x
   use gradients  , only : gradu_y
   use gradients  , only : gradu_z
@@ -53,8 +41,6 @@ module viscous
   use gradients  , only : gradtgm_z
   use global_vars, only : mu
   use global_vars, only : mu_t
-!  use global_vars, only : turbulence
-!  use global_vars, only : transition
   use global_sst , only : sst_F1
   use global_sst , only : sigma_k1
   use global_sst , only : sigma_k2
@@ -64,8 +50,7 @@ module viscous
   use global_kkl , only : sigma_phi
   use global_sa  , only : sigma_sa
   use global_sa  , only : cb2
-  use utils      , only : alloc, dealloc
-!  use string
+  use utils      , only : alloc
   implicit none
   private
 
@@ -75,18 +60,17 @@ module viscous
 
   contains
 
-    subroutine compute_viscous_fluxes(F, G, H, qp, control, scheme, flow, dims)
+    subroutine compute_viscous_fluxes(F, G, H, qp, scheme, flow, dims)
       !< Call to all viscous flux subroutine based on 
       !< the drection and turbulence/transition model being
       !< used
 
         implicit none
-        type(controltype), intent(in) :: control
         type(schemetype), intent(in) :: scheme
         type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
         real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-        real, dimension(:, :, :, :), pointer :: F, G, H
+        real, dimension(:, :, :, :), intent(inout) :: F, G, H
 
         imx = dims%imx
         jmx = dims%jmx
@@ -163,7 +147,7 @@ module viscous
       !< Compute viscous fluxes for first five Navier-Stokes equation
       implicit none
       character(len=*), intent(in) :: direction !< Face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
+      real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
@@ -374,7 +358,7 @@ module viscous
       !< Compute viscous fluxes for additianal equations due to SST turbulence model
       implicit none
       character(len=*), intent(in) :: direction !< face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< flux array
+      real, dimension(:, :, :, :), intent(inout) :: F !< flux array
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables
@@ -525,7 +509,7 @@ module viscous
       !< Compute viscous fluxes for additianal equations due to k-kL turbulence model
       implicit none
       character(len=*), intent(in) :: direction !< Face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
+      real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables
@@ -674,7 +658,7 @@ module viscous
       !< Compute viscous fluxes for additianal equations due to SA turbulence model
       implicit none
       character(len=*), intent(in) :: direction !< Face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
+      real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables
@@ -792,7 +776,7 @@ module viscous
       !< Compute viscous fluxes for additianal equations due to LCTM2015 transition model
       implicit none
       character(len=*), intent(in) :: direction !< Face direction
-      real, dimension(:, :, :, :), pointer, intent(inout) :: F !< Flux array
+      real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       ! local variables

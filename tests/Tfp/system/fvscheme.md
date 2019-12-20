@@ -2,7 +2,7 @@
 Scheme File
 ===========
 ## Inviscid Flux Scheme
-ausmUP
+ausm
 
 ## Higher Order Method
 muscl
@@ -23,7 +23,7 @@ none
 l
 
 ## Time Integration Method
-plusgs
+implicit
 
 ## Higher Order Boundary Conditions
 0

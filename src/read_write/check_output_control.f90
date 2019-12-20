@@ -1,20 +1,8 @@
   !< Check for the input from the output_control.md file
 module check_output_control
   !< Check for the input from the output_control.md file
-! ---------------------------------------------
-! 170619 -jatinder pal singh sandhu
-! Aim: to check wheter input are correct or not
-!----------------------------------------------
   use vartypes
-!  use global_vars, only: r_list
-!  use global_vars, only: w_list
-!  use global_vars, only: previous_flow_type
-!  use global_vars, only: turbulence
-!  use global_vars, only: transition
-!  use global_vars, only: mu_ref
-!  use global_vars, only: r_count
-!  use global_vars, only: w_count
-  use str_case   , only: lcase
+  !use str_case   , only: lcase
   implicit none
   private
   public :: verify_write_control
@@ -602,5 +590,21 @@ module check_output_control
       end do
 
     end subroutine verify_read_control
+
+    function lcase(text) result(res)
+      !< Make the whole string to lower case
+      CHARACTER(len=*), intent(in)         :: text
+      !< Input string of any case
+      character(len=STRING_BUFFER_LENGTH) :: res
+      !< Output string of lower case
+      integer ::  I,C
+  
+      res=text
+      DO I = 1,LEN(TEXT)
+        C = INDEX("ABCDEFGHIJKLMNOPQRSTUVWXYZ",TEXT(I:I))
+        IF (C.GT.0) res(I:I) = "abcdefghijklmnopqrstuvwxyz"(C:C)
+      END DO
+  
+    end function lcase
 
 end module check_output_control

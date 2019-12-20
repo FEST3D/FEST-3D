@@ -2,11 +2,10 @@
 Control File
 ===========
 ## CFL
-#3000.0
-300
+3000.0
 
 ## Restart level
-0
+2
 
 ## Maximum Iterations
 10000

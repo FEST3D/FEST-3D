@@ -9,9 +9,8 @@ module weno_NM
 #include "../../debug.h"
 
     use vartypes
-    use utils, only: alloc, dealloc
+    use utils, only: alloc
     use global_vars, only : volume
-!    use global_vars, only : qp
     use global_vars, only : process_id
 
     implicit none
@@ -41,7 +40,7 @@ module weno_NM
     integer :: imx, jmx, kmx, n_var
     ! Public members
     public :: setup_scheme
-    public :: destroy_scheme
+!    public :: destroy_scheme
     public :: compute_weno_NM_states
     public :: x_qp_left, x_qp_right
     public :: y_qp_left, y_qp_right
@@ -91,22 +90,22 @@ module weno_NM
         end subroutine setup_scheme
 
 
-        subroutine destroy_scheme()
-          !< Deallocate all the array used 
-
-            implicit none
-
-            DebugCall('destroy_weno_NM')
-
-            call dealloc(x_qp_left)
-            call dealloc(x_qp_right)
-            call dealloc(y_qp_left)
-            call dealloc(y_qp_right)
-            call dealloc(z_qp_left)
-            call dealloc(z_qp_right)
-
-        end subroutine destroy_scheme
-
+!        subroutine destroy_scheme()
+!          !< Deallocate all the array used 
+!
+!            implicit none
+!
+!            DebugCall('destroy_weno_NM')
+!
+!            call dealloc(x_qp_left)
+!            call dealloc(x_qp_right)
+!            call dealloc(y_qp_left)
+!            call dealloc(y_qp_right)
+!            call dealloc(z_qp_left)
+!            call dealloc(z_qp_right)
+!
+!        end subroutine destroy_scheme
+!
 
         subroutine compute_face_states(qp, dir)
           !< Subroutine to calculate state at the face, generalized for

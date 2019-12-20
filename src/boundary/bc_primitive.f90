@@ -77,7 +77,6 @@ module bc_primitive
 !  use global_vars, only: current_iter
 
   use global_sst , only: beta1
-  use utils,       only: turbulence_read_error
 
   use read_bc   , only : read_fixed_values
   use copy_bc   , only : copy3
@@ -320,7 +319,6 @@ module bc_primitive
             call fix(tk, fixed_tk, face)
             call fix(tkl, fixed_tkl, face)
           case DEFAULT
-            !call turbulence_read_error()
             Fatal_error
         end select
         select case(trim(transition))
@@ -360,7 +358,6 @@ module bc_primitive
             call copy3(tk, "flat", face, dims)
             call copy3(tkl, "flat", face, dims)
           case DEFAULT
-            !call turbulence_read_error()
             Fatal_error
         end select
         select case(trim(transition))
@@ -401,7 +398,6 @@ module bc_primitive
             call fix(tk, fixed_tk, face)
             call fix(tkl, fixed_tw, face)
           case DEFAULT
-           ! call turbulence_read_error()
            Fatal_error
         end select
         select case(trim(transition))
@@ -445,7 +441,6 @@ module bc_primitive
             call copy3(tk, "flat", face, dims)
             call copy3(tkl, "flat", face, dims)
           case DEFAULT
-           ! call turbulence_read_error()
            Fatal_error
         end select
         select case(trim(transition))
@@ -490,7 +485,6 @@ module bc_primitive
             call copy3(tk, "symm", face, dims)
             call copy3(tkl, "symm", face, dims)
           case DEFAULT
-            !call turbulence_read_error()
             Fatal_error
         end select
         select case(trim(transition))
@@ -528,7 +522,7 @@ module bc_primitive
             call copy3(tk, "flat", face, dims)
             call copy3(tkl, "flat", face, dims)
           case DEFAULT
-            call turbulence_read_error()
+            Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
@@ -607,7 +601,6 @@ module bc_primitive
             call copy3(tk  , "anti", face, dims)
             call copy3(tkl , "anti", face, dims)
           case DEFAULT
-            !call turbulence_read_error()
             Fatal_error
         end select
         select case(trim(transition))
@@ -720,7 +713,6 @@ module bc_primitive
           if(fixed_tk(face_num)==0.) fixed_tk(face_num)=tk_inf
           if(fixed_tkl(face_num)==0.) fixed_tkl(face_num)=tkl_inf
         case DEFAULT
-         ! call turbulence_read_error()
          Fatal_error
       end select
 
@@ -793,7 +785,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -828,7 +819,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -888,7 +878,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -923,7 +912,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -983,7 +971,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1018,7 +1005,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1078,7 +1064,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1113,7 +1098,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1173,7 +1157,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1208,7 +1191,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1268,7 +1250,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1303,7 +1284,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1385,7 +1365,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1414,7 +1393,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1472,7 +1450,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1501,7 +1478,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1559,7 +1535,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1588,7 +1563,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1646,7 +1620,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1675,7 +1648,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1733,7 +1705,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1762,7 +1733,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1820,7 +1790,6 @@ module bc_primitive
                       call copy3(tk, "flat", face, dims)
                       call copy3(tkl, "flat", face, dims)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))
@@ -1849,7 +1818,6 @@ module bc_primitive
                       call fix(tk, fixed_tk, face)
                       call fix(tkl, fixed_tkl, face)
                     case DEFAULT
-                      !call turbulence_read_error()
                       Fatal_error
                   end select
                   select case(trim(transition))

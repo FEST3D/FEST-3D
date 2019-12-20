@@ -3,7 +3,7 @@ module face_interpolant
 #include "../../debug.h"
 #include "../../error.h"
     use vartypes
-    use utils, only: alloc, dealloc
+    use utils, only: alloc
     use muscl, only: setup_scheme_muscl => setup_scheme, &
             compute_muscl_states, &
             x_qp_left_muscl => x_qp_left, &

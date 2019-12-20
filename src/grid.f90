@@ -23,7 +23,6 @@ module grid
     use global_vars, only : dir_switch
     use global_vars, only : layers
     use global_vars, only : process_id
-    use utils, only: alloc, dealloc
     
 #include "error.inc"
 #include "mpi.inc"

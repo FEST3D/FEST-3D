@@ -39,36 +39,12 @@ module lusgs
   use global_vars, only : ynx, yny, ynz !face unit normal y
   use global_vars, only : znx, zny, znz !face unit normal z
   use global_vars, only : xA, yA, zA    !face area
-    
-!  use global_vars, only : gm
-!  use global_vars, only : qp
-!  use global_vars, only : density
-!  use global_vars, only : x_speed
-!  use global_vars, only : y_speed
-!  use global_vars, only : z_speed
-!  use global_vars, only : pressure
   use global_vars, only : dist
   use global_vars, only : mu
   use global_vars, only : mu_t
-!  use global_vars, only : tk
-!  use global_vars, only : tw
-
   use global_vars, only : delta_t
   use global_vars, only : process_id
-
-  use global_vars, only: F_p
-  use global_vars, only: G_p
-  use global_vars, only: H_p
-  use global_vars, only: mass_residue
-  use global_vars, only: x_mom_residue
-  use global_vars, only: y_mom_residue
-  use global_vars, only: z_mom_residue
-  use global_vars, only: energy_residue
-  use global_vars, only: TKE_residue
-  use global_vars, only: omega_residue
-  use global_vars, only: kl_residue
-  use global_vars, only: residue
-!  use global_vars, only: mu_ref
+!  use global_vars, only: residue
 
   use gradients  , only: gradu_x
   use gradients  , only: gradu_y
@@ -82,9 +58,6 @@ module lusgs
   use geometry   , only: CellCenter
 
   use utils, only: alloc
-  use utils, only:  dealloc 
-
-!  use string
 
   !--- sst implicit update ---!
   use global_sst, only : sst_F1
@@ -256,33 +229,35 @@ module lusgs
 !      call dealloc(dummy)
 !    end subroutine destroy_lusgs
 
-    subroutine update_with_lusgs(qp, scheme, dims)
+    subroutine update_with_lusgs(qp, residue, scheme, dims)
       !< Time-integrate with LU_SGS method
       implicit none
       type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
 
       DebugCall("Update_with_lusgs")
       select case(trim(scheme%turbulence))
         case('none')
-          call update_laminar_variables(qp, dims)
+          call update_laminar_variables(qp, residue, dims)
 
         case('sst', 'sst2003')
           select case(trim(scheme%transition))
             case('none', 'bc')
-              call update_SST_variables(qp, dims)
+              call update_SST_variables(qp, residue, dims)
             case('lctm2015')
-              call update_lctm2015(qp, dims)
+              call update_lctm2015(qp, residue, dims)
             case DEFAULT
               Fatal_error
           end select
 
         case('kkl')
-          call update_KKL_variables(qp, dims)
+          call update_KKL_variables(qp, residue, dims)
 
         case('sa', 'saBC')
-          call update_SA_variables(qp, dims)
+          call update_SA_variables(qp, residue, dims)
 
         case Default
           Fatal_error
@@ -293,12 +268,14 @@ module lusgs
     end subroutine update_with_lusgs
 
 
-    subroutine update_laminar_variables(qp, dims)
+    subroutine update_laminar_variables(qp, residue, dims)
       !< Update laminar flow with LU-SGS scheme
       implicit none
       integer :: i,j,k
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
         real, dimension(1:5)     :: deltaU
         real                     :: D
         real, dimension(1:5)     :: conservativeQ
@@ -779,11 +756,13 @@ module lusgs
     end function SpectralRadius
 
 
-    subroutine update_SST_variables(qp, dims)
+    subroutine update_SST_variables(qp, residue, dims)
       !< Update the RANS (SST) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout):: qp
+      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
         real, dimension(1:7)     :: deltaU
         real, dimension(1:7)     :: D
@@ -1277,11 +1256,13 @@ module lusgs
 
     end function SSTFlux 
 
-    subroutine update_KKL_variables(qp, dims)
+    subroutine update_KKL_variables(qp, residue, dims)
       !< Update the RANS (k-kL) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout):: qp
+      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
         real, dimension(1:7)     :: deltaU
         real, dimension(1:7)     :: D
@@ -1745,11 +1726,13 @@ module lusgs
     end function KKLFlux 
 
 
-    subroutine update_SA_variables(qp, dims)
+    subroutine update_SA_variables(qp, residue, dims)
       !< Update the RANS (SA) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
         real, dimension(1:6)     :: deltaU
         real, dimension(1:6)     :: D
@@ -2313,11 +2296,13 @@ module lusgs
     end function SAFlux 
 
 
-    subroutine update_lctm2015(qp, dims)
+    subroutine update_lctm2015(qp, residue, dims)
       !< Update the RANS (LCTM2015 transition model with SST2003) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
         real, dimension(1:8)     :: deltaU
         real, dimension(1:8)     :: D
@@ -2517,7 +2502,6 @@ module lusgs
               De = 0.06*vort*Fturb*density*(2.0*50.0*Q0(8) - 1.0)
               D(8) = (D(8) + (-Dp + DE )*volume(i,j,k))
               !storing D in Iflux array for backward sweep
-              !F_p(i,j,k,1) = D
 
               deltaU(1:8) = -residue(i,j,k,1:8) &
                 - 0.5*((DelIminusFlux - LambdaTimesArea(1)*delQstar(i-1,j,k,1:8)) &

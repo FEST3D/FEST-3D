@@ -4,18 +4,8 @@ module wall_dist
   !< Calculate the distance from the wall 
   !< for each cell-center in the domain
   use vartypes
-!  use global,  only: NODESURF_FILE_UNIT
-!  use global,  only: WALL_DIST_FILE_UNIT
-!  use global,  only: wall_dist_file
-!  use global,  only: surface_node_points
-
-!  use global_vars, only : imx
-!  use global_vars, only : jmx
-!  use global_vars, only : kmx
-!  use grid, only : point
   use global_vars, only : dist
-
-  use utils, only: alloc, dealloc
+  use utils, only: alloc
 #include "../debug.h"
 #include "../error.h"
 
@@ -34,7 +24,7 @@ module wall_dist
   integer :: imx, jmx, kmx
 
   public :: setup_wall_dist
-  public :: destroy_wall_dist
+!  public :: destroy_wall_dist
   public :: find_wall_dist
 
   contains
@@ -65,21 +55,21 @@ module wall_dist
     end subroutine setup_wall_dist
 
 
-
-    subroutine destroy_wall_dist()
-      !< Deallocate the memory of wall_distance variable,
-      !< wall_x, wall_y, and wall_z
-
-      implicit none
-
-      DebugCall('destroy_wall_dist')
-      call dealloc(wall_x)
-      call dealloc(wall_y)
-      call dealloc(wall_z)
-      call dealloc(dist)
-
-    end subroutine destroy_wall_dist
-
+!
+!    subroutine destroy_wall_dist()
+!      !< Deallocate the memory of wall_distance variable,
+!      !< wall_x, wall_y, and wall_z
+!
+!      implicit none
+!
+!      DebugCall('destroy_wall_dist')
+!      call dealloc(wall_x)
+!      call dealloc(wall_y)
+!      call dealloc(wall_z)
+!      call dealloc(dist)
+!
+!    end subroutine destroy_wall_dist
+!
 
     subroutine setup_nodefile(files)
       !< Open and read first line of surface_node_point file
@@ -151,7 +141,7 @@ module wall_dist
           end do
         end do
       end do
-      call dealloc(node_dist)
+      deallocate(node_dist)
       DebugCall('find_wall_dist-> complete')
 
     end subroutine find_wall_dist

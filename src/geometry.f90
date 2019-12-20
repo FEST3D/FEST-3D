@@ -34,75 +34,10 @@ module geometry
     use global_vars, only : kmax_id
     use global_vars, only : process_id
     
-    use utils, only: alloc, dealloc
+    use utils, only: alloc
 
     implicit none
     private
-
-
-!    type, public :: celltype
-!      real :: volume
-!      !< Store cell volume
-!      real :: centerx
-!      real :: centery
-!      real :: centerz
-!      !< Store Cell-center location 
-!    end type celltype
-!
-!    type, public :: facetype
-!      real :: A
-!       !< Store magnitude of face area vector of direction faces
-!      real :: nx
-!      real :: ny
-!      real :: nz
-!       !< Store unit face normal vector for all faces 
-!    end type facetype
-
-
-!      real, dimension(:, :, :)             , pointer :: xnx
-!       !< Pointer to x component of face unit normal of I faces
-!      real, dimension(:, :, :)             , pointer :: xny
-!       !< Pointer to y component of face unit normal of I faces
-!      real, dimension(:, :, :)             , pointer :: xnz
-!       !< Pointer to z component of face unit normal of I faces
-!      real, dimension(:, :, :)             , pointer :: ynx
-!       !< Pointer to x component of face unit normal of J faces
-!      real, dimension(:, :, :)             , pointer :: yny
-!       !< Pointer to y component of face unit normal of J faces
-!      real, dimension(:, :, :)             , pointer :: ynz
-!       !< Pointer to z component of face unit normal of J faces
-!      real, dimension(:, :, :)             , pointer :: znx
-!       !< Pointer to x component of face unit normal of K faces
-!      real, dimension(:, :, :)             , pointer :: zny
-!       !< Pointer to y component of face unit normal of K faces
-!      real, dimension(:, :, :)             , pointer :: znz
-!       !< Pointer to z component of face unit normal of K faces
-
-  ! geometry variables
-!  real, dimension(:, :, :,:), allocatable, target :: xn
-!   !< Store unit face normal vector for all I faces 
-!  real, dimension(:, :, :,:), allocatable, target :: yn
-!   !< Store unit face normal vector for all J faces 
-!  real, dimension(:, :, :,:), allocatable, target :: zn
-!   !< Store unit face normal vector for all K faces 
-!  real, dimension(:, :, :), allocatable, target :: xA
-!   !< Store magnitude of face area vector of I direction faces
-!  real, dimension(:, :, :), allocatable, target :: yA
-!   !< Store magnitude of face area vector of J direction faces
-!  real, dimension(:, :, :), allocatable, target :: zA
-!   !< Store magnitude of face area vector of K direction faces
-!  real, dimension(:, :, :), allocatable, target ::   left_ghost_centroid
-!   !< Store the cell center of the ghost cell on 1 face
-!  real, dimension(:, :, :), allocatable, target ::  right_ghost_centroid
-!   !< Store the cell center of the ghost cell on 2 face
-!  real, dimension(:, :, :), allocatable, target ::  front_ghost_centroid
-!   !< Store the cell center of the ghost cell on 3 face
-!  real, dimension(:, :, :), allocatable, target ::   back_ghost_centroid
-!   !< Store the cell center of the ghost cell on 4 face
-!  real, dimension(:, :, :), allocatable, target ::    top_ghost_centroid
-!   !< Store the cell center of the ghost cell on 5 face
-!  real, dimension(:, :, :), allocatable, target :: bottom_ghost_centroid
-!   !< Store the cell center of the ghost cell on 6 face
       real, dimension(:,:,:,:), allocatable, public:: CellCenter
       !< Store Cell-center location 
       integer :: imx, jmx, kmx

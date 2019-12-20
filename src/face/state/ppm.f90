@@ -7,16 +7,7 @@ module ppm
     !-------------------------------------------------------------------
 
     use vartypes
-    use utils, only: alloc, dealloc
-!    use global_vars, only : qp
-!    use global_vars, only : pressure
-!    use global_vars, only : pressure_inf
-!    use global_vars, only : ilimiter_switch
-!    use global_vars, only : jlimiter_switch
-!    use global_vars, only : klimiter_switch
-!    use global_vars, only : iPB_switch
-!    use global_vars, only : jPB_switch
-!    use global_vars, only : kPB_switch
+    use utils, only: alloc
 
 #include "../../debug.h"
 #include "../../error.h"

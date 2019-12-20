@@ -22,7 +22,7 @@ module muscl
 #include "../../debug.h"
 
     use vartypes
-    use utils, only: alloc, dealloc
+    use utils, only: alloc
 
     implicit none
     private

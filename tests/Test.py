@@ -40,8 +40,7 @@ def SetInput(Flux, HOM, Turbulence, Transition):
     Scheme['TurbulenceModel']=Turbulence
     Scheme['TransitionModel']=Transition
     Scheme['TimeStep']='l'
-    #Scheme['TimeIntegration']='implicit'
-    Scheme['TimeIntegration']='plusgs'
+    Scheme['TimeIntegration']='implicit'
     Scheme['HigherOrderBC']='0'
     return Scheme
 

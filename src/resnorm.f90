@@ -16,22 +16,13 @@ module resnorm
   !----------------------------------------------------
 
   use vartypes
-!  use global,      only: RESNORM_FILE_UNIT
-!  use global,      only: resnorm_file
-
-!  use global_vars, only: Res_abs
-!  use global_vars, only: Res_rel
-!  use global_vars, only: Res_save
-!  use global_vars, only: Res_scale
-  use global_vars, only: residue
-  use global_vars, only: F_p
-  use global_vars, only: G_p
-  use global_vars, only: H_p
-  use utils,      only: dealloc
+!  use global_vars, only: residue
+!  use global_vars, only: F_p
+!  use global_vars, only: G_p
+!  use global_vars, only: H_p
   use utils,      only: alloc
   use layout,     only: process_id
   use layout,     only: total_process
-!  use fclose,     only: close_file
 
 #include "error.inc"
 #include "mpi.inc"
@@ -63,14 +54,22 @@ module resnorm
       call setup_file(files, control)
     end subroutine setup_resnorm
 
-    subroutine find_resnorm(file_handler, control, scheme, dims)
+    subroutine find_resnorm(file_handler, residue, F,G,H, control, scheme, dims)
       !< Find the normalized residual for each processor
       implicit none
       integer, intent(in) :: file_handler
       type(controltype), intent(in) :: control
       type(schemetype) , intent(in) :: scheme
       type(extent), intent(in) :: dims
-      call get_absolute_resnorm(control, dims)
+      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
+      real, dimension(:, :, :, :), intent(in) :: F
+      !< Store fluxes throught the I faces
+      real, dimension(:, :, :, :), intent(in) :: G
+      !< Store fluxes throught the J faces
+      real, dimension(:, :, :, :), intent(in) :: H
+      !< Store fluxes throught the K faces
+      call get_absolute_resnorm(residue, F,G,H, control, dims)
       call collect_resnorm_from_all_blocks(control)
       call assemble_resnom_at_each_process(control)
       call get_relative_resnorm(control)
@@ -172,22 +171,31 @@ module resnorm
 
     end subroutine setup_scale
 
-    subroutine get_absolute_resnorm(control, dims)
+    subroutine get_absolute_resnorm(residue, F,G,H, control, dims)
       !< Get absolute residual for current process
       implicit none
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
+      !< extent of the 3D domain
+      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
+      real, dimension(:, :, :, :), intent(in) :: F
+      !< Store fluxes throught the I faces
+      real, dimension(:, :, :, :), intent(in) :: G
+      !< Store fluxes throught the J faces
+      real, dimension(:, :, :, :), intent(in) :: H
+      !< Store fluxes throught the K faces
       integer :: i
       do i=1,control%n_var
         Res_abs(i) =(sum(Residue(:,:,:,i)**2)/Res_scale(i)**2)
       end do
       merror = (                                     &
-               sum(F_p(  1,1:dims%jmx-1,1:dims%kmx-1,1)) &
-              -sum(F_p(dims%imx,1:dims%jmx-1,1:dims%kmx-1,1)) &
-              +sum(G_p(1:dims%imx-1,  1,1:dims%kmx-1,1)) &
-              -sum(G_p(1:dims%imx-1,dims%jmx,1:dims%kmx-1,1)) &
-              +sum(H_p(1:dims%imx-1,1:dims%jmx-1,  1,1)) &
-              -sum(H_p(1:dims%imx-1,1:dims%jmx-1,dims%kmx,1)) &
+               sum(F(  1,1:dims%jmx-1,1:dims%kmx-1,1)) &
+              -sum(F(dims%imx,1:dims%jmx-1,1:dims%kmx-1,1)) &
+              +sum(G(1:dims%imx-1,  1,1:dims%kmx-1,1)) &
+              -sum(G(1:dims%imx-1,dims%jmx,1:dims%kmx-1,1)) &
+              +sum(H(1:dims%imx-1,1:dims%jmx-1,  1,1)) &
+              -sum(H(1:dims%imx-1,1:dims%jmx-1,dims%kmx,1)) &
               )
       Res_abs(0) = (merror/Res_scale(0))
     end subroutine get_absolute_resnorm

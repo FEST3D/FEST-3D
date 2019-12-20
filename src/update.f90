@@ -28,35 +28,28 @@ module update
   use gradients  ,only :   gradw_y
   use gradients  ,only :   gradw_z
   use global_vars, only : volume
-!  use global_vars, only : qp
-!  use global_vars, only : density
-!  use global_vars, only : x_speed
-!  use global_vars, only : y_speed
-!  use global_vars, only : z_speed
-!  use global_vars, only : pressure
   use global_vars, only : dist
   use global_vars, only : mu
   use global_vars, only : mu_t
   use global_vars, only : delta_t
   use global_vars, only : process_id
 
-  use global_vars, only: F_p
-  use global_vars, only: G_p
-  use global_vars, only: H_p
-  use global_vars, only: mass_residue
-  use global_vars, only: x_mom_residue
-  use global_vars, only: y_mom_residue
-  use global_vars, only: z_mom_residue
-  use global_vars, only: energy_residue
-  use global_vars, only: TKE_residue
-  use global_vars, only: omega_residue
-  use global_vars, only: kl_residue
-  use global_vars, only: residue
+!  use global_vars, only: F_p
+!  use global_vars, only: G_p
+!  use global_vars, only: H_p
+!  use global_vars, only: mass_residue
+!  use global_vars, only: x_mom_residue
+!  use global_vars, only: y_mom_residue
+!  use global_vars, only: z_mom_residue
+!  use global_vars, only: energy_residue
+!  use global_vars, only: TKE_residue
+!  use global_vars, only: omega_residue
+!  use global_vars, only: kl_residue
+!  use global_vars, only: residue
 
   use geometry   , only: CellCenter
 
   use utils, only: alloc
-  use utils, only:  dealloc 
 
   !subroutine for residual calculation
   use interface1,                      only: apply_interface
@@ -180,7 +173,7 @@ module update
 !      end subroutine destroy_update
 
 
-      subroutine get_next_solution(qp, Temp, control, scheme, flow, dims)
+      subroutine get_next_solution(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
         !< Get solution at next time-step using scheme
         !< given in the input file.
         implicit none
@@ -190,6 +183,14 @@ module update
         type(extent), intent(in) :: dims
         real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2,1:dims%n_var), intent(inout):: qp
         real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(inout):: Temp
+        real, dimension(:, :, :, :), intent(inout)  :: residue
+        !< Store residue at each cell-center
+        real, dimension(:, :, :, :), intent(inout) :: F
+        !< Store fluxes throught the I faces
+        real, dimension(:, :, :, :), intent(inout) :: G
+        !< Store fluxes throught the J faces
+        real, dimension(:, :, :, :), intent(inout) :: H
+        !< Store fluxes throught the K faces
         real :: CFL 
         CFL = control%CFL
         !finding the updated Temperature using ideal gas law
@@ -197,66 +198,68 @@ module update
         Temp = qp(:,:,:,5)/(flow%R_gas*qp(:,:,:,1) )
         select case (trim(scheme%time_step_accuracy))
             case ("none")
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
               call compute_time_step(qp, CFL, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, scheme, flow, "conservative", 1. ,1., .FALSE.) 
+              call update_with(qp, residue, scheme, flow, "conservative", 1. ,1., .FALSE.) 
             case ("RK4")
               R_store=0.
               U_store = qp
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
               call compute_time_step(qp, CFL, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
-              call update_with(qp, scheme, flow, "conservative", 0.5  , 2., .FALSE., R_store, U_store) 
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
-              call update_with(qp, scheme, flow, "conservative", 1.0  , 2., .FALSE., R_store, U_store) 
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
-              call update_with(qp, scheme, flow, "conservative", 1./6., 1., .TRUE. , R_store, U_store) 
+              call update_with(qp, residue, scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
+              call update_with(qp, residue, scheme, flow, "conservative", 0.5  , 2., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
+              call update_with(qp, residue, scheme, flow, "conservative", 1.0  , 2., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
+              call update_with(qp, residue, scheme, flow, "conservative", 1./6., 1., .TRUE. , R_store, U_store) 
             case("RK2")
               R_store=0.
               U_store = qp
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
               call compute_time_step(qp, CFL, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
-              call update_with(qp, scheme, flow, "conservative", 0.5  , 1., .TRUE., R_store, U_store) 
+              call update_with(qp, residue, scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
+              call update_with(qp, residue, scheme, flow, "conservative", 0.5  , 1., .TRUE., R_store, U_store) 
             case ("TVDRK3")
               U_store = qp
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
               call compute_time_step(qp, CFL, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, scheme, flow, "conservative", 1.0  , 1.) 
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
-              call update_with(qp, scheme, flow, "conservative", 1.0  , 1.) 
+              call update_with(qp, residue, scheme, flow, "conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
+              call update_with(qp, residue, scheme, flow, "conservative", 1.0  , 1.) 
               qp = 0.75*U_store + 0.25*qp
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
-              call update_with(qp, scheme, flow, "conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
+              call update_with(qp, residue, scheme, flow, "conservative", 1.0  , 1.) 
               qp = (1./3.)*U_store + (2./3.)*qp
             case ("TVDRK2")
               U_store = qp
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
               call compute_time_step(qp, CFL, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, scheme, flow, "conservative", 1.0  , 1.) 
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
-              call update_with(qp, scheme, flow, "conservative", 1.0  , 1.) 
+              call update_with(qp, residue, scheme, flow, "conservative", 1.0  , 1.) 
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
+              call update_with(qp, residue, scheme, flow, "conservative", 1.0  , 1.) 
               qp = 0.5*U_store + 0.5*qp
             case ("implicit")
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
               call compute_time_step(qp, CFL, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with_lusgs(qp, scheme, dims)
+              call update_with_lusgs(qp, residue, scheme, dims)
             case ("plusgs")
-              call get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
+              call get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
               call compute_time_step(qp, CFL, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with_plusgs(qp, scheme, dims)
+              call update_with_plusgs(qp, residue, scheme, dims)
             case default
               Fatal_error
         end select
       end subroutine get_next_solution
 
-      subroutine update_with(qp, scheme, flow, type, time_factor, store_factor, use, Rn, un)
+      subroutine update_with(qp, residue, scheme, flow, type, time_factor, store_factor, use, Rn, un)
         !< A generalized scheme to updat the solution explicitly using
         !< any RK method and even first order euler explicit.
         implicit none
         real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(inout), target:: qp
+        real, dimension(:, :, :, :), intent(in)  :: residue
+        !< Store residue at each cell-center
         type(schemetype), intent(in) :: scheme
         type(flowtype), intent(in) :: flow
         character(len=*), intent(in) :: type
@@ -283,6 +286,10 @@ module update
         real :: rsa
         real :: kd2
         real :: xi 
+        real :: mass_residue
+        real :: x_mom_residue, y_mom_residue, z_mom_residue
+        real :: energy_residue
+        real :: TKE_residue, Omega_residue, kl_residue
 
         if(present(time_factor)) TF=time_factor
         if(present(store_factor)) SF=store_factor
@@ -301,40 +308,50 @@ module update
             do k = 1,kmx-1
               do j = 1,jmx-1
                 do i = 1,imx-1
+
+                  mass_residue = residue(i,j,k,1)
+                  x_mom_residue = residue(i,j,k,2)
+                  y_mom_residue = residue(i,j,k,3)
+                  z_mom_residue = residue(i,j,k,4)
+                  energy_residue = residue(i,j,k,5)
             
                   u1(1:n_var) = Quse(i,j,k,1:n_var)
             
                   ! finding primitive residue
-                  R(1) = mass_residue(i,j,k)
-                  R(2) = -1*(u1(2)/u1(1))*mass_residue(i,j,k) + x_mom_residue(i,j,k)/u1(1)
-                  R(3) = -1*(u1(3)/u1(1))*mass_residue(i,j,k) + y_mom_residue(i,j,k)/u1(1)
-                  R(4) = -1*(u1(4)/u1(1))*mass_residue(i,j,k) + z_mom_residue(i,j,k)/u1(1)
-                  R(5) = 0.5*(flow%gm-1.)*(sum(u1(2:4)**2)*mass_residue(i,j,k)) &
-                         -(flow%gm-1.)*u1(2)*x_mom_residue(i,j,k)               &
-                         -(flow%gm-1.)*u1(3)*y_mom_residue(i,j,k)               &
-                         -(flow%gm-1.)*u1(4)*z_mom_residue(i,j,k)               &
-                         +(flow%gm-1.)*energy_residue(i,j,k)
+                  R(1) = mass_residue
+                  R(2) = -1*(u1(2)/u1(1))*mass_residue + x_mom_residue/u1(1)
+                  R(3) = -1*(u1(3)/u1(1))*mass_residue + y_mom_residue/u1(1)
+                  R(4) = -1*(u1(4)/u1(1))*mass_residue + z_mom_residue/u1(1)
+                  R(5) = 0.5*(flow%gm-1.)*(sum(u1(2:4)**2)*mass_residue) &
+                         -(flow%gm-1.)*u1(2)*x_mom_residue               &
+                         -(flow%gm-1.)*u1(3)*y_mom_residue               &
+                         -(flow%gm-1.)*u1(4)*z_mom_residue               &
+                         +(flow%gm-1.)*energy_residue
             
                   select case(scheme%turbulence)
                     case('none')
                       !do nothing
                       continue
                     case('sst', 'sst2003')
+                      TKE_residue = residue(i,j,k,6)
+                      omega_residue = residue(i,j,k,7)
                       beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
-                      R(5) = R(5) - (flow%gm-1.)*TKE_residue(i,j,k)
-                      R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
-                             +(1./(1.+bstar*u1(6)*delta_t(i,j,k)))*TKE_residue(i,j,k)/u1(1)
-                      R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
-                             +(1./(1.+2.*beta*u1(6)*delta_t(i,j,k)))*omega_residue(i,j,k)/u1(1)
+                      R(5) = R(5) - (flow%gm-1.)*TKE_residue
+                      R(6) = -(u1(6)/u1(1))*mass_residue&
+                             +(1./(1.+bstar*u1(6)*delta_t(i,j,k)))*TKE_residue/u1(1)
+                      R(7) = -(u1(7)/u1(1))*mass_residue&
+                             +(1./(1.+2.*beta*u1(6)*delta_t(i,j,k)))*omega_residue/u1(1)
                     case('kkl')
+                      TKE_residue = residue(i,j,k,6)
+                      kl_residue  = residue(i,j,k,7)
                       eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
                       fphi = (1+cd1*eta)/(1+eta**4)
-                      R(5) = R(5) - (flow%gm-1.)*TKE_residue(i,j,k)
-                      R(6) = -(u1(6)/u1(1))*mass_residue(i,j,k)&
+                      R(5) = R(5) - (flow%gm-1.)*TKE_residue
+                      R(6) = -(u1(6)/u1(1))*mass_residue&
                              + (1./(1.+((2.5*((cmu**0.75)*u1(1)*(u1(6)**1.5)/max(u1(7),1.e-20))&
-                             +(2*mu(i,j,k)/dist(i,j,k)**2))*delta_t(i,j,k))))*TKE_residue(i,j,k)/u1(1)
-                      R(7) = -(u1(7)/u1(1))*mass_residue(i,j,k)&
-                             +(1./(1.+(6*mu(i,j,k)*fphi/dist(i,j,k)**2)*delta_t(i,j,k)))*kl_residue(i,j,k)/u1(1)
+                             +(2*mu(i,j,k)/dist(i,j,k)**2))*delta_t(i,j,k))))*TKE_residue/u1(1)
+                      R(7) = -(u1(7)/u1(1))*mass_residue&
+                             +(1./(1.+(6*mu(i,j,k)*fphi/dist(i,j,k)**2)*delta_t(i,j,k)))*kl_residue/u1(1)
                     case DEFAULT
                       Fatal_error
                   end select
@@ -495,7 +512,7 @@ module update
       end subroutine update_with
 
 
-      subroutine get_total_conservative_Residue(qp, Temp, control, scheme, flow, dims)
+      subroutine get_total_conservative_Residue(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
         !< For each iteration it apply boundary conditions,
         !< use higher order method to reconstruct state at
         !< face, evalute fluxes at each face, calculate 
@@ -509,19 +526,27 @@ module update
         type(extent), intent(in) :: dims
         real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2,1:dims%n_var), intent(inout):: qp
         real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in):: Temp
+        real, dimension(:, :, :, :), intent(inout)  :: residue
+        !< Store residue at each cell-center
+        real, dimension(:, :, :, :), intent(inout) :: F
+        !< Store fluxes throught the I faces
+        real, dimension(:, :, :, :), intent(inout) :: G
+        !< Store fluxes throught the J faces
+        real, dimension(:, :, :, :), intent(inout) :: H
+        !< Store fluxes throught the K faces
 
         call apply_interface(qp, control, dims)
         call populate_ghost_primitive(qp, control, scheme, flow, dims)
         call compute_face_interpolant(qp, scheme, flow)
         call reconstruct_boundary_state(qp, control, scheme, dims)
-        call compute_fluxes(scheme, flow)
+        call compute_fluxes(F,G,H,scheme, flow, dims)
         if (flow%mu_ref /= 0.0) then
           call evaluate_all_gradients(qp,Temp,scheme)
           call calculate_viscosity(qp, scheme, flow, dims)
-          call compute_viscous_fluxes(F_p, G_p, H_p, qp, control, scheme, flow, dims)
+          call compute_viscous_fluxes(F, G, H, qp, scheme, flow, dims)
         end if
-        call compute_residue(scheme)
-        call add_source_term_residue(qp, control, scheme, flow, dims)
+        call compute_residue(residue, F,G,H,dims)
+        call add_source_term_residue(qp, residue, scheme, flow, dims)
 
       end subroutine get_total_conservative_Residue
 !

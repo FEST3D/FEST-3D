@@ -39,11 +39,8 @@ read_write/write/write_output_tec_node.f90
 wall/wall.f90 
 wall/wall_dist.f90 
 convergence.f90 
-aux/start_finish.f90 
-aux/bitwise.f90 
-aux/str_case.f90 
-aux/check_outout_control.f90 
-aux/utils.f90 
+read_write/check_output_control.f90 
+utils.f90 
 face/state/weno.f90 
 face/state/weno_NM.f90 
 face/state/muscl.f90 

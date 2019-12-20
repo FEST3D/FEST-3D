@@ -2,11 +2,6 @@
 module interface1
   !< This module handles the MPI Communication calls for interface boundary conditions
   use vartypes
-!  use global_vars, only: imx
-!  use global_vars, only: jmx
-!  use global_vars, only: kmx
-!  use global_vars, only: n_var
-!  use global_vars, only: qp
   use global_vars, only: imin_id
   use global_vars, only: jmin_id
   use global_vars, only: kmin_id
@@ -31,7 +26,6 @@ module interface1
   use mapping, only : read_interface_map
 
   use utils      , only:   alloc
-  use utils      , only: dealloc
 
 #include "debug.h"
 #include "error.h"

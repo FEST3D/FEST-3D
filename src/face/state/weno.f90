@@ -12,8 +12,7 @@ module weno
 #include "../../debug.h"
 
     use vartypes
-    use utils, only: alloc, dealloc
-!    use global_vars, only : qp
+    use utils, only: alloc
     use global_vars, only : process_id
 
     implicit none

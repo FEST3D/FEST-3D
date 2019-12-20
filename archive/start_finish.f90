@@ -1,7 +1,6 @@
   !< Start and stop the solver
 module start_finish
   !< Start and stop the solver
-!  use fclose, only: close_all_files
   use solver, only: destroy_solver
   use solver, only: setup_solver
 #include "../mpi.inc"

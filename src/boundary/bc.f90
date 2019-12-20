@@ -9,7 +9,6 @@ module bc
   use global_vars, only: jmax_id
   use global_vars, only: kmin_id
   use global_vars, only: kmax_id
-!  use global_vars, only: accur
   use global_vars, only: c1
   use global_vars, only: c2
   use global_vars, only: c3
@@ -20,7 +19,6 @@ module bc
   use global_vars, only: make_H_flux_zero
   use global_vars, only: PbcId
   use utils, only: alloc
-  use utils, only: dealloc
 
   use read_bc   ,  only: read_fixed_values
 
@@ -32,7 +30,7 @@ module bc
   !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
 
   public :: setup_bc
-  public :: destroy_bc
+!  public :: destroy_bc
 
 
   contains
@@ -88,12 +86,12 @@ module bc
 
     end subroutine setup_bc
 
-    subroutine destroy_bc()
-      !< Deallocate memory from boundary condition variables
-      implicit none
-      call dealloc(make_F_flux_zero)
-      call dealloc(make_G_flux_zero)
-      call dealloc(make_H_flux_zero)
-    end subroutine destroy_bc
+!    subroutine destroy_bc()
+!      !< Deallocate memory from boundary condition variables
+!      implicit none
+!      call dealloc(make_F_flux_zero)
+!      call dealloc(make_G_flux_zero)
+!      call dealloc(make_H_flux_zero)
+!    end subroutine destroy_bc
 
 end module bc

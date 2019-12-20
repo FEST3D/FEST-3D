@@ -3,7 +3,6 @@ integer function test_read() result(r)
    use read
     
    type(filetype) :: files
-   type(extent) :: dims
    type(controltype):: control
    type(schemetype) :: scheme
    type(flowtype)   :: flow

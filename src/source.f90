@@ -22,12 +22,7 @@ module source
   use global_sst   ,only : sigma_k
   use global_sst   ,only : gama
   use global_sst   ,only : sst_F1
-!  use global_vars  ,only : intermittency
-!  use global_vars  ,only :  qp
   use global_vars  ,only :   volume
-!  use global_vars  ,only :   density
-!  use global_vars  ,only :   tk
-!  use global_vars  ,only :   tw
   use global_vars  ,only :   mu
   use global_vars  ,only :   dist
   use gradients  ,only :   gradu_x
@@ -48,9 +43,7 @@ module source
   use gradients  ,only :   gradtgm_x
   use gradients  ,only :   gradtgm_y
   use gradients  ,only :   gradtgm_z
-  use global_vars  ,only :   residue
-!  use global_vars  ,only :   TKE_residue
-!  use global_vars  ,only : omega_residue
+!  use global_vars  ,only :   residue
   use global_vars  ,only : xn
   use global_vars  ,only : yn
   use global_vars  ,only : zn
@@ -72,7 +65,6 @@ module source
   use global_kkl, only : eta
 
   !variables required by sa source term calculation
-!  use global_vars,only : tv
   use global_sa , only : cb1
   use global_sa , only : cb2
   use global_sa , only : cw1
@@ -91,10 +83,7 @@ module source
   use global_vars, only : ynx, yny, ynz !face unit normal y
   use global_vars, only : znx, zny, znz !face unit normal z
   use global_vars, only : xA, yA, zA    !face area
-!  use global_vars  ,only : tkl
   use global_vars  ,only : mu_t
-!  use global_vars  ,only : KL_residue
-!  use global_vars  ,only : tv_residue
 
   use global_vars, only : DCCVnX
   use global_vars, only : DCCVnY
@@ -104,7 +93,7 @@ module source
   use global_vars, only : CCnormalZ
 
   use CC         , only : find_DCCVn
-  use utils,       only: alloc, dealloc
+  use utils,       only: alloc
   use layout,      only: process_id
 
   implicit none
@@ -117,15 +106,16 @@ module source
   contains
 
     
-    subroutine add_source_term_residue(qp, control,scheme,flow, dims)
+    subroutine add_source_term_residue(qp, residue, scheme,flow, dims)
       !< Call to add different source terms to the residual of different equations.
 
       implicit none
-      type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
 
       DebugCall('add_source_term_residue')
 
@@ -138,9 +128,9 @@ module source
         case ('sa')
           select case(trim(scheme%transition))
             case('none')
-              call add_sa_source(qp, dims)
+              call add_sa_source(qp, residue, dims)
             case('bc')
-              call add_saBC_source(qp, flow, dims)
+              call add_saBC_source(qp, residue, flow, dims)
             case DEFAULT
               Fatal_error
           end select
@@ -148,17 +138,17 @@ module source
         case ('sst', 'sst2003')
           select case(trim(scheme%transition))
             case('none')
-              call add_sst_source(qp, scheme, dims)
+              call add_sst_source(qp, residue, scheme, dims)
             case('lctm2015')
-              call add_sst_source_lctm2015(qp, control, scheme, dims)
+              call add_sst_source_lctm2015(qp, residue, scheme, dims)
             case('bc')
-              call add_sst_bc_source(qp, flow,dims)
+              call add_sst_bc_source(qp, residue, flow,dims)
             case DEFAULT
               Fatal_error
           end select
 
         case ('kkl')
-          call add_kkl_source(qp, dims)
+          call add_kkl_source(qp, residue, dims)
 
         case DEFAULT
           Fatal_error
@@ -181,12 +171,14 @@ module source
 !        !nothing
 !    end subroutine destroy_source
 
-    subroutine add_sst_source(qp, scheme,dims)
+    subroutine add_sst_source(qp, residue, scheme,dims)
       !< Add residual due to source terms of the SST turbulence model
       implicit none
       type(extent), intent(in) :: dims
       type(schemetype), intent(in) :: scheme
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
 
       real :: CD
@@ -273,13 +265,14 @@ module source
     end subroutine add_sst_source
 
 
-    subroutine add_sst_source_lctm2015(qp, control, scheme, dims)
+    subroutine add_sst_source_lctm2015(qp, residue, scheme, dims)
       !< Add residual due to source terms of the LCTM2015 transition model
       implicit none
-      type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
 
       real :: CD
@@ -430,12 +423,14 @@ module source
 
 
     ! SST-BC model
-    subroutine add_sst_bc_source(qp, flow, dims)
+    subroutine add_sst_bc_source(qp, residue, flow, dims)
       !< Add residual due to source terms of the SST-BC transition model
       implicit none
       type(extent), intent(in) :: dims
       type(flowtype), intent(in) :: flow
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
 
       real :: CD
@@ -547,11 +542,13 @@ module source
     end subroutine add_sst_bc_source
 
 
-    subroutine add_kkl_source(qp, dims)
+    subroutine add_kkl_source(qp, residue, dims)
       !< Add residual due to source terms of the k-kL turbulence model
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
 
       real :: Tau11
@@ -764,11 +761,13 @@ module source
     end subroutine add_kkl_source
 
 
-    subroutine add_sa_source(qp, dims)
+    subroutine add_sa_source(qp, residue, dims)
       !< Add residual due to source terms of SA turbulence model
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
 
       real :: CD1
@@ -903,12 +902,14 @@ module source
 
     end subroutine add_sa_source
 
-    subroutine add_saBC_source(qp, flow, dims)
+    subroutine add_saBC_source(qp, residue, flow, dims)
       !< Add residual due to source terms of SABC transition model
       implicit none
       type(extent), intent(in) :: dims
       type(flowtype), intent(in) :: flow
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
       integer :: i,j,k
 
       real :: CD1

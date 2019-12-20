@@ -25,14 +25,8 @@ module CC
   use global_vars, only: DCCVnY
   use global_vars, only: DCCVnZ
   use global_vars, only: dist
-!  use global_vars, only: x_speed
-!  use global_vars, only: y_speed
-!  use global_vars, only: z_speed
- ! use global_vars, only: transition
- ! use global_vars, only: turbulence
 
   use utils, only : alloc
-  use utils, only : dealloc
   implicit none
   private
   public :: find_DCCVn

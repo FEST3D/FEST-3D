@@ -24,20 +24,6 @@ module global_vars
   real                                      :: sim_clock             !< Simluation clock time
 
 
-!  real, dimension(:, :, :, :), allocatable, target  :: qp           
-!   !< Store primitive variable at cell center
-!  real, dimension(:, :, :)                , pointer :: density      
-!   !< Rho pointer, point to slice of qp (:,:,:,1)
-!  real, dimension(:, :, :)                , pointer :: x_speed      
-!   !< U pointer, point to slice of qp (:,:,:,2) 
-!  real, dimension(:, :, :)                , pointer :: y_speed      
-!   !< V pointer, point to slice of qp (:,:,:,3) 
-!  real, dimension(:, :, :)                , pointer :: z_speed      
-!   !< W pointer, point to slice of qp (:,:,:,4)
-!  real, dimension(:, :, :)                , pointer :: pressure     
-!   !< P pointer, point to slice of qp (:,:,:,5)
-!  real, dimension(:, :, :), allocatable, target  :: intermittency
-!   !< Intermiitency pointer
   real, dimension(:, :, :), allocatable             :: dist 
    !< Store wall distance for each cell center
   real, dimension(:, :, :), allocatable             :: CCnormalX 
@@ -55,52 +41,39 @@ module global_vars
   real, dimension(:, :, :), allocatable             :: DCCVnZ
   !< Store Derivative of Cell-Center CCVn with respect to z
 
-!  ! state variable turbulent
-!  real, dimension(:, :, :)                , pointer :: tk        !< TKE/mass
-!  real, dimension(:, :, :)                , pointer :: tw        !< Omega
-!  real, dimension(:, :, :)                , pointer :: te        !< Dissipation
-!  real, dimension(:, :, :)                , pointer :: tv        !< SA visocity
-!  real, dimension(:, :, :)                , pointer :: tkl       !< KL K-KL method
-!  real, dimension(:, :, :)                , pointer :: tgm       !< Intermittency of LCTM2015
   ! residue variables
-  real, dimension(:, :, :, :)             , pointer :: F_p
-   !< Flux pointer for face in the I direction
-  real, dimension(:, :, :, :)             , pointer :: G_p
-   !< Flux pointer for face in the G direction
-  real, dimension(:, :, :, :)             , pointer :: H_p
-   !< Flux pointer for face in the K direction
-  real, dimension(:, :, :, :)             , pointer :: residue
-   !< Store residue at each cell-center
-  real, dimension(:, :, :)                , pointer :: mass_residue
-   !< Store continuity equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: x_mom_residue
-   !< Store x-momentum equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: y_mom_residue
-   !< Store y-momentum equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: z_mom_residue
-   !< Store z-momentum equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: energy_residue
-   !< Store energy equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: TKE_residue
-   !< Store TKE equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: omega_residue
-   !< Store Omega equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: KL_residue
-   !< Store KL equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: dissipation_residue
-   !< Store Disspaiton equation residual at each cell-center
-  real, dimension(:, :, :)                , pointer :: tv_residue
-   !< Store nut equation(SA model) residual at each cell-center
+!  real, dimension(:, :, :, :)             , pointer :: F_p
+!   !< Flux pointer for face in the I direction
+!  real, dimension(:, :, :, :)             , pointer :: G_p
+!   !< Flux pointer for face in the G direction
+!  real, dimension(:, :, :, :)             , pointer :: H_p
+!   !< Flux pointer for face in the K direction
+!  real, dimension(:, :, :, :)             , pointer :: residue
+!   !< Store residue at each cell-center
+!  real, dimension(:, :, :)                , pointer :: mass_residue
+!   !< Store continuity equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: x_mom_residue
+!   !< Store x-momentum equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: y_mom_residue
+!   !< Store y-momentum equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: z_mom_residue
+!   !< Store z-momentum equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: energy_residue
+!   !< Store energy equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: TKE_residue
+!   !< Store TKE equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: omega_residue
+!   !< Store Omega equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: KL_residue
+!   !< Store KL equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: dissipation_residue
+!   !< Store Disspaiton equation residual at each cell-center
+!  real, dimension(:, :, :)                , pointer :: tv_residue
+!   !< Store nut equation(SA model) residual at each cell-center
   real, dimension(:, :, :), allocatable, target     :: mu
    !< Cell-center molecular viscosity
   real, dimension(:, :, :), allocatable, target     :: mu_t
    !< Cell-center turbulent viscosity
-!  real, dimension(:, :, :)              , pointer   :: sst_mu
-   !< Pointer to  turbulent viscosity for SST turbulence model
-!  real, dimension(:, :, :)              , pointer   :: kkl_mu
-   !< Pointer to  turbulent viscosity for KKL turbulence model
-!  real, dimension(:, :, :)              , pointer   :: sa_mu
-   !< Pointer to  turbulent viscosity for SA turbulence model
   real, pointer ::        resnorm     !<             Residual normalized
   real, pointer ::    vis_resnorm     !<  {rho+V+P} equation residual normalized
   real, pointer ::   turb_resnorm     !<  Turbulent residual normalized
