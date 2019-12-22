@@ -495,9 +495,11 @@ module face_interpolant
             z_qp_right(:, :, :, :) = qp(1:imx-1, 1:jmx-1, 0:kmx+1, 1:n_var)
         end subroutine extrapolate_cell_averages_to_faces
 
-        subroutine compute_face_interpolant(qp, scheme, flow)
+        subroutine compute_face_interpolant(qp, cells, scheme, flow, dims)
             implicit none
-            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
+            type(extent), intent(in) :: dims
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(in) :: flow
             select case (scheme%interpolant)
@@ -540,7 +542,7 @@ module face_interpolant
                     z_qp_left( :, :, :, 6:) = qp(1:imx-1, 1:jmx-1, -1:kmx, 6:n_var)
                     z_qp_right(:, :, :, 6:) = qp(1:imx-1, 1:jmx-1, 0:kmx+1, 6:n_var)
                 case ("weno_NM")
-                    call compute_weno_NM_states(qp)
+                    call compute_weno_NM_states(qp, cells, dims)
                     x_qp_left  =  x_qp_left_weno_NM
                     x_qp_right = x_qp_right_weno_NM
                     y_qp_left  =  y_qp_left_weno_NM

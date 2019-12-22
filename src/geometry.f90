@@ -12,14 +12,14 @@ module geometry
     !use grid, only : nodetype, extent
     use vartypes
 
-    use global_vars, only : xn           !face unit norm x
-    use global_vars, only : yn           !face unit norm y
-    use global_vars, only : zn           !face unit norm z
-    use global_vars, only : xnx, xny, xnz !face unit normal x
-    use global_vars, only : ynx, yny, ynz !face unit normal y
-    use global_vars, only : znx, zny, znz !face unit normal z
-    use global_vars, only : xA, yA, zA    !face area
-    use global_vars, only : volume
+!    use global_vars, only : xn           !face unit norm x
+!    use global_vars, only : yn           !face unit norm y
+!    use global_vars, only : zn           !face unit norm z
+!    use global_vars, only : xnx, xny, xnz !face unit normal x
+!    use global_vars, only : ynx, yny, ynz !face unit normal y
+!    use global_vars, only : znx, zny, znz !face unit normal z
+!    use global_vars, only : xA, yA, zA    !face area
+!    use global_vars, only : volume
 !    use global_vars, only :   left_ghost_centroid
 !    use global_vars, only :  right_ghost_centroid
 !    use global_vars, only :  front_ghost_centroid
@@ -149,35 +149,35 @@ module geometry
             !-----------------------------------------------------------
 
 
-            call alloc(volume, -2, imx+2, -2, jmx+2, -2, kmx+2, &
-                    errmsg='Error: Unable to allocate memory for volume.')
-
-            call alloc(xA, -2, imx+3, -2, jmx+2, -2, kmx+2, &
-                    errmsg='Error: Unable to allocate memory for xA.')
-            call alloc(yA, -2, imx+2, -2, jmx+3, -2, kmx+2, &
-                    errmsg='Error: Unable to allocate memory for yA.')
-            call alloc(zA, -2, imx+2, -2, jmx+2, -2, kmx+3, &
-                    errmsg='Error: Unable to allocate memory for yA.')
-
-            call alloc(xn, -2, imx+3, -2, jmx+2, -2, kmx+2, 1,3, &
-                    errmsg='Error: Unable to allocate memory for xnx.')
-            call alloc(yn, -2, imx+2, -2, jmx+3, -2, kmx+2, 1,3, &
-                    errmsg='Error: Unable to allocate memory for ynx.')
-            call alloc(zn, -2, imx+2, -2, jmx+2, -2, kmx+3, 1,3, &
-                    errmsg='Error: Unable to allocate memory for ynx.')
-
-            xnx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
-            xny(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
-            xnz(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
-
-            ynx(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
-            yny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
-            ynz(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
-
-            znx(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
-            zny(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
-            znz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
-
+!            call alloc(volume, -2, imx+2, -2, jmx+2, -2, kmx+2, &
+!                    errmsg='Error: Unable to allocate memory for volume.')
+!
+!            call alloc(xA, -2, imx+3, -2, jmx+2, -2, kmx+2, &
+!                    errmsg='Error: Unable to allocate memory for xA.')
+!            call alloc(yA, -2, imx+2, -2, jmx+3, -2, kmx+2, &
+!                    errmsg='Error: Unable to allocate memory for yA.')
+!            call alloc(zA, -2, imx+2, -2, jmx+2, -2, kmx+3, &
+!                    errmsg='Error: Unable to allocate memory for yA.')
+!
+!            call alloc(xn, -2, imx+3, -2, jmx+2, -2, kmx+2, 1,3, &
+!                    errmsg='Error: Unable to allocate memory for xnx.')
+!            call alloc(yn, -2, imx+2, -2, jmx+3, -2, kmx+2, 1,3, &
+!                    errmsg='Error: Unable to allocate memory for ynx.')
+!            call alloc(zn, -2, imx+2, -2, jmx+2, -2, kmx+3, 1,3, &
+!                    errmsg='Error: Unable to allocate memory for ynx.')
+!
+!            xnx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
+!            xny(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
+!            xnz(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
+!
+!            ynx(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
+!            yny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
+!            ynz(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
+!
+!            znx(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
+!            zny(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
+!            znz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
+!
             call alloc(CellCenter, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, 3, &
                     errmsg='Error: Unable to allocate memory for volume.')
 
@@ -723,22 +723,22 @@ module geometry
             call compute_volumes(cells, nodes)
             call compute_ghost_cell_centroid(cells, nodes)
 
-            volume = cells(:,:,:)%volume
+!            volume = cells(:,:,:)%volume
             cellcenter(:,:,:,1) = cells(-2:imx+2,-2:jmx+2,-2:kmx+2)%centerx
             cellcenter(:,:,:,2) = cells(-2:imx+2,-2:jmx+2,-2:kmx+2)%centery
             cellcenter(:,:,:,3) = cells(-2:imx+2,-2:jmx+2,-2:kmx+2)%centerz
-            xA = Ifaces(:,:,:)%A
-            yA = Jfaces(:,:,:)%A
-            zA = Kfaces(:,:,:)%A
-            xn(:,:,:,1) = Ifaces(:,:,:)%nx
-            xn(:,:,:,2) = Ifaces(:,:,:)%ny
-            xn(:,:,:,3) = Ifaces(:,:,:)%nz
-            yn(:,:,:,1) = Jfaces(:,:,:)%nx
-            yn(:,:,:,2) = Jfaces(:,:,:)%ny
-            yn(:,:,:,3) = Jfaces(:,:,:)%nz
-            zn(:,:,:,1) = Kfaces(:,:,:)%nx
-            zn(:,:,:,2) = Kfaces(:,:,:)%ny
-            zn(:,:,:,3) = Kfaces(:,:,:)%nz
+!            xA = Ifaces(:,:,:)%A
+!            yA = Jfaces(:,:,:)%A
+!            zA = Kfaces(:,:,:)%A
+!            xn(:,:,:,1) = Ifaces(:,:,:)%nx
+!            xn(:,:,:,2) = Ifaces(:,:,:)%ny
+!            xn(:,:,:,3) = Ifaces(:,:,:)%nz
+!            yn(:,:,:,1) = Jfaces(:,:,:)%nx
+!            yn(:,:,:,2) = Jfaces(:,:,:)%ny
+!            yn(:,:,:,3) = Jfaces(:,:,:)%nz
+!            zn(:,:,:,1) = Kfaces(:,:,:)%nx
+!            zn(:,:,:,2) = Kfaces(:,:,:)%ny
+!            zn(:,:,:,3) = Kfaces(:,:,:)%nz
 
         end subroutine setup_geometry
 

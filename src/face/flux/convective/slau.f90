@@ -8,10 +8,10 @@ module slau
 #include "../../../debug.h"
 #include "../../../error.h"
     use vartypes
-    use global_vars, only : xnx, xny, xnz !face unit normal x
-    use global_vars, only : ynx, yny, ynz !face unit normal y
-    use global_vars, only : znx, zny, znz !face unit normal z
-    use global_vars, only : xA, yA, zA    !face area
+!    use global_vars, only : xnx, xny, xnz !face unit normal x
+!    use global_vars, only : ynx, yny, ynz !face unit normal y
+!    use global_vars, only : znx, zny, znz !face unit normal z
+!    use global_vars, only : xA, yA, zA    !face area
     use global_vars, only : process_id
     use global_vars, only : make_F_flux_zero
     use global_vars, only : make_G_flux_zero
@@ -88,24 +88,26 @@ module slau
 !
 !        end subroutine destroy_scheme
 
-        subroutine compute_flux(Flux, f_dir, flow, dims)
+        subroutine compute_flux(Flux, f_dir, faces, flags, flow, dims)
           !< A generalized subroutine to calculate
           !< flux through the input direction, :x,y, or z
           !< which corresponds to the I,J, or K direction respectively
           !------------------------------------------------------------
 
             implicit none
+            integer, dimension(3), intent(in) :: flags
             type(extent), intent(in) :: dims
             type(flowtype), intent(in) :: flow
             real, dimension(:, :, :, :), intent(inout) :: Flux
             !< Store fluxes throught the any(I,J,K) faces
+            type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
             character, intent(in) :: f_dir
             !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
             !< Integer for DO loop
             integer :: i_f, j_f, k_f 
             !< Flags to determine face direction
-            real, dimension(:, :, :), pointer :: fA, nx, ny, nz
+            !real, dimension(:, :, :), pointer :: fA, nx, ny, nz
             !< Pointer to the face area and normal
             real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
             real, dimension(1:dims%n_var) :: F_plus
@@ -146,39 +148,42 @@ module slau
             real :: VnabsL, VnabsR
 
             DebugCall('compute_flux '//trim(f_dir))
+            i_f = flags(1)
+            j_f = flags(2)
+            k_f = flags(3)
             
             select case (f_dir)
                 case ('x')
-                    i_f = 1
-                    j_f = 0
-                    k_f = 0
-                    !flux_p => F
-                    fA => xA
-                    nx => xnx
-                    ny => xny
-                    nz => xnz
+                    !i_f = 1
+                    !j_f = 0
+                    !k_f = 0
+                    !!flux_p => F
+                    !fA => xA
+                    !nx => xnx
+                    !ny => xny
+                    !nz => xnz
                     f_qp_left => x_qp_left
                     f_qp_right => x_qp_right
                 case ('y')
-                    i_f = 0
-                    j_f = 1
-                    k_f = 0
-                    !flux_p => G
-                    fA => yA
-                    nx => ynx
-                    ny => yny
-                    nz => ynz
+                    !i_f = 0
+                    !j_f = 1
+                    !k_f = 0
+                    !!flux_p => G
+                    !fA => yA
+                    !nx => ynx
+                    !ny => yny
+                    !nz => ynz
                     f_qp_left => y_qp_left
                     f_qp_right => y_qp_right
                 case ('z')
-                    i_f = 0
-                    j_f = 0
-                    k_f = 1
-                    !flux_p => H
-                    fA => zA
-                    nx => znx
-                    ny => zny
-                    nz => znz
+                    !i_f = 0
+                    !j_f = 0
+                    !k_f = 1
+                    !!flux_p => H
+                    !fA => zA
+                    !nx => znx
+                    !ny => zny
+                    !nz => znz
                     f_qp_left => z_qp_left
                     f_qp_right => z_qp_right
                 case default
@@ -220,8 +225,8 @@ module slau
                 delrho = rR-rL!rL - rR
 
                 ! ---- face normal velocity ----
-                VnL = uL*nx(i, j, k) + vL*ny(i, j, k) + wL*nz(i, j, k)
-                VnR = uR*nx(i, j, k) + vR*ny(i, j, k) + wR*nz(i, j, k)
+                VnL = uL*faces(i, j, k)%nx + vL*faces(i, j, k)%ny + wL*faces(i, j, k)%nz
+                VnR = uR*faces(i, j, k)%nx + vR*faces(i, j, k)%ny + wR*faces(i, j, k)%nz
 
                 ! ---- Mach at face ----
                 ML = VnL/C
@@ -296,11 +301,11 @@ module slau
                 Flux(i, j, k, :) = F_plus(:) + F_minus(:)
 
                 ! -- Pressure flux addition --
-                Flux(i, j, K, 2) = Flux(i, j, k, 2) + (pbar * nx(i, j, k))
-                Flux(i, j, K, 3) = Flux(i, j, k, 3) + (pbar * ny(i, j, k))
-                Flux(i, j, K, 4) = Flux(i, j, k, 4) + (pbar * nz(i, j, k))
+                Flux(i, j, K, 2) = Flux(i, j, k, 2) + (pbar * faces(i, j, k)%nx)
+                Flux(i, j, K, 3) = Flux(i, j, k, 3) + (pbar * faces(i, j, k)%ny)
+                Flux(i, j, K, 4) = Flux(i, j, k, 4) + (pbar * faces(i, j, k)%nz)
 
-                Flux(i, j, k, :) = Flux(i, j, k, :) * fA(i, j, k)
+                Flux(i, j, k, :) = Flux(i, j, k, :)*faces(i,j,k)%A
 
               end do
              end do
@@ -308,8 +313,9 @@ module slau
 
         end subroutine compute_flux
 
-        !subroutine compute_fluxes(F,G,H, Ifaces, Jfaces, Kfaces, flow, dims)
-        subroutine compute_fluxes(F,G,H, flow, dims)
+
+        subroutine compute_fluxes(F,G,H, Ifaces, Jfaces, Kfaces, flow, dims)
+        !subroutine compute_fluxes(F,G,H, flow, dims)
           !< Call to compute fluxes throught faces in each direction
             
             implicit none
@@ -321,22 +327,25 @@ module slau
             !< Store fluxes throught the J faces
             real, dimension(:, :, :, :), intent(inout) :: H
             !< Store fluxes throught the K faces
-!            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
-!            !< Store face quantites for I faces 
-!            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
-!            !< Store face quantites for J faces 
-!            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
-!            !< Store face quantites for K faces 
+            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+            !< Store face quantites for I faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+            !< Store face quantites for J faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+            !< Store face quantites for K faces 
+            integer, dimension(3) :: flags
 
             
             DebugCall('compute_fluxes')
 
-            call compute_flux(F, 'x', flow, dims)
+            flags=(/1,0,0/)
+            call compute_flux(F, 'x', Ifaces, flags, flow, dims)
             if (any(isnan(F))) then
               Fatal_error
             end if    
 
-            call compute_flux(G, 'y', flow, dims)
+            flags=(/0,1,0/)
+            call compute_flux(G, 'y', Jfaces, flags, flow, dims)
             if (any(isnan(G))) then 
               Fatal_error
             end if    
@@ -344,13 +353,15 @@ module slau
             if(dims%kmx==2) then
               H = 0.
             else
-              call compute_flux(H, 'z', flow, dims)
+              flags=(/0,0,1/)
+              call compute_flux(H, 'z', Kfaces, flags, flow, dims)
             end if
             if (any(isnan(H))) then
               Fatal_error
             end if
 
         end subroutine compute_fluxes
+
 
 !        subroutine get_residue()
 !            !< Compute the residue for the slau scheme

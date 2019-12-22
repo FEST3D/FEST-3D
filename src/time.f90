@@ -3,11 +3,11 @@ module time
   !< Calculate the time step for the current iteration
 
   use vartypes
-  use global_vars, only : xnx, xny, xnz !face unit normal x
-  use global_vars, only : ynx, yny, ynz !face unit normal y
-  use global_vars, only : znx, zny, znz !face unit normal z
-  use global_vars, only : xA, yA, zA    !face area
-  use global_vars, only : volume
+!  use global_vars, only : xnx, xny, xnz !face unit normal x
+!  use global_vars, only : ynx, yny, ynz !face unit normal y
+!  use global_vars, only : znx, zny, znz !face unit normal z
+!  use global_vars, only : xA, yA, zA    !face area
+!  use global_vars, only : volume
   use global_vars, only : mu
   use global_vars, only : mu_t
   use global_vars, only : total_process
@@ -126,7 +126,7 @@ module time
           end if
         end function write_time
 
-        subroutine compute_local_time_step(qp, CFL, scheme, flow, dims)
+        subroutine compute_local_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
             !< Compute the time step to be used at each cell center
             !<
             !< Local time stepping can be used to get the solution 
@@ -141,6 +141,14 @@ module time
             type(flowtype), intent(in) :: flow
             type(extent), intent(in) :: dims
             real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+            !< Input cell quantities: volume
+            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+            !< Store face quantites for I faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+            !< Store face quantites for J faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+            !< Store face quantites for K faces 
 
             real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
             real :: x_sound_speed_avg, y_sound_speed_avg, z_sound_speed_avg
@@ -171,21 +179,21 @@ module time
                
                ! For left face: i.e., lower index face along xi direction
                lmx1 = abs( &
-                    (qp(i, j, k,2) * xnx(i, j, k)) + &
-                    (qp(i, j, k,3) * xny(i, j, k)) + &
-                    (qp(i, j, k,4) * xnz(i, j, k))) + &
+                    (qp(i, j, k,2) * Ifaces(i, j, k)%nx) + &
+                    (qp(i, j, k,3) * Ifaces(i, j, k)%ny) + &
+                    (qp(i, j, k,4) * Ifaces(i, j, k)%nz)) + &
                     x_sound_speed_avg
                ! For front face, i.e., lower index face along eta direction
                lmx2 = abs( &
-                    (qp(i, j, k,2) * ynx(i, j, k)) + &
-                    (qp(i, j, k,3) * yny(i, j, k)) + &
-                    (qp(i, j, k,4) * ynz(i, j, k))) + &
+                    (qp(i, j, k,2) * Jfaces(i, j, k)%nx) + &
+                    (qp(i, j, k,3) * Jfaces(i, j, k)%ny) + &
+                    (qp(i, j, k,4) * Jfaces(i, j, k)%nz)) + &
                     y_sound_speed_avg
                ! For bottom face, i.e., lower index face along zeta direction
                lmx3 = abs( &
-                    (qp(i, j, k,2) * znx(i, j, k)) + &
-                    (qp(i, j, k,3) * zny(i, j, k)) + &
-                    (qp(i, j, k,4) * znz(i, j, k))) + &
+                    (qp(i, j, k,2) * Kfaces(i, j, k)%nx) + &
+                    (qp(i, j, k,3) * Kfaces(i, j, k)%ny) + &
+                    (qp(i, j, k,4) * Kfaces(i, j, k)%nz)) + &
                     z_sound_speed_avg
 
                ! Faces with higher index
@@ -198,46 +206,46 @@ module time
                
                ! For right face, i.e., higher index face along xi direction
                lmx4 = abs( &
-                    (qp(i+1, j, k,2) * xnx(i+1, j, k)) + &  !x_speed*xnx
-                    (qp(i+1, j, k,3) * xny(i+1, j, k)) + &  !y_speed*xny
-                    (qp(i+1, j, k,4) * xnz(i+1, j, k))) + & !z_speed*xnz
+                    (qp(i+1, j, k,2) * Ifaces(i+1, j, k)%nx) + &  !x_speed*xnx
+                    (qp(i+1, j, k,3) * Ifaces(i+1, j, k)%ny) + &  !y_speed*xny
+                    (qp(i+1, j, k,4) * Ifaces(i+1, j, k)%nz)) + & !z_speed*xnz
                     x_sound_speed_avg
                ! For back face, i.e., higher index face along eta direction
                lmx5 = abs( &
-                    (qp(i, j+1, k,2) * ynx(i, j+1, k)) + &
-                    (qp(i, j+1, k,3) * yny(i, j+1, k)) + &
-                    (qp(i, j+1, k,4) * ynz(i, j+1, k))) + &
+                    (qp(i, j+1, k,2) * Jfaces(i, j+1, k)%nx) + &
+                    (qp(i, j+1, k,3) * Jfaces(i, j+1, k)%ny) + &
+                    (qp(i, j+1, k,4) * Jfaces(i, j+1, k)%nz)) + &
                     y_sound_speed_avg
                ! For top face, i.e., higher index face along zeta direction
                lmx6 = abs( &
-                    (qp(i, j, k+1,2) * znx(i, j, k+1)) + &
-                    (qp(i, j, k+1,3) * zny(i, j, k+1)) + &
-                    (qp(i, j, k+1,4) * znz(i, j, k+1))) + &
+                    (qp(i, j, k+1,2) * Kfaces(i, j, k+1)%nx) + &
+                    (qp(i, j, k+1,3) * Kfaces(i, j, k+1)%ny) + &
+                    (qp(i, j, k+1,4) * Kfaces(i, j, k+1)%nz)) + &
                     z_sound_speed_avg
 
-               lmxsum = (xA(i, j, k) * lmx1) + &
-                        (yA(i, j, k) * lmx2) + &
-                        (zA(i, j, k) * lmx3) + &
-                        (xA(i+1, j, k) * lmx4) + &
-                        (yA(i, j+1, k) * lmx5) + &
-                        (zA(i, j, k+1) * lmx6)
+               lmxsum = (Ifaces(i, j, k)%A * lmx1) + &
+                        (Jfaces(i, j, k)%A * lmx2) + &
+                        (Kfaces(i, j, k)%A * lmx3) + &
+                        (Ifaces(i+1, j, k)%A * lmx4) + &
+                        (Jfaces(i, j+1, k)%A * lmx5) + &
+                        (Kfaces(i, j, k+1)%A * lmx6)
             
                delta_t(i, j, k) = 1. / lmxsum
-               delta_t(i, j, k) = delta_t(i, j, k) * volume(i, j, k) * CFL
+               delta_t(i, j, k) = delta_t(i, j, k) * cells(i, j, k)%volume * CFL
               end do
              end do
             end do
 
             if(flow%mu_ref/=0.0) then
-              call add_viscous_time(qp, CFL, flow, dims)
+              call add_viscous_time(qp, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
             end if
             if(flow%mu_ref/=0 .and. trim(scheme%turbulence)/='none')then
-              call add_turbulent_time(qp, CFL, flow, dims)
+              call add_turbulent_time(qp, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
             end if
 
         end subroutine compute_local_time_step
 
-        subroutine compute_global_time_step(qp, CFL, scheme, flow, dims)
+        subroutine compute_global_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
             !< Compute a common time step to be used at all cell centers
             !<
             !< Global time stepping is generally used to get time 
@@ -251,13 +259,21 @@ module time
             type(flowtype), intent(in) :: flow
             type(extent), intent(in) :: dims
             real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+            !< Input cell quantities: volume
+            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+            !< Store face quantites for I faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+            !< Store face quantites for J faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+            !< Store face quantites for K faces 
             
             DebugCall('compute_global_time_step')
 
             if (scheme%global_time_step > 0) then
                 delta_t = scheme%global_time_step
             else
-                call compute_local_time_step(qp, CFL, scheme, flow, dims)
+              call compute_local_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
                 ! The global time step is the minimum of all the local time
                 ! steps.
                 delta_t = minval(delta_t)
@@ -265,7 +281,7 @@ module time
 
         end subroutine compute_global_time_step
 
-        subroutine compute_time_step(qp, CFL, scheme, flow, dims)
+        subroutine compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims)
             !< Compute the time step to be used
             !<
             !< This calls either compute_global_time_step() or 
@@ -279,13 +295,21 @@ module time
             type(flowtype), intent(in) :: flow
             type(extent), intent(in) :: dims
             real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+            !< Input cell quantities: volume
+            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+            !< Store face quantites for I faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+            !< Store face quantites for J faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+            !< Store face quantites for K faces 
             
             DebugCall('compute_time_step')
 
             if (scheme%time_stepping_method .eq. 'g') then
-                call compute_global_time_step(qp, CFL, scheme, flow, dims)
+                call compute_global_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
             else if (scheme%time_stepping_method .eq. 'l') then
-                call compute_local_time_step(qp, CFL, scheme, flow, dims)
+                call compute_local_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
             else
                 print*,'In compute_time_step: value for time_stepping_method (' //scheme%time_stepping_method // ') not recognized.'
                 Fatal_error
@@ -320,7 +344,7 @@ module time
 
       end subroutine update_simulation_clock
 
-      subroutine add_viscous_time(qp, CFL, flow, dims)
+      subroutine add_viscous_time(qp, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
         !< Addition to local time step due to viscous effects
         implicit none
 
@@ -328,6 +352,14 @@ module time
         type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
         real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+        type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+        !< Input cell quantities: volume
+        type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+        !< Store face quantites for I faces 
+        type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+        !< Store face quantites for J faces 
+        type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+        !< Store face quantites for K faces 
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
         integer :: i, j, k
 
@@ -342,61 +374,69 @@ module time
            
            ! For left face: i.e., lower index face along xi direction
            lmx1 = mu(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i-1,j,k,1) - CellCenter(i,j,k,1)) * xnx(i, j, k)) + &
-                ((CellCenter(i-1,j,k,2) - CellCenter(i,j,k,2)) * xny(i, j, k)) + &
-                ((CellCenter(i-1,j,k,3) - CellCenter(i,j,k,3)) * xnz(i, j, k))))
+                ((CellCenter(i-1,j,k,1) - CellCenter(i,j,k,1)) * Ifaces(i, j, k)%nx) + &
+                ((CellCenter(i-1,j,k,2) - CellCenter(i,j,k,2)) * Ifaces(i, j, k)%ny) + &
+                ((CellCenter(i-1,j,k,3) - CellCenter(i,j,k,3)) * Ifaces(i, j, k)%nz)))
            ! For front face, i.e., lower index face along eta direction
            lmx2 = mu(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i,j-1,k,1) - CellCenter(i,j,k,1)) * ynx(i, j, k)) + &
-                ((CellCenter(i,j-1,k,2) - CellCenter(i,j,k,2)) * yny(i, j, k)) + &
-                ((CellCenter(i,j-1,k,3) - CellCenter(i,j,k,3)) * ynz(i, j, k))))
+                ((CellCenter(i,j-1,k,1) - CellCenter(i,j,k,1)) * Jfaces(i, j, k)%nx) + &
+                ((CellCenter(i,j-1,k,2) - CellCenter(i,j,k,2)) * Jfaces(i, j, k)%ny) + &
+                ((CellCenter(i,j-1,k,3) - CellCenter(i,j,k,3)) * Jfaces(i, j, k)%nz)))
            ! For bottom face, i.e., lower index face along zeta direction
            lmx3 = mu(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i,j,k-1,1) - CellCenter(i,j,k,1)) * znx(i, j, k)) + &
-                ((CellCenter(i,j,k-1,2) - CellCenter(i,j,k,2)) * zny(i, j, k)) + &
-                ((CellCenter(i,j,k-1,3) - CellCenter(i,j,k,3)) * znz(i, j, k))))
+                ((CellCenter(i,j,k-1,1) - CellCenter(i,j,k,1)) * Kfaces(i, j, k)%nx) + &
+                ((CellCenter(i,j,k-1,2) - CellCenter(i,j,k,2)) * Kfaces(i, j, k)%ny) + &
+                ((CellCenter(i,j,k-1,3) - CellCenter(i,j,k,3)) * Kfaces(i, j, k)%nz)))
 
            
            ! For right face, i.e., higher index face along xi direction
            lmx4 = mu(i+1,j,k)/(qp(i+1,j,k,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i+1,j,k,1)) * xnx(i+1, j, k)) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i+1,j,k,2)) * xny(i+1, j, k)) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i+1,j,k,3)) * xnz(i+1, j, k))))
+                ((CellCenter(i,j,k,1) - CellCenter(i+1,j,k,1)) * Ifaces(i+1, j, k)%nx) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i+1,j,k,2)) * Ifaces(i+1, j, k)%ny) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i+1,j,k,3)) * Ifaces(i+1, j, k)%nz)))
            ! For back face, i.e., higher index face along eta direction
            lmx5 = mu(i,j+1,k)/(qp(i,j+1,k,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i,j+1,k,1)) * ynx(i, j+1, k)) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i,j+1,k,2)) * yny(i, j+1, k)) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i,j+1,k,3)) * ynz(i, j+1, k))))
+                ((CellCenter(i,j,k,1) - CellCenter(i,j+1,k,1)) * Jfaces(i, j+1, k)%nx) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i,j+1,k,2)) * Jfaces(i, j+1, k)%ny) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i,j+1,k,3)) * Jfaces(i, j+1, k)%nz)))
            ! For top face, i.e., higher index face along zeta direction
            lmx6 = mu(i,j,k+1)/(qp(i,j,k+1,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i,j,k+1,1)) * znx(i, j, k+1)) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i,j,k+1,2)) * zny(i, j, k+1)) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i,j,k+1,3)) * znz(i, j, k+1))))
+                ((CellCenter(i,j,k,1) - CellCenter(i,j,k+1,1)) * Kfaces(i, j, k+1)%nx) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i,j,k+1,2)) * Kfaces(i, j, k+1)%ny) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i,j,k+1,3)) * Kfaces(i, j, k+1)%nz)))
 
-           lmxsum = (xA(i, j, k) * lmx1) + &
-                    (yA(i, j, k) * lmx2) + &
-                    (zA(i, j, k) * lmx3) + &
-                    (xA(i+1, j, k) * lmx4) + &
-                    (yA(i, j+1, k) * lmx5) + &
-                    (zA(i, j, k+1) * lmx6)
+               lmxsum = (Ifaces(i, j, k)%A * lmx1) + &
+                        (Jfaces(i, j, k)%A * lmx2) + &
+                        (Kfaces(i, j, k)%A * lmx3) + &
+                        (Ifaces(i+1, j, k)%A * lmx4) + &
+                        (Jfaces(i, j+1, k)%A * lmx5) + &
+                        (Kfaces(i, j, k+1)%A * lmx6)
 
            lmxsum = flow%gm*lmxsum/flow%Pr
 
-           lmxsum = 2./(lmxsum + (2.*CFL*volume(i,j,k)/delta_t(i,j,k)))
+           lmxsum = 2./(lmxsum + (2.*CFL*cells(i,j,k)%volume/delta_t(i,j,k)))
         
-           delta_t(i, j, k) = CFL*( lmxsum * volume(i, j, k))
+           delta_t(i, j, k) = CFL*( lmxsum * cells(i, j, k)%volume)
           end do
          end do
         end do
       end subroutine add_viscous_time
 
-      subroutine add_turbulent_time(qp, CFL,flow,dims)
+      subroutine add_turbulent_time(qp,cells,Ifaces,Jfaces,Kfaces,CFL,flow,dims)
         !< Addition to local time step due to turbulence 
         implicit none
         real, intent(in) :: CFL
         type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
         real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+        type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+        !< Input cell quantities: volume
+        type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+        !< Store face quantites for I faces 
+        type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+        !< Store face quantites for J faces 
+        type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+        !< Store face quantites for K faces 
         real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
         integer :: i, j, k
 
@@ -411,49 +451,49 @@ module time
            
            ! For left face: i.e., lower index face along xi direction
            lmx1 = mu_t(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i-1,j,k,1) - CellCenter(i,j,k,1)) * xnx(i, j, k)) + &
-                ((CellCenter(i-1,j,k,2) - CellCenter(i,j,k,2)) * xny(i, j, k)) + &
-                ((CellCenter(i-1,j,k,3) - CellCenter(i,j,k,3)) * xnz(i, j, k))))
+                ((CellCenter(i-1,j,k,1) - CellCenter(i,j,k,1)) * Ifaces(i, j, k)%nx) + &
+                ((CellCenter(i-1,j,k,2) - CellCenter(i,j,k,2)) * Ifaces(i, j, k)%ny) + &
+                ((CellCenter(i-1,j,k,3) - CellCenter(i,j,k,3)) * Ifaces(i, j, k)%nz)))
            ! For front face, i.e., lower index face along eta direction
            lmx2 = mu_t(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i,j-1,k,1) - CellCenter(i,j,k,1)) * ynx(i, j, k)) + &
-                ((CellCenter(i,j-1,k,2) - CellCenter(i,j,k,2)) * yny(i, j, k)) + &
-                ((CellCenter(i,j-1,k,3) - CellCenter(i,j,k,3)) * ynz(i, j, k))))
+                ((CellCenter(i,j-1,k,1) - CellCenter(i,j,k,1)) * Jfaces(i, j, k)%nx) + &
+                ((CellCenter(i,j-1,k,2) - CellCenter(i,j,k,2)) * Jfaces(i, j, k)%ny) + &
+                ((CellCenter(i,j-1,k,3) - CellCenter(i,j,k,3)) * Jfaces(i, j, k)%nz)))
            ! For bottom face, i.e., lower index face along zeta direction
            lmx3 = mu_t(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i,j,k-1,1) - CellCenter(i,j,k,1)) * znx(i, j, k)) + &
-                ((CellCenter(i,j,k-1,2) - CellCenter(i,j,k,2)) * zny(i, j, k)) + &
-                ((CellCenter(i,j,k-1,3) - CellCenter(i,j,k,3)) * znz(i, j, k))))
+                ((CellCenter(i,j,k-1,1) - CellCenter(i,j,k,1)) * Kfaces(i, j, k)%nx) + &
+                ((CellCenter(i,j,k-1,2) - CellCenter(i,j,k,2)) * Kfaces(i, j, k)%ny) + &
+                ((CellCenter(i,j,k-1,3) - CellCenter(i,j,k,3)) * Kfaces(i, j, k)%nz)))
 
            
            ! For right face, i.e., higher index face along xi direction
            lmx4 = mu_t(i+1,j,k)/(qp(i+1,j,k,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i+1,j,k,1)) * xnx(i+1, j, k)) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i+1,j,k,2)) * xny(i+1, j, k)) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i+1,j,k,3)) * xnz(i+1, j, k))))
+                ((CellCenter(i,j,k,1) - CellCenter(i+1,j,k,1)) * Ifaces(i+1, j, k)%nx) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i+1,j,k,2)) * Ifaces(i+1, j, k)%ny) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i+1,j,k,3)) * Ifaces(i+1, j, k)%nz)))
            ! For back face, i.e., higher index face along eta direction
            lmx5 = mu_t(i,j+1,k)/(qp(i,j+1,k,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i,j+1,k,1)) * ynx(i, j+1, k)) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i,j+1,k,2)) * yny(i, j+1, k)) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i,j+1,k,3)) * ynz(i, j+1, k))))
+                ((CellCenter(i,j,k,1) - CellCenter(i,j+1,k,1)) * Jfaces(i, j+1, k)%nx) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i,j+1,k,2)) * Jfaces(i, j+1, k)%ny) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i,j+1,k,3)) * Jfaces(i, j+1, k)%nz)))
            ! For top face, i.e., higher index face along zeta direction
            lmx6 = mu_t(i,j,k+1)/(qp(i,j,k+1,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i,j,k+1,1)) * znx(i, j, k+1)) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i,j,k+1,2)) * zny(i, j, k+1)) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i,j,k+1,3)) * znz(i, j, k+1))))
+                ((CellCenter(i,j,k,1) - CellCenter(i,j,k+1,1)) * Kfaces(i, j, k+1)%nx) + &
+                ((CellCenter(i,j,k,2) - CellCenter(i,j,k+1,2)) * Kfaces(i, j, k+1)%ny) + &
+                ((CellCenter(i,j,k,3) - CellCenter(i,j,k+1,3)) * Kfaces(i, j, k+1)%nz)))
 
-           lmxsum = (xA(i, j, k) * lmx1) + &
-                    (yA(i, j, k) * lmx2) + &
-                    (zA(i, j, k) * lmx3) + &
-                    (xA(i+1, j, k) * lmx4) + &
-                    (yA(i, j+1, k) * lmx5) + &
-                    (zA(i, j, k+1) * lmx6)
+               lmxsum = (Ifaces(i, j, k)%A * lmx1) + &
+                        (Jfaces(i, j, k)%A * lmx2) + &
+                        (Kfaces(i, j, k)%A * lmx3) + &
+                        (Ifaces(i+1, j, k)%A * lmx4) + &
+                        (Jfaces(i, j+1, k)%A * lmx5) + &
+                        (Kfaces(i, j, k+1)%A * lmx6)
 
            lmxsum = flow%gm*lmxsum/flow%tPr
 
-           lmxsum = 2./(lmxsum + (2.*CFL*volume(i,j,k)/delta_t(i,j,k)))
+           lmxsum = 2./(lmxsum + (2.*CFL*cells(i,j,k)%volume/delta_t(i,j,k)))
         
-           delta_t(i, j, k) = CFL*( lmxsum * volume(i, j, k))
+           delta_t(i, j, k) = CFL*( lmxsum * cells(i, j, k)%volume)
           end do
          end do
         end do

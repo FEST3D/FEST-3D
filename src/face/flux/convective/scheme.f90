@@ -386,7 +386,7 @@ module scheme
 !
 !        end subroutine destroy_scheme
 
-        subroutine compute_fluxes(F,G,H, scheme, flow, dims)
+subroutine compute_fluxes(F,G,H, Ifaces, Jfaces, Kfaces, scheme, flow, dims)
         
             implicit none
             type(schemetype), intent(in) :: scheme
@@ -399,20 +399,26 @@ module scheme
             !< Store fluxes throught the J faces
             real, dimension(:, :, :, :), intent(inout) :: H
             !< Store fluxes throught the K faces
+            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+            !< Store face quantites for I faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+            !< Store face quantites for J faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+            !< Store face quantites for K faces 
 
             select case (scheme%scheme_name)
                 case ("van_leer")
-                    call compute_fluxes_van_leer(F,G,H,flow,dims)
+                  call compute_fluxes_van_leer(F,G,H,Ifaces,Jfaces,Kfaces,flow,dims)
                 case ("ausm")
-                    call compute_fluxes_ausm(F,G,H,flow,dims)
+                  call compute_fluxes_ausm(F,G,H,Ifaces,Jfaces,Kfaces,flow,dims)
                 case ("ausmP")
-                    call compute_fluxes_ausmP(F,G,H,flow,dims)
+                  call compute_fluxes_ausmP(F,G,H,Ifaces,Jfaces,Kfaces,flow,dims)
                 case ("ausmUP")
-                    call compute_fluxes_ausmP(F,G,H,flow,dims)
+                  call compute_fluxes_ausmUP(F,G,H,Ifaces,Jfaces,Kfaces,flow,dims)
                 case ("slau")
-                    call compute_fluxes_slau(F,G,H,flow,dims)
+                  call compute_fluxes_slau(F,G,H,Ifaces,Jfaces,Kfaces,flow,dims)
                 case ("ldfss0")
-                    call compute_fluxes_ldfss0(F,G,H,flow,dims)
+                  call compute_fluxes_ldfss0(F,G,H,Ifaces,Jfaces,Kfaces,flow,dims)
                 case default
                     Fatal_error
             end select

@@ -41,35 +41,6 @@ module global_vars
   real, dimension(:, :, :), allocatable             :: DCCVnZ
   !< Store Derivative of Cell-Center CCVn with respect to z
 
-  ! residue variables
-!  real, dimension(:, :, :, :)             , pointer :: F_p
-!   !< Flux pointer for face in the I direction
-!  real, dimension(:, :, :, :)             , pointer :: G_p
-!   !< Flux pointer for face in the G direction
-!  real, dimension(:, :, :, :)             , pointer :: H_p
-!   !< Flux pointer for face in the K direction
-!  real, dimension(:, :, :, :)             , pointer :: residue
-!   !< Store residue at each cell-center
-!  real, dimension(:, :, :)                , pointer :: mass_residue
-!   !< Store continuity equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: x_mom_residue
-!   !< Store x-momentum equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: y_mom_residue
-!   !< Store y-momentum equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: z_mom_residue
-!   !< Store z-momentum equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: energy_residue
-!   !< Store energy equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: TKE_residue
-!   !< Store TKE equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: omega_residue
-!   !< Store Omega equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: KL_residue
-!   !< Store KL equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: dissipation_residue
-!   !< Store Disspaiton equation residual at each cell-center
-!  real, dimension(:, :, :)                , pointer :: tv_residue
-!   !< Store nut equation(SA model) residual at each cell-center
   real, dimension(:, :, :), allocatable, target     :: mu
    !< Cell-center molecular viscosity
   real, dimension(:, :, :), allocatable, target     :: mu_t
@@ -115,40 +86,6 @@ module global_vars
   real          :: energy_resnorm_0s  !<  Energy residual normalized at iter 1 
   real          ::    TKE_resnorm_0s  !<  TKE residual normalized at iter 1 
   real          ::  omega_resnorm_0s  !<  Omega residual normalized at iter 1 
-  ! geometry variables
-  real, dimension(:, :, :,:), allocatable, target :: xn
-   !< Store unit face normal vector for all I faces 
-  real, dimension(:, :, :,:), allocatable, target :: yn
-   !< Store unit face normal vector for all J faces 
-  real, dimension(:, :, :,:), allocatable, target :: zn
-   !< Store unit face normal vector for all K faces 
-  real, dimension(:, :, :)             , pointer :: xnx
-   !< Pointer to x component of face unit normal of I faces
-  real, dimension(:, :, :)             , pointer :: xny
-   !< Pointer to y component of face unit normal of I faces
-  real, dimension(:, :, :)             , pointer :: xnz
-   !< Pointer to z component of face unit normal of I faces
-  real, dimension(:, :, :)             , pointer :: ynx
-   !< Pointer to x component of face unit normal of J faces
-  real, dimension(:, :, :)             , pointer :: yny
-   !< Pointer to y component of face unit normal of J faces
-  real, dimension(:, :, :)             , pointer :: ynz
-   !< Pointer to z component of face unit normal of J faces
-  real, dimension(:, :, :)             , pointer :: znx
-   !< Pointer to x component of face unit normal of K faces
-  real, dimension(:, :, :)             , pointer :: zny
-   !< Pointer to y component of face unit normal of K faces
-  real, dimension(:, :, :)             , pointer :: znz
-   !< Pointer to z component of face unit normal of K faces
-  real, dimension(:, :, :), allocatable, target :: xA
-   !< Store magnitude of face area vector of I direction faces
-  real, dimension(:, :, :), allocatable, target :: yA
-   !< Store magnitude of face area vector of J direction faces
-  real, dimension(:, :, :), allocatable, target :: zA
-   !< Store magnitude of face area vector of K direction faces
-  real, dimension(:, :, :), allocatable, target :: volume
-   !< Store cell volume
-  
 
   ! higher order boundary condtioion
 !  integer  :: accur=1                          !< Switch for higher order boundary condition

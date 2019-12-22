@@ -8,10 +8,10 @@ module ldfss0
 #include "../../../debug.h"
 #include "../../../error.h"
     use vartypes
-    use global_vars, only : xnx, xny, xnz !face unit normal x
-    use global_vars, only : ynx, yny, ynz !face unit normal y
-    use global_vars, only : znx, zny, znz !face unit normal z
-    use global_vars, only : xA, yA, zA    !face area
+!    use global_vars, only : xnx, xny, xnz !face unit normal x
+!    use global_vars, only : ynx, yny, ynz !face unit normal y
+!    use global_vars, only : znx, zny, znz !face unit normal z
+!    use global_vars, only : xA, yA, zA    !face area
     use global_vars, only : make_F_flux_zero
     use global_vars, only : make_G_flux_zero
     use global_vars, only : make_H_flux_zero
@@ -86,22 +86,24 @@ module ldfss0
 !
 !        end subroutine destroy_scheme
 
-        subroutine compute_flux(Flux, f_dir, flow, dims)
+        subroutine compute_flux(Flux, f_dir, faces, flags, flow, dims)
           !< A generalized subroutine to calculate
-          !< flux through the input direction, :x,y, or z
+          !< flux through the input-argument direction, :x,y, or z
           !< which corresponds to the I,J, or K direction respectively
           !------------------------------------------------------------
 
             implicit none
+            integer, dimension(3), intent(in) :: flags
             type(extent), intent(in) :: dims
             type(flowtype), intent(in) :: flow
             real, dimension(:, :, :, :), intent(inout) :: Flux
             !< Store fluxes throught the any(I,J,K) faces
+            type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
             character, intent(in) :: f_dir
             !< Input direction for which flux are calcuated and store
             integer :: i, j, k 
             integer :: i_f, j_f, k_f ! Flags to determine face direction
-            real, dimension(:, :, :), pointer :: fA, nx, ny, nz
+            !real, dimension(:, :, :), pointer :: fA, nx, ny, nz
             real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
             real, dimension(1:dims%n_var) :: F_plus, F_minus
             real :: M_perp_left, M_perp_right
@@ -115,39 +117,42 @@ module ldfss0
             real :: M_ldfss, M_plus_ldfss, M_minus_ldfss
 
             DebugCall('compute_flux')
+            i_f = flags(1)
+            j_f = flags(2)
+            k_f = flags(3)
             
             select case (f_dir)
                 case ('x')
-                    i_f = 1
-                    j_f = 0
-                    k_f = 0
-                    !flux_p => F
-                    fA => xA
-                    nx => xnx
-                    ny => xny
-                    nz => xnz
+                    !i_f = 1
+                    !j_f = 0
+                    !k_f = 0
+                    !!flux_p => F
+                    !fA => xA
+                    !nx => xnx
+                    !ny => xny
+                    !nz => xnz
                     f_qp_left => x_qp_left
                     f_qp_right => x_qp_right
                 case ('y')
-                    i_f = 0
-                    j_f = 1
-                    k_f = 0
-                    !flux_p => G
-                    fA => yA
-                    nx => ynx
-                    ny => yny
-                    nz => ynz
+                    !i_f = 0
+                    !j_f = 1
+                    !k_f = 0
+                    !!flux_p => G
+                    !fA => yA
+                    !nx => ynx
+                    !ny => yny
+                    !nz => ynz
                     f_qp_left => y_qp_left
                     f_qp_right => y_qp_right
                 case ('z')
-                    i_f = 0
-                    j_f = 0
-                    k_f = 1
-                    !flux_p => H
-                    fA => zA
-                    nx => znx
-                    ny => zny
-                    nz => znz
+                    !i_f = 0
+                    !j_f = 0
+                    !k_f = 1
+                    !!flux_p => H
+                    !fA => zA
+                    !nx => znx
+                    !ny => zny
+                    !nz => znz
                     f_qp_left => z_qp_left
                     f_qp_right => z_qp_right
                 case default
@@ -163,9 +168,9 @@ module ldfss0
                                             f_qp_right(i, j, k,1) ) )
                 
                 ! Compute '+' direction quantities
-                face_normal_speeds = f_qp_left(i, j, k,2) * nx(i, j, k) + &
-                                     f_qp_left(i, j, k,3) * ny(i, j, k) + &
-                                     f_qp_left(i, j, k,4) * nz(i, j, k)
+                face_normal_speeds = f_qp_left(i, j, k,2) * faces(i, j, k)%nx + &
+                                     f_qp_left(i, j, k,3) * faces(i, j, k)%ny + &
+                                     f_qp_left(i, j, k,4) * faces(i, j, k)%nz
                 M_perp_left = face_normal_speeds / sound_speed_avg
                 alpha_plus = 0.5 * (1.0 + sign(1.0, M_perp_left))
                 beta_left = -max(0, 1 - floor(abs(M_perp_left)))
@@ -177,9 +182,9 @@ module ldfss0
                         (beta_left * D_plus)
 
                 ! Compute '-' direction quantities
-                face_normal_speeds = f_qp_right(i, j, k, 2) * nx(i, j, k) + &
-                                     f_qp_right(i, j, k, 3) * ny(i, j, k) + &
-                                     f_qp_right(i, j, k, 4) * nz(i, j, k)
+                face_normal_speeds = f_qp_right(i, j, k, 2) * faces(i, j, k)%nx + &
+                                     f_qp_right(i, j, k, 3) * faces(i, j, k)%ny + &
+                                     f_qp_right(i, j, k, 4) * faces(i, j, k)%nz
                 M_perp_right = face_normal_speeds / sound_speed_avg
                 alpha_minus = 0.5 * (1.0 - sign(1.0, M_perp_right))
                 beta_right = -max(0, 1 - floor(abs(M_perp_right)))
@@ -217,11 +222,11 @@ module ldfss0
 
                 ! Construct other fluxes in terms of the F mass flux
                 F_plus(2) = (F_plus(1) * f_qp_left(i, j, k,2)) + &
-                            (scrD_plus * f_qp_left(i, j, k,5) * nx(i, j, k))
+                            (scrD_plus * f_qp_left(i, j, k,5) * faces(i, j, k)%nx)
                 F_plus(3) = (F_plus(1) * f_qp_left(i, j, k,3)) + &
-                            (scrD_plus * f_qp_left(i, j, k,5) * ny(i, j, k))
+                            (scrD_plus * f_qp_left(i, j, k,5) * faces(i, j, k)%ny)
                 F_plus(4) = (F_plus(1) * f_qp_left(i, j, k,4)) + &
-                            (scrD_plus * f_qp_left(i, j, k,5) * nz(i, j, k))
+                            (scrD_plus * f_qp_left(i, j, k,5) * faces(i, j, k)%nz)
                 F_plus(5) = F_plus(1) * &
                             ((0.5 * (f_qp_left(i, j, k,2) ** 2. + &
                                      f_qp_left(i, j, k,3) ** 2. + &
@@ -233,11 +238,11 @@ module ldfss0
                 
                 ! Construct other fluxes in terms of the F mass flux
                 F_minus(2) = (F_minus(1) * f_qp_right(i, j, k,2)) + &
-                             (scrD_minus * f_qp_right(i, j, k,5) * nx(i, j, k))
+                             (scrD_minus * f_qp_right(i, j, k,5) * faces(i, j, k)%nx)
                 F_minus(3) = (F_minus(1) * f_qp_right(i, j, k,3)) + &
-                             (scrD_minus * f_qp_right(i, j, k,5) * ny(i, j, k))
+                             (scrD_minus * f_qp_right(i, j, k,5) * faces(i, j, k)%ny)
                 F_minus(4) = (F_minus(1) * f_qp_right(i, j, k,4)) + &
-                             (scrD_minus * f_qp_right(i, j, k,5) * nz(i, j, k))
+                             (scrD_minus * f_qp_right(i, j, k,5) * faces(i, j, k)%nz)
                 F_minus(5) = F_minus(1) * &
                             ((0.5 * (f_qp_right(i, j, k,2) ** 2. + &
                                      f_qp_right(i, j, k,3) ** 2. + &
@@ -252,8 +257,8 @@ module ldfss0
                 end if
 
                 ! Multiply in the face areas
-                F_plus(:) = F_plus(:) * fA(i, j, k)
-                F_minus(:) = F_minus(:) * fA(i, j, k)
+                F_plus(:) = F_plus(:) * faces(i, j, k)%A
+                F_minus(:) = F_minus(:) * faces(i, j, k)%A
 
                 ! Get the total flux for a face
                 Flux(i, j, k, :) = F_plus(:) + F_minus(:)
@@ -263,8 +268,8 @@ module ldfss0
 
         end subroutine compute_flux
 
-        !subroutine compute_fluxes(F,G,H, Ifaces, Jfaces, Kfaces, flow, dims)
-        subroutine compute_fluxes(F,G,H, flow, dims)
+        subroutine compute_fluxes(F,G,H, Ifaces, Jfaces, Kfaces, flow, dims)
+        !subroutine compute_fluxes(F,G,H, flow, dims)
           !< Call to compute fluxes throught faces in each direction
             
             implicit none
@@ -276,22 +281,25 @@ module ldfss0
             !< Store fluxes throught the J faces
             real, dimension(:, :, :, :), intent(inout) :: H
             !< Store fluxes throught the K faces
-!            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
-!            !< Store face quantites for I faces 
-!            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
-!            !< Store face quantites for J faces 
-!            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
-!            !< Store face quantites for K faces 
+            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+            !< Store face quantites for I faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+            !< Store face quantites for J faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+            !< Store face quantites for K faces 
+            integer, dimension(3) :: flags
 
             
             DebugCall('compute_fluxes')
 
-            call compute_flux(F, 'x', flow, dims)
+            flags=(/1,0,0/)
+            call compute_flux(F, 'x', Ifaces, flags, flow, dims)
             if (any(isnan(F))) then
               Fatal_error
             end if    
 
-            call compute_flux(G, 'y', flow, dims)
+            flags=(/0,1,0/)
+            call compute_flux(G, 'y', Jfaces, flags, flow, dims)
             if (any(isnan(G))) then 
               Fatal_error
             end if    
@@ -299,13 +307,15 @@ module ldfss0
             if(dims%kmx==2) then
               H = 0.
             else
-              call compute_flux(H, 'z', flow, dims)
+              flags=(/0,0,1/)
+              call compute_flux(H, 'z', Kfaces, flags, flow, dims)
             end if
             if (any(isnan(H))) then
               Fatal_error
             end if
 
         end subroutine compute_fluxes
+
 
 !        subroutine get_residue()
 !            !< Compute the residue for the ldfss0 scheme

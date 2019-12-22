@@ -10,13 +10,13 @@ module CC
 
    use vartypes
   use global_vars, only: process_id
-  use global_vars, only: xn
-  use global_vars, only: yn
-  use global_vars, only: zn
-  use global_vars, only: xA
-  use global_vars, only: yA
-  use global_vars, only: zA
-  use global_vars, only: volume
+!  use global_vars, only: xn
+!  use global_vars, only: yn
+!  use global_vars, only: zn
+!  use global_vars, only: xA
+!  use global_vars, only: yA
+!  use global_vars, only: zA
+!  use global_vars, only: volume
   use global_vars, only: CCnormalX
   use global_vars, only: CCnormalY
   use global_vars, only: CCnormalZ
@@ -35,11 +35,19 @@ module CC
   
   contains
 
-    subroutine setupCC(scheme, dims)
+    subroutine setupCC(scheme, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Allocate memory for the cell center variable only in case of transition model
       implicit none
       type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
 
       DebugCall("Setup CC")
 
@@ -51,7 +59,7 @@ module CC
         call alloc(DCCVnX, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("DCCVnZ"))
         call alloc(DCCVnY, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("DCCVnY"))
         call alloc(DCCVnZ, -2, dims%imx+2, -2, dims%jmx+2, -2, dims%kmx+2, AErrMsg("DCCVnZ"))
-        call find_CCnormal(dims)
+        call find_CCnormal(cells, Ifaces, Jfaces, Kfaces, dims)
       end if
 
     end subroutine setupCC
@@ -74,13 +82,21 @@ module CC
 !    end subroutine destroyCC
 
 
-    subroutine find_CCnormal(dims)
+    subroutine find_CCnormal(cells, Ifaces, Jfaces, Kfaces,dims)
       !< Find the cell-center unit normal
       implicit none
       type(extent), intent(in) :: dims
-      call compute_gradient(CCnormalX, dist, 'x', dims)
-      call compute_gradient(CCnormalY, dist, 'y', dims)
-      call compute_gradient(CCnormalZ, dist, 'z', dims)
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
+      call compute_gradient(CCnormalX, dist, cells, Ifaces, Jfaces, Kfaces, 'x', dims)
+      call compute_gradient(CCnormalY, dist, cells, Ifaces, Jfaces, Kfaces, 'y', dims)
+      call compute_gradient(CCnormalZ, dist, cells, Ifaces, Jfaces, Kfaces, 'z', dims)
       !using already allocated memeory for storing magnitude
       CCVn = sqrt(CCnormalX**2 + CCnormalY**2 + CCnormalZ**2)
       !CCVn hold the magnitude of CCnormal temporaraly and can be 
@@ -100,29 +116,45 @@ module CC
     end subroutine find_CCVn
 
 
-    subroutine find_DCCVn(qp, dims)
+    subroutine find_DCCVn(qp,cells, Ifaces, Jfaces, Kfaces,dims)
       !< Find gradient of the dot product between cell velocity and unit normal
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx,-2:dims%jmx,-2:dims%kmx,-2:dims%n_var), intent(in) :: qp
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       call find_CCVn(qp, dims)
-      call compute_gradient(DCCVnX, dist, 'x', dims)
-      call compute_gradient(DCCVnY, dist, 'y', dims)
-      call compute_gradient(DCCVnZ, dist, 'z', dims)
+      call compute_gradient(DCCVnX, dist, cells, Ifaces, Jfaces, Kfaces, 'x', dims)
+      call compute_gradient(DCCVnY, dist, cells, Ifaces, Jfaces, Kfaces, 'y', dims)
+      call compute_gradient(DCCVnZ, dist, cells, Ifaces, Jfaces, Kfaces, 'z', dims)
     end subroutine find_DCCVn
 
 
-    subroutine compute_gradient(grad, var, dir, dims)
+    subroutine compute_gradient(grad, var, cells, Ifaces, Jfaces, Kfaces, dir, dims)
       !< Generalized subroutine to calculate gradients
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(out) :: grad
       real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: var
-      character(len=*)                           , intent(in) :: dir
+      character(len=*)                                          , intent(in) :: dir
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       
-      real, dimension(:,:,:), pointer  :: nx
-      real, dimension(:,:,:), pointer  :: ny
-      real, dimension(:,:,:), pointer  :: nz
+      !real, dimension(:,:,:), pointer  :: nx
+      !real, dimension(:,:,:), pointer  :: ny
+      !real, dimension(:,:,:), pointer  :: nz
 
       integer :: i
       integer :: j
@@ -133,38 +165,75 @@ module CC
 
       select case(dir)
         case('x')
-          nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,1)
-          ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,1)
-          nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,1)
+          do k=0,dims%kmx
+            do j=0,dims%jmx
+              do i=0,dims%imx
+                grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*Ifaces(i,j,k)%nx*Jfaces(i,j,k)%A &
+                              -(var(i  ,j-1,k  )+var(i,j,k))*Ifaces(i,j,k)%ny*Jfaces(i,j,k)%A &
+                              -(var(i  ,j  ,k-1)+var(i,j,k))*Ifaces(i,j,k)%nz*Jfaces(i,j,k)%A &
+                              +(var(i+1,j  ,k  )+var(i,j,k))*Ifaces(i+1,j  ,k  )%nx*Ifaces(i+1,j  ,k  )%A &
+                              +(var(i  ,j+1,k  )+var(i,j,k))*Ifaces(i  ,j+1,k  )%ny*Ifaces(i  ,j+1,k  )%A &
+                              +(var(i  ,j  ,k+1)+var(i,j,k))*Ifaces(i  ,j  ,k+1)%nz*Ifaces(i  ,j  ,k+1)%A &
+                             )/(2*cells(i,j,k)%volume)
+              end do
+            end do
+          end do
+          !nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,1)
+          !ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,1)
+          !nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,1)
         case('y')
-          nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,2)
-          ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,2)
-          nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,2)
+          do k=0,dims%kmx
+            do j=0,dims%jmx
+              do i=0,dims%imx
+                grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*Jfaces(i,j,k)%nx*Jfaces(i,j,k)%A &
+                              -(var(i  ,j-1,k  )+var(i,j,k))*Jfaces(i,j,k)%ny*Jfaces(i,j,k)%A &
+                              -(var(i  ,j  ,k-1)+var(i,j,k))*Jfaces(i,j,k)%nz*Jfaces(i,j,k)%A &
+                              +(var(i+1,j  ,k  )+var(i,j,k))*Jfaces(i+1,j  ,k  )%nx*Jfaces(i+1,j  ,k  )%A &
+                              +(var(i  ,j+1,k  )+var(i,j,k))*Jfaces(i  ,j+1,k  )%ny*Jfaces(i  ,j+1,k  )%A &
+                              +(var(i  ,j  ,k+1)+var(i,j,k))*Jfaces(i  ,j  ,k+1)%nz*Jfaces(i  ,j  ,k+1)%A &
+                             )/(2*cells(i,j,k)%volume)
+              end do
+            end do
+          end do
+          !nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,2)
+          !ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,2)
+          !nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,2)
         case('z')
-          nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,3)
-          ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,3)
-          nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,3)
+          do k=0,dims%kmx
+            do j=0,dims%jmx
+              do i=0,dims%imx
+                grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*Kfaces(i,j,k)%nx*Kfaces(i,j,k)%A &
+                              -(var(i  ,j-1,k  )+var(i,j,k))*Kfaces(i,j,k)%ny*Kfaces(i,j,k)%A &
+                              -(var(i  ,j  ,k-1)+var(i,j,k))*Kfaces(i,j,k)%nz*Kfaces(i,j,k)%A &
+                              +(var(i+1,j  ,k  )+var(i,j,k))*Kfaces(i+1,j  ,k  )%nx*Kfaces(i+1,j  ,k  )%A &
+                              +(var(i  ,j+1,k  )+var(i,j,k))*Kfaces(i  ,j+1,k  )%ny*Kfaces(i  ,j+1,k  )%A &
+                              +(var(i  ,j  ,k+1)+var(i,j,k))*Kfaces(i  ,j  ,k+1)%nz*Kfaces(i  ,j  ,k+1)%A &
+                             )/(2*cells(i,j,k)%volume)
+              end do
+            end do
+          end do
+          !nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,3)
+          !ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,3)
+          !nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,3)
         case DEFAULT
-          nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,1)
-          ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,1)
-          nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,1)
           print*, "ERROR: gradient direction error"
+          Fatal_error
       end select
       grad = 0.0
 
-      do k=0,dims%kmx
-        do j=0,dims%jmx
-          do i=0,dims%imx
-            grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*nx(i,j,k)*xA(i,j,k) &
-                          -(var(i  ,j-1,k  )+var(i,j,k))*ny(i,j,k)*yA(i,j,k) &
-                          -(var(i  ,j  ,k-1)+var(i,j,k))*nz(i,j,k)*zA(i,j,k) &
-                          +(var(i+1,j  ,k  )+var(i,j,k))*nx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                          +(var(i  ,j+1,k  )+var(i,j,k))*ny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                          +(var(i  ,j  ,k+1)+var(i,j,k))*nz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                         )/(2*volume(i,j,k))
-          end do
-        end do
-      end do
+!      do k=0,dims%kmx
+!        do j=0,dims%jmx
+!          do i=0,dims%imx
+!            grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*nx(i,j,k)*xA(i,j,k) &
+!                          -(var(i  ,j-1,k  )+var(i,j,k))*ny(i,j,k)*yA(i,j,k) &
+!                          -(var(i  ,j  ,k-1)+var(i,j,k))*nz(i,j,k)*zA(i,j,k) &
+!                          +(var(i+1,j  ,k  )+var(i,j,k))*nx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
+!                          +(var(i  ,j+1,k  )+var(i,j,k))*ny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
+!                          +(var(i  ,j  ,k+1)+var(i,j,k))*nz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
+!                         )/(2*volume(i,j,k))
+!          end do
+!        end do
+!      end do
       if(any(isnan(grad)))then
         Fatal_error
       end if

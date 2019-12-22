@@ -4,12 +4,12 @@ module viscous
   !-----------------------------------------------------------------
 #include "error.inc"
   use vartypes
-  use global_vars, only : xnx, xny, xnz !face unit normal x
-  use global_vars, only : ynx, yny, ynz !face unit normal y
-  use global_vars, only : znx, zny, znz !face unit normal z
-  use global_vars, only : xA, yA, zA    !face area
-  use global_vars, only : vol => volume
-  use geometry   , only : CellCenter
+!  use global_vars, only : xnx, xny, xnz !face unit normal x
+!  use global_vars, only : ynx, yny, ynz !face unit normal y
+!  use global_vars, only : znx, zny, znz !face unit normal z
+!  use global_vars, only : xA, yA, zA    !face area
+!  use global_vars, only : vol => volume
+!  use geometry   , only : CellCenter
   
   use global_vars, only : process_id
   use gradients  , only : gradu_x
@@ -60,7 +60,7 @@ module viscous
 
   contains
 
-    subroutine compute_viscous_fluxes(F, G, H, qp, scheme, flow, dims)
+    subroutine compute_viscous_fluxes(F, G, H, qp, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims)
       !< Call to all viscous flux subroutine based on 
       !< the drection and turbulence/transition model being
       !< used
@@ -71,17 +71,28 @@ module viscous
         type(extent), intent(in) :: dims
         real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
         real, dimension(:, :, :, :), intent(inout) :: F, G, H
+        type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+        !< Input cell quantities: volume
+        type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+        !< Store face quantites for I faces 
+        type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+        !< Store face quantites for J faces 
+        type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+        !< Store face quantites for K faces 
+        integer, dimension(3) :: flagsi=(/1,0,0/)
+        integer, dimension(3) :: flagsj=(/0,1,0/)
+        integer, dimension(3) :: flagsk=(/0,0,1/)
 
         imx = dims%imx
         jmx = dims%jmx
         kmx = dims%kmx
 
-        call compute_viscous_fluxes_laminar(F, qp, 'x', scheme, flow, dims)
-        call compute_viscous_fluxes_laminar(G, qp, 'y', scheme, flow, dims)
+        call compute_viscous_fluxes_laminar(F, qp, cells, Ifaces, flagsi, scheme, flow, dims)
+        call compute_viscous_fluxes_laminar(G, qp, cells, Jfaces, flagsj, scheme, flow, dims)
         !if(kmx==2)then
         !  continue
         !else
-          call compute_viscous_fluxes_laminar(H, qp, 'z', scheme, flow, dims)
+          call compute_viscous_fluxes_laminar(H, qp, cells, Kfaces, flagsk,scheme, flow, dims)
         !end if
         
         select case(trim(scheme%turbulence))
@@ -90,24 +101,24 @@ module viscous
             continue
 
           case('sa', 'saBC')
-            call compute_viscous_fluxes_sa(F, qp, 'x', dims)
-            call compute_viscous_fluxes_sa(G, qp, 'y', dims)
-            call compute_viscous_fluxes_sa(H, qp, 'z', dims)
+            call compute_viscous_fluxes_sa(F, qp, cells, Ifaces, flagsi,dims)
+            call compute_viscous_fluxes_sa(G, qp, cells, Jfaces, flagsj,dims)
+            call compute_viscous_fluxes_sa(H, qp, cells, Kfaces, flagsk,dims)
           case('sst', 'sst2003')
-            call compute_viscous_fluxes_sst(F, qp, 'x', dims)
-            call compute_viscous_fluxes_sst(G, qp, 'y', dims)
+            call compute_viscous_fluxes_sst(F, qp,cells,  Ifaces, flagsi,dims)
+            call compute_viscous_fluxes_sst(G, qp,cells,  Jfaces, flagsj,dims)
             if(kmx==2)then
               continue
             else
-              call compute_viscous_fluxes_sst(H, qp, 'z', dims)
+              call compute_viscous_fluxes_sst(H, qp,cells, Kfaces, flagsk,dims)
             end if
           case('kkl')
-            call compute_viscous_fluxes_kkl(F, qp, 'x', dims)
-            call compute_viscous_fluxes_kkl(G, qp, 'y', dims)
+            call compute_viscous_fluxes_kkl(F, qp,cells, Ifaces, flagsi,dims)
+            call compute_viscous_fluxes_kkl(G, qp,cells, Jfaces, flagsj,dims)
             !if(kmx==2)then
             !  continue
             !else
-              call compute_viscous_fluxes_kkl(H, qp, 'z', dims)
+              call compute_viscous_fluxes_kkl(H, qp,cells, Kfaces, flagsk,dims)
             !end if
           case DEFAULT
             Fatal_error
@@ -116,12 +127,12 @@ module viscous
 
         select case(trim(scheme%transition))
           case('lctm2015')
-            call compute_viscous_fluxes_lctm2015(F, qp, 'x', dims)
-            call compute_viscous_fluxes_lctm2015(G, qp, 'y', dims)
+            call compute_viscous_fluxes_lctm2015(F, qp,cells, Ifaces, flagsi,dims)
+            call compute_viscous_fluxes_lctm2015(G, qp,cells, Jfaces, flagsj,dims)
             if(kmx==2)then
               continue
             else
-              call compute_viscous_fluxes_lctm2015(H, qp, 'z', dims)
+              call compute_viscous_fluxes_lctm2015(H, qp,cells, Kfaces, flagsk,dims)
             end if
           case('none', 'bc')
             !do nothing
@@ -143,15 +154,18 @@ module viscous
 
     end subroutine compute_viscous_fluxes
 
-    subroutine compute_viscous_fluxes_laminar(F, qp, direction, scheme, flow, dims)
+    subroutine compute_viscous_fluxes_laminar(F, qp, cells, faces, flags, scheme, flow, dims)
       !< Compute viscous fluxes for first five Navier-Stokes equation
       implicit none
-      character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
+      integer, dimension(3), intent(in) :: flags
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
       ! local variables
       real :: dudx, dudy, dudz
       real :: dvdx, dvdy, dvdz
@@ -188,48 +202,51 @@ module viscous
       real :: uface
       real :: vface
       real :: wface
-      real, dimension(:, :, :), pointer :: fA
-      real, dimension(:, :, :), pointer :: fnx
-      real, dimension(:, :, :), pointer :: fny
-      real, dimension(:, :, :), pointer :: fnz
+!      real, dimension(:, :, :), pointer :: fA
+!      real, dimension(:, :, :), pointer :: fnx
+!      real, dimension(:, :, :), pointer :: fny
+!      real, dimension(:, :, :), pointer :: fnz
       integer :: i, j, k
       integer :: ii, jj, kk
 
+      ii = flags(1)
+      jj = flags(2)
+      kk = flags(3)
       !--------------------------------------------------------------------
       ! select Direction
       !--------------------------------------------------------------------
-      select case(trim(direction))
-        case('x')
-          ii  =  1
-          jj  =  0
-          kk  =  0
-          fnx => xnx
-          fny => xny
-          fnz => xnz
-          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
+     ! select case(trim(direction))
+     !   case('x')
+     !     ii  =  1
+     !     jj  =  0
+     !     kk  =  0
+     !     fnx => xnx
+     !     fny => xny
+     !     fnz => xnz
+     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
-        case('y')
-          ii  =  0
-          jj  =  1
-          kk  =  0
-          fnx => ynx
-          fny => yny
-          fnz => ynz
-          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
+     !   case('y')
+     !     ii  =  0
+     !     jj  =  1
+     !     kk  =  0
+     !     fnx => ynx
+     !     fny => yny
+     !     fnz => ynz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
-        case('z')
-          ii  =  0
-          jj  =  0
-          kk  =  1
-          fnx => znx
-          fny => zny
-          fnz => znz
-          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
+     !   case('z')
+     !     ii  =  0
+     !     jj  =  0
+     !     kk  =  1
+     !     fnx => znx
+     !     fny => zny
+     !     fnz => znz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
-        case Default
-          Fatal_error
+     !   case Default
+     !     Fatal_error
 
-      end select
+     ! end select
 
 
       !---------------------------------------------------------------------
@@ -255,9 +272,9 @@ module viscous
           dTdz = 0.5 * (gradT_z(i-ii, j-jj, k-kk) + gradT_z(i, j, k))
           !--- For ODD-EVEN coupling error ---!
           ! distance between cell center of adjacent cell for the i,j,k face
-          delx = CellCenter(i, j, k, 1) - CellCenter(i-ii, j-jj, k-kk, 1)
-          dely = CellCenter(i, j, k, 2) - CellCenter(i-ii, j-jj, k-kk, 2)
-          delz = CellCenter(i, j, k, 3) - CellCenter(i-ii, j-jj, k-kk, 3)
+          delx = cells(i, j, k)%centerx - cells(i-ii, j-jj, k-kk)%centerx
+          dely = cells(i, j, k)%centery - cells(i-ii, j-jj, k-kk)%centery
+          delz = cells(i, j, k)%centerz - cells(i-ii, j-jj, k-kk)%centerz
 
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
@@ -326,10 +343,10 @@ module viscous
           Qz = K_heat*dTdz
 
           ! calling some element from memory and keep them handy for calculation
-          nx    = fnx(i,j,k)
-          ny    = fny(i,j,k)
-          nz    = fnz(i,j,k)
-          area  =  fA(i,j,k)
+          nx    = faces(i,j,k)%nx
+          ny    = faces(i,j,k)%ny
+          nz    = faces(i,j,k)%nz
+          area  = faces(i,j,k)%A
           uface = 0.5 * (qp(i-ii, j-jj, k-kk, 2) + qp(i, j, k, 2))
           vface = 0.5 * (qp(i-ii, j-jj, k-kk, 3) + qp(i, j, k, 3))
           wface = 0.5 * (qp(i-ii, j-jj, k-kk, 4) + qp(i, j, k, 4))
@@ -354,13 +371,16 @@ module viscous
     end subroutine compute_viscous_fluxes_laminar
 
 
-    subroutine compute_viscous_fluxes_sst(F, qp, direction, dims)
+    subroutine compute_viscous_fluxes_sst(F, qp, cells, faces, flags, dims)
       !< Compute viscous fluxes for additianal equations due to SST turbulence model
       implicit none
-      character(len=*), intent(in) :: direction !< face direction
       real, dimension(:, :, :, :), intent(inout) :: F !< flux array
       type(extent), intent(in) :: dims
+      integer, dimension(3), intent(in) :: flags
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
       ! local variables
       real :: tkface
       real :: rhoface
@@ -381,10 +401,10 @@ module viscous
       real :: ny
       real :: nz
       real :: area
-      real, dimension(:, :, :), pointer :: fA
-      real, dimension(:, :, :), pointer :: fnx
-      real, dimension(:, :, :), pointer :: fny
-      real, dimension(:, :, :), pointer :: fnz
+!      real, dimension(:, :, :), pointer :: fA
+!      real, dimension(:, :, :), pointer :: fnx
+!      real, dimension(:, :, :), pointer :: fny
+!      real, dimension(:, :, :), pointer :: fnz
       integer :: i, j, k
       integer :: ii, jj, kk
       !--- sst variable requirement ---!
@@ -393,41 +413,44 @@ module viscous
       real ::  sigma_kf
       real ::  sigma_wf
 
+      ii = flags(1)
+      jj = flags(2)
+      kk = flags(3)
       !--------------------------------------------------------------------
       ! select Direction
       !--------------------------------------------------------------------
-      select case(trim(direction))
-        case('x')
-          ii  =  1
-          jj  =  0
-          kk  =  0
-          fnx => xnx
-          fny => xny
-          fnz => xnz
-          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
+     ! select case(trim(direction))
+     !   case('x')
+     !     ii  =  1
+     !     jj  =  0
+     !     kk  =  0
+     !     fnx => xnx
+     !     fny => xny
+     !     fnz => xnz
+     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
-        case('y')
-          ii  =  0
-          jj  =  1
-          kk  =  0
-          fnx => ynx
-          fny => yny
-          fnz => ynz
-          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
+     !   case('y')
+     !     ii  =  0
+     !     jj  =  1
+     !     kk  =  0
+     !     fnx => ynx
+     !     fny => yny
+     !     fnz => ynz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
-        case('z')
-          ii  =  0
-          jj  =  0
-          kk  =  1
-          fnx => znx
-          fny => zny
-          fnz => znz
-          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
+     !   case('z')
+     !     ii  =  0
+     !     jj  =  0
+     !     kk  =  1
+     !     fnx => znx
+     !     fny => zny
+     !     fnz => znz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
-        case Default
-          Fatal_error
+     !   case Default
+     !     Fatal_error
 
-      end select
+     ! end select
 
 
       !---------------------------------------------------------------------
@@ -447,9 +470,9 @@ module viscous
           dtwdz = 0.5 * (gradtw_z(i-ii, j-jj, k-kk) + gradtw_z(i, j, k))
           !--- For ODD-EVEN coupling error ---!
           ! distance between cell center of adjacent cell for the i,j,k face
-          delx = CellCenter(i, j, k, 1) - CellCenter(i-ii, j-jj, k-kk, 1)
-          dely = CellCenter(i, j, k, 2) - CellCenter(i-ii, j-jj, k-kk, 2)
-          delz = CellCenter(i, j, k, 3) - CellCenter(i-ii, j-jj, k-kk, 3)
+          delx = cells(i, j, k)%centerx - cells(i-ii, j-jj, k-kk)%centerx
+          dely = cells(i, j, k)%centery - cells(i-ii, j-jj, k-kk)%centery
+          delz = cells(i, j, k)%centerz - cells(i-ii, j-jj, k-kk)%centerz
 
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
@@ -486,10 +509,10 @@ module viscous
           Tau_zz = Tau_xx
 
           ! calling some element from memory and keep them handy for calculation
-          nx    = fnx(i,j,k)
-          ny    = fny(i,j,k)
-          nz    = fnz(i,j,k)
-          area  =  fA(i,j,k)
+          nx    = faces(i,j,k)%nx
+          ny    = faces(i,j,k)%ny
+          nz    = faces(i,j,k)%nz
+          area  = faces(i,j,k)%A
 
           ! adding viscous fluxes to stored convective flux
           F(i, j, k, 2) = F(i, j, k, 2) - (Tau_xx * nx * area)
@@ -505,13 +528,16 @@ module viscous
     end subroutine compute_viscous_fluxes_sst
 
 
-    subroutine compute_viscous_fluxes_kkl(F, qp, direction, dims)
+    subroutine compute_viscous_fluxes_kkl(F, qp, cells, faces, flags, dims)
       !< Compute viscous fluxes for additianal equations due to k-kL turbulence model
       implicit none
-      character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
       type(extent), intent(in) :: dims
+      integer, dimension(3), intent(in) :: flags
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
       ! local variables
       real :: tkface
       real :: rhoface
@@ -532,10 +558,10 @@ module viscous
       real :: ny
       real :: nz
       real :: area
-      real, dimension(:, :, :), pointer :: fA
-      real, dimension(:, :, :), pointer :: fnx
-      real, dimension(:, :, :), pointer :: fny
-      real, dimension(:, :, :), pointer :: fnz
+!      real, dimension(:, :, :), pointer :: fA
+!      real, dimension(:, :, :), pointer :: fnx
+!      real, dimension(:, :, :), pointer :: fny
+!      real, dimension(:, :, :), pointer :: fnz
       integer :: i, j, k
       integer :: ii, jj, kk
       !--- kkl variable requirement  ---!
@@ -543,42 +569,45 @@ module viscous
       real :: dtkldx, dtkldy, dtkldz
 
 
+      ii = flags(1)
+      jj = flags(2)
+      kk = flags(3)
 
       !--------------------------------------------------------------------
       ! select Direction
       !--------------------------------------------------------------------
-      select case(trim(direction))
-        case('x')
-          ii  =  1
-          jj  =  0
-          kk  =  0
-          fnx => xnx
-          fny => xny
-          fnz => xnz
-          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
+     ! select case(trim(direction))
+     !   case('x')
+     !     ii  =  1
+     !     jj  =  0
+     !     kk  =  0
+     !     fnx => xnx
+     !     fny => xny
+     !     fnz => xnz
+     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
-        case('y')
-          ii  =  0
-          jj  =  1
-          kk  =  0
-          fnx => ynx
-          fny => yny
-          fnz => ynz
-          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
+     !   case('y')
+     !     ii  =  0
+     !     jj  =  1
+     !     kk  =  0
+     !     fnx => ynx
+     !     fny => yny
+     !     fnz => ynz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
-        case('z')
-          ii  =  0
-          jj  =  0
-          kk  =  1
-          fnx => znx
-          fny => zny
-          fnz => znz
-          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
+     !   case('z')
+     !     ii  =  0
+     !     jj  =  0
+     !     kk  =  1
+     !     fnx => znx
+     !     fny => zny
+     !     fnz => znz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
-        case Default
-          Fatal_error
+     !   case Default
+     !     Fatal_error
 
-      end select
+     ! end select
 
 
       !---------------------------------------------------------------------
@@ -598,9 +627,9 @@ module viscous
           dtkldz = 0.5 * (gradtkl_z(i-ii, j-jj, k-kk) + gradtkl_z(i, j, k))
           !--- For ODD-EVEN coupling error ---!
           ! distance between cell center of adjacent cell for the i,j,k face
-          delx = CellCenter(i, j, k, 1) - CellCenter(i-ii, j-jj, k-kk, 1)
-          dely = CellCenter(i, j, k, 2) - CellCenter(i-ii, j-jj, k-kk, 2)
-          delz = CellCenter(i, j, k, 3) - CellCenter(i-ii, j-jj, k-kk, 3)
+          delx = cells(i, j, k)%centerx - cells(i-ii, j-jj, k-kk)%centerx
+          dely = cells(i, j, k)%centery - cells(i-ii, j-jj, k-kk)%centery
+          delz = cells(i, j, k)%centerz - cells(i-ii, j-jj, k-kk)%centerz
 
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
@@ -634,10 +663,10 @@ module viscous
           Tau_zz = Tau_xx
 
           ! calling some element from memory and keep them handy for calculation
-          nx    = fnx(i,j,k)
-          ny    = fny(i,j,k)
-          nz    = fnz(i,j,k)
-          area  =  fA(i,j,k)
+          nx    = faces(i,j,k)%nx
+          ny    = faces(i,j,k)%ny
+          nz    = faces(i,j,k)%nz
+          area  = faces(i,j,k)%A
 
           ! adding viscous fluxes to stored convective flux
           F(i, j, k, 2) = F(i, j, k, 2) - (Tau_xx * nx * area)
@@ -654,13 +683,16 @@ module viscous
     end subroutine compute_viscous_fluxes_kkl
 
 
-    subroutine compute_viscous_fluxes_sa(F, qp, direction, dims)
+    subroutine compute_viscous_fluxes_sa(F, qp, cells, faces, flags, dims)
       !< Compute viscous fluxes for additianal equations due to SA turbulence model
       implicit none
-      character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
       type(extent), intent(in) :: dims
+      integer, dimension(3), intent(in) :: flags
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
       ! local variables
       real :: rhoface
       real :: normal_comp
@@ -675,50 +707,53 @@ module viscous
       real :: ny
       real :: nz
       real :: area
-      real, dimension(:, :, :), pointer :: fA
-      real, dimension(:, :, :), pointer :: fnx
-      real, dimension(:, :, :), pointer :: fny
-      real, dimension(:, :, :), pointer :: fnz
+!      real, dimension(:, :, :), pointer :: fA
+!      real, dimension(:, :, :), pointer :: fnx
+!      real, dimension(:, :, :), pointer :: fny
+!      real, dimension(:, :, :), pointer :: fnz
       integer :: i, j, k
       integer :: ii, jj, kk
       !--- sa variable requirement ---!
       real :: dtvdx, dtvdy, dtvdz
 
+      ii = flags(1)
+      jj = flags(2)
+      kk = flags(3)
       !--------------------------------------------------------------------
       ! select Direction
       !--------------------------------------------------------------------
-      select case(trim(direction))
-        case('x')
-          ii  =  1
-          jj  =  0
-          kk  =  0
-          fnx => xnx
-          fny => xny
-          fnz => xnz
-          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
+     ! select case(trim(direction))
+     !   case('x')
+     !     ii  =  1
+     !     jj  =  0
+     !     kk  =  0
+     !     fnx => xnx
+     !     fny => xny
+     !     fnz => xnz
+     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
-        case('y')
-          ii  =  0
-          jj  =  1
-          kk  =  0
-          fnx => ynx
-          fny => yny
-          fnz => ynz
-          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
+     !   case('y')
+     !     ii  =  0
+     !     jj  =  1
+     !     kk  =  0
+     !     fnx => ynx
+     !     fny => yny
+     !     fnz => ynz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
-        case('z')
-          ii  =  0
-          jj  =  0
-          kk  =  1
-          fnx => znx
-          fny => zny
-          fnz => znz
-          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
+     !   case('z')
+     !     ii  =  0
+     !     jj  =  0
+     !     kk  =  1
+     !     fnx => znx
+     !     fny => zny
+     !     fnz => znz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
-        case Default
-          Fatal_error
+     !   case Default
+     !     Fatal_error
 
-      end select
+     ! end select
 
 
       !---------------------------------------------------------------------
@@ -736,9 +771,9 @@ module viscous
 
           !--- For ODD-EVEN coupling error ---!
           ! distance between cell center of adjacent cell for the i,j,k face
-          delx = CellCenter(i, j, k, 1) - CellCenter(i-ii, j-jj, k-kk, 1)
-          dely = CellCenter(i, j, k, 2) - CellCenter(i-ii, j-jj, k-kk, 2)
-          delz = CellCenter(i, j, k, 3) - CellCenter(i-ii, j-jj, k-kk, 3)
+          delx = cells(i, j, k)%centerx - cells(i-ii, j-jj, k-kk)%centerx
+          dely = cells(i, j, k)%centery - cells(i-ii, j-jj, k-kk)%centery
+          delz = cells(i, j, k)%centerz - cells(i-ii, j-jj, k-kk)%centerz
 
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
@@ -758,10 +793,10 @@ module viscous
           mut_f    = 0.5*(qp(i-ii, j-jj, k-kk, 6) + qp(i, j, k, 6))*rhoface
 
           ! calling some element from memory and keep them handy for calculation
-          nx    = fnx(i,j,k)
-          ny    = fny(i,j,k)
-          nz    = fnz(i,j,k)
-          area  =  fA(i,j,k)
+          nx    = faces(i,j,k)%nx
+          ny    = faces(i,j,k)%ny
+          nz    = faces(i,j,k)%nz
+          area  = faces(i,j,k)%A
 
           ! adding viscous fluxes to stored convective flux
           F(i, j, k, 6) = F(i, j, k, 6) - (area*((mu_f + mut_f)*(dtvdx*nx + dtvdy*ny + dtvdz*nz)))/sigma_sa
@@ -772,13 +807,16 @@ module viscous
     end subroutine compute_viscous_fluxes_sa
 
 
-    subroutine compute_viscous_fluxes_lctm2015(F, qp, direction, dims)
+    subroutine compute_viscous_fluxes_lctm2015(F, qp, cells, faces, flags,dims)
       !< Compute viscous fluxes for additianal equations due to LCTM2015 transition model
       implicit none
-      character(len=*), intent(in) :: direction !< Face direction
       real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
       type(extent), intent(in) :: dims
+      integer, dimension(3), intent(in) :: flags
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
       ! local variables
       real :: rhoface
       real :: normal_comp
@@ -793,50 +831,53 @@ module viscous
       real :: ny
       real :: nz
       real :: area
-      real, dimension(:, :, :), pointer :: fA
-      real, dimension(:, :, :), pointer :: fnx
-      real, dimension(:, :, :), pointer :: fny
-      real, dimension(:, :, :), pointer :: fnz
+!      real, dimension(:, :, :), pointer :: fA
+!      real, dimension(:, :, :), pointer :: fnx
+!      real, dimension(:, :, :), pointer :: fny
+!      real, dimension(:, :, :), pointer :: fnz
       integer :: i, j, k
       integer :: ii, jj, kk
       !--- sa variable requirement ---!
       real :: dtgmdx, dtgmdy, dtgmdz
 
+      ii = flags(1)
+      jj = flags(2)
+      kk = flags(3)
       !--------------------------------------------------------------------
       ! select Direction
       !--------------------------------------------------------------------
-      select case(trim(direction))
-        case('x')
-          ii  =  1
-          jj  =  0
-          kk  =  0
-          fnx => xnx
-          fny => xny
-          fnz => xnz
-          fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
+     ! select case(trim(direction))
+     !   case('x')
+     !     ii  =  1
+     !     jj  =  0
+     !     kk  =  0
+     !     fnx => xnx
+     !     fny => xny
+     !     fnz => xnz
+     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
 
-        case('y')
-          ii  =  0
-          jj  =  1
-          kk  =  0
-          fnx => ynx
-          fny => yny
-          fnz => ynz
-          fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
+     !   case('y')
+     !     ii  =  0
+     !     jj  =  1
+     !     kk  =  0
+     !     fnx => ynx
+     !     fny => yny
+     !     fnz => ynz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
 
-        case('z')
-          ii  =  0
-          jj  =  0
-          kk  =  1
-          fnx => znx
-          fny => zny
-          fnz => znz
-          fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
+     !   case('z')
+     !     ii  =  0
+     !     jj  =  0
+     !     kk  =  1
+     !     fnx => znx
+     !     fny => zny
+     !     fnz => znz
+     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
 
-        case Default
-          Fatal_error
+     !   case Default
+     !     Fatal_error
 
-      end select
+     ! end select
 
 
       !---------------------------------------------------------------------
@@ -854,9 +895,9 @@ module viscous
 
           !--- For ODD-EVEN coupling error ---!
           ! distance between cell center of adjacent cell for the i,j,k face
-          delx = CellCenter(i, j, k, 1) - CellCenter(i-ii, j-jj, k-kk, 1)
-          dely = CellCenter(i, j, k, 2) - CellCenter(i-ii, j-jj, k-kk, 2)
-          delz = CellCenter(i, j, k, 3) - CellCenter(i-ii, j-jj, k-kk, 3)
+          delx = cells(i, j, k)%centerx - cells(i-ii, j-jj, k-kk)%centerx
+          dely = cells(i, j, k)%centery - cells(i-ii, j-jj, k-kk)%centery
+          delz = cells(i, j, k)%centerz - cells(i-ii, j-jj, k-kk)%centerz
 
           d_LR = sqrt(delx*delx + dely*dely + delz*delz)
 
@@ -876,10 +917,10 @@ module viscous
           mut_f    = 0.5*(mu_t(i-ii, j-jj, k-kk) + mu_t(i, j, k))
 
           ! calling some element from memory and keep them handy for calculation
-          nx    = fnx(i,j,k)
-          ny    = fny(i,j,k)
-          nz    = fnz(i,j,k)
-          area  =  fA(i,j,k)
+          nx    = faces(i,j,k)%nx
+          ny    = faces(i,j,k)%ny
+          nz    = faces(i,j,k)%nz
+          area  = faces(i,j,k)%A
 
           ! adding viscous fluxes to stored convective flux
           F(i, j, k, dims%n_var) = F(i, j, k, dims%n_var) - (area*((mu_f + mut_f)*(dtgmdx*nx + dtgmdy*ny + dtgmdz*nz)))

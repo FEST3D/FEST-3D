@@ -5,8 +5,8 @@ Ran Test number 1  --->  Subsonic flow over a smooth bump
  Higher order method: muscl
  Turbulence model   : none
  Expected Change in entropy           : 0.000E+00
- Calculated relative change in entropy: 1.046E-06
- Difference                           : 1.046E-04 %
+ Calculated relative change in entropy: 7.883E-07
+ Difference                           : 7.883E-05 %
  Allowed Tolerance                    : 0.1 %
 ------------ >>> Test Passed  <<< --------------
 
@@ -19,7 +19,7 @@ Ran Test number 2  --->  Laminar flow over a flat plate
  Turbulence model   : none
  Expected drag coeffcient    : 1.330E-03
  Calculated drag coefficient : 1.329E-03
- Difference                  : 4.638E-02 %
+ Difference                  : 5.001E-02 %
  Allowed Tolerance           : 1 %
 ------------ >>> Test Passed  <<< --------------
 
@@ -31,7 +31,7 @@ Ran Test number 3  --->  Turbulent flow over a flat plate
  Higher order method: muscl
  Turbulence model   : sst
  Expected drag coeffcient    : 2.900E-03
- Calculated drag coefficient : 2.873E-03
- Difference                  : 9.312E-01 %
+ Calculated drag coefficient : 2.872E-03
+ Difference                  : 9.586E-01 %
  Allowed Tolerance           : 2 %
 ------------ >>> Test Passed  <<< --------------

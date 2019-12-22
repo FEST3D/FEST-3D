@@ -36,11 +36,11 @@ module plusgs
   use global_vars, only : CCnormalY
   use global_vars, only : CCnormalZ
 
-  use global_vars, only : volume
-  use global_vars, only : xnx, xny, xnz !face unit normal x
-  use global_vars, only : ynx, yny, ynz !face unit normal y
-  use global_vars, only : znx, zny, znz !face unit normal z
-  use global_vars, only : xA, yA, zA    !face area
+!  use global_vars, only : volume
+!  use global_vars, only : xnx, xny, xnz !face unit normal x
+!  use global_vars, only : ynx, yny, ynz !face unit normal y
+!  use global_vars, only : znx, zny, znz !face unit normal z
+!  use global_vars, only : xA, yA, zA    !face area
   use global_vars, only : dist
   use global_vars, only : mu
   use global_vars, only : mu_t
@@ -57,7 +57,7 @@ module plusgs
   use gradients  , only: gradw_x
   use gradients  , only: gradw_y
   use gradients  , only: gradw_z
-  use geometry   , only: CellCenter
+!  use geometry   , only: CellCenter
 
   use utils, only: alloc
 
@@ -234,7 +234,7 @@ module plusgs
 !      call dealloc(dummy)
 !    end subroutine destroy_plusgs
 
-    subroutine update_with_plusgs(qp, residue, scheme, dims)
+    subroutine update_with_plusgs(qp, cells, Ifaces,Jfaces,Kfaces,residue, scheme, dims)
       !< Time-integrate with LU_SGS method
       implicit none
       type(schemetype), intent(in) :: scheme
@@ -242,17 +242,25 @@ module plusgs
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
 
       select case(trim(scheme%turbulence))
         case('none')
-          call update_laminar_variables(qp, residue, dims)
+          call update_laminar_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
 
         case('sst', 'sst2003')
           select case(trim(scheme%transition))
             case('none', 'bc')
-              call update_SST_variables(qp, residue, dims)
+              call update_SST_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
             case('lctm2015')
-              call update_lctm2015(qp, residue, dims)
+              call update_lctm2015(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
             case DEFAULT
               Fatal_error
           end select
@@ -261,7 +269,7 @@ module plusgs
 !          call update_KKL_variables()
 
         case('sa', 'saBC')
-          call update_SA_variables(qp, residue, dims)
+          call update_SA_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
 
         case Default
           Fatal_error
@@ -273,13 +281,21 @@ module plusgs
 
 
 
-    subroutine update_laminar_variables(qp, residue, dims)
+    subroutine update_laminar_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update laminar flow with LU-SGS scheme
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
         real, dimension(1:5)     :: deltaU
         real                     :: D
@@ -338,13 +354,13 @@ module plusgs
         do k=1,dims%kmx-1
           do j=1,dims%jmx-1
             do i=1,dims%imx-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:5)
               Q1  = qp(i-1, j  , k  , 1:5)
@@ -359,51 +375,51 @@ module plusgs
               DQ2 = delQstar(i  , j-1, k  , 1:5)
               DQ3 = delQstar(i  , j  , k-1, 1:5)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
 
@@ -439,7 +455,7 @@ module plusgs
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
               PrecondInv(1,1) = 1.0 - factor*1*VMag*VMag/2.0
@@ -485,13 +501,13 @@ module plusgs
             do i=dims%imx-1,1,-1
           do j=dims%jmx-1,1,-1
         do k=dims%kmx-1,1,-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:5)
               Q1  = qp(i-1, j  , k  , 1:5)
@@ -506,51 +522,51 @@ module plusgs
               DQ5 = delQ(i  , j+1, k  , 1:5)
               DQ6 = delQ(i  , j  , k+1, 1:5)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
 
@@ -587,7 +603,7 @@ module plusgs
               DelJminusFlux =  NewJminusFlux - OldJminusFlux
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
 
               PrecondInv(1,1) = 1.0 - factor*1*VMag*VMag/2.0
               PrecondInv(2,1) = 0.0 - factor*u*VMag*VMag/2.0
@@ -849,13 +865,21 @@ module plusgs
     end function SpectralRadius
 
 
-    subroutine update_SST_variables(qp, residue, dims)
+    subroutine update_SST_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS (SST) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
         real, dimension(1:7)     :: deltaU
         real, dimension(1:7)     :: D
@@ -920,13 +944,13 @@ module plusgs
         do k=1,dims%kmx-1
           do j=1,dims%jmx-1
             do i=1,dims%imx-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:7)
               Q1  = qp(i-1, j  , k  , 1:7)
@@ -941,56 +965,56 @@ module plusgs
               DQ2 = delQstar(i  , j-1, k  , 1:7)
               DQ3 = delQstar(i  , j  , k-1, 1:7)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
               Flist1(8) = 0.5*(sst_F1(i-1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
               Flist2(8) = 0.5*(sst_F1(i  , j-1, k  ) + sst_F1(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
               Flist3(8) = 0.5*(sst_F1(i  , j  , k-1) + sst_F1(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
               Flist4(8) = 0.5*(sst_F1(i+1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
               Flist5(8) = 0.5*(sst_F1(i  , j+1, k  ) + sst_F1(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
               Flist6(8) = 0.5*(sst_F1(i  , j  , k+1) + sst_F1(i,j,k))
@@ -1083,10 +1107,10 @@ module plusgs
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               beta = sst_F1(i,j,k)*beta1 + (1.0-sst_F1(i,j,k))*beta2
-              D(6) = (D(6) + (bstar*qp(i,j,k,7))*volume(i,j,k))
-              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*volume(i,j,k))
+              D(6) = (D(6) + (bstar*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*cells(i,j,k)%volume)
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
               
@@ -1106,13 +1130,13 @@ module plusgs
             do i=dims%imx-1,1,-1
           do j=dims%jmx-1,1,-1
         do k=dims%kmx-1,1,-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:7)
               Q1  = qp(i-1, j  , k  , 1:7)
@@ -1127,56 +1151,56 @@ module plusgs
               DQ5 = delQ(i  , j+1, k  , 1:7)
               DQ6 = delQ(i  , j  , k+1, 1:7)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
               Flist1(8) = 0.5*(sst_F1(i-1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
               Flist2(8) = 0.5*(sst_F1(i  , j-1, k  ) + sst_F1(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
               Flist3(8) = 0.5*(sst_F1(i  , j  , k-1) + sst_F1(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
               Flist4(8) = 0.5*(sst_F1(i+1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
               Flist5(8) = 0.5*(sst_F1(i  , j+1, k  ) + sst_F1(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
               Flist6(8) = 0.5*(sst_F1(i  , j  , k+1) + sst_F1(i,j,k))
@@ -1268,10 +1292,10 @@ module plusgs
               DelJminusFlux =  NewJminusFlux - OldJminusFlux
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               beta = sst_F1(i,j,k)*beta1 + (1.0-sst_F1(i,j,k))*beta2
-              D(6) = (D(6) + (bstar*qp(i,j,k,7))*volume(i,j,k))
-              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*volume(i,j,k))
+              D(6) = (D(6) + (bstar*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*cells(i,j,k)%volume)
 
 
               delQ(i,j,k,1:7) = delQstar(i,j,k,1:7) &
@@ -1491,13 +1515,21 @@ module plusgs
 
     end function SSTFlux 
 
-    subroutine update_SA_variables(qp, residue, dims)
+    subroutine update_SA_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS (SA) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
         real, dimension(1:6)     :: deltaU
         real, dimension(1:6)     :: D
@@ -1583,13 +1615,13 @@ module plusgs
           do j=1,dims%jmx-1
             do i=1,dims%imx-1
               density = qp(i,j,k,1)
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:6)
               Q1  = qp(i-1, j  , k  , 1:6)
@@ -1604,51 +1636,51 @@ module plusgs
               DQ2 = delQstar(i  , j-1, k  , 1:6)
               DQ3 = delQstar(i  , j  , k-1, 1:6)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
 
@@ -1727,7 +1759,7 @@ module plusgs
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
               ! -- source term derivatives -- !
@@ -1759,7 +1791,7 @@ module plusgs
               dfv2 = -((1.0/nu) - Ji_2*dfv1)/((1.0+Ji*fv1)**2)
               dShat = (fv2+Q0(6)*dfv2)*inv_k2_d2
 
-              D = D - cb1*(Q0(6)*dShat+Shat)*Volume(i,j,k)
+              D = D - cb1*(Q0(6)*dShat+Shat)*cells(i,j,k)%volume
 
               ! ___ Destruction term___ !
               r    = min(Q0(6)*inv_Shat*inv_k2_d2, 10.0)
@@ -1771,7 +1803,7 @@ module plusgs
               dg = dr*(1.0+cw2*(6.0*(r**5)-1.0))
               dfw= dg*glim*(1.0-g_6/(g_6+cw3_6))
 
-              D = D+cw1*(dfw*Q0(6) + 2*fw)*Q0(6)/dist_i_2*volume(i,j,k)
+              D = D+cw1*(dfw*Q0(6) + 2*fw)*Q0(6)/dist_i_2*cells(i,j,k)%volume
               ! --  end of source term -- !
 
               deltaU(1:6) = -matmul(PrecondInv,residue(i,j,k,1:6)) &
@@ -1791,13 +1823,13 @@ module plusgs
           do j=dims%jmx-1,1,-1
         do k=dims%kmx-1,1,-1
               density = qp(i,j,k,1)
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:6)
               Q1  = qp(i-1, j  , k  , 1:6)
@@ -1812,51 +1844,51 @@ module plusgs
               DQ5 = delQ(i  , j+1, k  , 1:6)
               DQ6 = delQ(i  , j  , k+1, 1:6)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
 
@@ -1933,7 +1965,7 @@ module plusgs
               DelJminusFlux =  NewJminusFlux - OldJminusFlux
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
 
               ! -- source term derivatives -- !
               Omega = sqrt( ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
@@ -1963,7 +1995,7 @@ module plusgs
               dfv2 = -((1.0/nu) - Ji_2*dfv1)/((1.0+Ji*fv1)**2)
               dShat = (fv2+Q0(6)*dfv2)*inv_k2_d2
 
-              D = D - cb1*(Q0(6)*dShat+Shat)*Volume(i,j,k)
+              D = D - cb1*(Q0(6)*dShat+Shat)*cells(i,j,k)%volume
 
               ! ___ Destruction term___ !
               r    = min(Q0(6)*inv_Shat*inv_k2_d2, 10.0)
@@ -1975,7 +2007,7 @@ module plusgs
               dg = dr*(1.0+cw2*(6.0*(r**5)-1.0))
               dfw= dg*glim*(1.0-g_6/(g_6+cw3_6))
 
-              D = D+cw1*(dfw*Q0(6) + 2*fw)*Q0(6)/dist_i_2*volume(i,j,k)
+              D = D+cw1*(dfw*Q0(6) + 2*fw)*Q0(6)/dist_i_2*cells(i,j,k)%volume
               ! --  end of source term -- !
 
               delQ(i,j,k,1:6) = delQstar(i,j,k,1:6) &
@@ -2175,13 +2207,21 @@ module plusgs
     end function SAFlux 
 
 
-    subroutine update_lctm2015(qp, residue, dims)
+    subroutine update_lctm2015(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS/transition (LCTM2015) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
         real, dimension(1:8)     :: deltaU
         real, dimension(1:8)     :: D
@@ -2269,13 +2309,13 @@ module plusgs
           do j=1,dims%jmx-1
             do i=1,dims%imx-1
               density = qp(i,j,k,1)
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:8)
               Q1  = qp(i-1, j  , k  , 1:8)
@@ -2290,56 +2330,56 @@ module plusgs
               DQ2 = delQstar(i  , j-1, k  , 1:8)
               DQ3 = delQstar(i  , j  , k-1, 1:8)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
               Flist1(8) = 0.5*(sst_F1(i-1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
               Flist2(8) = 0.5*(sst_F1(i  , j-1, k  ) + sst_F1(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
               Flist3(8) = 0.5*(sst_F1(i  , j  , k-1) + sst_F1(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
               Flist4(8) = 0.5*(sst_F1(i+1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
               Flist5(8) = 0.5*(sst_F1(i  , j+1, k  ) + sst_F1(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
               Flist6(8) = 0.5*(sst_F1(i  , j  , k+1) + sst_F1(i,j,k))
@@ -2401,11 +2441,11 @@ module plusgs
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               beta = sst_F1(i,j,k)*beta1 + (1.0-sst_F1(i,j,k))*beta2
-              !D(6) = (D(6) + bstar*qp(i,j,k,7)*volume(i,j,k))
-              D(6) = (D(6) + (bstar*qp(i,j,k,7))*volume(i,j,k))
-              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*volume(i,j,k))
+              !D(6) = (D(6) + bstar*qp(i,j,k,7)*cells(i,j,k)%volume)
+              D(6) = (D(6) + (bstar*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*cells(i,j,k)%volume)
               !gamma
               vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
                               + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
@@ -2443,7 +2483,7 @@ module plusgs
               Fonset  = max(Fonset2 - Fonset3, 0.0)
               Dp = 100*density*strain*Fonset*(1.0-2.0*Q0(8))
               De = 0.06*vort*Fturb*density*(2.0*50.0*Q0(8) - 1.0)
-              D(8) = (D(8) + (-Dp + DE )*volume(i,j,k))
+              D(8) = (D(8) + (-Dp + DE )*cells(i,j,k)%volume)
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
 
@@ -2463,13 +2503,13 @@ module plusgs
           do j=dims%jmx-1,1,-1
         do k=dims%kmx-1,1,-1
               density = qp(i,j,k,1)
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:8)
               Q1  = qp(i-1, j  , k  , 1:8)
@@ -2484,56 +2524,56 @@ module plusgs
               DQ5 = delQ(i  , j+1, k  , 1:8)
               DQ6 = delQ(i  , j  , k+1, 1:8)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
               Flist1(8) = 0.5*(sst_F1(i-1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
               Flist2(8) = 0.5*(sst_F1(i  , j-1, k  ) + sst_F1(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
               Flist3(8) = 0.5*(sst_F1(i  , j  , k-1) + sst_F1(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
               Flist4(8) = 0.5*(sst_F1(i+1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
               Flist5(8) = 0.5*(sst_F1(i  , j+1, k  ) + sst_F1(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
               Flist6(8) = 0.5*(sst_F1(i  , j  , k+1) + sst_F1(i,j,k))
@@ -2591,11 +2631,11 @@ module plusgs
               DelJminusFlux =  NewJminusFlux - OldJminusFlux
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               beta = sst_F1(i,j,k)*beta1 + (1.0-sst_F1(i,j,k))*beta2
-              !D(6) = (D(6) + bstar*qp(i,j,k,7)*volume(i,j,k))
-              D(6) = (D(6) + (bstar*qp(i,j,k,7))*volume(i,j,k))
-              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*volume(i,j,k))
+              !D(6) = (D(6) + bstar*qp(i,j,k,7)*cells(i,j,k)%volume)
+              D(6) = (D(6) + (bstar*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*cells(i,j,k)%volume)
               !gamma
               vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
                               + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
@@ -2633,7 +2673,7 @@ module plusgs
               Fonset  = max(Fonset2 - Fonset3, 0.0)
               Dp = 100*density*strain*Fonset*(1.0-2.0*Q0(8))
               De = 0.06*vort*Fturb*density*(2.0*50.0*Q0(8) - 1.0)
-              D(8) = (D(8) + (-Dp + DE )*volume(i,j,k))
+              D(8) = (D(8) + (-Dp + DE )*cells(i,j,k)%volume)
 
               delQ(i,j,k,1:8) = delQstar(i,j,k,1:8) &
                 - 0.5*((matmul(PrecondInv,DelIminusFlux) - LambdaTimesArea(4)*delQ(i+1,j,k,1:8)) &

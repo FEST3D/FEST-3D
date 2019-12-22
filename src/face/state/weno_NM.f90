@@ -10,7 +10,7 @@ module weno_NM
 
     use vartypes
     use utils, only: alloc
-    use global_vars, only : volume
+!    use global_vars, only : volume
     use global_vars, only : process_id
 
     implicit none
@@ -107,12 +107,15 @@ module weno_NM
 !        end subroutine destroy_scheme
 !
 
-        subroutine compute_face_states(qp, dir)
+        subroutine compute_face_states(qp, cells, dims, dir)
           !< Subroutine to calculate state at the face, generalized for
           !< all direction : I,J, and K.
             implicit none
 
-            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
+            type(extent), intent(in) :: dims
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
             character(len=*), intent(in) :: dir
             integer :: i, j, k, l
             integer :: i_f=0, j_f=0, k_f=0
@@ -160,21 +163,21 @@ module weno_NM
               f_qp_right => z_qp_right
             end select
 
-            do l = 1, n_var
-             do k = 1-k_f, kmx-1+k_f
-              do j = 1-j_f, jmx-1+j_f
-               do i = 1-i_f, imx-1+i_f
+            do l = 1, dims%n_var
+             do k = 1-k_f, dims%kmx-1+k_f
+              do j = 1-j_f, dims%jmx-1+j_f
+               do i = 1-i_f, dims%imx-1+i_f
                  U(-2) = qp(i-2*i_f,j-2*j_f,k-2*k_f,l)  !u_{i-2}
                  U(-1) = qp(i-1*i_f,j-1*j_f,k-1*k_f,l)  !u_{i-1}
                  u( 0) = qp(i      ,j      ,k      ,l)  !u_{i}
                  U( 1) = qp(i+1*i_f,j+1*j_f,k+1*k_f,l)  !u_{i+1}
                  U( 2) = qp(i+2*i_f,j+2*j_f,k+2*k_f,l)  !u_{i+2}
 
-                 Vol(-2) = volume(i-2*i_f,j-2*j_f,k-2*k_f)  !volume_{i-2}
-                 Vol(-1) = volume(i-1*i_f,j-1*j_f,k-1*k_f)  !volume_{i-1}
-                 Vol( 0) = volume(i      ,j      ,k      )  !volume_{i}
-                 Vol( 1) = volume(i+1*i_f,j+1*j_f,k+1*k_f)  !volume_{i+1}
-                 Vol( 2) = volume(i+2*i_f,j+2*j_f,k+2*k_f)  !volume_{i+2}
+                 Vol(-2) = cells(i-2*i_f,j-2*j_f,k-2*k_f)%volume  !volume_{i-2}
+                 Vol(-1) = cells(i-1*i_f,j-1*j_f,k-1*k_f)%volume  !volume_{i-1}
+                 Vol( 0) = cells(i      ,j      ,k      )%volume  !volume_{i}
+                 Vol( 1) = cells(i+1*i_f,j+1*j_f,k+1*k_f)%volume  !volume_{i+1}
+                 Vol( 2) = cells(i+2*i_f,j+2*j_f,k+2*k_f)%volume  !volume_{i+2}
 
                  alpha12 = Vol( 2)/(Vol( 1) + Vol( 2))
                  alpha01 = Vol( 1)/(Vol( 0) + Vol( 1))
@@ -217,14 +220,16 @@ module weno_NM
         end subroutine compute_face_states
 
 
-        subroutine compute_weno_NM_states(qp)
+        subroutine compute_weno_NM_states(qp, cells, dims)
           !< Call Weno scheme for all the three direction I,J, and K
 
             implicit none
-            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
-            call compute_face_states(qp, 'x')
-            call compute_face_states(qp, 'y')
-            call compute_face_states(qp, 'z')
+            type(extent), intent(in) :: dims
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+            call compute_face_states(qp, cells, dims, 'x')
+            call compute_face_states(qp, cells, dims, 'y')
+            call compute_face_states(qp, cells, dims, 'z')
 
         end subroutine compute_weno_NM_states
 

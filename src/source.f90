@@ -22,7 +22,7 @@ module source
   use global_sst   ,only : sigma_k
   use global_sst   ,only : gama
   use global_sst   ,only : sst_F1
-  use global_vars  ,only :   volume
+!  use global_vars  ,only :   volume
   use global_vars  ,only :   mu
   use global_vars  ,only :   dist
   use gradients  ,only :   gradu_x
@@ -44,9 +44,9 @@ module source
   use gradients  ,only :   gradtgm_y
   use gradients  ,only :   gradtgm_z
 !  use global_vars  ,only :   residue
-  use global_vars  ,only : xn
-  use global_vars  ,only : yn
-  use global_vars  ,only : zn
+!  use global_vars  ,only : xn
+!  use global_vars  ,only : yn
+!  use global_vars  ,only : zn
 
   !--- variables required for kkl source calculation ---!
   use global_kkl, only : zeta1
@@ -79,10 +79,10 @@ module source
   use gradients ,only : gradtv_y
   use gradients ,only : gradtv_z
 
-  use global_vars, only : xnx, xny, xnz !face unit normal x
-  use global_vars, only : ynx, yny, ynz !face unit normal y
-  use global_vars, only : znx, zny, znz !face unit normal z
-  use global_vars, only : xA, yA, zA    !face area
+!  use global_vars, only : xnx, xny, xnz !face unit normal x
+!  use global_vars, only : ynx, yny, ynz !face unit normal y
+!  use global_vars, only : znx, zny, znz !face unit normal z
+!  use global_vars, only : xA, yA, zA    !face area
   use global_vars  ,only : mu_t
 
   use global_vars, only : DCCVnX
@@ -106,7 +106,7 @@ module source
   contains
 
     
-    subroutine add_source_term_residue(qp, residue, scheme,flow, dims)
+    subroutine add_source_term_residue(qp, residue, cells, Ifaces,Jfaces,Kfaces,scheme,flow, dims)
       !< Call to add different source terms to the residual of different equations.
 
       implicit none
@@ -116,6 +116,14 @@ module source
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       real, dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
 
       DebugCall('add_source_term_residue')
 
@@ -128,9 +136,9 @@ module source
         case ('sa')
           select case(trim(scheme%transition))
             case('none')
-              call add_sa_source(qp, residue, dims)
+              call add_sa_source(qp, residue, cells, Ifaces,Jfaces,Kfaces,dims)
             case('bc')
-              call add_saBC_source(qp, residue, flow, dims)
+              call add_saBC_source(qp, residue, cells, Ifaces,Jfaces,Kfaces,flow, dims)
             case DEFAULT
               Fatal_error
           end select
@@ -138,17 +146,17 @@ module source
         case ('sst', 'sst2003')
           select case(trim(scheme%transition))
             case('none')
-              call add_sst_source(qp, residue, scheme, dims)
+              call add_sst_source(qp, residue, cells,scheme, dims)
             case('lctm2015')
-              call add_sst_source_lctm2015(qp, residue, scheme, dims)
+              call add_sst_source_lctm2015(qp, residue, cells,Ifaces,Jfaces,Kfaces,scheme, dims)
             case('bc')
-              call add_sst_bc_source(qp, residue, flow,dims)
+              call add_sst_bc_source(qp, residue, cells,flow,dims)
             case DEFAULT
               Fatal_error
           end select
 
         case ('kkl')
-          call add_kkl_source(qp, residue, dims)
+          call add_kkl_source(qp, residue, cells, Ifaces,Jfaces,Kfaces, dims)
 
         case DEFAULT
           Fatal_error
@@ -171,13 +179,15 @@ module source
 !        !nothing
 !    end subroutine destroy_source
 
-    subroutine add_sst_source(qp, residue, scheme,dims)
+    subroutine add_sst_source(qp, residue, cells,scheme,dims)
       !< Add residual due to source terms of the SST turbulence model
       implicit none
       type(extent), intent(in) :: dims
       type(schemetype), intent(in) :: scheme
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       real, dimension(:, :, :, :), intent(inout)  :: residue
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
       !< Store residue at each cell-center
       integer :: i,j,k
 
@@ -252,8 +262,8 @@ module source
             S_k = P_k - D_k           !Source term TKE
             S_w = P_w - D_w  +lamda   !source term omega
 
-            S_k = S_k * volume(i, j, k)
-            S_w = S_w * volume(i, j, k)
+            S_k = S_k * cells(i, j, k)%volume
+            S_w = S_w * cells(i, j, k)%volume
 
             residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
             residue(i, j, k, 7) = residue(i, j, k, 7) - S_w
@@ -265,7 +275,7 @@ module source
     end subroutine add_sst_source
 
 
-    subroutine add_sst_source_lctm2015(qp, residue, scheme, dims)
+    subroutine add_sst_source_lctm2015(qp, residue, cells, Ifaces, Jfaces, Kfaces, scheme, dims)
       !< Add residual due to source terms of the LCTM2015 transition model
       implicit none
       type(schemetype), intent(in) :: scheme
@@ -273,6 +283,14 @@ module source
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       real, dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
 
       real :: CD
@@ -319,7 +337,7 @@ module source
       end if
 
       !for pressure gradient calculation
-      call find_DCCVn(qp, dims)
+      call find_DCCVn(qp, cells, Ifaces, Jfaces, Kfaces, dims)
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1
@@ -407,9 +425,9 @@ module source
             S_W = P_w - D_w  + lamda        !Source term gm
             S_gm = P_gm - D_gm           !Source term gm
 
-            S_k = S_k * volume(i, j, k)
-            S_w = S_w * volume(i, j, k)
-            S_gm= S_gm* Volume(i, j, k)
+            S_k = S_k * cells(i, j, k)%volume
+            S_w = S_w * cells(i, j, k)%volume
+            S_gm= S_gm* cells(i, j, k)%Volume
 
             residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
             residue(i, j, k, 7) = residue(i, j, k, 7) - S_w
@@ -423,7 +441,7 @@ module source
 
 
     ! SST-BC model
-    subroutine add_sst_bc_source(qp, residue, flow, dims)
+    subroutine add_sst_bc_source(qp, residue, cells, flow, dims)
       !< Add residual due to source terms of the SST-BC transition model
       implicit none
       type(extent), intent(in) :: dims
@@ -431,6 +449,8 @@ module source
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       real, dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
       integer :: i,j,k
 
       real :: CD
@@ -529,8 +549,8 @@ module source
             S_k = P_k - D_k           !Source term TKE
             S_w = P_w - D_w  +lamda   !source term omega
 
-            S_k = S_k * volume(i, j, k)
-            S_w = S_w * volume(i, j, k)
+            S_k = S_k * cells(i, j, k)%volume
+            S_w = S_w * cells(i, j, k)%volume
 
             residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
             residue(i, j, k, 7) = residue(i, j, k, 7) - S_w
@@ -542,13 +562,21 @@ module source
     end subroutine add_sst_bc_source
 
 
-    subroutine add_kkl_source(qp, residue, dims)
+    subroutine add_kkl_source(qp, residue, cells, Ifaces,Jfaces,Kfaces, dims)
       !< Add residual due to source terms of the k-kL turbulence model
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       real, dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
 
       real :: Tau11
@@ -646,80 +674,80 @@ module source
 
             ! calculation of Lvk
             ! first get second order gradients 
-            d2udx2 =(-(gradu_x(i-1,j  ,k  )+gradu_x(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradu_x(i  ,j-1,k  )+gradu_x(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradu_x(i  ,j  ,k-1)+gradu_x(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradu_x(i+1,j  ,k  )+gradu_x(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradu_x(i  ,j+1,k  )+gradu_x(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradu_x(i  ,j  ,k+1)+gradu_x(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2udx2 =(-(gradu_x(i-1,j  ,k  )+gradu_x(i,j,k))*Ifaces(i,j,k)%nx*Ifaces(i,j,k)%A &
+                     -(gradu_x(i  ,j-1,k  )+gradu_x(i,j,k))*Jfaces(i,j,k)%nx*Jfaces(i,j,k)%A &
+                     -(gradu_x(i  ,j  ,k-1)+gradu_x(i,j,k))*Kfaces(i,j,k)%nx*Kfaces(i,j,k)%A &
+                     +(gradu_x(i+1,j  ,k  )+gradu_x(i,j,k))*Ifaces(i+1,j  ,k  )%nx*Ifaces(i+1,j  ,k  )%A &
+                     +(gradu_x(i  ,j+1,k  )+gradu_x(i,j,k))*Jfaces(i  ,j+1,k  )%nx*Jfaces(i  ,j+1,k  )%A &
+                     +(gradu_x(i  ,j  ,k+1)+gradu_x(i,j,k))*Kfaces(i  ,j  ,k+1)%nx*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
-            d2udy2 =(-(gradu_y(i-1,j  ,k  )+gradu_y(i,j,k))*xny(i,j,k)*xA(i,j,k) &
-                     -(gradu_y(i  ,j-1,k  )+gradu_y(i,j,k))*yny(i,j,k)*yA(i,j,k) &
-                     -(gradu_y(i  ,j  ,k-1)+gradu_y(i,j,k))*zny(i,j,k)*zA(i,j,k) &
-                     +(gradu_y(i+1,j  ,k  )+gradu_y(i,j,k))*xny(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradu_y(i  ,j+1,k  )+gradu_y(i,j,k))*yny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradu_y(i  ,j  ,k+1)+gradu_y(i,j,k))*zny(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2udy2 =(-(gradu_y(i-1,j  ,k  )+gradu_y(i,j,k))*Ifaces(i,j,k)%ny*Ifaces(i,j,k)%A &
+                     -(gradu_y(i  ,j-1,k  )+gradu_y(i,j,k))*Jfaces(i,j,k)%ny*Jfaces(i,j,k)%A &
+                     -(gradu_y(i  ,j  ,k-1)+gradu_y(i,j,k))*Kfaces(i,j,k)%ny*Kfaces(i,j,k)%A &
+                     +(gradu_y(i+1,j  ,k  )+gradu_y(i,j,k))*Ifaces(i+1,j  ,k  )%ny*Ifaces(i+1,j  ,k  )%A &
+                     +(gradu_y(i  ,j+1,k  )+gradu_y(i,j,k))*Jfaces(i  ,j+1,k  )%ny*Jfaces(i  ,j+1,k  )%A &
+                     +(gradu_y(i  ,j  ,k+1)+gradu_y(i,j,k))*Kfaces(i  ,j  ,k+1)%ny*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
-            d2udz2 =(-(gradu_z(i-1,j  ,k  )+gradu_z(i,j,k))*xnz(i,j,k)*xA(i,j,k) &
-                     -(gradu_z(i  ,j-1,k  )+gradu_z(i,j,k))*ynz(i,j,k)*yA(i,j,k) &
-                     -(gradu_z(i  ,j  ,k-1)+gradu_z(i,j,k))*znz(i,j,k)*zA(i,j,k) &
-                     +(gradu_z(i+1,j  ,k  )+gradu_z(i,j,k))*xnz(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradu_z(i  ,j+1,k  )+gradu_z(i,j,k))*ynz(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradu_z(i  ,j  ,k+1)+gradu_z(i,j,k))*znz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2udz2 =(-(gradu_z(i-1,j  ,k  )+gradu_z(i,j,k))*Ifaces(i,j,k)%nz*Ifaces(i,j,k)%A &
+                     -(gradu_z(i  ,j-1,k  )+gradu_z(i,j,k))*Jfaces(i,j,k)%nz*Jfaces(i,j,k)%A &
+                     -(gradu_z(i  ,j  ,k-1)+gradu_z(i,j,k))*Kfaces(i,j,k)%nz*Kfaces(i,j,k)%A &
+                     +(gradu_z(i+1,j  ,k  )+gradu_z(i,j,k))*Ifaces(i+1,j  ,k  )%nz*Ifaces(i+1,j  ,k  )%A &
+                     +(gradu_z(i  ,j+1,k  )+gradu_z(i,j,k))*Jfaces(i  ,j+1,k  )%nz*Jfaces(i  ,j+1,k  )%A &
+                     +(gradu_z(i  ,j  ,k+1)+gradu_z(i,j,k))*Kfaces(i  ,j  ,k+1)%nz*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
             ! gradient of v component
-            d2vdx2 =(-(gradv_x(i-1,j  ,k  )+gradv_x(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradv_x(i  ,j-1,k  )+gradv_x(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradv_x(i  ,j  ,k-1)+gradv_x(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradv_x(i+1,j  ,k  )+gradv_x(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradv_x(i  ,j+1,k  )+gradv_x(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradv_x(i  ,j  ,k+1)+gradv_x(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2vdx2 =(-(gradv_x(i-1,j  ,k  )+gradv_x(i,j,k))*Ifaces(i,j,k)%nx*Ifaces(i,j,k)%A &
+                     -(gradv_x(i  ,j-1,k  )+gradv_x(i,j,k))*Jfaces(i,j,k)%nx*Jfaces(i,j,k)%A &
+                     -(gradv_x(i  ,j  ,k-1)+gradv_x(i,j,k))*Kfaces(i,j,k)%nx*Kfaces(i,j,k)%A &
+                     +(gradv_x(i+1,j  ,k  )+gradv_x(i,j,k))*Ifaces(i+1,j  ,k  )%nx*Ifaces(i+1,j  ,k  )%A &
+                     +(gradv_x(i  ,j+1,k  )+gradv_x(i,j,k))*Jfaces(i  ,j+1,k  )%nx*Jfaces(i  ,j+1,k  )%A &
+                     +(gradv_x(i  ,j  ,k+1)+gradv_x(i,j,k))*Kfaces(i  ,j  ,k+1)%nx*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
-            d2vdy2 =(-(gradv_y(i-1,j  ,k  )+gradv_y(i,j,k))*xny(i,j,k)*xA(i,j,k) &
-                     -(gradv_y(i  ,j-1,k  )+gradv_y(i,j,k))*yny(i,j,k)*yA(i,j,k) &
-                     -(gradv_y(i  ,j  ,k-1)+gradv_y(i,j,k))*zny(i,j,k)*zA(i,j,k) &
-                     +(gradv_y(i+1,j  ,k  )+gradv_y(i,j,k))*xny(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradv_y(i  ,j+1,k  )+gradv_y(i,j,k))*yny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradv_y(i  ,j  ,k+1)+gradv_y(i,j,k))*zny(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2vdy2 =(-(gradv_y(i-1,j  ,k  )+gradv_y(i,j,k))*Ifaces(i,j,k)%ny*Ifaces(i,j,k)%A &
+                     -(gradv_y(i  ,j-1,k  )+gradv_y(i,j,k))*Jfaces(i,j,k)%ny*Jfaces(i,j,k)%A &
+                     -(gradv_y(i  ,j  ,k-1)+gradv_y(i,j,k))*Kfaces(i,j,k)%ny*Kfaces(i,j,k)%A &
+                     +(gradv_y(i+1,j  ,k  )+gradv_y(i,j,k))*Ifaces(i+1,j  ,k  )%ny*Ifaces(i+1,j  ,k  )%A &
+                     +(gradv_y(i  ,j+1,k  )+gradv_y(i,j,k))*Jfaces(i  ,j+1,k  )%ny*Jfaces(i  ,j+1,k  )%A &
+                     +(gradv_y(i  ,j  ,k+1)+gradv_y(i,j,k))*Kfaces(i  ,j  ,k+1)%ny*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
-            d2vdz2 =(-(gradv_z(i-1,j  ,k  )+gradv_z(i,j,k))*xnz(i,j,k)*xA(i,j,k) &
-                     -(gradv_z(i  ,j-1,k  )+gradv_z(i,j,k))*ynz(i,j,k)*yA(i,j,k) &
-                     -(gradv_z(i  ,j  ,k-1)+gradv_z(i,j,k))*znz(i,j,k)*zA(i,j,k) &
-                     +(gradv_z(i+1,j  ,k  )+gradv_z(i,j,k))*xnz(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradv_z(i  ,j+1,k  )+gradv_z(i,j,k))*ynz(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradv_z(i  ,j  ,k+1)+gradv_z(i,j,k))*znz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2vdz2 =(-(gradv_z(i-1,j  ,k  )+gradv_z(i,j,k))*Ifaces(i,j,k)%nz*Ifaces(i,j,k)%A &
+                     -(gradv_z(i  ,j-1,k  )+gradv_z(i,j,k))*Jfaces(i,j,k)%nz*Jfaces(i,j,k)%A &
+                     -(gradv_z(i  ,j  ,k-1)+gradv_z(i,j,k))*Kfaces(i,j,k)%nz*Kfaces(i,j,k)%A &
+                     +(gradv_z(i+1,j  ,k  )+gradv_z(i,j,k))*Ifaces(i+1,j  ,k  )%nz*Ifaces(i+1,j  ,k  )%A &
+                     +(gradv_z(i  ,j+1,k  )+gradv_z(i,j,k))*Jfaces(i  ,j+1,k  )%nz*Jfaces(i  ,j+1,k  )%A &
+                     +(gradv_z(i  ,j  ,k+1)+gradv_z(i,j,k))*Kfaces(i  ,j  ,k+1)%nz*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
 
             !gradients of w components
-            d2wdx2 =(-(gradw_x(i-1,j  ,k  )+gradw_x(i,j,k))*xnx(i,j,k)*xA(i,j,k) &
-                     -(gradw_x(i  ,j-1,k  )+gradw_x(i,j,k))*ynx(i,j,k)*yA(i,j,k) &
-                     -(gradw_x(i  ,j  ,k-1)+gradw_x(i,j,k))*znx(i,j,k)*zA(i,j,k) &
-                     +(gradw_x(i+1,j  ,k  )+gradw_x(i,j,k))*xnx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradw_x(i  ,j+1,k  )+gradw_x(i,j,k))*ynx(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradw_x(i  ,j  ,k+1)+gradw_x(i,j,k))*znx(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2wdx2 =(-(gradw_x(i-1,j  ,k  )+gradw_x(i,j,k))*Ifaces(i,j,k)%nx*Ifaces(i,j,k)%A &
+                     -(gradw_x(i  ,j-1,k  )+gradw_x(i,j,k))*Jfaces(i,j,k)%nx*Jfaces(i,j,k)%A &
+                     -(gradw_x(i  ,j  ,k-1)+gradw_x(i,j,k))*Kfaces(i,j,k)%nx*Kfaces(i,j,k)%A &
+                     +(gradw_x(i+1,j  ,k  )+gradw_x(i,j,k))*Ifaces(i+1,j  ,k  )%nx*Ifaces(i+1,j  ,k  )%A &
+                     +(gradw_x(i  ,j+1,k  )+gradw_x(i,j,k))*Jfaces(i  ,j+1,k  )%nx*Jfaces(i  ,j+1,k  )%A &
+                     +(gradw_x(i  ,j  ,k+1)+gradw_x(i,j,k))*Kfaces(i  ,j  ,k+1)%nx*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
-            d2wdy2 =(-(gradw_y(i-1,j  ,k  )+gradw_y(i,j,k))*xny(i,j,k)*xA(i,j,k) &
-                     -(gradw_y(i  ,j-1,k  )+gradw_y(i,j,k))*yny(i,j,k)*yA(i,j,k) &
-                     -(gradw_y(i  ,j  ,k-1)+gradw_y(i,j,k))*zny(i,j,k)*zA(i,j,k) &
-                     +(gradw_y(i+1,j  ,k  )+gradw_y(i,j,k))*xny(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradw_y(i  ,j+1,k  )+gradw_y(i,j,k))*yny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradw_y(i  ,j  ,k+1)+gradw_y(i,j,k))*zny(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2wdy2 =(-(gradw_y(i-1,j  ,k  )+gradw_y(i,j,k))*Ifaces(i,j,k)%ny*Ifaces(i,j,k)%A &
+                     -(gradw_y(i  ,j-1,k  )+gradw_y(i,j,k))*Jfaces(i,j,k)%ny*Jfaces(i,j,k)%A &
+                     -(gradw_y(i  ,j  ,k-1)+gradw_y(i,j,k))*Kfaces(i,j,k)%ny*Kfaces(i,j,k)%A &
+                     +(gradw_y(i+1,j  ,k  )+gradw_y(i,j,k))*Ifaces(i+1,j  ,k  )%ny*Ifaces(i+1,j  ,k  )%A &
+                     +(gradw_y(i  ,j+1,k  )+gradw_y(i,j,k))*Jfaces(i  ,j+1,k  )%ny*Jfaces(i  ,j+1,k  )%A &
+                     +(gradw_y(i  ,j  ,k+1)+gradw_y(i,j,k))*Kfaces(i  ,j  ,k+1)%ny*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
-            d2wdz2 =(-(gradw_z(i-1,j  ,k  )+gradw_z(i,j,k))*xnz(i,j,k)*xA(i,j,k) &
-                     -(gradw_z(i  ,j-1,k  )+gradw_z(i,j,k))*ynz(i,j,k)*yA(i,j,k) &
-                     -(gradw_z(i  ,j  ,k-1)+gradw_z(i,j,k))*znz(i,j,k)*zA(i,j,k) &
-                     +(gradw_z(i+1,j  ,k  )+gradw_z(i,j,k))*xnz(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-                     +(gradw_z(i  ,j+1,k  )+gradw_z(i,j,k))*ynz(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-                     +(gradw_z(i  ,j  ,k+1)+gradw_z(i,j,k))*znz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-                    )/(2*volume(i,j,k))
+            d2wdz2 =(-(gradw_z(i-1,j  ,k  )+gradw_z(i,j,k))*Ifaces(i,j,k)%nz*Ifaces(i,j,k)%A &
+                     -(gradw_z(i  ,j-1,k  )+gradw_z(i,j,k))*Jfaces(i,j,k)%nz*Jfaces(i,j,k)%A &
+                     -(gradw_z(i  ,j  ,k-1)+gradw_z(i,j,k))*Kfaces(i,j,k)%nz*Kfaces(i,j,k)%A &
+                     +(gradw_z(i+1,j  ,k  )+gradw_z(i,j,k))*Ifaces(i+1,j  ,k  )%nz*Ifaces(i+1,j  ,k  )%A &
+                     +(gradw_z(i  ,j+1,k  )+gradw_z(i,j,k))*Jfaces(i  ,j+1,k  )%nz*Jfaces(i  ,j+1,k  )%A &
+                     +(gradw_z(i  ,j  ,k+1)+gradw_z(i,j,k))*Kfaces(i  ,j  ,k+1)%nz*Kfaces(i  ,j  ,k+1)%A &
+                    )/(2*cells(i,j,k)%volume)
 
             udd = sqrt( (d2udx2+d2udy2+d2udz2)**2 &
                       + (d2vdx2+d2vdy2+d2vdz2)**2 &
@@ -748,8 +776,8 @@ module source
             S_k  = P_k  - D_k  - 2*mu(i,j,k)*tk/(dist(i,j,k)**2)       !Source term TKE
             S_kl = P_kl - D_kl - 6*mu(i,j,k)*tkl*fphi/(dist(i,j,k)**2) !source term KL
 
-            S_k  = S_k  * volume(i, j, k)
-            S_kl = S_kl * volume(i, j, k)
+            S_k  = S_k  * cells(i, j, k)%volume
+            S_kl = S_kl * cells(i, j, k)%volume
 
             residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
             residue(i, j, k, 7) = residue(i, j, k, 7) - S_kl
@@ -761,13 +789,21 @@ module source
     end subroutine add_kkl_source
 
 
-    subroutine add_sa_source(qp, residue, dims)
+    subroutine add_sa_source(qp, residue, cells, Ifaces,Jfaces,Kfaces, dims)
       !< Add residual due to source terms of SA turbulence model
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       real, dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
 
       real :: CD1
@@ -809,19 +845,19 @@ module source
             RhoFace(5) = qp(i  ,j+1,k  ,1)+density
             RhoFace(6) = qp(i  ,j  ,k+1,1)+density
 
-            Area(1) = xA(i,j,k)
-            Area(2) = yA(i,j,k)
-            Area(3) = zA(i,j,k)
-            Area(4) = xA(i+1,j  ,k  )
-            Area(5) = yA(i  ,j+1,k  )
-            Area(6) = zA(i  ,j  ,k+1)
+            Area(1) = Ifaces(i,j,k)%A
+            Area(2) = Jfaces(i,j,k)%A
+            Area(3) = Kfaces(i,j,k)%A
+            Area(4) = Ifaces(i+1,j  ,k  )%A
+            Area(5) = Jfaces(i  ,j+1,k  )%A
+            Area(6) = Kfaces(i  ,j  ,k+1)%A
 
-            Normal(1,1:3) = xn(i,j,k,:)
-            Normal(2,1:3) = yn(i,j,k,:)
-            Normal(3,1:3) = zn(i,j,k,:)
-            Normal(4,1:3) = xn(i+1,j  ,k  ,:)
-            Normal(5,1:3) = yn(i  ,j+1,k  ,:)
-            Normal(6,1:3) = zn(i  ,j  ,k+1,:)
+            Normal(1,1:3) = (/Ifaces(i,j,k)%nx,Ifaces(i,j,k)%ny,Ifaces(i,j,k)%nz/)
+            Normal(2,1:3) = (/Jfaces(i,j,k)%nx,Jfaces(i,j,k)%ny,Jfaces(i,j,k)%nz/)
+            Normal(3,1:3) = (/Kfaces(i,j,k)%nx,Kfaces(i,j,k)%nx,Kfaces(i,j,k)%nx/)
+            Normal(4,1:3) = (/Ifaces(i+1,j  ,k)%nx,Ifaces(i+1,j  ,k)%ny,Ifaces(i+1,j  ,k)%nz/)
+            Normal(5,1:3) = (/Jfaces(i  ,j+1,k)%nx,Jfaces(i  ,j+1,k)%ny,Jfaces(i  ,j+1,k)%nz/)
+            Normal(6,1:3) = (/Kfaces(i  ,j,k+1)%nx,Kfaces(i  ,j,k+1)%ny,Kfaces(i  ,j,k+1)%nz/)
 
             gradrho_x = (-(RhoFace(1))*Normal(1,1)*Area(1) &
                          -(RhoFace(2))*Normal(2,1)*Area(2) &
@@ -829,7 +865,7 @@ module source
                          +(RhoFace(4))*Normal(4,1)*Area(4) &
                          +(RhoFace(5))*Normal(5,1)*Area(5) &
                          +(RhoFace(6))*Normal(6,1)*Area(6) &
-                        )/(2.0*volume(i,j,k))
+                        )/(2.0*cells(i,j,k)%volume)
 
             gradrho_y = (-(RhoFace(1))*Normal(1,2)*Area(1) &
                          -(RhoFace(2))*Normal(2,2)*Area(2) &
@@ -837,7 +873,7 @@ module source
                          +(RhoFace(4))*Normal(4,2)*Area(4) &
                          +(RhoFace(5))*Normal(5,2)*Area(5) &
                          +(RhoFace(6))*Normal(6,2)*Area(6) &
-                        )/(2.0*volume(i,j,k))
+                        )/(2.0*cells(i,j,k)%volume)
 
             gradrho_z = (-(RhoFace(1))*Normal(1,3)*Area(1) &
                          -(RhoFace(2))*Normal(2,3)*Area(2) &
@@ -845,7 +881,7 @@ module source
                          +(RhoFace(4))*Normal(4,3)*Area(4) &
                          +(RhoFace(5))*Normal(5,3)*Area(5) &
                          +(RhoFace(6))*Normal(6,3)*Area(6) &
-                        )/(2.0*volume(i,j,k))
+                        )/(2.0*cells(i,j,k)%volume)
 
 
             ! __ vorticity __
@@ -892,7 +928,7 @@ module source
             ! ____ cross diffusion term ___
             lamda = density*CD1/sigma_sa - CD2*(nu+tv)/sigma_sa
 
-            S_v = (P_v - D_v  + lamda)*volume(i,j,k)
+            S_v = (P_v - D_v  + lamda)*cells(i,j,k)%volume
 
             residue(i, j, k, 6)   = residue(i, j, k, 6) - S_v
 
@@ -902,7 +938,7 @@ module source
 
     end subroutine add_sa_source
 
-    subroutine add_saBC_source(qp, residue, flow, dims)
+    subroutine add_saBC_source(qp, residue, cells, Ifaces,Jfaces,Kfaces, flow, dims)
       !< Add residual due to source terms of SABC transition model
       implicit none
       type(extent), intent(in) :: dims
@@ -910,6 +946,14 @@ module source
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       real, dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
 
       real :: CD1
@@ -983,19 +1027,19 @@ module source
             RhoFace(5) = qp(i  ,j+1,k  ,1)+density
             RhoFace(6) = qp(i  ,j  ,k+1,1)+density
 
-            Area(1) = xA(i,j,k)
-            Area(2) = yA(i,j,k)
-            Area(3) = zA(i,j,k)
-            Area(4) = xA(i+1,j  ,k  )
-            Area(5) = yA(i  ,j+1,k  )
-            Area(6) = zA(i  ,j  ,k+1)
+            Area(1) = Ifaces(i,j,k)%A
+            Area(2) = Jfaces(i,j,k)%A
+            Area(3) = Kfaces(i,j,k)%A
+            Area(4) = Ifaces(i+1,j  ,k  )%A
+            Area(5) = Jfaces(i  ,j+1,k  )%A
+            Area(6) = Kfaces(i  ,j  ,k+1)%A
 
-            Normal(1,1:3) = xn(i,j,k,:)
-            Normal(2,1:3) = yn(i,j,k,:)
-            Normal(3,1:3) = zn(i,j,k,:)
-            Normal(4,1:3) = xn(i+1,j  ,k  ,:)
-            Normal(5,1:3) = yn(i  ,j+1,k  ,:)
-            Normal(6,1:3) = zn(i  ,j  ,k+1,:)
+            Normal(1,1:3) = (/Ifaces(i,j,k)%nx,Ifaces(i,j,k)%ny,Ifaces(i,j,k)%nz/)
+            Normal(2,1:3) = (/Jfaces(i,j,k)%nx,Jfaces(i,j,k)%ny,Jfaces(i,j,k)%nz/)
+            Normal(3,1:3) = (/Kfaces(i,j,k)%nx,Kfaces(i,j,k)%nx,Kfaces(i,j,k)%nx/)
+            Normal(4,1:3) = (/Ifaces(i+1,j  ,k)%nx,Ifaces(i+1,j  ,k)%ny,Ifaces(i+1,j  ,k)%nz/)
+            Normal(5,1:3) = (/Jfaces(i  ,j+1,k)%nx,Jfaces(i  ,j+1,k)%ny,Jfaces(i  ,j+1,k)%nz/)
+            Normal(6,1:3) = (/Kfaces(i  ,j,k+1)%nx,Kfaces(i  ,j,k+1)%ny,Kfaces(i  ,j,k+1)%nz/)
 
             gradrho_x = (-(RhoFace(1))*Normal(1,1)*Area(1) &
                          -(RhoFace(2))*Normal(2,1)*Area(2) &
@@ -1003,7 +1047,7 @@ module source
                          +(RhoFace(4))*Normal(4,1)*Area(4) &
                          +(RhoFace(5))*Normal(5,1)*Area(5) &
                          +(RhoFace(6))*Normal(6,1)*Area(6) &
-                        )/(2*volume(i,j,k))
+                        )/(2*cells(i,j,k)%volume)
 
             gradrho_y = (-(RhoFace(1))*Normal(1,2)*Area(1) &
                          -(RhoFace(2))*Normal(2,2)*Area(2) &
@@ -1011,7 +1055,7 @@ module source
                          +(RhoFace(4))*Normal(4,2)*Area(4) &
                          +(RhoFace(5))*Normal(5,2)*Area(5) &
                          +(RhoFace(6))*Normal(6,2)*Area(6) &
-                        )/(2*volume(i,j,k))
+                        )/(2*cells(i,j,k)%volume)
 
             gradrho_z = (-(RhoFace(1))*Normal(1,3)*Area(1) &
                          -(RhoFace(2))*Normal(2,3)*Area(2) &
@@ -1019,7 +1063,7 @@ module source
                          +(RhoFace(4))*Normal(4,3)*Area(4) &
                          +(RhoFace(5))*Normal(5,3)*Area(5) &
                          +(RhoFace(6))*Normal(6,3)*Area(6) &
-                        )/(2*volume(i,j,k))
+                        )/(2*cells(i,j,k)%volume)
 
 
             ! __ vorticity __
@@ -1080,7 +1124,7 @@ module source
             term_exponential = (term1 + term2)
             gamma_BC = 1.0 - exp(-term_exponential)
 
-            Production = gamma_BC*cb1*Shat*tv*volume(i,j,k)
+            Production = gamma_BC*cb1*Shat*tv*cells(i,j,k)%volume
 
             ! ___ Destruction term___ !
             r    = min(tv*inv_Shat*inv_k2_d2, 10.0)
@@ -1088,10 +1132,10 @@ module source
             g_6  = g**6
             glim = ((1.0+cw3_6)/(g_6+cw3_6))**(1.0/6.0)
             fw   = g*glim
-            Destruction = (cw1*fw*tv*tv/dist_i_2)*(volume(i,j,k))
+            Destruction = (cw1*fw*tv*tv/dist_i_2)*(cells(i,j,k)%volume)
 
             ! ____ cross diffusion term ___
-            lamda = (density*CD1/sigma_sa - CD2*(nu+tv)/sigma_sa)*volume(i,j,k)
+            lamda = (density*CD1/sigma_sa - CD2*(nu+tv)/sigma_sa)*cells(i,j,k)%volume
 
             S_v = (Production - Destruction  + lamda)
             residue(i, j, k, 6)   = residue(i, j, k, 6) - S_v

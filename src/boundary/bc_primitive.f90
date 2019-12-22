@@ -45,16 +45,16 @@ module bc_primitive
 !  use global_vars, only: kmx
 !  use global_vars, only: turbulence
 !  use global_vars, only: transition
-  use global_vars, only: xnx
-  use global_vars, only: xny
-  use global_vars, only: xnz
-  use global_vars, only: ynx
-  use global_vars, only: yny
-  use global_vars, only: ynz
-  use global_vars, only: znx
-  use global_vars, only: zny
-  use global_vars, only: znz
-  use global_vars, only: mu_t
+!  use global_vars, only: xnx
+!  use global_vars, only: xny
+!  use global_vars, only: xnz
+!  use global_vars, only: ynx
+!  use global_vars, only: yny
+!  use global_vars, only: ynz
+!  use global_vars, only: znx
+!  use global_vars, only: zny
+!  use global_vars, only: znz
+!  use global_vars, only: mu_t
 !  use global_vars, only: T_ref
   use global_vars, only: dist
   use global_vars, only: process_id
@@ -125,7 +125,7 @@ module bc_primitive
 
   contains
 
-    subroutine populate_ghost_primitive(state, control, scheme, flow, dims)
+    subroutine populate_ghost_primitive(state, Ifaces, Jfaces, Kfaces, control, scheme, flow, dims)
       !< Populate the state variables in the ghost cell
       !< with particular value based on the boundary conditio 
       !< being applied at that face
@@ -133,6 +133,12 @@ module bc_primitive
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
       !< state variables
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
@@ -241,19 +247,19 @@ module bc_primitive
             call wall(face, dims)
 
           case(-6)
-            call slip_wall(face, dims)
+            call slip_wall(face, Ifaces, Jfaces, Kfaces, dims)
 
           case(-7)
             call pole(face, dims)
 
           case(-8)
-            call far_field(face, dims)
+            call far_field(face, Ifaces, Jfaces, Kfaces, dims)
 
           case(-9)
             call periodic_bc(face)
 
           case(-11)
-            call total_pressure(face, dims)
+            call total_pressure(face, Ifaces, Jfaces, Kfaces, dims)
 
           case Default
             if(id(i)>=0 .or. id(i)==-10) then
@@ -463,12 +469,18 @@ module bc_primitive
       end subroutine wall
 
 
-      subroutine slip_wall(face, dims)
+      subroutine slip_wall(face, Ifaces, Jfaces, Kfaces, dims)
         !< Slip wall boundary condition. 
         !< Maintain flow tangency
         implicit none
         type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
+        type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+        !< Input varaible which stores I faces' area and unit normal
+        type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+        !< Input varaible which stores J faces' area and unit normal
+        type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+        !< Input varaible which stores K faces' area and unit normal
         !< Name of the face at which boundary condition is called
         call copy3(density , "symm", face, dims)
         call copy3(pressure, "symm", face, dims)
@@ -493,7 +505,7 @@ module bc_primitive
           case DEFAULT
             continue
         end select
-        call flow_tangency(qp, face, dims)
+        call flow_tangency(qp, face, Ifaces, Jfaces, Kfaces, dims)
       end subroutine slip_wall
 
 
@@ -724,11 +736,17 @@ module bc_primitive
       end select
     end subroutine check_if_value_fixed
 
-    subroutine far_field(face, dims)
+    subroutine far_field(face, Ifaces, Jfaces, Kfaces, dims)
       !< Far-field Riemann boundary condition
       implicit none
       type(extent), intent(in) :: dims
-      character(len=*) :: face
+      character(len=*), intent(in) :: face
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       real :: cinf, cexp   ! speed of sound
       real :: Rinf, Rexp   ! Riemann invarient
       real :: Uninf, Unexp ! face normal speed
@@ -758,17 +776,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 !cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
-                Uninf = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
+                Unexp = u *(-Ifaces(i,j,k)%nx) + v *(-Ifaces(i,j,k)%ny) + w *(-Ifaces(i,j,k)%nz)
+                Uninf = uf*(-Ifaces(i,j,k)%nx) + vf*(-Ifaces(i,j,k)%ny) + wf*(-Ifaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i-1,j,k) = x_speed(i,j,k) + vel_diff*(-xnx(i,j,k))
-                  y_speed(i-1,j,k) = y_speed(i,j,k) + vel_diff*(-xny(i,j,k))
-                  z_speed(i-1,j,k) = z_speed(i,j,k) + vel_diff*(-xnz(i,j,k))
+                  x_speed(i-1,j,k) = x_speed(i,j,k) + vel_diff*(-Ifaces(i,j,k)%nx)
+                  y_speed(i-1,j,k) = y_speed(i,j,k) + vel_diff*(-Ifaces(i,j,k)%ny)
+                  z_speed(i-1,j,k) = z_speed(i,j,k) + vel_diff*(-Ifaces(i,j,k)%nz)
                   s = pressure(i,j,k)/(density(i,j,k)**(gm))
                   density(i-1,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
@@ -796,9 +814,9 @@ module bc_primitive
                   face_already_has_fixed_values(1)=0
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-xnx(i,j,k))
-                  y_speed(i-1,j,k) = y_speed_inf + vel_diff*(-xny(i,j,k))
-                  z_speed(i-1,j,k) = z_speed_inf + vel_diff*(-xnz(i,j,k))
+                  x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-Ifaces(i,j,k)%nx)
+                  y_speed(i-1,j,k) = y_speed_inf + vel_diff*(-Ifaces(i,j,k)%ny)
+                  z_speed(i-1,j,k) = z_speed_inf + vel_diff*(-Ifaces(i,j,k)%nz)
                   s = pressure_inf/(density_inf**(gm))
                   density(i-1,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i-1,j,k) = (density(i-1,j,k)*Cb*Cb/gm)
@@ -851,17 +869,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
                 !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
-                Uninf = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
+                Unexp = u *(Ifaces(i,j,k)%nx) + v *(Ifaces(i,j,k)%ny) + w *(Ifaces(i,j,k)%nz)
+                Uninf = uf*(Ifaces(i,j,k)%nx) + vf*(Ifaces(i,j,k)%ny) + wf*(Ifaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j,k) = x_speed(i-1,j,k) + vel_diff*(xnx(i,j,k))
-                  y_speed(i,j,k) = y_speed(i-1,j,k) + vel_diff*(xny(i,j,k))
-                  z_speed(i,j,k) = z_speed(i-1,j,k) + vel_diff*(xnz(i,j,k))
+                  x_speed(i,j,k) = x_speed(i-1,j,k) + vel_diff*(Ifaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed(i-1,j,k) + vel_diff*(Ifaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed(i-1,j,k) + vel_diff*(Ifaces(i,j,k)%nz)
                   s = pressure(i-1,j,k)/(density(i-1,j,k)**(gm))
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
@@ -889,9 +907,9 @@ module bc_primitive
                   face_already_has_fixed_values(2)=0
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j,k) = x_speed_inf + vel_diff*(xnx(i,j,k))
-                  y_speed(i,j,k) = y_speed_inf + vel_diff*(xny(i,j,k))
-                  z_speed(i,j,k) = z_speed_inf + vel_diff*(xnz(i,j,k))
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(Ifaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(Ifaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(Ifaces(i,j,k)%nz)
                   s = pressure_inf/(density_inf**(gm))
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
@@ -944,17 +962,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 !cinf = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(-ynx(i,j,k)) + v *(-yny(i,j,k)) + w *(-ynz(i,j,k))
-                Uninf = uf*(-ynx(i,j,k)) + vf*(-yny(i,j,k)) + wf*(-ynz(i,j,k))
+                Unexp = u *(-Jfaces(i,j,k)%nx) + v *(-Jfaces(i,j,k)%ny) + w *(-Jfaces(i,j,k)%nz)
+                Uninf = uf*(-Jfaces(i,j,k)%nx) + vf*(-Jfaces(i,j,k)%ny) + wf*(-Jfaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j-1,k) = x_speed(i,j,k) + vel_diff*(-ynx(i,j,k))
-                  y_speed(i,j-1,k) = y_speed(i,j,k) + vel_diff*(-yny(i,j,k))
-                  z_speed(i,j-1,k) = z_speed(i,j,k) + vel_diff*(-ynz(i,j,k))
+                  x_speed(i,j-1,k) = x_speed(i,j,k) + vel_diff*(-Jfaces(i,j,k)%nx)
+                  y_speed(i,j-1,k) = y_speed(i,j,k) + vel_diff*(-Jfaces(i,j,k)%ny)
+                  z_speed(i,j-1,k) = z_speed(i,j,k) + vel_diff*(-Jfaces(i,j,k)%nz)
                   s = pressure(i,j,k)/(density(i,j,k)**(gm))
                   density(i,j-1,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j-1,k) = (density(i,j-1,k)*Cb*Cb/gm)
@@ -982,9 +1000,9 @@ module bc_primitive
                   face_already_has_fixed_values(3)=0
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j-1,k) = x_speed_inf + vel_diff*(-ynx(i,j,k))
-                  y_speed(i,j-1,k) = y_speed_inf + vel_diff*(-yny(i,j,k))
-                  z_speed(i,j-1,k) = z_speed_inf + vel_diff*(-ynz(i,j,k))
+                  x_speed(i,j-1,k) = x_speed_inf + vel_diff*(-Jfaces(i,j,k)%nx)
+                  y_speed(i,j-1,k) = y_speed_inf + vel_diff*(-Jfaces(i,j,k)%ny)
+                  z_speed(i,j-1,k) = z_speed_inf + vel_diff*(-Jfaces(i,j,k)%nz)
                   s = pressure_inf/(density_inf**(gm))
                   density(i,j-1,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j-1,k) = (density(i,j-1,k)*Cb*Cb/gm)
@@ -1037,17 +1055,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
                 !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
-                Uninf = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
+                Unexp = u *(Jfaces(i,j,k)%nx) + v *(Jfaces(i,j,k)%ny) + w *(Jfaces(i,j,k)%nz)
+                Uninf = uf*(Jfaces(i,j,k)%nx) + vf*(Jfaces(i,j,k)%ny) + wf*(Jfaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(ynx(i,j,k))
-                  y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(yny(i,j,k))
-                  z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(ynz(i,j,k))
+                  x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(Jfaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(Jfaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(Jfaces(i,j,k)%nz)
                   s = pressure(i,j-1,k)/(density(i,j-1,k)**(gm))
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
@@ -1075,9 +1093,9 @@ module bc_primitive
                   face_already_has_fixed_values(4)=0
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j,k) = x_speed_inf + vel_diff*(ynx(i,j,k))
-                  y_speed(i,j,k) = y_speed_inf + vel_diff*(yny(i,j,k))
-                  z_speed(i,j,k) = z_speed_inf + vel_diff*(ynz(i,j,k))
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(Jfaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(Jfaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(Jfaces(i,j,k)%nz)
                   s = pressure_inf/(density_inf**(gm))
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
@@ -1130,17 +1148,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 !cinf = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(-znx(i,j,k)) + v *(-zny(i,j,k)) + w *(-znz(i,j,k))
-                Uninf = uf*(-znx(i,j,k)) + vf*(-zny(i,j,k)) + wf*(-znz(i,j,k))
+                Unexp = u *(-Kfaces(i,j,k)%nx) + v *(-Kfaces(i,j,k)%ny) + w *(-Kfaces(i,j,k)%nz)
+                Uninf = uf*(-Kfaces(i,j,k)%nx) + vf*(-Kfaces(i,j,k)%ny) + wf*(-Kfaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j,k-1) = x_speed(i,j,k) + vel_diff*(-znx(i,j,k))
-                  y_speed(i,j,k-1) = y_speed(i,j,k) + vel_diff*(-zny(i,j,k))
-                  z_speed(i,j,k-1) = z_speed(i,j,k) + vel_diff*(-znz(i,j,k))
+                  x_speed(i,j,k-1) = x_speed(i,j,k) + vel_diff*(-Kfaces(i,j,k)%nx)
+                  y_speed(i,j,k-1) = y_speed(i,j,k) + vel_diff*(-Kfaces(i,j,k)%ny)
+                  z_speed(i,j,k-1) = z_speed(i,j,k) + vel_diff*(-Kfaces(i,j,k)%nz)
                   s = pressure(i,j,k)/(density(i,j,k)**(gm))
                   density(i,j,k-1) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k-1) = (density(i,j,k-1)*Cb*Cb/gm)
@@ -1168,9 +1186,9 @@ module bc_primitive
                   face_already_has_fixed_values(5)=0
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j,k-1) = x_speed_inf + vel_diff*(-znx(i,j,k))
-                  y_speed(i,j,k-1) = y_speed_inf + vel_diff*(-zny(i,j,k))
-                  z_speed(i,j,k-1) = z_speed_inf + vel_diff*(-znz(i,j,k))
+                  x_speed(i,j,k-1) = x_speed_inf + vel_diff*(-Kfaces(i,j,k)%nx)
+                  y_speed(i,j,k-1) = y_speed_inf + vel_diff*(-Kfaces(i,j,k)%ny)
+                  z_speed(i,j,k-1) = z_speed_inf + vel_diff*(-Kfaces(i,j,k)%nz)
                   s = pressure_inf/(density_inf**(gm))
                   density(i,j,k-1) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k-1) = (density(i,j,k-1)*Cb*Cb/gm)
@@ -1223,17 +1241,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
                 !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(znx(i,j,k)) + v *(zny(i,j,k)) + w *(znz(i,j,k))
-                Uninf = uf*(znx(i,j,k)) + vf*(zny(i,j,k)) + wf*(znz(i,j,k))
+                Unexp = u *(Kfaces(i,j,k)%nx) + v *(Kfaces(i,j,k)%ny) + w *(Kfaces(i,j,k)%nz)
+                Uninf = uf*(Kfaces(i,j,k)%nx) + vf*(Kfaces(i,j,k)%ny) + wf*(Kfaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j,k) = x_speed(i,j,k-1) + vel_diff*(znx(i,j,k))
-                  y_speed(i,j,k) = y_speed(i,j,k-1) + vel_diff*(zny(i,j,k))
-                  z_speed(i,j,k) = z_speed(i,j,k-1) + vel_diff*(znz(i,j,k))
+                  x_speed(i,j,k) = x_speed(i,j,k-1) + vel_diff*(Kfaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed(i,j,k-1) + vel_diff*(Kfaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed(i,j,k-1) + vel_diff*(Kfaces(i,j,k)%nz)
                   s = pressure(i,j,k-1)/(density(i,j,k-1)**(gm))
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
@@ -1261,9 +1279,9 @@ module bc_primitive
                   face_already_has_fixed_values(6)=0
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j,k) = x_speed_inf + vel_diff*(znx(i,j,k))
-                  y_speed(i,j,k) = y_speed_inf + vel_diff*(zny(i,j,k))
-                  z_speed(i,j,k) = z_speed_inf + vel_diff*(znz(i,j,k))
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(Kfaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(Kfaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(Kfaces(i,j,k)%nz)
                   s = pressure_inf/(density_inf**(gm))
                   density(i,j,k) = (Cb*Cb/(gm*s))**(1./(gm-1.))
                   pressure(i,j,k) = (density(i,j,k)*Cb*Cb/gm)
@@ -1309,11 +1327,17 @@ module bc_primitive
     end subroutine far_field
 
 
-    subroutine total_pressure(face, dims)
+    subroutine total_pressure(face, Ifaces, Jfaces, Kfaces, dims)
       !< Total Pressure Riemann boundary condition
       implicit none
       type(extent), intent(in) :: dims
-      character(len=*) :: face
+      character(len=*), intent(in) :: face
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       real :: cinf, cexp   ! speed of sound
       real :: Rinf, Rexp   ! Riemann invarient
       real :: Uninf, Unexp ! face normal speed
@@ -1341,17 +1365,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 !cinf = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(-xnx(i,j,k)) + v *(-xny(i,j,k)) + w *(-xnz(i,j,k))
-                Uninf = uf*(-xnx(i,j,k)) + vf*(-xny(i,j,k)) + wf*(-xnz(i,j,k))
+                Unexp = u *(-Ifaces(i,j,k)%nx) + v *(-Ifaces(i,j,k)%ny) + w *(-Ifaces(i,j,k)%nz)
+                Uninf = uf*(-Ifaces(i,j,k)%nx) + vf*(-Ifaces(i,j,k)%ny) + wf*(-Ifaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i-1,j,k) = x_speed(i,j,k) + vel_diff*(-xnx(i,j,k))
-                  y_speed(i-1,j,k) = y_speed(i,j,k) + vel_diff*(-xny(i,j,k))
-                  z_speed(i-1,j,k) = z_speed(i,j,k) + vel_diff*(-xnz(i,j,k))
+                  x_speed(i-1,j,k) = x_speed(i,j,k) + vel_diff*(-Ifaces(i,j,k)%nx)
+                  y_speed(i-1,j,k) = y_speed(i,j,k) + vel_diff*(-Ifaces(i,j,k)%ny)
+                  z_speed(i-1,j,k) = z_speed(i,j,k) + vel_diff*(-Ifaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1375,9 +1399,9 @@ module bc_primitive
                   end select
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-xnx(i,j,k))
-                  y_speed(i-1,j,k) = y_speed_inf + vel_diff*(-xny(i,j,k))
-                  z_speed(i-1,j,k) = z_speed_inf + vel_diff*(-xnz(i,j,k))
+                  x_speed(i-1,j,k) = x_speed_inf + vel_diff*(-Ifaces(i,j,k)%nx)
+                  y_speed(i-1,j,k) = y_speed_inf + vel_diff*(-Ifaces(i,j,k)%ny)
+                  z_speed(i-1,j,k) = z_speed_inf + vel_diff*(-Ifaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1426,17 +1450,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i-1,j,k)/density(i-1,j,k))
                 !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(xnx(i,j,k)) + v *(xny(i,j,k)) + w *(xnz(i,j,k))
-                Uninf = uf*(xnx(i,j,k)) + vf*(xny(i,j,k)) + wf*(xnz(i,j,k))
+                Unexp = u *(Ifaces(i,j,k)%nx) + v *(Ifaces(i,j,k)%ny) + w *(Ifaces(i,j,k)%nz)
+                Uninf = uf*(Ifaces(i,j,k)%nx) + vf*(Ifaces(i,j,k)%ny) + wf*(Ifaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j,k) = x_speed(i-1,j,k) + vel_diff*(xnx(i,j,k))
-                  y_speed(i,j,k) = y_speed(i-1,j,k) + vel_diff*(xny(i,j,k))
-                  z_speed(i,j,k) = z_speed(i-1,j,k) + vel_diff*(xnz(i,j,k))
+                  x_speed(i,j,k) = x_speed(i-1,j,k) + vel_diff*(Ifaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed(i-1,j,k) + vel_diff*(Ifaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed(i-1,j,k) + vel_diff*(Ifaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1460,9 +1484,9 @@ module bc_primitive
                   end select
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j,k) = x_speed_inf + vel_diff*(xnx(i,j,k))
-                  y_speed(i,j,k) = y_speed_inf + vel_diff*(xny(i,j,k))
-                  z_speed(i,j,k) = z_speed_inf + vel_diff*(xnz(i,j,k))
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(Ifaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(Ifaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(Ifaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1511,17 +1535,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 !cinf = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(-ynx(i,j,k)) + v *(-yny(i,j,k)) + w *(-ynz(i,j,k))
-                Uninf = uf*(-ynx(i,j,k)) + vf*(-yny(i,j,k)) + wf*(-ynz(i,j,k))
+                Unexp = u *(-Jfaces(i,j,k)%nx) + v *(-Jfaces(i,j,k)%ny) + w *(-Jfaces(i,j,k)%nz)
+                Uninf = uf*(-Jfaces(i,j,k)%nx) + vf*(-Jfaces(i,j,k)%ny) + wf*(-Jfaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j-1,k) = x_speed(i,j,k) + vel_diff*(-ynx(i,j,k))
-                  y_speed(i,j-1,k) = y_speed(i,j,k) + vel_diff*(-yny(i,j,k))
-                  z_speed(i,j-1,k) = z_speed(i,j,k) + vel_diff*(-ynz(i,j,k))
+                  x_speed(i,j-1,k) = x_speed(i,j,k) + vel_diff*(-Jfaces(i,j,k)%nx)
+                  y_speed(i,j-1,k) = y_speed(i,j,k) + vel_diff*(-Jfaces(i,j,k)%ny)
+                  z_speed(i,j-1,k) = z_speed(i,j,k) + vel_diff*(-Jfaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1545,9 +1569,9 @@ module bc_primitive
                   end select
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j-1,k) = x_speed_inf + vel_diff*(-ynx(i,j,k))
-                  y_speed(i,j-1,k) = y_speed_inf + vel_diff*(-yny(i,j,k))
-                  z_speed(i,j-1,k) = z_speed_inf + vel_diff*(-ynz(i,j,k))
+                  x_speed(i,j-1,k) = x_speed_inf + vel_diff*(-Jfaces(i,j,k)%nx)
+                  y_speed(i,j-1,k) = y_speed_inf + vel_diff*(-Jfaces(i,j,k)%ny)
+                  z_speed(i,j-1,k) = z_speed_inf + vel_diff*(-Jfaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1596,17 +1620,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j-1,k)/density(i,j-1,k))
                 !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(ynx(i,j,k)) + v *(yny(i,j,k)) + w *(ynz(i,j,k))
-                Uninf = uf*(ynx(i,j,k)) + vf*(yny(i,j,k)) + wf*(ynz(i,j,k))
+                Unexp = u *(Jfaces(i,j,k)%nx) + v *(Jfaces(i,j,k)%ny) + w *(Jfaces(i,j,k)%nz)
+                Uninf = uf*(Jfaces(i,j,k)%nx) + vf*(Jfaces(i,j,k)%ny) + wf*(Jfaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(ynx(i,j,k))
-                  y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(yny(i,j,k))
-                  z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(ynz(i,j,k))
+                  x_speed(i,j,k) = x_speed(i,j-1,k) + vel_diff*(Jfaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed(i,j-1,k) + vel_diff*(Jfaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed(i,j-1,k) + vel_diff*(Jfaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1630,9 +1654,9 @@ module bc_primitive
                   end select
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j,k) = x_speed_inf + vel_diff*(ynx(i,j,k))
-                  y_speed(i,j,k) = y_speed_inf + vel_diff*(yny(i,j,k))
-                  z_speed(i,j,k) = z_speed_inf + vel_diff*(ynz(i,j,k))
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(Jfaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(Jfaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(Jfaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1681,17 +1705,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 !cinf = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(-znx(i,j,k)) + v *(-zny(i,j,k)) + w *(-znz(i,j,k))
-                Uninf = uf*(-znx(i,j,k)) + vf*(-zny(i,j,k)) + wf*(-znz(i,j,k))
+                Unexp = u *(-Kfaces(i,j,k)%nx) + v *(-Kfaces(i,j,k)%ny) + w *(-Kfaces(i,j,k)%nz)
+                Uninf = uf*(-Kfaces(i,j,k)%nx) + vf*(-Kfaces(i,j,k)%ny) + wf*(-Kfaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j,k-1) = x_speed(i,j,k) + vel_diff*(-znx(i,j,k))
-                  y_speed(i,j,k-1) = y_speed(i,j,k) + vel_diff*(-zny(i,j,k))
-                  z_speed(i,j,k-1) = z_speed(i,j,k) + vel_diff*(-znz(i,j,k))
+                  x_speed(i,j,k-1) = x_speed(i,j,k) + vel_diff*(-Kfaces(i,j,k)%nx)
+                  y_speed(i,j,k-1) = y_speed(i,j,k) + vel_diff*(-Kfaces(i,j,k)%ny)
+                  z_speed(i,j,k-1) = z_speed(i,j,k) + vel_diff*(-Kfaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1715,9 +1739,9 @@ module bc_primitive
                   end select
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j,k-1) = x_speed_inf + vel_diff*(-znx(i,j,k))
-                  y_speed(i,j,k-1) = y_speed_inf + vel_diff*(-zny(i,j,k))
-                  z_speed(i,j,k-1) = z_speed_inf + vel_diff*(-znz(i,j,k))
+                  x_speed(i,j,k-1) = x_speed_inf + vel_diff*(-Kfaces(i,j,k)%nx)
+                  y_speed(i,j,k-1) = y_speed_inf + vel_diff*(-Kfaces(i,j,k)%ny)
+                  z_speed(i,j,k-1) = z_speed_inf + vel_diff*(-Kfaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1766,17 +1790,17 @@ module bc_primitive
                 cexp = sqrt(gm*pressure(i,j,k-1)/density(i,j,k-1))
                 !cinf = sqrt(gm*pressure(i,j,k)/density(i,j,k))
                 cinf = sqrt(gm*pressure_inf/density_inf)
-                Unexp = u *(znx(i,j,k)) + v *(zny(i,j,k)) + w *(znz(i,j,k))
-                Uninf = uf*(znx(i,j,k)) + vf*(zny(i,j,k)) + wf*(znz(i,j,k))
+                Unexp = u *(Kfaces(i,j,k)%nx) + v *(Kfaces(i,j,k)%ny) + w *(Kfaces(i,j,k)%nz)
+                Uninf = uf*(Kfaces(i,j,k)%nx) + vf*(Kfaces(i,j,k)%ny) + wf*(Kfaces(i,j,k)%nz)
                 Rinf  = Uninf - 2*cinf/(gm-1.)
                 Rexp  = Unexp + 2*cexp/(gm-1.)
                 Unb   = 0.5*(Rexp + Rinf)
                 Cb    = 0.25*(gm-1.)*(Rexp - Rinf)
                 if(Unb > 0.)then
                   vel_diff = Unb - Unexp
-                  x_speed(i,j,k) = x_speed(i,j,k-1) + vel_diff*(znx(i,j,k))
-                  y_speed(i,j,k) = y_speed(i,j,k-1) + vel_diff*(zny(i,j,k))
-                  z_speed(i,j,k) = z_speed(i,j,k-1) + vel_diff*(znz(i,j,k))
+                  x_speed(i,j,k) = x_speed(i,j,k-1) + vel_diff*(Kfaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed(i,j,k-1) + vel_diff*(Kfaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed(i,j,k-1) + vel_diff*(Kfaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing
@@ -1800,9 +1824,9 @@ module bc_primitive
                   end select
                 else
                   vel_diff = Unb - Uninf
-                  x_speed(i,j,k) = x_speed_inf + vel_diff*(znx(i,j,k))
-                  y_speed(i,j,k) = y_speed_inf + vel_diff*(zny(i,j,k))
-                  z_speed(i,j,k) = z_speed_inf + vel_diff*(znz(i,j,k))
+                  x_speed(i,j,k) = x_speed_inf + vel_diff*(Kfaces(i,j,k)%nx)
+                  y_speed(i,j,k) = y_speed_inf + vel_diff*(Kfaces(i,j,k)%ny)
+                  z_speed(i,j,k) = z_speed_inf + vel_diff*(Kfaces(i,j,k)%nz)
                   select case (turbulence)
                     case('none')
                       !do nothing

@@ -17,7 +17,6 @@ module solver
   use geometry,  only : setup_geometry!, destroy_geometry
   use state,     only : setup_state!, destroy_state
   use gradients, only : setup_gradients
-  use gradients, only : evaluate_all_gradients
   use Scheme,    only : setup_scheme!, destroy_scheme
 
   use wall_dist,     only: setup_wall_dist, find_wall_dist
@@ -48,7 +47,7 @@ module solver
     type(celltype), dimension(:,:,:), allocatable :: cells
     type(facetype), dimension(:,:,:), allocatable :: Ifaces, Jfaces, Kfaces
     type(controltype), public :: control
-    type(schemetype), public :: scheme
+    type(schemetype), public :: schemes
     type(flowtype) :: flow
     type(filetype) :: files
     real, dimension(:, :, :, :), allocatable :: qp           
@@ -118,30 +117,30 @@ module solver
             call get_process_data() ! parallel calls
             call read_layout_file(files, process_id) ! reads layout file calls
             
-            call read_input_and_controls(files, control, scheme, flow)
+            call read_input_and_controls(files, control, schemes, flow)
             call setup_grid(files, nodes, dims)
             call setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, dims)
-            call setup_viscosity(mu, mu_t, scheme, flow, dims)
-            call setup_state(files, qp, control, scheme, flow, dims)
+            call setup_viscosity(mu, mu_t, schemes, flow, dims)
+            call setup_state(files, qp, control, schemes, flow, dims)
             allocate(Temp(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2))
-            call setup_gradients(control,scheme,flow,dims)
+            call setup_gradients(control,schemes,flow,dims)
             !call setup_source
-            call setup_bc(files, scheme, flow, dims)
+            call setup_bc(files, schemes, flow, dims)
             call setup_time(control,dims)
-            call setup_update(control,scheme,flow, dims)
+            call setup_update(control,schemes,flow, dims)
             call setup_interface(control,dims)
-            call setup_scheme(residue, F,G,H, control, scheme, dims)
-            if(scheme%turbulence /= 'none') then
+            call setup_scheme(residue, F,G,H, control, schemes, dims)
+            if(schemes%turbulence /= 'none') then
               call write_surfnode(files, nodes, dims)
               call setup_wall_dist(files, dims)
               call mpi_barrier(MPI_COMM_WORLD,ierr)
               call find_wall_dist(nodes, dims)
             end if
-            call setupCC(scheme, dims)
-            call setup_resnorm(files, control, scheme, flow)
+            call setupCC(schemes, cells, Ifaces,Jfaces,Kfaces, dims)
+            call setup_resnorm(files, control, schemes, flow)
             call initmisc()
             control%checkpoint_iter_count = 0
-            call checkpoint(files, qp, nodes, control, scheme, dims)  ! Create an initial dump file
+            call checkpoint(files, qp, nodes, control, schemes, dims)  ! Create an initial dump file
             control%current_iter=1
             DebugCall('setup_solver: checkpoint')
             DebugCall('Setup solver complete')
@@ -209,9 +208,9 @@ module solver
               print*, control%current_iter
             end if
 
-            call get_next_solution(qp, Temp, residue, F,G,H, control, scheme, flow, dims)
-            call find_resnorm(files%RESNORM_FILE_UNIT, residue, F,G,H, control, scheme, dims)
-            call checkpoint(files, qp, nodes, control, scheme, dims)
+            call get_next_solution(qp, Temp, residue, cells, F,G,H, Ifaces,Jfaces,Kfaces,control, schemes, flow, dims)
+            call find_resnorm(files%RESNORM_FILE_UNIT, residue, F,G,H, control, schemes, dims)
+            call checkpoint(files, qp, nodes, control, schemes, dims)
             control%current_iter = control%current_iter + 1
             if(process_id==0)then
               open(files%STOP_FILE_UNIT, file=files%stop_file)
