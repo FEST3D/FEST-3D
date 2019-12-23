@@ -7,17 +7,6 @@ module write_output_tec
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-
-!  use global_vars, only : density 
-!  use global_vars, only : x_speed 
-!  use global_vars, only : y_speed 
-!  use global_vars, only : z_speed 
-!  use global_vars, only : pressure 
-!  use global_vars, only : tk 
-!  use global_vars, only : tw 
-!  use global_vars, only : tkl
-!  use global_vars, only : tv
-!  use global_vars, only : tgm
   use global_vars, only : mu 
   use global_vars, only : mu_t 
   use global_vars, only : dist
@@ -40,7 +29,6 @@ module write_output_tec
   use gradients, only : gradtw_x
   use gradients, only : gradtw_y
   use gradients, only : gradtw_z
-  use global_vars, only : process_id
 
   use utils
 

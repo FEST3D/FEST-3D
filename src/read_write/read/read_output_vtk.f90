@@ -7,17 +7,6 @@ module read_output_vtk
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global_vars, only : process_id
-!  use global_vars, only : density
-!  use global_vars, only : x_speed
-!  use global_vars, only : y_speed
-!  use global_vars, only : z_speed
-!  use global_vars, only : pressure
-!  use global_vars, only : tk
-!  use global_vars, only : tw
-!  use global_vars, only : tkl
-!  use global_vars, only : tv
-!  use global_vars, only : tgm
   use utils
 
   implicit none

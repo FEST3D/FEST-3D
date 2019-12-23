@@ -3,17 +3,9 @@ module time
   !< Calculate the time step for the current iteration
 
   use vartypes
-!  use global_vars, only : xnx, xny, xnz !face unit normal x
-!  use global_vars, only : ynx, yny, ynz !face unit normal y
-!  use global_vars, only : znx, zny, znz !face unit normal z
-!  use global_vars, only : xA, yA, zA    !face area
-!  use global_vars, only : volume
   use global_vars, only : mu
   use global_vars, only : mu_t
-  use global_vars, only : total_process
-  use global_vars, only : process_id
   use global_vars, only : delta_t
-  use global_vars, only : sim_clock
 
   use utils, only: alloc
   use face_interpolant, only: &
@@ -21,9 +13,8 @@ module time
           y_qp_left, y_qp_right, &
           z_qp_left, z_qp_right
 
-!  use string
   use read, only : read_input_and_controls
-  use geometry, only : CellCenter
+!  use geometry, only : CellCenter
 
 #include "debug.h"
 #include "error.h"
@@ -40,6 +31,7 @@ module time
     REAL :: t1         !< Start clock time
     REAL :: t2         !< Finish clock time
     real :: cpu_time_elapsed
+    real :: sim_clock=0.0
 
     integer :: imx, jmx, kmx, n_var
     ! Public methods
@@ -70,18 +62,19 @@ module time
 
         end subroutine setup_time
 
-        subroutine destroy_time()
+        subroutine destroy_time(control)
           !< Deallocate memory and find simulation time.
             implicit none
+            type(controltype), intent(in) :: control
             real, dimension(:), allocatable :: total_time 
             integer :: ierr
             
             DebugCall('deallocate_misc')
 
             !simlulation clock data
-            if(process_id==0) write(*, '(A)') '>> TIME <<'
-            if(process_id==0) write(*, '(A)') "Simulation Clock : "//trim(write_time(sim_clock))
-            call alloc(total_time, 1, total_process)
+            if(control%process_id==0) write(*, '(A)') '>> TIME <<'
+            if(control%process_id==0) write(*, '(A)') "Simulation Clock : "//trim(write_time(sim_clock))
+            call alloc(total_time, 1, control%total_process)
             CALL CPU_TIME(t2)
             CALL SYSTEM_CLOCK(COUNT=nb_ticks_final)
             !call dealloc(delta_t)
@@ -91,17 +84,17 @@ module time
             nb_ticks = nb_ticks + nb_ticks_max
             elapsed_time   = REAL(nb_ticks) / nb_ticks_sec
             cpu_time_elapsed = t2-t1 
-            write(*,'(A,I0,A)') 'process: ',process_id,&
+            write(*,'(A,I0,A)') 'process: ',control%process_id,&
                                 " > SYSTEM clock <: "//trim(write_time(elapsed_time))//&
                                 " /-\ CPU time <: "//trim(write_time(cpu_time_elapsed))
             
             !total time including all blocks
             call MPI_GATHER(elapsed_time, 1, MPI_DOUBLE_PRECISION, &
             total_time, 1, MPI_DOUBLE_PRECISION, 0,MPI_COMM_WORLD, ierr)
-            if(process_id==0) print*, "Total SYSTEM clock: ", trim(write_time(sum(total_time)))
+            if(control%process_id==0) print*, "Total SYSTEM clock: ", trim(write_time(sum(total_time)))
             call MPI_GATHER(cpu_time_elapsed, 1, MPI_DOUBLE_PRECISION, &
             total_time, 1, MPI_DOUBLE_PRECISION, 0,MPI_COMM_WORLD, ierr)
-            if(process_id==0) print*, "Total CPU time    : ", trim(write_time(sum(total_time)))
+            if(control%process_id==0) print*, "Total CPU time    : ", trim(write_time(sum(total_time)))
             !call dealloc(total_time)
 
         end subroutine destroy_time
@@ -374,36 +367,36 @@ module time
            
            ! For left face: i.e., lower index face along xi direction
            lmx1 = mu(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i-1,j,k,1) - CellCenter(i,j,k,1)) * Ifaces(i, j, k)%nx) + &
-                ((CellCenter(i-1,j,k,2) - CellCenter(i,j,k,2)) * Ifaces(i, j, k)%ny) + &
-                ((CellCenter(i-1,j,k,3) - CellCenter(i,j,k,3)) * Ifaces(i, j, k)%nz)))
+                ((cells(i-1,j,k)%centerx - cells(i,j,k)%centerx) * Ifaces(i, j, k)%nx) + &
+                ((cells(i-1,j,k)%centery - cells(i,j,k)%centery) * Ifaces(i, j, k)%ny) + &
+                ((cells(i-1,j,k)%centerz - cells(i,j,k)%centerz) * Ifaces(i, j, k)%nz)))
            ! For front face, i.e., lower index face along eta direction
            lmx2 = mu(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i,j-1,k,1) - CellCenter(i,j,k,1)) * Jfaces(i, j, k)%nx) + &
-                ((CellCenter(i,j-1,k,2) - CellCenter(i,j,k,2)) * Jfaces(i, j, k)%ny) + &
-                ((CellCenter(i,j-1,k,3) - CellCenter(i,j,k,3)) * Jfaces(i, j, k)%nz)))
+                ((cells(i,j-1,k)%centerx - cells(i,j,k)%centerx) * Jfaces(i, j, k)%nx) + &
+                ((cells(i,j-1,k)%centery - cells(i,j,k)%centery) * Jfaces(i, j, k)%ny) + &
+                ((cells(i,j-1,k)%centerz - cells(i,j,k)%centerz) * Jfaces(i, j, k)%nz)))
            ! For bottom face, i.e., lower index face along zeta direction
            lmx3 = mu(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i,j,k-1,1) - CellCenter(i,j,k,1)) * Kfaces(i, j, k)%nx) + &
-                ((CellCenter(i,j,k-1,2) - CellCenter(i,j,k,2)) * Kfaces(i, j, k)%ny) + &
-                ((CellCenter(i,j,k-1,3) - CellCenter(i,j,k,3)) * Kfaces(i, j, k)%nz)))
+                ((cells(i,j,k-1)%centerx - cells(i,j,k)%centerx) * Kfaces(i, j, k)%nx) + &
+                ((cells(i,j,k-1)%centery - cells(i,j,k)%centery) * Kfaces(i, j, k)%ny) + &
+                ((cells(i,j,k-1)%centerz - cells(i,j,k)%centerz) * Kfaces(i, j, k)%nz)))
 
            
            ! For right face, i.e., higher index face along xi direction
            lmx4 = mu(i+1,j,k)/(qp(i+1,j,k,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i+1,j,k,1)) * Ifaces(i+1, j, k)%nx) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i+1,j,k,2)) * Ifaces(i+1, j, k)%ny) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i+1,j,k,3)) * Ifaces(i+1, j, k)%nz)))
+                ((cells(i,j,k)%centerx - cells(i+1,j,k)%centerx) * Ifaces(i+1, j, k)%nx) + &
+                ((cells(i,j,k)%centery - cells(i+1,j,k)%centery) * Ifaces(i+1, j, k)%ny) + &
+                ((cells(i,j,k)%centerz - cells(i+1,j,k)%centerz) * Ifaces(i+1, j, k)%nz)))
            ! For back face, i.e., higher index face along eta direction
            lmx5 = mu(i,j+1,k)/(qp(i,j+1,k,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i,j+1,k,1)) * Jfaces(i, j+1, k)%nx) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i,j+1,k,2)) * Jfaces(i, j+1, k)%ny) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i,j+1,k,3)) * Jfaces(i, j+1, k)%nz)))
+                ((cells(i,j,k)%centerx - cells(i,j+1,k)%centerx) * Jfaces(i, j+1, k)%nx) + &
+                ((cells(i,j,k)%centery - cells(i,j+1,k)%centery) * Jfaces(i, j+1, k)%ny) + &
+                ((cells(i,j,k)%centerz - cells(i,j+1,k)%centerz) * Jfaces(i, j+1, k)%nz)))
            ! For top face, i.e., higher index face along zeta direction
            lmx6 = mu(i,j,k+1)/(qp(i,j,k+1,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i,j,k+1,1)) * Kfaces(i, j, k+1)%nx) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i,j,k+1,2)) * Kfaces(i, j, k+1)%ny) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i,j,k+1,3)) * Kfaces(i, j, k+1)%nz)))
+                ((cells(i,j,k)%centerx - cells(i,j,k+1)%centerx) * Kfaces(i, j, k+1)%nx) + &
+                ((cells(i,j,k)%centery - cells(i,j,k+1)%centery) * Kfaces(i, j, k+1)%ny) + &
+                ((cells(i,j,k)%centerz - cells(i,j,k+1)%centerz) * Kfaces(i, j, k+1)%nz)))
 
                lmxsum = (Ifaces(i, j, k)%A * lmx1) + &
                         (Jfaces(i, j, k)%A * lmx2) + &
@@ -451,36 +444,36 @@ module time
            
            ! For left face: i.e., lower index face along xi direction
            lmx1 = mu_t(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i-1,j,k,1) - CellCenter(i,j,k,1)) * Ifaces(i, j, k)%nx) + &
-                ((CellCenter(i-1,j,k,2) - CellCenter(i,j,k,2)) * Ifaces(i, j, k)%ny) + &
-                ((CellCenter(i-1,j,k,3) - CellCenter(i,j,k,3)) * Ifaces(i, j, k)%nz)))
+                ((cells(i-1,j,k)%centerx - cells(i,j,k)%centerx) * Ifaces(i, j, k)%nx) + &
+                ((cells(i-1,j,k)%centery - cells(i,j,k)%centery) * Ifaces(i, j, k)%ny) + &
+                ((cells(i-1,j,k)%centerz - cells(i,j,k)%centerz) * Ifaces(i, j, k)%nz)))
            ! For front face, i.e., lower index face along eta direction
            lmx2 = mu_t(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i,j-1,k,1) - CellCenter(i,j,k,1)) * Jfaces(i, j, k)%nx) + &
-                ((CellCenter(i,j-1,k,2) - CellCenter(i,j,k,2)) * Jfaces(i, j, k)%ny) + &
-                ((CellCenter(i,j-1,k,3) - CellCenter(i,j,k,3)) * Jfaces(i, j, k)%nz)))
+                ((cells(i,j-1,k)%centerx - cells(i,j,k)%centerx) * Jfaces(i, j, k)%nx) + &
+                ((cells(i,j-1,k)%centery - cells(i,j,k)%centery) * Jfaces(i, j, k)%ny) + &
+                ((cells(i,j-1,k)%centerz - cells(i,j,k)%centerz) * Jfaces(i, j, k)%nz)))
            ! For bottom face, i.e., lower index face along zeta direction
            lmx3 = mu_t(i,j,k)/(qp(i,j,k,1)*abs( &
-                ((CellCenter(i,j,k-1,1) - CellCenter(i,j,k,1)) * Kfaces(i, j, k)%nx) + &
-                ((CellCenter(i,j,k-1,2) - CellCenter(i,j,k,2)) * Kfaces(i, j, k)%ny) + &
-                ((CellCenter(i,j,k-1,3) - CellCenter(i,j,k,3)) * Kfaces(i, j, k)%nz)))
+                ((cells(i,j,k-1)%centerx - cells(i,j,k)%centerx) * Kfaces(i, j, k)%nx) + &
+                ((cells(i,j,k-1)%centery - cells(i,j,k)%centery) * Kfaces(i, j, k)%ny) + &
+                ((cells(i,j,k-1)%centerz - cells(i,j,k)%centerz) * Kfaces(i, j, k)%nz)))
 
            
            ! For right face, i.e., higher index face along xi direction
            lmx4 = mu_t(i+1,j,k)/(qp(i+1,j,k,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i+1,j,k,1)) * Ifaces(i+1, j, k)%nx) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i+1,j,k,2)) * Ifaces(i+1, j, k)%ny) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i+1,j,k,3)) * Ifaces(i+1, j, k)%nz)))
+                ((cells(i,j,k)%centerx - cells(i+1,j,k)%centerx) * Ifaces(i+1, j, k)%nx) + &
+                ((cells(i,j,k)%centery - cells(i+1,j,k)%centery) * Ifaces(i+1, j, k)%ny) + &
+                ((cells(i,j,k)%centerz - cells(i+1,j,k)%centerz) * Ifaces(i+1, j, k)%nz)))
            ! For back face, i.e., higher index face along eta direction
            lmx5 = mu_t(i,j+1,k)/(qp(i,j+1,k,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i,j+1,k,1)) * Jfaces(i, j+1, k)%nx) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i,j+1,k,2)) * Jfaces(i, j+1, k)%ny) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i,j+1,k,3)) * Jfaces(i, j+1, k)%nz)))
+                ((cells(i,j,k)%centerx - cells(i,j+1,k)%centerx) * Jfaces(i, j+1, k)%nx) + &
+                ((cells(i,j,k)%centery - cells(i,j+1,k)%centery) * Jfaces(i, j+1, k)%ny) + &
+                ((cells(i,j,k)%centerz - cells(i,j+1,k)%centerz) * Jfaces(i, j+1, k)%nz)))
            ! For top face, i.e., higher index face along zeta direction
            lmx6 = mu_t(i,j,k+1)/(qp(i,j,k+1,1)*abs( &
-                ((CellCenter(i,j,k,1) - CellCenter(i,j,k+1,1)) * Kfaces(i, j, k+1)%nx) + &
-                ((CellCenter(i,j,k,2) - CellCenter(i,j,k+1,2)) * Kfaces(i, j, k+1)%ny) + &
-                ((CellCenter(i,j,k,3) - CellCenter(i,j,k+1,3)) * Kfaces(i, j, k+1)%nz)))
+                ((cells(i,j,k)%centerx - cells(i,j,k+1)%centerx) * Kfaces(i, j, k+1)%nx) + &
+                ((cells(i,j,k)%centery - cells(i,j,k+1)%centery) * Kfaces(i, j, k+1)%ny) + &
+                ((cells(i,j,k)%centerz - cells(i,j,k+1)%centerz) * Kfaces(i, j, k+1)%nz)))
 
                lmxsum = (Ifaces(i, j, k)%A * lmx1) + &
                         (Jfaces(i, j, k)%A * lmx2) + &

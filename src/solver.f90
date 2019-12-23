@@ -3,25 +3,18 @@ module solver
   !< allocate/deallcoate memory, initialize, iterate
   !-------------------------------------------------
   use vartypes
-  use global_vars, only : want_to_stop
-  use global_vars, only : Halt
-  use global_vars, only : sim_clock
   use global_vars, only: mu_t
   use global_vars, only: mu
-
   use CC,    only: setupCC
-
   use read, only : read_input_and_controls
-
   use grid,      only : setup_grid!, destroy_grid
   use geometry,  only : setup_geometry!, destroy_geometry
   use state,     only : setup_state!, destroy_state
   use gradients, only : setup_gradients
   use Scheme,    only : setup_scheme!, destroy_scheme
-
   use wall_dist,     only: setup_wall_dist, find_wall_dist
   use viscous,       only: compute_viscous_fluxes
-  use layout,        only: process_id, get_process_data, read_layout_file, total_process
+  use layout,        only: get_process_data, read_layout_file
   use interface1,    only : setup_interface
   use resnorm,       only : find_resnorm, setup_resnorm!, destroy_resnorm
   use dump_solution, only : checkpoint
@@ -29,14 +22,10 @@ module solver
   use viscosity    , only : calculate_viscosity
   use wall         , only : write_surfnode
   use bc,            only : setup_bc
-!  use bc,            only : destroy_bc
   use time ,         only : setup_time
   use time ,         only : destroy_time
   use update,        only : get_next_solution
   use update,        only : setup_update
-  use mapping,       only : read_interface_map
-  use bc_primitive,  only : populate_ghost_primitive
-  use boundary_state_reconstruction, only: reconstruct_boundary_state
 #include "debug.h"
 #include "error.h"
 #include "mpi.inc"
@@ -50,6 +39,7 @@ module solver
     type(schemetype), public :: schemes
     type(flowtype) :: flow
     type(filetype) :: files
+    type(boundarytype) :: boundary
     real, dimension(:, :, :, :), allocatable :: qp           
      !< Store primitive variable at cell center
     real, dimension(:, :, :   ), allocatable :: Temp
@@ -114,24 +104,24 @@ module solver
             integer :: ierr
 
             DebugCall('setup_solver: Start')
-            call get_process_data() ! parallel calls
-            call read_layout_file(files, process_id) ! reads layout file calls
+            call get_process_data(control) ! parallel calls
+            call read_layout_file(files, control, boundary) ! reads layout file calls
             
             call read_input_and_controls(files, control, schemes, flow)
-            call setup_grid(files, nodes, dims)
-            call setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, dims)
+            call setup_grid(files, nodes, control, boundary, dims)
+            call setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, boundary, dims)
             call setup_viscosity(mu, mu_t, schemes, flow, dims)
             call setup_state(files, qp, control, schemes, flow, dims)
             allocate(Temp(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2))
             call setup_gradients(control,schemes,flow,dims)
             !call setup_source
-            call setup_bc(files, schemes, flow, dims)
+            call setup_bc(files, schemes, flow, boundary, dims)
             call setup_time(control,dims)
             call setup_update(control,schemes,flow, dims)
             call setup_interface(control,dims)
             call setup_scheme(residue, F,G,H, control, schemes, dims)
             if(schemes%turbulence /= 'none') then
-              call write_surfnode(files, nodes, dims)
+              call write_surfnode(files, nodes, control, boundary, dims)
               call setup_wall_dist(files, dims)
               call mpi_barrier(MPI_COMM_WORLD,ierr)
               call find_wall_dist(nodes, dims)
@@ -172,7 +162,7 @@ module solver
 !            !call destroy_grid()
 !            call destroy_resnorm()
 !            call destroy_interface()
-            call destroy_time()
+            call destroy_time(control)
 !            call destroy_bc()
 !
 !            if(allocated(r_list)) deallocate(r_list)
@@ -188,7 +178,6 @@ module solver
             
             DebugCall('initmisc')
 
-            sim_clock = 0.
             control%current_iter = 0
 
         end subroutine initmisc
@@ -208,17 +197,17 @@ module solver
               print*, control%current_iter
             end if
 
-            call get_next_solution(qp, Temp, residue, cells, F,G,H, Ifaces,Jfaces,Kfaces,control, schemes, flow, dims)
+            call get_next_solution(qp, Temp, residue, cells, F,G,H, Ifaces,Jfaces,Kfaces,control, schemes, flow, boundary, dims)
             call find_resnorm(files%RESNORM_FILE_UNIT, residue, F,G,H, control, schemes, dims)
             call checkpoint(files, qp, nodes, control, schemes, dims)
             control%current_iter = control%current_iter + 1
             if(process_id==0)then
               open(files%STOP_FILE_UNIT, file=files%stop_file)
-              read(files%STOP_FILE_UNIT,*) want_to_stop
+              read(files%STOP_FILE_UNIT,*) control%want_to_stop
               close(files%STOP_FILE_UNIT)
             end if
-            call MPI_BCAST(want_to_stop,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
-            if (want_to_stop==1) Halt = .TRUE.
+            call MPI_BCAST(control%want_to_stop,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+            if (control%want_to_stop==1) control%Halt = .TRUE.
 
         end subroutine iterate_one_more_time_step
 

@@ -1,7 +1,6 @@
 program main
   !< Main program
   !-------------------------------------------------
-  use global_vars,  only: Halt
   use solver     ,  only: iterate_one_more_time_step
   use solver     ,  only: control
   use convergence,  only: converged
@@ -14,7 +13,7 @@ program main
 !--------Start---------!
   call start_run()
 
-  do while ((control%current_iter <= control%max_iters) .and. (.not. converged(control)) .and. (.not. Halt))
+  do while ((control%current_iter <= control%max_iters) .and. (.not. converged(control)) .and. (.not. control%Halt))
      call iterate_one_more_time_step()
   end do
 

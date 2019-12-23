@@ -15,7 +15,6 @@ module read
 
 #include "../../debug.h"
   use vartypes
-  use global_vars, only: process_id
   implicit none
   private
 
@@ -27,15 +26,14 @@ module read
         !< Read all the input control files
         implicit none
         type(filetype), intent(in) :: files
-        type(controltype), intent(out) :: control
-        type(schemetype), intent(out) :: scheme
-        type(flowtype), intent(out) :: flow
+        type(controltype), intent(inout) :: control
+        type(schemetype), intent(inout) :: scheme
+        type(flowtype), intent(inout) :: flow
         call read_controls(files, control)
         call read_scheme(files, scheme)
         call read_flow(files, control, flow)
         call read_output_control(files, control)
         call read_Res_list(files, control)
-        print*, scheme
       end subroutine read_input_and_controls
 
 
@@ -232,7 +230,6 @@ module read
         end if
         DebugInfo('time_stepping_method = '//trim(buf))
         DebugInfo('global_time_step = '//trim(buf))
-        print*, scheme%time_stepping_method
 
         ! read time integration method
         call get_next_token(files%SCHEME_FILE_UNIT, buf)

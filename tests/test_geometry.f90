@@ -7,6 +7,7 @@ integer function test_geometry() result(r)
    type(extent) :: dims
    type(celltype), dimension(:,:,:), allocatable :: cell
    type(facetype), dimension(:,:,:), allocatable :: Iface, Jface, Kface
+   type(boundarytype) :: bc
    character(len=*), parameter :: prefix="../../tests/"
 
    dims%imx = -4
@@ -39,7 +40,7 @@ integer function test_geometry() result(r)
    points(-1,-1,-1)%z = 1.0
 
    r = 1
-   call setup_geometry(cell, Iface, Jface, Kface, points, dims)
+   call setup_geometry(cell, Iface, Jface, Kface, points, bc, dims)
    print*, cell(:,:,:)%volume
    print*, Iface(:,:,:)%nx
    print*, Iface(:,:,:)%ny

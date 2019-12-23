@@ -9,15 +9,15 @@ module layout
 !  use global, only: layout_file
 
   use vartypes
-  use global_vars, only : total_process
-  use global_vars, only : total_entries
-  use global_vars, only : process_id
-  use global_vars, only : imin_id
-  use global_vars, only : imax_id
-  use global_vars, only : jmin_id
-  use global_vars, only : jmax_id
-  use global_vars, only : kmin_id
-  use global_vars, only : kmax_id
+!  use global_vars, only : total_process
+!  use global_vars, only : total_entries
+!  use global_vars, only : process_id
+!  use global_vars, only : imin_id
+!  use global_vars, only : imax_id
+!  use global_vars, only : jmin_id
+!  use global_vars, only : jmax_id
+!  use global_vars, only : kmin_id
+!  use global_vars, only : kmax_id
 
 
 #include "error.h"
@@ -38,13 +38,15 @@ module layout
 contains
 
 
-  subroutine get_process_data()
+  subroutine get_process_data(control)
     !<Get Processor Id and total number of processors
   implicit none
+  type(controltype), intent(inout) :: control
     ! Finds and sets process data
     integer :: ierr
-    call MPI_COMM_RANK(MPI_COMM_WORLD,process_id,ierr)
-    call MPI_COMM_SIZE(MPI_COMM_WORLD,total_process,ierr)
+    call MPI_COMM_RANK(MPI_COMM_WORLD,control%process_id,ierr)
+    call MPI_COMM_SIZE(MPI_COMM_WORLD,control%total_process,ierr)
+    process_id = control%process_id
 
   end subroutine get_process_data
 
@@ -90,17 +92,20 @@ contains
   end subroutine get_next_token_parallel
 
 
-  subroutine read_layout_file(files,process_id)
+  subroutine read_layout_file(files,control, bc)
     !< Read the layout file for particular processor
     implicit none
     type(filetype), intent(inout) :: files
+    type(boundarytype), intent(inout) :: bc
     character(len=STRING_BUFFER_LENGTH) :: buf
     character(len=128) :: grid_file_buf
     !< Name of the gridfile to load
     character(len=128) :: bc_file
     !< Name of the boundary condition file to load.
-    integer,intent(in)::process_id
+    type(controltype) ,intent(in)::control
     !< Processor id for current block
+    integer :: total_entries      
+    !< Total enteries in layout.md for each processorS
     integer :: i,buf_id 
     DebugCall('read_layout_file')
 
@@ -108,17 +113,17 @@ contains
 
     ! Read the parameters from the file
     call get_next_token_parallel(files%CONFIG_FILE_UNIT, buf)
-    read(buf,*)total_process
+    read(buf,*)!control%total_process
     call get_next_token_parallel(files%CONFIG_FILE_UNIT, buf)
     read(buf,*)total_entries
     i = 0
     !print *, process_id
     call get_next_token_parallel(files%CONFIG_FILE_UNIT, buf)
-    do while(i < process_id)
+    do while(i < control%process_id)
           call get_next_token_parallel(files%CONFIG_FILE_UNIT, buf)
        i = i+1
     end do
-    read(buf,*) buf_id, grid_file_buf, bc_file, imin_id, imax_id, jmin_id,jmax_id,kmin_id,kmax_id
+    read(buf,*) buf_id, grid_file_buf, bc_file, bc%imin_id, bc%imax_id, bc%jmin_id,bc%jmax_id,bc%kmin_id,bc%kmax_id
     write(files%gridfile, '(A)') 'system/mesh/gridfiles/'//trim(grid_file_buf)
     write(files%bcfile, '(A)') 'system/mesh/bc/'//trim(bc_file)
   end subroutine read_layout_file

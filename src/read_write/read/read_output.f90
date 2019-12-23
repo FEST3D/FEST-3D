@@ -8,12 +8,6 @@ module read_output
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-!  use global     , only :      IN_FILE_UNIT
-!  use global     , only : RESTART_FILE_UNIT
-!  use global_vars, only :      infile
-!  use global_vars, only : restartfile
-
-  use global_vars, only : process_id
   use global_vars, only :        resnorm_0
   use global_vars, only :    vis_resnorm_0
   use global_vars, only :   turb_resnorm_0
@@ -30,7 +24,6 @@ module read_output
   use check_output_control, only: verify_read_control
 
   use utils
-!  use string
 
   implicit none
   private

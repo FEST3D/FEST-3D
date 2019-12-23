@@ -5,7 +5,6 @@ module source
 #include "debug.h"
 #include "error.h"
   use vartypes
-  use global_vars, only : process_id
   !--- variable required for sst source calculation ---!
   use global_sst   ,only : sigma_k1
   use global_sst   ,only : sigma_k2
@@ -22,7 +21,6 @@ module source
   use global_sst   ,only : sigma_k
   use global_sst   ,only : gama
   use global_sst   ,only : sst_F1
-!  use global_vars  ,only :   volume
   use global_vars  ,only :   mu
   use global_vars  ,only :   dist
   use gradients  ,only :   gradu_x
@@ -43,10 +41,6 @@ module source
   use gradients  ,only :   gradtgm_x
   use gradients  ,only :   gradtgm_y
   use gradients  ,only :   gradtgm_z
-!  use global_vars  ,only :   residue
-!  use global_vars  ,only : xn
-!  use global_vars  ,only : yn
-!  use global_vars  ,only : zn
 
   !--- variables required for kkl source calculation ---!
   use global_kkl, only : zeta1
@@ -78,23 +72,16 @@ module source
   use gradients ,only : gradtv_x
   use gradients ,only : gradtv_y
   use gradients ,only : gradtv_z
-
-!  use global_vars, only : xnx, xny, xnz !face unit normal x
-!  use global_vars, only : ynx, yny, ynz !face unit normal y
-!  use global_vars, only : znx, zny, znz !face unit normal z
-!  use global_vars, only : xA, yA, zA    !face area
   use global_vars  ,only : mu_t
-
-  use global_vars, only : DCCVnX
-  use global_vars, only : DCCVnY
-  use global_vars, only : DCCVnZ
-  use global_vars, only : CCnormalX
-  use global_vars, only : CCnormalY
-  use global_vars, only : CCnormalZ
+  use CC, only : DCCVnX
+  use CC, only : DCCVnY
+  use CC, only : DCCVnZ
+  use CC, only : CCnormalX
+  use CC, only : CCnormalY
+  use CC, only : CCnormalZ
 
   use CC         , only : find_DCCVn
   use utils,       only: alloc
-  use layout,      only: process_id
 
   implicit none
   private

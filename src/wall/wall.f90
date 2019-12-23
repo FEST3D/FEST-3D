@@ -3,8 +3,6 @@ module wall
  !< Detect all the grid points on the wall boundary condition
  !< and store them in a single file
   use vartypes
-  use global_vars, only : total_process
-  use global_vars, only : id
   use utils, only: alloc
 
 #include "../debug.h"
@@ -56,12 +54,14 @@ module wall
 
   contains 
 
-    subroutine write_surfnode(files, nodes, dims)
+    subroutine write_surfnode(files, nodes, control, bc, dims)
       !< Extract and write the wall surface node points
       !< in a file shared by all the MPI processes
       implicit none
       type(filetype), intent(in) :: files
+      type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
+      type(boundarytype), intent(in) :: bc
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
       integer :: count
       integer :: i
@@ -70,19 +70,19 @@ module wall
       jmx = dims%jmx
       kmx = dims%kmx
 
-      call setup_surface(files)
+      call setup_surface(files, control, bc)
       call surface_points(nodes)
       call MPI_GATHER(n_wall, 1, MPI_Integer, n_wall_buf, 1, &
                       MPI_integer,0, MPI_COMM_WORLD, ierr)
       total_n_wall = sum(n_wall_buf(:))
       call MPI_Bcast(total_n_wall,1, MPI_Integer, 0, &
                        MPI_COMM_WORLD, ierr)
-      call MPI_Bcast(n_wall_buf, total_process, MPI_Integer, 0, &
+      call MPI_Bcast(n_wall_buf, control%total_process, MPI_Integer, 0, &
                        MPI_COMM_WORLD, ierr)
 
       write_flag=0
       count=0
-      do i=1,total_process
+      do i=1,control%total_process
         if(n_wall_buf(i)>0) then
           write_flag(i)=count
           count = count+1
@@ -114,9 +114,10 @@ module wall
     end subroutine write_surfnode
 
 
-    subroutine allocate_memory()
+    subroutine allocate_memory(control)
       !< Allocate memory to str and wallc variable array
         implicit none
+        type(controltype), intent(in) :: control
 
         DebugCall('setup_surface')
 
@@ -134,8 +135,8 @@ module wall
         call alloc(wallc, 1, n_wall, 1, 3 ,&
                   errmsg='Error: Unable to allocate memory for wallc')
 
-        allocate(n_wall_buf(1:total_process))
-        allocate(write_flag(1:total_process))
+        allocate(n_wall_buf(1:control%total_process))
+        allocate(write_flag(1:control%total_process))
     end subroutine allocate_memory
 
 
@@ -180,12 +181,14 @@ module wall
 
     
 
-    subroutine setup_surface(files)
+    subroutine setup_surface(files, control, bc)
       !< Open MPI_shared write file, allocate memory and
       !< setup pointers
 
       implicit none
+      type(boundarytype), intent(in) :: bc
       type(filetype), intent(in) :: files
+      type(controltype), intent(in) :: control
       integer :: stat
 
       DebugCall('setup_surface')
@@ -197,8 +200,8 @@ module wall
       call MPI_FILE_OPEN(MPI_COMM_WORLD, files%surface_node_points, &
                         MPI_MODE_WRONLY + MPI_MODE_CREATE + MPI_MODE_EXCL, &
                         MPI_INFO_NULL, thisfile, ierr)
-      call find_wall()
-      call allocate_memory()
+      call find_wall(bc)
+      call allocate_memory(control)
       call link_aliases()
 
     end subroutine setup_surface
@@ -218,15 +221,16 @@ module wall
 !    end subroutine destroy_surface
 
 
-    subroutine find_wall()
+    subroutine find_wall(bc)
       !< Setup wall flag for all six boundary of the block
 
       implicit none
+      type(boundarytype), intent(in) :: bc
       integer :: i
 
       NO_slip_flag=0
       do i = 1,6
-        if(id(i)==-5) NO_SLIP_FLAG(i)=1
+        if(bc%id(i)==-5) NO_SLIP_FLAG(i)=1
       end do
 
     end subroutine find_wall

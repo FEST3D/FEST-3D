@@ -16,13 +16,7 @@ module resnorm
   !----------------------------------------------------
 
   use vartypes
-!  use global_vars, only: residue
-!  use global_vars, only: F_p
-!  use global_vars, only: G_p
-!  use global_vars, only: H_p
   use utils,      only: alloc
-  use layout,     only: process_id
-  use layout,     only: total_process
 
 #include "error.inc"
 #include "mpi.inc"
@@ -81,12 +75,6 @@ module resnorm
       end if
     end subroutine find_resnorm
 
-!    subroutine destroy_resnorm()
-!      !< Deallocate memory and close residual file
-!      implicit none
-!      call deallocate_memory()
-!      call close_file(RESNORM_FILE_UNIT)
-!    end subroutine destroy_resnorm
 
     subroutine setup_file(files, control)
       !< Open the residual file to write
@@ -116,7 +104,7 @@ module resnorm
       call alloc(Res_rel  , 0,control%n_var)
       call alloc(Res_scale, 0,control%n_var)
       call alloc(Res_save , 0,control%n_var)
-      call alloc(buffer   , 1,(control%n_var+1)*total_process)
+      call alloc(buffer   , 1,(control%n_var+1)*control%total_process)
     end subroutine allocate_memory
 
 !    subroutine deallocate_memory()
@@ -215,7 +203,7 @@ module resnorm
       type(controltype), intent(in) :: control
       integer :: i,j
       Res_abs=0.
-      do i=0,total_process-1
+      do i=0,control%total_process-1
         do j = 0,control%n_var
           Res_abs(j) =  Res_abs(j)+buffer((j+1)+(control%n_var+1)*i)
         end do

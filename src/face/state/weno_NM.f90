@@ -10,8 +10,6 @@ module weno_NM
 
     use vartypes
     use utils, only: alloc
-!    use global_vars, only : volume
-    use global_vars, only : process_id
 
     implicit none
     private

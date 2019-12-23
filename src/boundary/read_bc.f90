@@ -7,34 +7,19 @@ module read_bc
   !-----------------------------------------------------
 #include "../error.inc"
   use vartypes
-!  use global     , only: BOUNDARY_CONDITIONS_FILE_UNIT
-!  use global     , only: STRING_BUFFER_LENGTH
-!  use global_vars, only: density_inf
-!  use global_vars, only: x_speed_inf
-!  use global_vars, only: y_speed_inf
-!  use global_vars, only: z_speed_inf
-!  use global_vars, only: pressure_inf
-!  use global_vars, only: tk_inf
-!  use global_vars, only: tw_inf
-!  use global_vars, only: tv_inf
-!  use global_vars, only: te_inf
-!  use global_vars, only: tkl_inf
-  use global_vars, only: fixed_density
-  use global_vars, only: fixed_x_speed
-  use global_vars, only: fixed_y_speed
-  use global_vars, only: fixed_z_speed
-  use global_vars, only: fixed_pressure
-  use global_vars, only: fixed_tk
-  use global_vars, only: fixed_tw
-  use global_vars, only: fixed_te
-  use global_vars, only: fixed_tv
-  use global_vars, only: fixed_tkl
-  use global_vars, only: fixed_Tpressure
-  use global_vars, only: fixed_Ttemperature
-  use global_vars, only: fixed_wall_temperature
-  use global_vars, only: process_id
-!  use global_vars, only: turbulence
-!  use layout     , only: bc_file
+!  use global_vars, only: fixed_density
+!  use global_vars, only: fixed_x_speed
+!  use global_vars, only: fixed_y_speed
+!  use global_vars, only: fixed_z_speed
+!  use global_vars, only: fixed_pressure
+!  use global_vars, only: fixed_tk
+!  use global_vars, only: fixed_tw
+!  use global_vars, only: fixed_te
+!  use global_vars, only: fixed_tv
+!  use global_vars, only: fixed_tkl
+!  use global_vars, only: fixed_Tpressure
+!  use global_vars, only: fixed_Ttemperature
+!  use global_vars, only: fixed_wall_temperature
 
   implicit none
   private
@@ -46,15 +31,16 @@ module read_bc
 
   contains
 
-    subroutine read_fixed_values(files, scheme, flow)
+    subroutine read_fixed_values(files, scheme, flow, bc)
       !< Read fixed values for each block face
       implicit none
       type(filetype), intent(in) :: files
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) ::flow
+      type(boundarytype), intent(inout) :: bc
       integer :: count=0
 
-      call fill_fixed_values(scheme, flow)
+      call fill_fixed_values(scheme, flow, bc)
 
       open(unit=files%BOUNDARY_CONDITIONS_FILE_UNIT, file=files%bcfile)
             read(files%BOUNDARY_CONDITIONS_FILE_UNIT, *)
@@ -64,19 +50,20 @@ module read_bc
         read(files%BOUNDARY_CONDITIONS_FILE_UNIT, "(A)") buf
         if(buf(1:1)=='#')then
           count=count+1
-          call get_fixed_values(files, scheme,flow, count)
+          call get_fixed_values(files, scheme,flow, bc, count)
         end if
       end do
       close(files%BOUNDARY_CONDITIONS_FILE_UNIT)
 
     end subroutine read_fixed_values
 
-    subroutine get_fixed_values(files, scheme, flow, count)
+    subroutine get_fixed_values(files, scheme, flow, bc, count)
       !< Extract fixed value from the bc_**.md file
       implicit none
       type(filetype), intent(in) :: files
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
+      type(boundarytype), intent(inout) :: bc
       integer, intent(in) :: count
       real :: fix_val
       integer :: ios
@@ -86,28 +73,28 @@ module read_bc
           read(buf(index(buf(3:), ' ')+3:), *, iostat=ios) fix_val
           select case(buf(3:index(buf(3:), " ")+1))
             case ("FIX_DENSITY")
-              call set_value(fixed_density , fix_val, flow%density_inf , count, ios)
+              call set_value(bc%fixed_density , fix_val, flow%density_inf , count, ios)
 
             case ("FIX_X_SPEED")
-              call set_value(fixed_x_speed , fix_val, flow%x_speed_inf , count, ios)
+              call set_value(bc%fixed_x_speed , fix_val, flow%x_speed_inf , count, ios)
 
             case ("FIX_Y_SPEED")
-              call set_value(fixed_y_speed , fix_val, flow%y_speed_inf , count, ios)
+              call set_value(bc%fixed_y_speed , fix_val, flow%y_speed_inf , count, ios)
 
             case ("FIX_Z_SPEED")
-              call set_value(fixed_z_speed , fix_val, flow%z_speed_inf , count, ios)
+              call set_value(bc%fixed_z_speed , fix_val, flow%z_speed_inf , count, ios)
 
             case ("FIX_PRESSURE")
-              call set_value(fixed_pressure, fix_val, flow%pressure_inf, count, ios)
+              call set_value(bc%fixed_pressure, fix_val, flow%pressure_inf, count, ios)
 
             case ("WALL_TEMPERATURE")
-              call set_value(fixed_wall_temperature, fix_val, 0.0, count, ios)
+              call set_value(bc%fixed_wall_temperature, fix_val, 0.0, count, ios)
 
             case ("TOTAL_TEMPERATURE")
-              call set_value(fixed_Ttemperature, fix_val, 0.0, count, ios)
+              call set_value(bc%fixed_Ttemperature, fix_val, 0.0, count, ios)
 
             case ("TOTAL_PRESSURE")
-              call set_value(fixed_Tpressure, fix_val, 0.0, count, ios)
+              call set_value(bc%fixed_Tpressure, fix_val, 0.0, count, ios)
 
           end select
 
@@ -120,9 +107,9 @@ module read_bc
             case ("sst", 'tw', 'sst2003')
               select case(buf(3:index(buf(3:), " ")+1))
                 case ("FIX_tk")
-                  call set_value(fixed_tk      , fix_val, flow%tk_inf      , count, ios)
+                  call set_value(bc%fixed_tk      , fix_val, flow%tk_inf      , count, ios)
                 case ("FIX_tw")
-                  call set_value(fixed_tw      , fix_val, flow%tw_inf      , count, ios)
+                  call set_value(bc%fixed_tw      , fix_val, flow%tw_inf      , count, ios)
                 case DEFAULT
                   ! no a value to fix
                   continue
@@ -131,9 +118,9 @@ module read_bc
             case ("kkl")
               select case(buf(3:index(buf(3:), " ")+1))
                 case ("FIX_tk")
-                  call set_value(fixed_tk      , fix_val, flow%tk_inf      , count, ios)
+                  call set_value(bc%fixed_tk      , fix_val, flow%tk_inf      , count, ios)
                 case ("FIX_tkl")
-                  call set_value(fixed_tkl     , fix_val, flow%tkl_inf     , count, ios)
+                  call set_value(bc%fixed_tkl     , fix_val, flow%tkl_inf     , count, ios)
                 case DEFAULT
                   ! no a value to fix
                   continue
@@ -142,7 +129,7 @@ module read_bc
             case ("sa", "saBC")
               select case(buf(3:index(buf(3:), " ")+1))
                 case ("FIX_tv")
-                  call set_value(fixed_tk      , fix_val, flow%tv_inf      , count, ios)
+                  call set_value(bc%fixed_tk      , fix_val, flow%tv_inf      , count, ios)
                 case DEFAULT
                   ! no a value to fix
                   continue
@@ -158,39 +145,40 @@ module read_bc
     end subroutine get_fixed_values
 
     
-    subroutine fill_fixed_values(scheme, flow)
+    subroutine fill_fixed_values(scheme, flow, bc)
       !< Fill the Fixed_var array with with free-stream value
       !< or default values.
       implicit none
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
+      type(boundarytype), intent(inout) :: bc
       integer :: count
       integer :: ios=-1
 
       do count = 1,6
         !case ("FIX_DENSITY")
-          call set_value(fixed_density , flow%density_inf, flow%density_inf , count, ios)
+          call set_value(bc%fixed_density , flow%density_inf, flow%density_inf , count, ios)
 
         !case ("FIX_X_SPEED")
-          call set_value(fixed_x_speed , flow%x_speed_inf, flow%x_speed_inf , count, ios)
+          call set_value(bc%fixed_x_speed , flow%x_speed_inf, flow%x_speed_inf , count, ios)
 
         !case ("FIX_Y_SPEED")
-          call set_value(fixed_y_speed , flow%y_speed_inf, flow%y_speed_inf , count, ios)
+          call set_value(bc%fixed_y_speed , flow%y_speed_inf, flow%y_speed_inf , count, ios)
 
         !case ("FIX_Z_SPEED")
-          call set_value(fixed_z_speed , flow%z_speed_inf, flow%z_speed_inf , count, ios)
+          call set_value(bc%fixed_z_speed , flow%z_speed_inf, flow%z_speed_inf , count, ios)
 
         !case ("FIX_PRESSURE")
-          call set_value(fixed_pressure, flow%pressure_inf, flow%pressure_inf, count, ios)
+          call set_value(bc%fixed_pressure, flow%pressure_inf, flow%pressure_inf, count, ios)
 
         !case ("WALL_TEMPERATURE")
-          call set_value(fixed_wall_temperature, 0.0, 0.0, count, ios)
+          call set_value(bc%fixed_wall_temperature, 0.0, 0.0, count, ios)
 
         !case ("TOTAL_TEMPERATURE")
-          call set_value(fixed_Ttemperature, 0.0, 0.0, count, ios)
+          call set_value(bc%fixed_Ttemperature, 0.0, 0.0, count, ios)
 
         !case ("TOTAL_PRESSURE")
-          call set_value(fixed_Tpressure, 0.0, 0.0, count, ios)
+          call set_value(bc%fixed_Tpressure, 0.0, 0.0, count, ios)
 
 
         select case (scheme%turbulence)
@@ -201,19 +189,19 @@ module read_bc
 
           case ("sst", 'tw', 'sst2003')
             !case ("FIX_tk")
-              call set_value(fixed_tk      , flow%tk_inf, flow%tk_inf      , count, ios)
+              call set_value(bc%fixed_tk      , flow%tk_inf, flow%tk_inf      , count, ios)
             !case ("FIX_tw")
-              call set_value(fixed_tw      , flow%tw_inf, flow%tw_inf      , count, ios)
+              call set_value(bc%fixed_tw      , flow%tw_inf, flow%tw_inf      , count, ios)
             
           case ("kkl")
             !case ("FIX_tk")
-              call set_value(fixed_tk      , flow%tk_inf, flow%tk_inf      , count, ios)
+              call set_value(bc%fixed_tk      , flow%tk_inf, flow%tk_inf      , count, ios)
             !case ("FIX_tkl")
-              call set_value(fixed_tkl     , flow%tkl_inf, flow%tkl_inf     , count, ios)
+              call set_value(bc%fixed_tkl     , flow%tkl_inf, flow%tkl_inf     , count, ios)
 
           case ("sa", "saBC")
             !case ("FIX_tv")
-              call set_value(fixed_tk      , flow%tv_inf, flow%tv_inf      , count, ios)
+              call set_value(bc%fixed_tk      , flow%tv_inf, flow%tv_inf      , count, ios)
 
           case DEFAULT
             Fatal_error

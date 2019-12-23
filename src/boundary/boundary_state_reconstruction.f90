@@ -9,12 +9,12 @@ module boundary_state_reconstruction
 #include "../error.h"
 
    use vartypes
-  use global_vars,          only: imin_id
-  use global_vars,          only: jmin_id
-  use global_vars,          only: kmin_id
-  use global_vars,          only: imax_id
-  use global_vars,          only: jmax_id
-  use global_vars,          only: kmax_id
+!  use global_vars,          only: imin_id
+!  use global_vars,          only: jmin_id
+!  use global_vars,          only: kmin_id
+!  use global_vars,          only: imax_id
+!  use global_vars,          only: jmax_id
+!  use global_vars,          only: kmax_id
   !use global_vars,          only: qp
   use face_interpolant,     only: x_qp_left, x_qp_right
   use face_interpolant,     only: y_qp_left, y_qp_right
@@ -32,7 +32,7 @@ module boundary_state_reconstruction
 
   contains
 
-    subroutine reconstruct_boundary_state(qp, control, scheme, dims)
+    subroutine reconstruct_boundary_state(qp, control, scheme, bc, dims)
       !< Call reconstruction based on the flag and boundary condition
 
       implicit none
@@ -40,6 +40,7 @@ module boundary_state_reconstruction
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
+      type(boundarytype), intent(in) :: bc
 
       DebugCall('recons_boundary_state')
 
@@ -49,44 +50,45 @@ module boundary_state_reconstruction
 
       n_var = control%n_var
       if (scheme%interpolant == 'ppm' .or. scheme%interpolant=='weno' .or. scheme%interpolant=='weno_NM') ppm_flag=1
-      if (imin_id==-7 .or. jmin_id==-7 .or. kmin_id==-7) ppm_flag=1
-      if (imax_id==-7 .or. jmax_id==-7 .or. kmax_id==-7) ppm_flag=1
+      if (bc%imin_id==-7 .or. bc%jmin_id==-7 .or. bc%kmin_id==-7) ppm_flag=1
+      if (bc%imax_id==-7 .or. bc%jmax_id==-7 .or. bc%kmax_id==-7) ppm_flag=1
       if(scheme%interpolant /='none')then
-        if(imin_id<0 .and. imin_id/=-10)then
+        if(bc%imin_id<0 .and. bc%imin_id/=-10)then
           DebugCall('recons_bndry_state: imin')
-          call reconstruct_imin(qp, scheme)
+          call reconstruct_imin(qp, scheme, bc)
         end if
-        if(imax_id<0 .and. imax_id/=-10)then
+        if(bc%imax_id<0 .and. bc%imax_id/=-10)then
           DebugCall('recons_bndry_state: imax')
-          call reconstruct_imax(qp, scheme)
+          call reconstruct_imax(qp, scheme, bc)
         end if
-        if(jmin_id<0 .and. jmin_id/=-10)then
+        if(bc%jmin_id<0 .and. bc%jmin_id/=-10)then
           DebugCall('recons_bndry_state: jmin')
-          call reconstruct_jmin(qp, scheme)
+          call reconstruct_jmin(qp, scheme, bc)
         end if
-        if(jmax_id<0 .and. jmax_id/=-10)then
+        if(bc%jmax_id<0 .and. bc%jmax_id/=-10)then
           DebugCall('recons_bndry_state: jmax')
-          call reconstruct_jmax(qp, scheme)
+          call reconstruct_jmax(qp, scheme, bc)
         end if
-        if(kmin_id<0 .and. kmin_id/=-10)then
+        if(bc%kmin_id<0 .and. bc%kmin_id/=-10)then
           DebugCall('recons_bndry_state: kmin')
-          call reconstruct_kmin(qp, scheme)
+          call reconstruct_kmin(qp, scheme, bc)
         end if
-        if(kmax_id<0 .and. kmax_id/=-10)then
+        if(bc%kmax_id<0 .and. bc%kmax_id/=-10)then
         DebugCall('recons_bndry_state: kmax')
-          call reconstruct_kmax(qp, scheme)
+          call reconstruct_kmax(qp, scheme, bc)
         end if
       end if
 
     end subroutine reconstruct_boundary_state
 
 
-    subroutine reconstruct_imin(qp, scheme)
+    subroutine reconstruct_imin(qp, scheme, bc)
       !< Reconstruct state at the IMIN boundary face with MUSCL scheme
 
       implicit none
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
+      type(boundarytype), intent(in) :: bc
       integer :: i, j, k, l
       real :: psi1, psi2, fd, bd, r
       real :: kappa, phi
@@ -126,7 +128,7 @@ module boundary_state_reconstruction
          end do
         end do
       end if
-      if(imin_id==-8 .or. imin_id==-9)then
+      if(bc%imin_id==-8 .or. bc%imin_id==-9)then
          x_qp_left(1,1:jmx-1,1:kmx-1,1:n_var) = qp(0,1:jmx-1,1:kmx-1,1:n_var) 
         x_qp_right(1,1:jmx-1,1:kmx-1,1:n_var) = qp(0,1:jmx-1,1:kmx-1,1:n_var) 
       else
@@ -138,12 +140,13 @@ module boundary_state_reconstruction
     end subroutine reconstruct_imin
 
 
-    subroutine reconstruct_imax(qp, scheme)
+    subroutine reconstruct_imax(qp, scheme, bc)
       !< Reconstruct state at the IMAX boundary face with MUSCL scheme
 
       implicit none
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
+      type(boundarytype), intent(in) :: bc
       integer :: i, j, k, l
       real :: psi1, psi2, fd, bd, r
       real :: kappa, phi
@@ -181,7 +184,7 @@ module boundary_state_reconstruction
          end do
         end do
       end if
-      if(imax_id==-8 .or. imax_id==-9)then
+      if(bc%imax_id==-8 .or. bc%imax_id==-9)then
          x_qp_left(imx,1:jmx-1,1:kmx-1,1:n_var) = qp(imx,1:jmx-1,1:kmx-1,1:n_var) 
         x_qp_right(imx,1:jmx-1,1:kmx-1,1:n_var) = qp(imx,1:jmx-1,1:kmx-1,1:n_var) 
       else
@@ -192,12 +195,13 @@ module boundary_state_reconstruction
     end subroutine reconstruct_imax
 
 
-    subroutine reconstruct_jmin(qp, scheme)
+    subroutine reconstruct_jmin(qp, scheme, bc)
       !< Reconstruct state at the JMIN boundary face with MUSCL scheme
 
       implicit none
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
+      type(boundarytype), intent(in) :: bc
       integer :: i, j, k, l
       real :: psi1, psi2, fd, bd, r
       real :: kappa, phi
@@ -235,7 +239,7 @@ module boundary_state_reconstruction
          end do
         end do
       end if
-      if(jmin_id==-8 .or. jmin_id==-9)then
+      if(bc%jmin_id==-8 .or. bc%jmin_id==-9)then
          y_qp_left(1:imx-1,1,1:kmx-1,1:n_var) = qp(1:imx-1,0,1:kmx-1,1:n_var) 
         y_qp_right(1:imx-1,1,1:kmx-1,1:n_var) = qp(1:imx-1,0,1:kmx-1,1:n_var) 
       else
@@ -246,12 +250,13 @@ module boundary_state_reconstruction
     end subroutine reconstruct_jmin
 
 
-    subroutine reconstruct_jmax(qp, scheme)
+    subroutine reconstruct_jmax(qp, scheme, bc)
       !< Reconstruct state at the JMAX boundary face with MUSCL scheme
 
       implicit none
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
+      type(boundarytype), intent(in) :: bc
       integer :: i, j, k, l
       real :: psi1, psi2, fd, bd, r
       real :: kappa, phi
@@ -288,7 +293,7 @@ module boundary_state_reconstruction
          end do
         end do
       end if
-      if(jmax_id==-8 .or. jmax_id==-9)then
+      if(bc%jmax_id==-8 .or. bc%jmax_id==-9)then
          y_qp_left(1:imx-1,jmx,1:kmx-1,1:n_var) = qp(1:imx-1,jmx,1:kmx-1,1:n_var) 
         y_qp_right(1:imx-1,jmx,1:kmx-1,1:n_var) = qp(1:imx-1,jmx,1:kmx-1,1:n_var) 
       else
@@ -299,12 +304,13 @@ module boundary_state_reconstruction
     end subroutine reconstruct_jmax
 
 
-    subroutine reconstruct_kmin(qp, scheme)
+    subroutine reconstruct_kmin(qp, scheme, bc)
       !< Reconstruct state at the KMIN boundary face with MUSCL scheme
 
       implicit none
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
+      type(boundarytype), intent(in) :: bc
       real :: psi1, psi2, fd, bd, r
       integer :: i, j, k, l
       real :: kappa, phi
@@ -343,7 +349,7 @@ module boundary_state_reconstruction
          end do
         end do
       end if
-      if(kmin_id==-8 .or. kmin_id==-9)then
+      if(bc%kmin_id==-8 .or. bc%kmin_id==-9)then
          z_qp_left(1:imx-1,1:jmx-1,1,1:n_var) = qp(1:imx-1,1:jmx-1,0,1:n_var) 
         z_qp_right(1:imx-1,1:jmx-1,1,1:n_var) = qp(1:imx-1,1:jmx-1,0,1:n_var) 
       else
@@ -354,12 +360,13 @@ module boundary_state_reconstruction
     end subroutine reconstruct_kmin
 
 
-    subroutine reconstruct_kmax(qp, scheme)
+    subroutine reconstruct_kmax(qp, scheme, bc)
       !< Reconstruct state at the KMAX boundary face with MUSCL scheme
 
       implicit none
       real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
+      type(boundarytype), intent(in) :: bc
       real :: psi1, psi2, fd, bd, r
       integer :: i, j, k, l
       real :: kappa, phi
@@ -401,7 +408,7 @@ module boundary_state_reconstruction
         end do
        end do
       end do
-      if(kmax_id==-8 .or. kmax_id==-9)then
+      if(bc%kmax_id==-8 .or. bc%kmax_id==-9)then
          z_qp_left(1:imx-1,1:jmx-1,kmx,1:n_var) = qp(1:imx-1,1:jmx-1,kmx,1:n_var) 
         z_qp_right(1:imx-1,1:jmx-1,kmx,1:n_var) = qp(1:imx-1,1:jmx-1,kmx,1:n_var) 
       else

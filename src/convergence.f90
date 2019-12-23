@@ -4,7 +4,6 @@ module convergence
   use vartypes
   use resnorm    , only: Res_abs
   use resnorm    , only: Res_rel
-  use global_vars, only: process_id
 #include "error.inc"
   implicit none
   private

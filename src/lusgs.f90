@@ -27,24 +27,17 @@ module lusgs
   use global_sa , only : kappa_sa
   use global_sa , only : cv1_3
   use global_sa , only : cw3_6
-  use global_vars, only : DCCVnX
-  use global_vars, only : DCCVnY
-  use global_vars, only : DCCVnZ
-  use global_vars, only : CCnormalX
-  use global_vars, only : CCnormalY
-  use global_vars, only : CCnormalZ
+!  use global_vars, only : DCCVnX
+!  use global_vars, only : DCCVnY
+!  use global_vars, only : DCCVnZ
+!  use global_vars, only : CCnormalX
+!  use global_vars, only : CCnormalY
+!  use global_vars, only : CCnormalZ
 
-!  use global_vars, only : volume
-!  use global_vars, only : xnx, xny, xnz !face unit normal x
-!  use global_vars, only : ynx, yny, ynz !face unit normal y
-!  use global_vars, only : znx, zny, znz !face unit normal z
-!  use global_vars, only : xA, yA, zA    !face area
   use global_vars, only : dist
   use global_vars, only : mu
   use global_vars, only : mu_t
   use global_vars, only : delta_t
-  use global_vars, only : process_id
-!  use global_vars, only: residue
 
   use gradients  , only: gradu_x
   use gradients  , only: gradu_y
@@ -55,7 +48,6 @@ module lusgs
   use gradients  , only: gradw_x
   use gradients  , only: gradw_y
   use gradients  , only: gradw_z
-!  use geometry   , only: CellCenter
 
   use utils, only: alloc
 
@@ -69,25 +61,6 @@ module lusgs
   use global_kkl, only : sigma_k
   use global_kkl, only : sigma_phi
 
-  !-------mapping --------------!
-  use mapping, only : PiDir
-  use mapping, only : PjDir
-  use mapping, only : PkDir
-  use mapping, only : Pilo
-  use mapping, only : Pjlo
-  use mapping, only : Pklo
-  use mapping, only : Pihi
-  use mapping, only : Pjhi
-  use mapping, only : Pkhi
-  use mapping, only : mpi_class
-  use global_vars, only: imin_id
-  use global_vars, only: jmin_id
-  use global_vars, only: kmin_id
-  use global_vars, only: imax_id
-  use global_vars, only: jmax_id
-  use global_vars, only: kmax_id
-  use global_vars, only : dir_switch
-  use global_vars, only: PbcId
 
 
 #include "debug.h"
@@ -106,37 +79,6 @@ module lusgs
   real, dimension(:,:,:), pointer :: mmu
   !< Pointer to molecular viscosity
         
-  !parallel communication
-  integer :: ibuf_size
-  !< size of the buffer for I face interface
-  integer :: jbuf_size
-  !< size of the buffer for J face interface
-  integer :: kbuf_size
-  !< size of the buffer for K face interface
-  real, dimension(:), allocatable :: imin_send_buf
-  !< Array to store data to send data for Imin face
-  real, dimension(:), allocatable :: jmin_send_buf
-  !< Array to store data to send data for Jmin face
-  real, dimension(:), allocatable :: kmin_send_buf
-  !< Array to store data to send data for Kmin face
-  real, dimension(:), allocatable :: imin_recv_buf
-  !< Array to store data to receive data for Imin face
-  real, dimension(:), allocatable :: jmin_recv_buf
-  !< Array to store data to receive data for Jmin face
-  real, dimension(:), allocatable :: kmin_recv_buf
-  !< Array to store data to receive data for Kmin face
-  real, dimension(:), allocatable :: imax_send_buf
-  !< Array to store data to send data for Imax face
-  real, dimension(:), allocatable :: jmax_send_buf
-  !< Array to store data to send data for Jmax face
-  real, dimension(:), allocatable :: kmax_send_buf
-  !< Array to store data to send data for Kmax face
-  real, dimension(:), allocatable :: imax_recv_buf
-  !< Array to store data to receive data for Imax face
-  real, dimension(:), allocatable :: jmax_recv_buf
-  !< Array to store data to receive data for Jmax face
-  real, dimension(:), allocatable :: kmax_recv_buf
-  !< Array to store data to receive data for Kmax face
 
   integer :: imx, jmx, kmx, n_var
   real :: gm, mu_ref, Reynolds_number, free_stream_tu
@@ -174,22 +116,6 @@ module lusgs
       pr = flow%pr
       R_gas = flow%R_gas
 
-      ibuf_size = (jmx-1)*(kmx-1)*n_var*1
-      jbuf_size = (imx-1)*(kmx-1)*n_var*1
-      kbuf_size = (imx-1)*(jmx-1)*n_var*1
-      call alloc(imin_send_buf,1,ibuf_size, errmsg)
-      call alloc(jmin_send_buf,1,jbuf_size, errmsg)
-      call alloc(kmin_send_buf,1,kbuf_size, errmsg)
-      call alloc(imin_recv_buf,1,ibuf_size, errmsg)
-      call alloc(jmin_recv_buf,1,jbuf_size, errmsg)
-      call alloc(kmin_recv_buf,1,kbuf_size, errmsg)
-      call alloc(imax_send_buf,1,ibuf_size, errmsg)
-      call alloc(jmax_send_buf,1,jbuf_size, errmsg)
-      call alloc(kmax_send_buf,1,kbuf_size, errmsg)
-      call alloc(imax_recv_buf,1,ibuf_size, errmsg)
-      call alloc(jmax_recv_buf,1,jbuf_size, errmsg)
-      call alloc(kmax_recv_buf,1,kbuf_size, errmsg)
-
       call alloc(delQ, 0, imx, 0, jmx, 0, kmx, 1, n_var)
       call alloc(delQstar, 0, imx, 0, jmx, 0, kmx, 1, n_var)
 
@@ -209,25 +135,6 @@ module lusgs
       end if
     end subroutine setup_lusgs
 
-!    subroutine destroy_lusgs()
-!      !< unallocate the memory required by LU-SGS module
-!      implicit none
-!      call dealloc(imin_send_buf)
-!      call dealloc(jmin_send_buf)
-!      call dealloc(kmin_send_buf)
-!      call dealloc(imin_recv_buf)
-!      call dealloc(jmin_recv_buf)
-!      call dealloc(kmin_recv_buf)
-!      call dealloc(imax_send_buf)
-!      call dealloc(jmax_send_buf)
-!      call dealloc(kmax_send_buf)
-!      call dealloc(imax_recv_buf)
-!      call dealloc(jmax_recv_buf)
-!      call dealloc(kmax_recv_buf)
-!      call dealloc(delQ)
-!      call dealloc(delQstar)
-!      call dealloc(dummy)
-!    end subroutine destroy_lusgs
 
     subroutine update_with_lusgs(qp, residue, cells, Ifaces, Jfaces, Kfaces, scheme, dims)
       !< Time-integrate with LU_SGS method

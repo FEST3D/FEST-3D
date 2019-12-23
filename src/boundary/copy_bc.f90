@@ -10,9 +10,9 @@ module copy_bc
 !  use global_vars, only: imx
 !  use global_vars, only: jmx
 !  use global_vars, only: kmx
-  use global_vars, only: c1
-  use global_vars, only: c2
-  use global_vars, only: c3
+!  use global_vars, only: c1
+!  use global_vars, only: c2
+!  use global_vars, only: c3
 
   implicit none
   private
@@ -66,10 +66,11 @@ module copy_bc
     end subroutine copy1
 
     
-    subroutine copy3(var, type, face, dims)
+    subroutine copy3(var, type, face, bc, dims)
       !< Copy 3 layer of interior cell to three ghost cell layer
       implicit none
       type(extent), intent(in) :: dims
+      type(boundarytype), intent(in) :: bc
       character(len=*), intent(in) :: face
       !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
@@ -100,9 +101,9 @@ module copy_bc
           a2 =  1. ; i2 = 1
           a3 =  0. ; i3 = 1
         case("symm")
-          a1 =  c1 ; i1 = 1
-          a2 =  c2 ; i2 = 2
-          a3 =  c3 ; i3 = 3
+          a1 =  bc%c1 ; i1 = 1
+          a2 =  bc%c2 ; i2 = 2
+          a3 =  bc%c3 ; i3 = 3
           ! do nothing
           ! use default value
           continue

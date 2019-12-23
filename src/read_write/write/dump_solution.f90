@@ -11,7 +11,6 @@ module dump_solution
   use vartypes
 !  use global,      only : FILE_NAME_LENGTH
 !  use global,      only : RESTART_FILE_UNIT
-  use global_vars, only : sim_clock
 !  use global_vars, only :     outfile
 !  use global_vars, only : restartfile
   use global_vars, only :        resnorm_0

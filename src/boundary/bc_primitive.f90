@@ -7,78 +7,25 @@ module bc_primitive
   !-------------------------------------------
 #include "../error.inc"
   use vartypes
-  use global_vars, only: imin_id
-  use global_vars, only: imax_id
-  use global_vars, only: jmin_id
-  use global_vars, only: jmax_id
-  use global_vars, only: kmin_id
-  use global_vars, only: kmax_id
-  use global_vars, only: fixed_density
-  use global_vars, only: fixed_x_speed
-  use global_vars, only: fixed_y_speed
-  use global_vars, only: fixed_z_speed
-  use global_vars, only: fixed_pressure
-  use global_vars, only: fixed_tk
-  use global_vars, only: fixed_tw
-  use global_vars, only: fixed_tkl
-  use global_vars, only: fixed_tgm
-  use global_vars, only: fixed_wall_temperature
-  use global_vars, only: fixed_Ttemperature
-  use global_vars, only: fixed_Tpressure
-  use global_vars, only: fixed_tv
-!  use global_vars, only: mu_ref
-!  use global_vars, only: R_gas
-!  use global_vars, only: sutherland_temp
-!  use global_vars, only: pressure
-!  use global_vars, only: density
-!  use global_vars, only: x_speed
-!  use global_vars, only: y_speed
-!  use global_vars, only: z_speed
-!  use global_vars, only: tk
-!  use global_vars, only: tw
-!  use global_vars, only: tkl
-!  use global_vars, only: tv
-!  use global_vars, only: tgm
-!  use global_vars, only: accur
-!  use global_vars, only: imx
-!  use global_vars, only: jmx
-!  use global_vars, only: kmx
-!  use global_vars, only: turbulence
-!  use global_vars, only: transition
-!  use global_vars, only: xnx
-!  use global_vars, only: xny
-!  use global_vars, only: xnz
-!  use global_vars, only: ynx
-!  use global_vars, only: yny
-!  use global_vars, only: ynz
-!  use global_vars, only: znx
-!  use global_vars, only: zny
-!  use global_vars, only: znz
-!  use global_vars, only: mu_t
-!  use global_vars, only: T_ref
+!  use global_vars, only: fixed_density
+!  use global_vars, only: fixed_x_speed
+!  use global_vars, only: fixed_y_speed
+!  use global_vars, only: fixed_z_speed
+!  use global_vars, only: fixed_pressure
+!  use global_vars, only: fixed_tk
+!  use global_vars, only: fixed_tw
+!  use global_vars, only: fixed_tkl
+!  use global_vars, only: fixed_tgm
+!  use global_vars, only: fixed_wall_temperature
+!  use global_vars, only: fixed_Ttemperature
+!  use global_vars, only: fixed_Tpressure
+!  use global_vars, only: fixed_tv
   use global_vars, only: dist
-  use global_vars, only: process_id
-!  use global_vars, only: tk_inf
-!  use global_vars, only: tw_inf
-!  use global_vars, only: te_inf
-!  use global_vars, only: tv_inf
-!  use global_vars, only: tgm_inf
-!  use global_vars, only: tkl_inf
-  use global_vars, only: face_names
-  use global_vars, only: id
-
-!  use global_vars, only: gm
-!  use global_vars, only: x_speed_inf
-!  use global_vars, only: y_speed_inf
-!  use global_vars, only: z_speed_inf
-!  use global_vars, only: density_inf
-!  use global_vars, only: pressure_inf
-!  use global_vars, only: qp
-!  use global_vars, only: current_iter
-
+!  use global_vars, only: face_names
+!  use global_vars, only: id
   use global_sst , only: beta1
 
-  use read_bc   , only : read_fixed_values
+!  use read_bc   , only : read_fixed_values
   use copy_bc   , only : copy3
   use FT_bc     , only : flow_tangency
 
@@ -125,7 +72,7 @@ module bc_primitive
 
   contains
 
-    subroutine populate_ghost_primitive(state, Ifaces, Jfaces, Kfaces, control, scheme, flow, dims)
+    subroutine populate_ghost_primitive(state, Ifaces, Jfaces, Kfaces, control, scheme, flow, bc, dims)
       !< Populate the state variables in the ghost cell
       !< with particular value based on the boundary conditio 
       !< being applied at that face
@@ -142,6 +89,7 @@ module bc_primitive
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
+      type(boundarytype), intent(in) :: bc
       integer :: i
       character(len=4) :: face
 
@@ -227,45 +175,45 @@ module bc_primitive
       
       do i = 1,6
         face_num = i
-        face = face_names(face_num)
+        face = bc%face_names(face_num)
 
-        select case(id(face_num))
+        select case(bc%id(face_num))
 
           case(-1)
-            call supersonic_inlet(face)
+            call supersonic_inlet(face, bc)
 
           case(-2)
-            call supersonic_outlet(face, dims)
+            call supersonic_outlet(face, bc, dims)
 
           case(-3)
-            call subsonic_inlet(face, dims)
+            call subsonic_inlet(face, bc, dims)
 
           case(-4)
-            call subsonic_outlet(face, dims)
+            call subsonic_outlet(face, bc, dims)
 
           case(-5)
-            call wall(face, dims)
+            call wall(face, bc, dims)
 
           case(-6)
-            call slip_wall(face, Ifaces, Jfaces, Kfaces, dims)
+            call slip_wall(face, Ifaces, Jfaces, Kfaces, bc, dims)
 
           case(-7)
-            call pole(face, dims)
+            call pole(face, bc, dims)
 
           case(-8)
-            call far_field(face, Ifaces, Jfaces, Kfaces, dims)
+            call far_field(face, Ifaces, Jfaces, Kfaces, bc, dims)
 
           case(-9)
             call periodic_bc(face)
 
           case(-11)
-            call total_pressure(face, Ifaces, Jfaces, Kfaces, dims)
+            call total_pressure(face, Ifaces, Jfaces, Kfaces, bc, dims)
 
           case Default
-            if(id(i)>=0 .or. id(i)==-10) then
+            if(bc%id(i)>=0 .or. bc%id(i)==-10) then
               continue !interface boundary 
             else
-              print*, " boundary condition not recognised -> id is :", id(i)
+              print*, " boundary condition not recognised -> id is :", bc%id(i)
             end if
 
           end select
@@ -298,39 +246,40 @@ module bc_primitive
       end subroutine populate_ghost_primitive
 
 
-      subroutine supersonic_inlet(face)
+      subroutine supersonic_inlet(face, bc)
         !< Supersonic inlet boundary condition
         !< All the values of state variables are fixed
         implicit none
         character(len=*), intent(in) :: face
+        type(boundarytype), intent(in) :: bc
         !< Name of the face at which boundary condition is called
         if(current_iter<=2)then
-        call fix(density , fixed_density , face)
-        call fix(x_speed , fixed_x_speed , face)
-        call fix(y_speed , fixed_y_speed , face)
-        call fix(z_speed , fixed_z_speed , face)
-        call fix(pressure, fixed_pressure, face)
+        call fix(density , bc%fixed_density , face)
+        call fix(x_speed , bc%fixed_x_speed , face)
+        call fix(y_speed , bc%fixed_y_speed , face)
+        call fix(z_speed , bc%fixed_z_speed , face)
+        call fix(pressure, bc%fixed_pressure, face)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call fix(tv, fixed_tv, face)
+            call fix(tv, bc%fixed_tv, face)
           case('sst', 'sst2003')
-            call check_if_value_fixed("sst")
-            call fix(tk, fixed_tk, face)
-            call fix(tw, fixed_tw, face)
+            !call check_if_value_fixed(bc, "sst")
+            call fix(tk, bc%fixed_tk, face)
+            call fix(tw, bc%fixed_tw, face)
           case('kkl')
-            call check_if_value_fixed("kkl")
-            call fix(tk, fixed_tk, face)
-            call fix(tkl, fixed_tkl, face)
+            !call check_if_value_fixed(bc, "kkl")
+            call fix(tk, bc%fixed_tk, face)
+            call fix(tkl, bc%fixed_tkl, face)
           case DEFAULT
             Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call check_if_value_fixed("lctm2015")
-            call fix(tgm, fixed_tgm, face)
+            !call check_if_value_fixed(bc, "lctm2015")
+            call fix(tgm, bc%fixed_tgm, face)
           case DEFAULT
             continue
         end select
@@ -338,142 +287,147 @@ module bc_primitive
       end subroutine supersonic_inlet
 
 
-      subroutine supersonic_outlet(face, dims)
+      subroutine supersonic_outlet(face, bc, dims)
         !< Supersonic outlet boundary condition. 
         !< All the values of state variables are copied 
         !< from inside the domain
         implicit none
         type(extent), intent(in) :: dims
+        type(boundarytype), intent(in) :: bc
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(density , "flat", face, dims)
-        call copy3(x_speed , "flat", face, dims)
-        call copy3(y_speed , "flat", face, dims)
-        call copy3(z_speed , "flat", face, dims)
-        call copy3(pressure, "flat", face, dims)
+        call copy3(density , "flat", face, bc, dims)
+        call copy3(x_speed , "flat", face, bc, dims)
+        call copy3(y_speed , "flat", face, bc, dims)
+        call copy3(z_speed , "flat", face, bc, dims)
+        call copy3(pressure, "flat", face, bc, dims)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv, "flat", face, dims)
+            call copy3(tv, "flat", face, bc, dims)
           case('sst', 'sst2003')
-            call copy3(tk, "flat", face, dims)
-            call copy3(tw, "flat", face, dims)
+            call copy3(tk, "flat", face, bc, dims)
+            call copy3(tw, "flat", face, bc, dims)
           case('kkl')
-            call copy3(tk, "flat", face, dims)
-            call copy3(tkl, "flat", face, dims)
+            call copy3(tk, "flat", face, bc, dims)
+            call copy3(tkl, "flat", face, bc, dims)
           case DEFAULT
             Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face, dims)
+            call copy3(tgm, "flat", face, bc, dims)
           case DEFAULT
             continue
         end select
       end subroutine supersonic_outlet
 
 
-      subroutine subsonic_inlet(face, dims)
+      subroutine subsonic_inlet(face, bc, dims)
         !< Subsonic inlet boundary condition. 
         !< All the state variables's value expect pressure
         !< is fixed and pressure is copied from inside the 
         !< domain
         implicit none
         type(extent), intent(in) :: dims
+        type(boundarytype), intent(in) :: bc
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
         if(current_iter<=2)then
-        call fix(density , fixed_density , face)
-        call fix(x_speed , fixed_x_speed , face)
-        call fix(y_speed , fixed_y_speed , face)
-        call fix(z_speed , fixed_z_speed , face)
+        call fix(density , bc%fixed_density , face)
+        call fix(x_speed , bc%fixed_x_speed , face)
+        call fix(y_speed , bc%fixed_y_speed , face)
+        call fix(z_speed , bc%fixed_z_speed , face)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call fix(tv, fixed_tv, face)
+            call fix(tv, bc%fixed_tv, face)
           case('sst', 'sst2003')
-            call check_if_value_fixed("sst")
-            call fix(tk, fixed_tk, face)
-            call fix(tw, fixed_tw, face)
+            !call check_if_value_fixed(bc, "sst")
+            call fix(tk, bc%fixed_tk, face)
+            call fix(tw, bc%fixed_tw, face)
           case('kkl')
-            call check_if_value_fixed("kkl")
-            call fix(tk, fixed_tk, face)
-            call fix(tkl, fixed_tw, face)
+            !call check_if_value_fixed(bc, "kkl")
+            call fix(tk, bc%fixed_tk, face)
+            call fix(tkl, bc%fixed_tw, face)
           case DEFAULT
            Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call check_if_value_fixed("lctm2015")
-            call fix(tgm, fixed_tgm, face)
+            !call check_if_value_fixed(bc, "lctm2015")
+            call fix(tgm, bc%fixed_tgm, face)
           case DEFAULT
             continue
         end select
         end if
-        call copy3(pressure, "flat", face, dims)
+        call copy3(pressure, "flat", face, bc, dims)
       end subroutine subsonic_inlet
 
 
-      subroutine subsonic_outlet(face, dims)
+      subroutine subsonic_outlet(face, bc, dims)
         !< Subsonic outlet boundary condition. 
         !< All the state variables's value expect pressure
         !< is copied from the inside of the domain and pressure 
         !< is fixed
         implicit none
         type(extent), intent(in) :: dims
+        type(boundarytype), intent(in) :: bc
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(density, "flat", face, dims)
-        call copy3(x_speed, "flat", face, dims)
-        call copy3(y_speed, "flat", face, dims)
-        call copy3(z_speed, "flat", face, dims)
+        call copy3(density, "flat", face, bc, dims)
+        call copy3(x_speed, "flat", face, bc, dims)
+        call copy3(y_speed, "flat", face, bc, dims)
+        call copy3(z_speed, "flat", face, bc, dims)
         if(current_iter<=2)then
-        call fix(pressure, fixed_pressure, face)
+        call fix(pressure, bc%fixed_pressure, face)
         end if
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv, "flat", face, dims)
+            call copy3(tv, "flat", face, bc, dims)
           case('sst', 'sst2003')
-            call copy3(tk, "flat", face, dims)
-            call copy3(tw, "flat", face, dims)
+            call copy3(tk, "flat", face, bc, dims)
+            call copy3(tw, "flat", face, bc, dims)
           case('kkl')
-            call copy3(tk, "flat", face, dims)
-            call copy3(tkl, "flat", face, dims)
+            call copy3(tk, "flat", face, bc, dims)
+            call copy3(tkl, "flat", face, bc, dims)
           case DEFAULT
            Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face, dims)
+            call copy3(tgm, "flat", face, bc, dims)
           case DEFAULT
             continue
         end select
       end subroutine subsonic_outlet
 
-      subroutine wall(face, dims)
+      subroutine wall(face, bc, dims)
         !< Adiabatic/Isothermal wall boundary condition
         implicit none
         type(extent), intent(in) :: dims
         character(len=*), intent(in) :: face
+        type(boundarytype), intent(in) :: bc
         !< Name of the face at which boundary condition is called
-        call copy3(pressure, "symm",  face, dims)
-        call temp_based_density(fixed_wall_temperature, face, dims)
-        call no_slip(face, dims)
+        call copy3(pressure, "symm",  face, bc, dims)
+        call temp_based_density(bc%fixed_wall_temperature, face, bc, dims)
+        call no_slip(face, bc, dims)
       end subroutine wall
 
 
-      subroutine slip_wall(face, Ifaces, Jfaces, Kfaces, dims)
+      subroutine slip_wall(face, Ifaces, Jfaces, Kfaces, bc, dims)
         !< Slip wall boundary condition. 
         !< Maintain flow tangency
         implicit none
         type(extent), intent(in) :: dims
+        type(boundarytype), intent(in) :: bc
         character(len=*), intent(in) :: face
         type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
         !< Input varaible which stores I faces' area and unit normal
@@ -482,26 +436,26 @@ module bc_primitive
         type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
         !< Input varaible which stores K faces' area and unit normal
         !< Name of the face at which boundary condition is called
-        call copy3(density , "symm", face, dims)
-        call copy3(pressure, "symm", face, dims)
+        call copy3(density , "symm", face, bc, dims)
+        call copy3(pressure, "symm", face, bc, dims)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv, "symm", face, dims)
+            call copy3(tv, "symm", face, bc, dims)
           case('sst', 'sst2003')
-            call copy3(tk, "symm", face, dims)
-            call copy3(tw, "symm", face, dims)
+            call copy3(tk, "symm", face, bc, dims)
+            call copy3(tw, "symm", face, bc, dims)
           case('kkl')
-            call copy3(tk, "symm", face, dims)
-            call copy3(tkl, "symm", face, dims)
+            call copy3(tk, "symm", face, bc, dims)
+            call copy3(tkl, "symm", face, bc, dims)
           case DEFAULT
             Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face, dims)
+            call copy3(tgm, "flat", face, bc, dims)
           case DEFAULT
             continue
         end select
@@ -509,36 +463,37 @@ module bc_primitive
       end subroutine slip_wall
 
 
-      subroutine pole(face, dims)
+      subroutine pole(face, bc, dims)
         !< Boundary condition for the block face
         !< with zero area; turning into a pole
         implicit none
         type(extent), intent(in) :: dims
+        type(boundarytype), intent(in) :: bc
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(density , "flat", face, dims)
-        call copy3(x_speed , "flat", face, dims)
-        call copy3(y_speed , "flat", face, dims)
-        call copy3(z_speed , "flat", face, dims)
-        call copy3(pressure, "flat", face, dims)
+        call copy3(density , "flat", face, bc, dims)
+        call copy3(x_speed , "flat", face, bc, dims)
+        call copy3(y_speed , "flat", face, bc, dims)
+        call copy3(z_speed , "flat", face, bc, dims)
+        call copy3(pressure, "flat", face, bc, dims)
         select case (turbulence)
           case('none')
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv, "flat", face, dims) 
+            call copy3(tv, "flat", face, bc, dims) 
           case('sst', 'sst2003')
-            call copy3(tk, "flat", face, dims)
-            call copy3(tw, "flat", face, dims)
+            call copy3(tk, "flat", face, bc, dims)
+            call copy3(tw, "flat", face, bc, dims)
           case('kkl')
-            call copy3(tk, "flat", face, dims)
-            call copy3(tkl, "flat", face, dims)
+            call copy3(tk, "flat", face, bc, dims)
+            call copy3(tkl, "flat", face, bc, dims)
           case DEFAULT
             Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face, dims)
+            call copy3(tgm, "flat", face, bc, dims)
           case DEFAULT
             continue
         end select
@@ -590,34 +545,35 @@ module bc_primitive
       end subroutine fix
 
 
-      subroutine no_slip(face, dims)
+      subroutine no_slip(face, bc, dims)
         !< No-slip wall boundary condition. All the 
         !< component of velocity throught face is zero
         implicit none
         type(extent), intent(in) :: dims
+        type(boundarytype), intent(in) :: bc
         character(len=*), intent(in) :: face
         !< Name of the face at which boundary condition is called
-        call copy3(x_speed, "anti", face, dims)
-        call copy3(y_speed, "anti", face, dims)
-        call copy3(z_speed, "anti", face, dims)
+        call copy3(x_speed, "anti", face, bc, dims)
+        call copy3(y_speed, "anti", face, bc, dims)
+        call copy3(z_speed, "anti", face, bc, dims)
         select case(turbulence)
           case("none")
             !do nothing
             continue
           case('sa', 'saBC')
-            call copy3(tv  , "anti", face, dims)
+            call copy3(tv  , "anti", face, bc, dims)
           case("sst", 'sst2003')
-            call copy3(tk  , "anti", face, dims)
+            call copy3(tk  , "anti", face, bc, dims)
             call set_omega_at_wall(face)
           case("kkl")
-            call copy3(tk  , "anti", face, dims)
-            call copy3(tkl , "anti", face, dims)
+            call copy3(tk  , "anti", face, bc, dims)
+            call copy3(tkl , "anti", face, bc, dims)
           case DEFAULT
             Fatal_error
         end select
         select case(trim(transition))
           case('lctm2015')
-            call copy3(tgm, "flat", face, dims)
+            call copy3(tgm, "flat", face, bc, dims)
           case DEFAULT
             continue
         end select
@@ -706,37 +662,7 @@ module bc_primitive
       end select
     end subroutine set_omega_at_wall
 
-    subroutine check_if_value_fixed(model)
-      !< A Fail-check subroutine which set the freestream
-      !< as the fixed value in case not specified explicitly
-      implicit none
-      character(len=*), intent(in) :: model
-
-      select case(model)
-        case("none", "lctm2015")
-          !do nothing
-          continue
-        case("sa", 'saBC')
-          if(fixed_tv(face_num)==0.0)fixed_tv(face_num)=tv_inf
-        case("sst", 'sst2003')
-          if(fixed_tk(face_num)==0.) fixed_tk(face_num)=tk_inf
-          if(fixed_tw(face_num)==0.) fixed_tw(face_num)=tw_inf
-        case("kkl")
-          if(fixed_tk(face_num)==0.) fixed_tk(face_num)=tk_inf
-          if(fixed_tkl(face_num)==0.) fixed_tkl(face_num)=tkl_inf
-        case DEFAULT
-         Fatal_error
-      end select
-
-      select case(trim(transition))
-        case('lctm2015')
-          if(fixed_tgm(face_num)==0.0) fixed_tgm(face_num)=tgm_inf
-        Case DEFAULT
-          continue
-      end select
-    end subroutine check_if_value_fixed
-
-    subroutine far_field(face, Ifaces, Jfaces, Kfaces, dims)
+    subroutine far_field(face, Ifaces, Jfaces, Kfaces, bc, dims)
       !< Far-field Riemann boundary condition
       implicit none
       type(extent), intent(in) :: dims
@@ -747,6 +673,7 @@ module bc_primitive
       !< Input varaible which stores J faces' area and unit normal
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
+      type(boundarytype), intent(in) :: bc
       real :: cinf, cexp   ! speed of sound
       real :: Rinf, Rexp   ! Riemann invarient
       real :: Uninf, Unexp ! face normal speed
@@ -795,19 +722,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -827,22 +754,22 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
@@ -888,19 +815,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -920,22 +847,22 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
@@ -981,19 +908,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1013,22 +940,22 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
@@ -1074,19 +1001,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1106,22 +1033,22 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
@@ -1167,19 +1094,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1199,22 +1126,22 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
@@ -1260,19 +1187,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1292,22 +1219,22 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
@@ -1327,7 +1254,7 @@ module bc_primitive
     end subroutine far_field
 
 
-    subroutine total_pressure(face, Ifaces, Jfaces, Kfaces, dims)
+    subroutine total_pressure(face, Ifaces, Jfaces, Kfaces, bc, dims)
       !< Total Pressure Riemann boundary condition
       implicit none
       type(extent), intent(in) :: dims
@@ -1338,6 +1265,7 @@ module bc_primitive
       !< Input varaible which stores J faces' area and unit normal
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
+      type(boundarytype), intent(in) :: bc
       real :: cinf, cexp   ! speed of sound
       real :: Rinf, Rexp   ! Riemann invarient
       real :: Uninf, Unexp ! face normal speed
@@ -1381,19 +1309,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1407,28 +1335,28 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i-1,j,k)**2+y_speed(i-1,j,k)**2+z_speed(i-1,j,k)**2)/Cb
-                pressure(i-1,j,k) = fixed_Tpressure(1)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
+                pressure(i-1,j,k) = bc%fixed_Tpressure(1)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i-1,j,k) = gm*pressure(i-1,j,k)/(Cb*Cb)
               end do
             end do
@@ -1466,19 +1394,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1492,28 +1420,28 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                pressure(i,j,k) = fixed_Tpressure(2)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
+                pressure(i,j,k) = bc%fixed_Tpressure(2)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
               end do
             end do
@@ -1551,19 +1479,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1577,28 +1505,28 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j-1,k)**2+y_speed(i,j-1,k)**2+z_speed(i,j-1,k)**2)/Cb
-                pressure(i,j-1,k) = fixed_Tpressure(3)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
+                pressure(i,j-1,k) = bc%fixed_Tpressure(3)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j-1,k) = gm*pressure(i,j-1,k)/(Cb*Cb)
               end do
             end do
@@ -1636,19 +1564,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1662,28 +1590,28 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                pressure(i,j,k) = fixed_Tpressure(4)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
+                pressure(i,j,k) = bc%fixed_Tpressure(4)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
               end do
             end do
@@ -1721,19 +1649,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1747,28 +1675,28 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                pressure(i,j,k-1) = fixed_Tpressure(5)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
+                pressure(i,j,k-1) = bc%fixed_Tpressure(5)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j,k-1) = gm*pressure(i,j,k-1)/(Cb*Cb)
               end do
             end do
@@ -1806,19 +1734,19 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call copy3(tv, "flat", face, dims)
+                      call copy3(tv, "flat", face, bc, dims)
                     case('sst', 'sst2003')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tw, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
-                      call copy3(tk, "flat", face, dims)
-                      call copy3(tkl, "flat", face, dims)
+                      call copy3(tk, "flat", face, bc, dims)
+                      call copy3(tkl, "flat", face, bc, dims)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call copy3(tgm, "flat", face, dims)
+                      call copy3(tgm, "flat", face, bc, dims)
                     case DEFAULT
                       continue
                   end select
@@ -1832,28 +1760,28 @@ module bc_primitive
                       !do nothing
                       continue
                     case('sa', 'saBC')
-                      call fix(tv, fixed_tv, face)
+                      call fix(tv, bc%fixed_tv, face)
                     case('sst', 'sst2003')
-                      call check_if_value_fixed("sst")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tw, fixed_tw, face)
+                      !call check_if_value_fixed(bc, "sst")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tw, bc%fixed_tw, face)
                     case('kkl')
-                      call check_if_value_fixed("kkl")
-                      call fix(tk, fixed_tk, face)
-                      call fix(tkl, fixed_tkl, face)
+                      !call check_if_value_fixed(bc, "kkl")
+                      call fix(tk, bc%fixed_tk, face)
+                      call fix(tkl, bc%fixed_tkl, face)
                     case DEFAULT
                       Fatal_error
                   end select
                   select case(trim(transition))
                     case('lctm2015')
-                      call check_if_value_fixed("lctm2015")
-                      call fix(tgm, fixed_tgm, face)
+                      !call check_if_value_fixed(bc, "lctm2015")
+                      call fix(tgm, bc%fixed_tgm, face)
                     case DEFAULT
                       continue
                   end select
                 end if
                 Mb = sqrt(x_speed(i,j,k)**2+y_speed(i,j,k)**2+z_speed(i,j,k)**2)/Cb
-                pressure(i,j,k) = fixed_Tpressure(6)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
+                pressure(i,j,k) = bc%fixed_Tpressure(6)/(((1+0.5*(gm-1.)*Mb*Mb))**(gm/(gm-1.)))
                 density(i,j,k) = gm*pressure(i,j,k)/(Cb*Cb)
               end do
             end do
@@ -1867,11 +1795,12 @@ module bc_primitive
 
     end subroutine total_pressure
 
-    subroutine temp_based_density(temperature, face, dims)
+    subroutine temp_based_density(temperature, face, bc, dims)
       !< Specify the density in the ghost cell based on the
       !< temperature on the wall. Isothermal or adiabatic
       implicit none
       type(extent), intent(in) :: dims
+      type(boundarytype), intent(in) :: bc
       real, dimension(1:6)     , intent(in)  :: temperature
       character(len=*)         , intent(in)  :: face
       real :: stag_temp
@@ -1901,7 +1830,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face, dims)
+            call copy3(density , "symm",  face, bc, dims)
           end if
          case("imax")
           if(temperature(2)<0.0)then
@@ -1926,7 +1855,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face, dims)
+            call copy3(density , "symm",  face, bc, dims)
           end if
         case("jmin")
           if(temperature(3)<0.0)then
@@ -1951,7 +1880,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face, dims)
+            call copy3(density , "symm",  face, bc, dims)
           end if
         case("jmax")
           if(temperature(4)<0.0)then
@@ -1976,7 +1905,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face, dims)
+            call copy3(density , "symm",  face, bc, dims)
           end if
         case("kmin")
           if(temperature(5)<0.0)then
@@ -2001,7 +1930,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face, dims)
+            call copy3(density , "symm",  face, bc, dims)
           end if
         case("kmax")
           if(temperature(6)<0.0)then
@@ -2026,7 +1955,7 @@ module bc_primitive
               end do
             end do
           else
-            call copy3(density , "symm",  face, dims)
+            call copy3(density , "symm",  face, bc, dims)
           end if
         case DEFAULT
           !print*, "ERROR: wrong face for boundary condition"

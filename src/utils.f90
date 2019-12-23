@@ -2,7 +2,6 @@
 module utils
   !< Utility module to allocate, deallocate and debug message
 
-    use global_vars, only : process_id
     implicit none
     private
 !    integer, public :: DEBUG_LEVEL = 1

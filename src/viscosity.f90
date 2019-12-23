@@ -11,11 +11,10 @@ module viscosity
 
   use vartypes
   use global_vars , only : mu
-  use global_vars , only : process_id
   use global_vars  , only : mu_t
 
-  use global_vars  , only : id
-  use global_vars  , only : face_names
+!  use global_vars  , only : id
+!  use global_vars  , only : face_names
   use global_vars  , only : dist
   use global_kkl   , only : cmu
   use global_sst   , only : bstar
@@ -61,12 +60,13 @@ module viscosity
 
   contains
 
-    subroutine calculate_viscosity(qp, scheme, flow, dims)
+    subroutine calculate_viscosity(qp, scheme, flow, bc, dims)
       !< Calculate molecular and turbulent viscosity
       implicit none
       type(schemetype), intent(in) :: scheme
       type(flowtype), intent(in) :: flow
       type(extent), intent(in) :: dims
+      type(boundarytype), intent(in) :: bc
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer :: i,j,k
       real :: T ! molecular viscosity
@@ -170,14 +170,14 @@ module viscosity
 
             ! populating ghost cell
             do i = 1,6
-              select case(id(i))
+              select case(bc%id(i))
                 case(-10,0:)
                   !interface
                   continue
 
                 case(-1,-2,-3,-4,-6,-7,-8,-9)
                   !call copy1(sa_mu, "symm", face_names(i))
-                  select case(face_names(i))
+                  select case(bc%face_names(i))
                     case("imin")
                         mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
@@ -197,7 +197,7 @@ module viscosity
 
                 case(-5)
                   !call copy1(sa_mu, "anti", face_names(i))
-                  select case(face_names(i))
+                  select case(bc%face_names(i))
                     case("imin")
                         mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
@@ -287,14 +287,14 @@ module viscosity
 
             ! populating ghost cell
             do i = 1,6
-              select case(id(i))
+              select case(bc%id(i))
                 case(-10,0:)
                   !interface
                   continue
 
                 case(-1,-2,-3,-4,-6,-7,-8,-9)
                   !call copy1(sst_mu, "symm", face_names(i))
-                  select case(face_names(i))
+                  select case(bc%face_names(i))
                     case("imin")
                         mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
                         sst_F1(      0, 1:jmx-1, 1:kmx-1) = sst_F1(     1, 1:jmx-1, 1:kmx-1)
@@ -319,7 +319,7 @@ module viscosity
                   end select
                 case(-5)
                   !call copy1(sst_mu, "anti", face_names(i))
-                  select case(face_names(i))
+                  select case(bc%face_names(i))
                     case("imin")
                         mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
                         sst_F1(      0, 1:jmx-1, 1:kmx-1) =  sst_F1(     1, 1:jmx-1, 1:kmx-1)
@@ -412,14 +412,14 @@ module viscosity
 
             ! populating ghost cell
             do i = 1,6
-              select case(id(i))
+              select case(bc%id(i))
                 case(-10,0:)
                   !interface
                   continue
 
                 case(-1,-2,-3,-4,-6,-7,-8,-9)
                   !call copy1(sst_mu, "symm", face_names(i))
-                  select case(face_names(i))
+                  select case(bc%face_names(i))
                     case("imin")
                         mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
                         sst_F1(      0, 1:jmx-1, 1:kmx-1) = sst_F1(     1, 1:jmx-1, 1:kmx-1)
@@ -444,7 +444,7 @@ module viscosity
                   end select
                 case(-5)
                   !call copy1(sst_mu, "anti", face_names(i))
-                  select case(face_names(i))
+                  select case(bc%face_names(i))
                     case("imin")
                         mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
                         sst_F1(      0, 1:jmx-1, 1:kmx-1) =  sst_F1(     1, 1:jmx-1, 1:kmx-1)
@@ -491,14 +491,14 @@ module viscosity
 
             ! populating ghost cell
             do i = 1,6
-              select case(id(i))
+              select case(bc%id(i))
                 case(-10,0:)
                   !interface
                   continue
 
                 case(-4:-1,-6,-8,-9)
                   !call copy1(kkl_mu, "symm", face_names(i))
-                  select case(face_names(i))
+                  select case(bc%face_names(i))
                     case("imin")
                         mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")
@@ -517,7 +517,7 @@ module viscosity
                   end select
                 case(-5)
                   !call copy1(kkl_mu, "anti", face_names(i))
-                  select case(face_names(i))
+                  select case(bc%face_names(i))
                     case("imin")
                         mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
                     case("imax")

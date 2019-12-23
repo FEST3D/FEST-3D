@@ -9,29 +9,41 @@ module CC
 #include "error.h"
 
    use vartypes
-  use global_vars, only: process_id
-!  use global_vars, only: xn
-!  use global_vars, only: yn
-!  use global_vars, only: zn
-!  use global_vars, only: xA
-!  use global_vars, only: yA
-!  use global_vars, only: zA
-!  use global_vars, only: volume
-  use global_vars, only: CCnormalX
-  use global_vars, only: CCnormalY
-  use global_vars, only: CCnormalZ
-  use global_vars, only: CCVn
-  use global_vars, only: DCCVnX
-  use global_vars, only: DCCVnY
-  use global_vars, only: DCCVnZ
+!  use global_vars, only: CCnormalX
+!  use global_vars, only: CCnormalY
+!  use global_vars, only: CCnormalZ
+!  use global_vars, only: CCVn
+!  use global_vars, only: DCCVnX
+!  use global_vars, only: DCCVnY
+!  use global_vars, only: DCCVnZ
   use global_vars, only: dist
 
   use utils, only : alloc
   implicit none
   private
+  real, dimension(:, :, :), allocatable             :: CCnormalX 
+   !< Cell-Center normal nx with respect to wall; used for transition model (pressure gradient calcualtion)
+  real, dimension(:, :, :), allocatable             :: CCnormalY
+   !< Cell-Center normal ny with respect to wall; used for transiton model (pressure gradient calculation)
+  real, dimension(:, :, :), allocatable             :: CCnormalZ
+   !< Cell-Center normal nz with respect to wall; used for transiton model (pressure gradient calculation)
+  real, dimension(:, :, :), allocatable             :: CCVn 
+  !< Store value at Cell-Center of dot product between velocity vector and cell-center normal. {vec(Velocity).normal}
+  real, dimension(:, :, :), allocatable             :: DCCVnX
+  !< Store Derivative of Cell-Center CCVn with respect to x
+  real, dimension(:, :, :), allocatable             :: DCCVnY
+  !< Store Derivative of Cell-Center CCVn with respect to y
+  real, dimension(:, :, :), allocatable             :: DCCVnZ
+  !< Store Derivative of Cell-Center CCVn with respect to z
   public :: find_DCCVn
   public :: setupCC
-!  public :: destroyCC
+  public :: CCnormalX
+  public :: CCnormalY
+  public :: CCnormalZ
+
+  public :: DCCVnX
+  public :: DCCVnY
+  public :: DCCVnZ
   
   contains
 

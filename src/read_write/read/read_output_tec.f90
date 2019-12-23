@@ -7,30 +7,7 @@ module read_output_tec
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-!  use global     , only : IN_FILE_UNIT
-!  use global     , only : OUTIN_FILE_UNIT
-!  use global     , only : outin_file
-!  use global_vars, only : density 
-!  use global_vars, only : x_speed 
-!  use global_vars, only : y_speed 
-!  use global_vars, only : z_speed 
-!  use global_vars, only : pressure 
-!  use global_vars, only : tk 
-!  use global_vars, only : tw 
-!  use global_vars, only : tkl
-!  use global_vars, only : tv
-!  use global_vars, only : tgm
-  use global_vars, only : mu 
-  use global_vars, only : mu_t 
-  use global_vars, only : dist
-
-!  use global_vars, only : r_count
-!  use global_vars, only : r_list
-
-  use global_vars, only : process_id
-
   use utils
-!  use string
 
   implicit none
   private

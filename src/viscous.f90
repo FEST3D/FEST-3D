@@ -4,14 +4,6 @@ module viscous
   !-----------------------------------------------------------------
 #include "error.inc"
   use vartypes
-!  use global_vars, only : xnx, xny, xnz !face unit normal x
-!  use global_vars, only : ynx, yny, ynz !face unit normal y
-!  use global_vars, only : znx, zny, znz !face unit normal z
-!  use global_vars, only : xA, yA, zA    !face area
-!  use global_vars, only : vol => volume
-!  use geometry   , only : CellCenter
-  
-  use global_vars, only : process_id
   use gradients  , only : gradu_x
   use gradients  , only : gradu_y
   use gradients  , only : gradu_z

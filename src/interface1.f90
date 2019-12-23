@@ -2,16 +2,8 @@
 module interface1
   !< This module handles the MPI Communication calls for interface boundary conditions
   use vartypes
-  use global_vars, only: imin_id
-  use global_vars, only: jmin_id
-  use global_vars, only: kmin_id
-  use global_vars, only: imax_id
-  use global_vars, only: jmax_id
-  use global_vars, only: kmax_id
-  use global_vars, only: layers
-  use global_vars, only: process_id
-  use global_vars, only : dir_switch
-  use global_vars, only: PbcId
+  !use global_vars, only : dir_switch
+  !use global_vars, only: PbcId
 
   use mapping, only : PiDir
   use mapping, only : PjDir
@@ -31,6 +23,7 @@ module interface1
 #include "error.h"
 #include "mpi.inc"
   private
+  integer :: layers = 3
   integer :: ibuf_size
   !< Size of the buffer for I face interface
   integer :: jbuf_size
@@ -101,31 +94,15 @@ module interface1
     end subroutine setup_interface
 
 
-!    subroutine destroy_interface()
-!      !< Deallocate all the memory being used  for data communication between processors
-!      implicit none
-!      call dealloc(imin_send_buf)
-!      call dealloc(jmin_send_buf)
-!      call dealloc(kmin_send_buf)
-!      call dealloc(imin_recv_buf)
-!      call dealloc(jmin_recv_buf)
-!      call dealloc(kmin_recv_buf)
-!      call dealloc(imax_send_buf)
-!      call dealloc(jmax_send_buf)
-!      call dealloc(kmax_send_buf)
-!      call dealloc(imax_recv_buf)
-!      call dealloc(jmax_recv_buf)
-!      call dealloc(kmax_recv_buf)
-!    end subroutine destroy_interface
 
-
-    subroutine apply_interface(qp, control, dims)
+    subroutine apply_interface(qp, control, bc, dims)
       !< MPISEND_RECV call to exchange interface infromation between
       !< connected blocks.
       implicit none
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2,1:dims%n_var) :: qp
+      type(boundarytype), intent(in) :: bc
       integer:: i,j,k,n,l
       integer:: status(MPI_STATUS_SIZE)
       integer:: ierr
@@ -143,9 +120,9 @@ module interface1
       ! call pattern is change for first block = 0
       ! to avoid O-Grid infinite loop for mpi communication call
       !-----------------------------------------------------------
-      if(mod(process_id,2)==0)then
+      if(mod(control%process_id,2)==0)then
       !--- IMAX ---!
-      if(imax_id>=0)then
+      if(bc%imax_id>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -158,20 +135,20 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
-                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
+        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%imax_id,tag,&
+                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%imax_id,tag,&
                           MPI_COMM_WORLD,status,ierr)
 !        if(mpi_class(2)==0)then
-!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
-!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imax_id,tag,MPI_COMM_WORLD,status, ierr)
 !        elseif(mpi_class(2)==1)then
-!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
-!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imax_id,tag,MPI_COMM_WORLD,ierr)
 !        else
 !          Fatal_error
 !        end if
         ! redistribute data
-        if(dir_switch(2)==0)then
+        if(bc%dir_switch(2)==0)then
           count=0
           do n=1,n_var
             do l=1,layers
@@ -200,7 +177,7 @@ module interface1
 
       !--- IMIN ---!
       DebugCall('apply_interface')
-      if(imin_id>=0)then
+      if(bc%imin_id>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -213,20 +190,20 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
-                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
+        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%imin_id,tag,&
+                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%imin_id,tag,&
                           MPI_COMM_WORLD,status,ierr)
 !        if(mpi_class(1)==0)then
-!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
-!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imin_id,tag,MPI_COMM_WORLD,status, ierr)
 !        elseif(mpi_class(1)==1)then
-!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
-!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imin_id,tag,MPI_COMM_WORLD,ierr)
 !        else
 !          Fatal_error
 !        end if
         ! redistribute data
-        if(dir_switch(1)==0)then
+        if(bc%dir_switch(1)==0)then
           count=0
           do n=1,n_var
             do l=1,layers
@@ -256,7 +233,7 @@ module interface1
       else
       !--- IMIN ---!
       DebugCall('apply_interface')
-      if(imin_id>=0)then
+      if(bc%imin_id>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -269,20 +246,20 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
-                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
+        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%imin_id,tag,&
+                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%imin_id,tag,&
                           MPI_COMM_WORLD,status,ierr)
 !        if(mpi_class(1)==0)then
-!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
-!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imin_id,tag,MPI_COMM_WORLD,status, ierr)
 !        elseif(mpi_class(1)==1)then
-!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,status, ierr)
-!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imin_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imin_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imin_id,tag,MPI_COMM_WORLD,ierr)
 !        else
 !          Fatal_error
 !        end if
         ! redistribute data
-        if(dir_switch(1)==0)then
+        if(bc%dir_switch(1)==0)then
           count=0
           do n=1,n_var
             do l=1,layers
@@ -310,7 +287,7 @@ module interface1
       end if
 
       !--- IMAX ---!
-      if(imax_id>=0)then
+      if(bc%imax_id>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -323,20 +300,20 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
-                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
+        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%imax_id,tag,&
+                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%imax_id,tag,&
                           MPI_COMM_WORLD,status,ierr)
 !        if(mpi_class(2)==0)then
-!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
-!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imax_id,tag,MPI_COMM_WORLD,status, ierr
 !        elseif(mpi_class(2)==1)then
-!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,status, ierr)
-!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,imax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(imax_recv_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(imax_send_buf,ibuf_size,MPI_DOUBLE_PRECISION,bc%imax_id,tag,MPI_COMM_WORLD,ierr)
 !        else
 !          Fatal_error
 !        end if
         ! redistribute data
-        if(dir_switch(2)==0)then
+        if(bc%dir_switch(2)==0)then
           count=0
           do n=1,n_var
             do l=1,layers
@@ -368,7 +345,7 @@ module interface1
 
 
       !--- JMIN ---!
-      if(jmin_id>=0)then
+      if(bc%jmin_id>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -381,20 +358,20 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmin_id,tag,&
-                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmin_id,tag,&
+        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, bc%jmin_id,tag,&
+                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, bc%jmin_id,tag,&
                           MPI_COMM_WORLD,status,ierr)
 !        if(mpi_class(3)==0)then
-!          call MPI_SEND(jmin_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,ierr)
-!          call MPI_RECV(jmin_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(jmin_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,bc%jmin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(jmin_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,bc%jmin_id,tag,MPI_COMM_WORLD,status, ierr)
 !        elseif(mpi_class(3)==1)then
-!          call MPI_RECV(jmin_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,status, ierr)
-!          call MPI_SEND(jmin_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(jmin_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,bc%jmin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(jmin_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,bc%jmin_id,tag,MPI_COMM_WORLD,ierr)
 !        else
 !          Fatal_error
 !        end if
         ! redistribute data
-        if(dir_switch(3)==0)then
+        if(bc%dir_switch(3)==0)then
           count=0
           do n=1,n_var
             do l=1,layers
@@ -422,7 +399,7 @@ module interface1
       end if
 
       !--- JMAX ---!
-      if(jmax_id>=0)then
+      if(bc%jmax_id>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -435,21 +412,21 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmax_id,tag,&
-                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmax_id,tag,&
+        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, bc%jmax_id,tag,&
+                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, bc%jmax_id,tag,&
                           MPI_COMM_WORLD,status,ierr)
 !        if(mpi_class(4)==0)then
-!          call MPI_SEND(jmax_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,ierr)
-!          call MPI_RECV(jmax_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(jmax_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,bc%jmax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(jmax_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,bc%jmax_id,tag,MPI_COMM_WORLD,status, ierr)
 !        elseif(mpi_class(4)==1)then
-!          call MPI_RECV(jmax_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,status, ierr)
-!          call MPI_SEND(jmax_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,jmax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(jmax_recv_buf,jbuf_size,MPI_DOUBLE_PRECISION,bc%jmax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(jmax_send_buf,jbuf_size,MPI_DOUBLE_PRECISION,bc%jmax_id,tag,MPI_COMM_WORLD,ierr)
 !        else
 !          Fatal_error
 !        end if
 
         ! redistribute data
-        if(dir_switch(4)==0)then
+        if(bc%dir_switch(4)==0)then
           count=0
           do n=1,n_var
             do l=1,layers
@@ -477,7 +454,7 @@ module interface1
       end if
 
       !--- KMIN ---!
-      if(kmin_id>=0)then
+      if(bc%kmin_id>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -490,20 +467,20 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmin_id,tag,&
-                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmin_id,tag,&
+        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, bc%kmin_id,tag,&
+                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, bc%kmin_id,tag,&
                           MPI_COMM_WORLD,status,ierr)
 !        if(mpi_class(5)==0)then
-!          call MPI_SEND(kmin_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,ierr)
-!          call MPI_RECV(kmin_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(kmin_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,bc%kmin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(kmin_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,bc%kmin_id,tag,MPI_COMM_WORLD,status, ierr)
 !        elseif(mpi_class(5)==1)then
-!          call MPI_RECV(kmin_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,status, ierr)
-!          call MPI_SEND(kmin_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmin_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(kmin_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,bc%kmin_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(kmin_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,bc%kmin_id,tag,MPI_COMM_WORLD,ierr)
 !        else
 !          Fatal_error
 !        end if
         ! redistribute data
-        if(dir_switch(5)==0)then
+        if(bc%dir_switch(5)==0)then
           count=0
           do n=1,n_var
             do l=1,layers
@@ -531,7 +508,7 @@ module interface1
       end if
 
       !--- KMAX ---!
-      if(kmax_id>=0)then
+      if(bc%kmax_id>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -544,20 +521,20 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmax_id,tag,&
-                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmax_id,tag,&
+        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, bc%kmax_id,tag,&
+                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, bc%kmax_id,tag,&
                           MPI_COMM_WORLD,status,ierr)
 !        if(mpi_class(6)==0)then
-!          call MPI_SEND(kmax_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,ierr)
-!          call MPI_RECV(kmax_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(kmax_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,bc%kmax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(kmax_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,bc%kmax_id,tag,MPI_COMM_WORLD,status, ierr)
 !        elseif(mpi_class(6)==1)then
-!          call MPI_RECV(kmax_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,status, ierr)
-!          call MPI_SEND(kmax_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,kmax_id,tag,MPI_COMM_WORLD,ierr)
+!          call MPI_RECV(kmax_recv_buf,kbuf_size,MPI_DOUBLE_PRECISION,bc%kmax_id,tag,MPI_COMM_WORLD,status, ierr)
+!          call MPI_SEND(kmax_send_buf,kbuf_size,MPI_DOUBLE_PRECISION,bc%kmax_id,tag,MPI_COMM_WORLD,ierr)
 !        else
 !          Fatal_error
 !        end if
         ! redistribute data
-        if(dir_switch(6)==0)then
+        if(bc%dir_switch(6)==0)then
           count=0
           do n=1,n_var
             do l=1,layers
@@ -583,16 +560,17 @@ module interface1
           end do
         end if
       end if
-      call apply_periodic_bc(qp, control, dims)
+      call apply_periodic_bc(qp, control, bc, dims)
     end subroutine apply_interface
 
 
-    subroutine apply_periodic_bc(qp, control, dims)
+    subroutine apply_periodic_bc(qp, control, bc, dims)
       !<If a block is connected to another block in perodic
       !<fashion, this subroutine will take care of that boundary condition.
       implicit none
       type(controltype), intent(in) :: control
       type(extent), intent(in) :: dims
+      type(boundarytype), intent(in) :: bc
       real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2,1:dims%n_var) :: qp
       integer:: i,j,k,n,l
       integer:: status(MPI_STATUS_SIZE)
@@ -609,7 +587,7 @@ module interface1
 
       n_var = control%n_var
 
-      if(PbcId(1)>=0)then
+      if(bc%PbcId(1)>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -622,8 +600,8 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(1),tag,&
-                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(1),tag,&
+        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(1),tag,&
+                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(1),tag,&
                           MPI_COMM_WORLD,status,ierr)
         count=0
         do n=1,n_var
@@ -638,7 +616,7 @@ module interface1
         end do
       end if
 
-      if(PbcId(2)>=0)then
+      if(bc%PbcId(2)>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -651,8 +629,8 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(2),tag,&
-                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(2),tag,&
+        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(2),tag,&
+                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(2),tag,&
                           MPI_COMM_WORLD,status,ierr)
         count=0
         do n=1,n_var
@@ -667,7 +645,7 @@ module interface1
         end do
       end if
       !--- JMIN ---!
-      if(PbcId(3)>=0)then
+      if(bc%PbcId(3)>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -680,8 +658,8 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(3),tag,&
-                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(3),tag,&
+        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(3),tag,&
+                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(3),tag,&
                           MPI_COMM_WORLD,status,ierr)
         ! redistribute data
         count=0
@@ -698,7 +676,7 @@ module interface1
       end if
 
       !--- JMAX ---!
-      if(PbcId(4)>=0)then
+      if(bc%PbcId(4)>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -711,8 +689,8 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(4),tag,&
-                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(4),tag,&
+        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(4),tag,&
+                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(4),tag,&
                           MPI_COMM_WORLD,status,ierr)
         ! redistribute data
         count=0
@@ -729,7 +707,7 @@ module interface1
       end if
 
       !--- KMIN ---!
-      if(PbcId(5)>=0)then
+      if(bc%PbcId(5)>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -742,8 +720,8 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(5),tag,&
-                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(5),tag,&
+        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(5),tag,&
+                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(5),tag,&
                           MPI_COMM_WORLD,status,ierr)
         ! redistribute data
         count=0
@@ -760,7 +738,7 @@ module interface1
       end if
 
       !--- KMAX ---!
-      if(PbcId(6)>=0)then
+      if(bc%PbcId(6)>=0)then
         !collect data
         count=0
         do n=1,n_var
@@ -773,8 +751,8 @@ module interface1
             end do
           end do
         end do
-        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(6),tag,&
-                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(6),tag,&
+        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(6),tag,&
+                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, bc%PbcId(6),tag,&
                           MPI_COMM_WORLD,status,ierr)
         ! redistribute data
         count=0

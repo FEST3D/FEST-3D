@@ -9,85 +9,81 @@ module gradients
   !-------------------------------------------------------------------
 #include "error.h"
 #include "debug.h"
-   use vartypes
-  use global_vars,  only : process_id
-  use global_vars, only : fixed_wall_temperature
-
+  use vartypes
   use utils,        only : alloc
-!  use global_vars, only : qp
-!  use global_vars, only : x_speed
-!  use global_vars, only : y_speed
-!  use global_vars, only : z_speed
-!  use global_vars, only : tk
-!  use global_vars, only : tw
-!  use global_vars, only : tv
-!  use global_vars, only : te
-!  use global_vars, only : tkl
-!  use global_vars, only : tgm
-!  use global_vars, only : xn
-!  use global_vars, only : yn
-!  use global_vars, only : zn
-!  use global_vars, only : xnx
-!  use global_vars, only : xny
-!  use global_vars, only : xnz
-!  use global_vars, only : ynx
-!  use global_vars, only : yny
-!  use global_vars, only : ynz
-!  use global_vars, only : znx
-!  use global_vars, only : zny
-!  use global_vars, only : znz
-!  use global_vars, only : xA
-!  use global_vars, only : yA
-!  use global_vars, only : zA
-!  use global_vars, only : volume
-!  use global_vars, only : density
-!  use global_vars, only : pressure
-  ! layout boundary condition id for face
-  use global_vars, only : imin_id
-  use global_vars, only : imax_id
-  use global_vars, only : jmin_id
-  use global_vars, only : jmax_id
-  use global_vars, only : kmin_id
-  use global_vars, only : kmax_id
 
 
   implicit none
   !private
   ! gradients
-  integer                                           :: n_grad=4 !< Number of variable to store gradient for
-  real, dimension(:, :, :, :), allocatable, target  :: gradqp_x !< Store gradient of n_grad variables with respect to direction x
-  real, dimension(:, :, :, :), allocatable, target  :: gradqp_y !< Store gradient of n_grad variables with respect to direction y
-  real, dimension(:, :, :, :), allocatable, target  :: gradqp_z !< Store gradient of n_grad variables with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradu_x  !< Gradient of variable U with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradu_y  !< Gradient of variable U with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradu_z  !< Gradient of variable U with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradv_x  !< Gradient of variable V with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradv_y  !< Gradient of variable V with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradv_z  !< Gradient of variable V with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradw_x  !< Gradient of variable W with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradw_y  !< Gradient of variable W with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradw_z  !< Gradient of variable W with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradT_x  !< Gradient of variable Temperature with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradT_y  !< Gradient of variable Temperature with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradT_z  !< Gradient of variable Temperature with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtk_x !< Gradient of variable turbulent kinetic energy with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtk_y !< Gradient of variable turbulent kinetic energy with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtk_z !< Gradient of variable turbulent kinetic energy with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtw_x !< Gradient of variable dissipation rate with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtw_y !< Gradient of variable dissipation rate with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtw_z !< Gradient of variable dissipation rate with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtkl_x!< Gradient of variable kL with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtkl_y!< Gradient of variable kL with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtkl_z!< Gradient of variable kL with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradte_x !< Gradient of variable turbulent energy dissiaption with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradte_y !< Gradient of variable turbulent energy dissiaption with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradte_z !< Gradient of variable turbulent energy dissiaption with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtv_x !< Gradient of variable turbulenct visocity(SA mode) with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtv_y !< Gradient of variable turbulenct visocity(SA mode) with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtv_z !< Gradient of variable turbulenct visocity(SA mode) with respect to direction z
-  real, dimension(:, :, :),                 pointer :: gradtgm_x!< Gradient of variable intermittency with respect to direction x
-  real, dimension(:, :, :),                 pointer :: gradtgm_y!< Gradient of variable intermittency with respect to direction y
-  real, dimension(:, :, :),                 pointer :: gradtgm_z!< Gradient of variable intermittency with respect to direction z
+  integer                                           :: n_grad=4 
+  !< Number of variable to store gradient for
+  real, dimension(:, :, :, :), allocatable, target  :: gradqp_x 
+  !< Store gradient of n_grad variables with respect to direction x
+  real, dimension(:, :, :, :), allocatable, target  :: gradqp_y 
+  !< Store gradient of n_grad variables with respect to direction y
+  real, dimension(:, :, :, :), allocatable, target  :: gradqp_z 
+  !< Store gradient of n_grad variables with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradu_x  
+  !< Gradient of variable U with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradu_y  
+  !< Gradient of variable U with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradu_z  
+  !< Gradient of variable U with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradv_x  
+  !< Gradient of variable V with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradv_y  
+  !< Gradient of variable V with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradv_z  
+  !< Gradient of variable V with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradw_x  
+  !< Gradient of variable W with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradw_y  
+  !< Gradient of variable W with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradw_z  
+  !< Gradient of variable W with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradT_x  
+  !< Gradient of variable Temperature with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradT_y  
+  !< Gradient of variable Temperature with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradT_z  
+  !< Gradient of variable Temperature with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradtk_x 
+  !< Gradient of variable turbulent kinetic energy with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradtk_y 
+  !< Gradient of variable turbulent kinetic energy with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradtk_z 
+  !< Gradient of variable turbulent kinetic energy with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradtw_x 
+  !< Gradient of variable dissipation rate with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradtw_y 
+  !< Gradient of variable dissipation rate with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradtw_z 
+  !< Gradient of variable dissipation rate with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradtkl_x
+  !< Gradient of variable kL with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradtkl_y
+  !< Gradient of variable kL with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradtkl_z
+  !< Gradient of variable kL with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradte_x 
+  !< Gradient of variable turbulent energy dissiaption with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradte_y 
+  !< Gradient of variable turbulent energy dissiaption with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradte_z 
+  !< Gradient of variable turbulent energy dissiaption with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradtv_x 
+  !< Gradient of variable turbulenct visocity(SA mode) with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradtv_y 
+  !< Gradient of variable turbulenct visocity(SA mode) with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradtv_z 
+  !< Gradient of variable turbulenct visocity(SA mode) with respect to direction z
+  real, dimension(:, :, :),                 pointer :: gradtgm_x
+  !< Gradient of variable intermittency with respect to direction x
+  real, dimension(:, :, :),                 pointer :: gradtgm_y
+  !< Gradient of variable intermittency with respect to direction y
+  real, dimension(:, :, :),                 pointer :: gradtgm_z
+  !< Gradient of variable intermittency with respect to direction z
   real :: R_gas
 
   integer :: imx, jmx, kmx, n_var
@@ -271,7 +267,7 @@ module gradients
     end subroutine get_n_grad
 
 
-    subroutine evaluate_all_gradients(qp, Temp, cells, Ifaces, Jfaces, Kfaces, scheme, dims)
+    subroutine evaluate_all_gradients(qp, Temp, cells, Ifaces, Jfaces, Kfaces, scheme, bc, dims)
       !< Call to all the required gradients and 
       !< apply boundary condition for ghost cell
       !< gradients
@@ -289,6 +285,7 @@ module gradients
       !< Input varaible which stores J faces' area and unit normal
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
+      type(boundarytype), intent(in) :: bc
       real, dimension(:, :, :), pointer :: x_speed      
        !< U pointer, point to slice of qp (:,:,:,2) 
       real, dimension(:, :, :), pointer :: y_speed      
@@ -389,7 +386,7 @@ module gradients
 
       end Select
 
-      call apply_gradient_bc(qp, temp, cells, Ifaces, Jfaces, Kfaces, dims)
+      call apply_gradient_bc(qp, temp, cells, Ifaces, Jfaces, Kfaces, bc, dims)
 
     end subroutine evaluate_all_gradients
 
@@ -563,7 +560,7 @@ module gradients
 !    end subroutine compute_gradient_T
 
 
-    subroutine apply_gradient_bc(qp, temp, cells, Ifaces, Jfaces, Kfaces, dims)
+    subroutine apply_gradient_bc(qp, temp, cells, Ifaces, Jfaces, Kfaces, bc, dims)
       !< Call same subroutine for all the face
       !< Apply/set value of all gradient in the ghost cells
       !< gradqp_G = (qp_I - qp_G)*Area_W*unit_normal_G/(volume_G)
@@ -583,6 +580,7 @@ module gradients
       !< Input varaible which stores J faces' area and unit normal
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
+      type(boundarytype), intent(in) :: bc
 !      real, dimension(n_grad) :: qp_I
 !      real, dimension(n_grad) :: qp_G
 !      real    :: T_I
@@ -620,7 +618,7 @@ module gradients
       domain%iu   = 0
       domain%ju   = 0
       domain%ku   = 0
-      call apply_gradient_bc_face(qp, temp, cells, Ifaces, dims, domain)
+      call apply_gradient_bc_face(qp, temp, cells, Ifaces, dims, domain, bc%imin_id, bc%fixed_wall_temperature(1))
 
       domain%imin = dims%imx
       domain%imax = dims%imx
@@ -634,7 +632,7 @@ module gradients
       domain%iu   = 1
       domain%ju   = 0
       domain%ku   = 0
-      call apply_gradient_bc_face(qp, temp, cells, Ifaces, dims, domain)
+      call apply_gradient_bc_face(qp, temp, cells, Ifaces, dims, domain, bc%imax_id, bc%fixed_wall_temperature(2))
 
       domain%imin = 1
       domain%imax = dims%imx-1
@@ -648,7 +646,7 @@ module gradients
       domain%iu   = 0
       domain%ju   = 0
       domain%ku   = 0
-      call apply_gradient_bc_face(qp, temp, cells, Jfaces, dims, domain)
+      call apply_gradient_bc_face(qp, temp, cells, Jfaces, dims, domain, bc%jmin_id, bc%fixed_wall_temperature(3))
 
       domain%imin = 1
       domain%imax = dims%imx-1
@@ -662,7 +660,7 @@ module gradients
       domain%iu   = 0
       domain%ju   = 1
       domain%ku   = 0
-      call apply_gradient_bc_face(qp, temp, cells, Jfaces, dims, domain)
+      call apply_gradient_bc_face(qp, temp, cells, Jfaces, dims, domain, bc%jmax_id, bc%fixed_wall_temperature(4))
 
       domain%imin = 1
       domain%imax = dims%imx-1
@@ -676,7 +674,7 @@ module gradients
       domain%iu   = 0
       domain%ju   = 0
       domain%ku   = 0
-      call apply_gradient_bc_face(qp, temp, cells, Kfaces, dims, domain)
+      call apply_gradient_bc_face(qp, temp, cells, Kfaces, dims, domain, bc%kmin_id, bc%fixed_wall_temperature(5))
 
       domain%imin = 1
       domain%imax = dims%imx-1
@@ -690,7 +688,7 @@ module gradients
       domain%iu   = 0
       domain%ju   = 0
       domain%ku   = 1
-      call apply_gradient_bc_face(qp, temp, cells, Kfaces, dims, domain)
+      call apply_gradient_bc_face(qp, temp, cells, Kfaces, dims, domain, bc%kmax_id, bc%fixed_wall_temperature(6))
       !-----------------------------------------------------------
       ! gradqp_G = (qp_I - qp_G)*Area_W*unit_normal_G/(volume_G)
       ! volume_G = volume_I
@@ -935,7 +933,7 @@ module gradients
           
     end subroutine apply_gradient_bc
 
-    subroutine apply_gradient_bc_face(qp, temp, cells, faces, dims, domain)
+    subroutine apply_gradient_bc_face(qp, temp, cells, faces, dims, domain, bc_id, fixed_temp)
       !< Call same subroutine for all the face
       !< Apply/set value of all gradient in the ghost cells
       !< gradqp_G = (qp_I - qp_G)*Area_W*unit_normal_G/(volume_G)
@@ -952,6 +950,8 @@ module gradients
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: faces
       !< Input varaible which stores any(I,J,K) faces' area and unit normal
+      integer, intent(in) :: bc_id
+      real, intent(in) :: fixed_temp
       real, dimension(n_grad) :: qp_I
       real, dimension(n_grad) :: qp_G
       real    :: T_I
@@ -995,7 +995,7 @@ module gradients
             gradqp_x(i-il,j-jl,k-kl,4) = ( T_I -  T_G)*c_x
             gradqp_y(i-il,j-jl,k-kl,4) = ( T_I -  T_G)*c_y
             gradqp_z(i-il,j-jl,k-kl,4) = ( T_I -  T_G)*c_z
-            if(imin_id==-5 .and. (fixed_wall_temperature(1)<1. .and. fixed_wall_temperature(1)>=0.))then
+            if(bc_id==-5 .and. (fixed_temp<1. .and. fixed_temp>=0.))then
               gradqp_x(i-il,j-jl,k-kl,4) = -gradqp_x(i-iu,j-ju,k-ku,4)
               gradqp_y(i-il,j-jl,k-kl,4) = -gradqp_y(i-iu,j-ju,k-ku,4)
               gradqp_z(i-il,j-jl,k-kl,4) = -gradqp_z(i-iu,j-ju,k-ku,4)

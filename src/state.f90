@@ -29,179 +29,6 @@ module state
 
     contains
 
-!
-!        subroutine link_aliases(scheme)
-!          !< Setup state variable pointers
-!
-!            implicit none
-!            type(schemetype), intent(in) :: scheme
-!
-!            DebugCall("link_aliases")
-!
-!            density(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 1)
-!            x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 2)
-!            y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 3)
-!            z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 4)
-!            pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 5)
-!
-!
-!            select case (trim(scheme%turbulence))
-!
-!                case ("none")
-!                    !include nothing
-!                    continue
-!                
-!                case ("sst", "sst2003", "bsl", "des-sst", "kw")
-!                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-!                    tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-!
-!                case ("kkl")
-!                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-!                    tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-!
-!                case ("sa", "saBC")
-!                    tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-!
-!                case ("ke")
-!                    tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 6)
-!                    te(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, 7)
-!
-!                case ("les")
-!                  continue
-!                  ! todo
-!
-!                case DEFAULT
-!                  Fatal_error
-!
-!            end select
-!
-!
-!            ! Transition modeling
-!            select case(trim(scheme%transition))
-!
-!              case('lctm2015')
-!                tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => qp(:, :, :, n_var)
-!!                tgm_inf => qp_inf(n_var)
-!
-!              case('bc', 'none')
-!                !do nothing
-!                continue
-!
-!              case DEFAULT
-!                Fatal_error
-!
-!            end Select
-!
-!        end subroutine link_aliases
-!
-
-
-!        subroutine unlink_aliases()
-!          !< Nullify the pointer link
-!
-!            implicit none
-!
-!            DebugCall("unlink_aliases")
-!
-!            nullify(density)
-!            nullify(x_speed)
-!            nullify(y_speed)
-!            nullify(z_speed)
-!            nullify(pressure)
-!
-!            nullify(density_inf)
-!            nullify(x_speed_inf)
-!            nullify(y_speed_inf)
-!            nullify(z_speed_inf)
-!            nullify(pressure_inf)
-!
-!            select case (trim(turbulence))
-!
-!                case ("none")
-!                    continue
-!
-!                  case ("sst", "sst2003", "bsl", "kw", "des-sst")
-!                    nullify(tk)
-!                    nullify(tw)
-!                    nullify(tk_inf)
-!                    nullify(tw_inf)
-!
-!                case ("kkl")
-!                    nullify(tk)
-!                    nullify(tkl)
-!                    nullify(tk_inf)
-!                    nullify(tkl_inf)
-!
-!                case ("sa", "saBC")
-!                    nullify(tv)
-!                    nullify(tv_inf)
-!
-!                case ("ke")
-!                    nullify(tk)
-!                    nullify(te)
-!                    nullify(tk_inf)
-!                    nullify(te_inf)
-!
-!                case ("les")
-!                    continue
-!                    ! todo
-!
-!                case DEFAULT
-!                  Fatal_error
-!
-!            end select
-!
-!
-!            !Transition modeling
-!            select case(trim(transition))
-!
-!              case('lctm2015')
-!                nullify(tgm)
-!                nullify(tgm_inf)
-!
-!              case('bc', 'none')
-!                !do nothing
-!                continue
-!
-!              case DEFAULT
-!                Fatal_error
-!
-!            end Select
-!
-!        end subroutine unlink_aliases
-
-
-
-
-!        subroutine allocate_memory(qp)
-!            !< Allocate memory to the state variables
-!            !-----------------------------------------------------------
-!            implicit none
-!
-!            DebugCall("allocate_memory")
-!
-!            ! The state of the system is defined by the primitive 
-!            ! variables (density, velocity and pressure) at the grid
-!            ! cell centers. 
-!            call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, AErrMsg("qp"))
-!
-!        end subroutine allocate_memory
-!
-
-
-!        subroutine deallocate_memory()
-!          !< Deallocate memory from the state variable
-!
-!            implicit none
-!
-!            DebugCall("allocate_memory")
-!
-!            call dealloc(qp)
-!
-!        end subroutine deallocate_memory
-
-
-
         subroutine setup_state(files, qp, control, scheme, flow, dims)
             !< Setup the state module.
             !< This subroutine should be run before the state variables
@@ -235,24 +62,6 @@ module state
             call initstate(files, qp, control, scheme, flow, dims)
 
         end subroutine setup_state
-
-
-
-!        subroutine destroy_state()
-!            !< Destroy the state module.
-!            !< This subroutine destroys the state module which includes
-!            !< unlinking the aliases for the state components and 
-!            !< deallocating the memory held by the state variables
-!            !-----------------------------------------------------------
-!
-!            implicit none
-!            
-!            DebugCall("destroy_state")
-!
-!            call unlink_aliases()
-!            call deallocate_memory()
-!
-!        end subroutine destroy_state
 
 
 
@@ -316,21 +125,6 @@ module state
 
             end select
 
-
-           ! !Transition modeling
-           ! select case(trim(scheme%transition))
-
-           !   case('lctm2015')
-           !     tgm_inf = free_stream_tgm
-
-           !   case('bc', 'none')
-           !     !do nothing
-           !     continue
-
-           !   case DEFAULT
-           !     Fatal_error
-
-           ! end Select
 
         end subroutine init_infinity_values
 
@@ -508,5 +302,6 @@ module state
           control%n_var = n_var
 
         end subroutine set_n_var_value
+
 
 end module state
