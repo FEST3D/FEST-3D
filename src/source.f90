@@ -21,8 +21,8 @@ module source
   use global_sst   ,only : sigma_k
   use global_sst   ,only : gama
   use global_sst   ,only : sst_F1
-  use global_vars  ,only :   mu
-  use global_vars  ,only :   dist
+  use viscosity  ,only :   mu
+  use wall_dist  ,only :   dist
   use gradients  ,only :   gradu_x
   use gradients  ,only :   gradu_y
   use gradients  ,only :   gradu_z
@@ -72,7 +72,7 @@ module source
   use gradients ,only : gradtv_x
   use gradients ,only : gradtv_y
   use gradients ,only : gradtv_z
-  use global_vars  ,only : mu_t
+  use viscosity  ,only : mu_t
   use CC, only : DCCVnX
   use CC, only : DCCVnY
   use CC, only : DCCVnZ

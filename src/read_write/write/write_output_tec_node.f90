@@ -9,9 +9,9 @@ module write_output_tec_node
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global_vars, only : mu 
-  use global_vars, only : mu_t 
-  use global_vars, only : dist
+  use viscosity, only : mu 
+  use viscosity, only : mu_t 
+  use wall_dist, only : dist
   use global_sst , only : sst_F1
   use gradients, only : gradu_x
   use gradients, only : gradu_y

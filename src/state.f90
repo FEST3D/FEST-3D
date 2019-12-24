@@ -57,6 +57,7 @@ module state
             dims%n_var = control%n_var
             !call allocate_memory(qp)
             call alloc(qp, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, n_var, AErrMsg("qp"))
+            allocate(control%previous_res(1:control%n_var+1))
             !call link_aliases(scheme)
             call init_infinity_values(scheme, flow)
             call initstate(files, qp, control, scheme, flow, dims)

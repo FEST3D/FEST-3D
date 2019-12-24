@@ -189,6 +189,8 @@ module vartypes
         !< 0: continue the solver; 1=Stop the solver
         logical :: Halt = .FALSE.
         !< Logical value used to stop the solver in main program file.
+        real, dimension(:), allocatable :: previous_res
+        !< starting resnrom of previous run
     end type controltype
 
     type, public :: schemetype

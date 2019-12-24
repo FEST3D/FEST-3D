@@ -29,17 +29,10 @@ module plusgs
   use global_sa , only : kappa_sa
   use global_sa , only : cv1_3
   use global_sa , only : cw3_6
-!  use global_vars, only : DCCVnX
-!  use global_vars, only : DCCVnY
-!  use global_vars, only : DCCVnZ
-!  use global_vars, only : CCnormalX
-!  use global_vars, only : CCnormalY
-!  use global_vars, only : CCnormalZ
 
-  use global_vars, only : dist
-  use global_vars, only : mu
-  use global_vars, only : mu_t
-  use global_vars, only : delta_t
+  use wall_dist, only : dist
+  use viscosity, only : mu
+  use viscosity, only : mu_t
 
   use gradients  , only: gradu_x
   use gradients  , only: gradu_y
@@ -159,12 +152,13 @@ module plusgs
 !      call dealloc(dummy)
 !    end subroutine destroy_plusgs
 
-    subroutine update_with_plusgs(qp, cells, Ifaces,Jfaces,Kfaces,residue, scheme, dims)
+    subroutine update_with_plusgs(qp, delta_t, cells, Ifaces,Jfaces,Kfaces,residue, scheme, dims)
       !< Time-integrate with LU_SGS method
       implicit none
       type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
@@ -178,14 +172,14 @@ module plusgs
 
       select case(trim(scheme%turbulence))
         case('none')
-          call update_laminar_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
+          call update_laminar_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
 
         case('sst', 'sst2003')
           select case(trim(scheme%transition))
             case('none', 'bc')
-              call update_SST_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
+              call update_SST_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
             case('lctm2015')
-              call update_lctm2015(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
+              call update_lctm2015(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
             case DEFAULT
               Fatal_error
           end select
@@ -194,7 +188,7 @@ module plusgs
 !          call update_KKL_variables()
 
         case('sa', 'saBC')
-          call update_SA_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
+          call update_SA_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
 
         case Default
           Fatal_error
@@ -206,13 +200,14 @@ module plusgs
 
 
 
-    subroutine update_laminar_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
+    subroutine update_laminar_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update laminar flow with LU-SGS scheme
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -790,13 +785,14 @@ module plusgs
     end function SpectralRadius
 
 
-    subroutine update_SST_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
+    subroutine update_SST_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS (SST) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -1440,13 +1436,14 @@ module plusgs
 
     end function SSTFlux 
 
-    subroutine update_SA_variables(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
+    subroutine update_SA_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS (SA) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -2132,13 +2129,14 @@ module plusgs
     end function SAFlux 
 
 
-    subroutine update_lctm2015(qp, residue, cells, Ifaces, Jfaces, Kfaces, dims)
+    subroutine update_lctm2015(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS/transition (LCTM2015) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
       real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
       real, dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
+      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces

@@ -4,7 +4,7 @@ module wall_dist
   !< Calculate the distance from the wall 
   !< for each cell-center in the domain
   use vartypes
-  use global_vars, only : dist
+!  use global_vars, only : dist
   use utils, only: alloc
 #include "../debug.h"
 #include "../error.h"
@@ -21,11 +21,13 @@ module wall_dist
   !< Y component of wall surface node point
   real, private,dimension(:)    , allocatable :: wall_z
   !< Z component of wall surface node point
+  real, dimension(:, :, :), allocatable             :: dist 
+
   integer :: imx, jmx, kmx
 
   public :: setup_wall_dist
-!  public :: destroy_wall_dist
   public :: find_wall_dist
+  public :: dist
 
   contains
 

@@ -17,7 +17,6 @@ source.f90
 CC.f90
 gradients.f90 
 state.f90 
-global/global_vars.f90 
 global/global_sa.f90 
 global/global_kkl.f90 
 global/global_sst.f90 

@@ -27,10 +27,9 @@ module update
   use gradients  ,only :   gradw_x
   use gradients  ,only :   gradw_y
   use gradients  ,only :   gradw_z
-  use global_vars, only : dist
-  use global_vars, only : mu
-  use global_vars, only : mu_t
-  use global_vars, only : delta_t
+  use wall_dist, only : dist
+  use viscosity, only : mu
+  use viscosity, only : mu_t
 
   use utils, only: alloc
 
@@ -153,7 +152,7 @@ module update
 !      end subroutine destroy_update
 
 
-    subroutine get_next_solution(qp, Temp, residue, cells, F,G,H, Ifaces, Jfaces, Kfaces, control, scheme, flow, bc, dims)
+    subroutine get_next_solution(qp, Temp, residue, delta_t, cells, F,G,H, Ifaces, Jfaces, Kfaces, control, scheme, flow, bc, dims)
         !< Get solution at next time-step using scheme
         !< given in the input file.
         implicit none
@@ -165,6 +164,7 @@ module update
         real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2,1:dims%n_var), intent(inout):: qp
         real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(inout):: Temp
         real, dimension(:, :, :, :), intent(inout)  :: residue
+        real, dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout)  :: delta_t
         !< Store residue at each cell-center
         real, dimension(:, :, :, :), intent(inout) :: F
         !< Store fluxes throught the I faces
@@ -188,66 +188,67 @@ module update
         select case (trim(scheme%time_step_accuracy))
             case ("none")
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 1. ,1., .FALSE.) 
+              call compute_time_step(qp, delta_t, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 1. ,1., .FALSE.) 
             case ("RK4")
               R_store=0.
               U_store = qp
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call compute_time_step(qp, delta_t, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 0.5  , 2., .FALSE., R_store, U_store) 
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 0.5  , 2., .FALSE., R_store, U_store) 
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 1.0  , 2., .FALSE., R_store, U_store) 
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 1.0  , 2., .FALSE., R_store, U_store) 
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 1./6., 1., .TRUE. , R_store, U_store) 
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 1./6., 1., .TRUE. , R_store, U_store) 
             case("RK2")
               R_store=0.
               U_store = qp
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
+              call compute_time_step(qp, delta_t, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 0.5  , 1., .FALSE., R_store, U_store) 
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 0.5  , 1., .TRUE., R_store, U_store) 
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 0.5  , 1., .TRUE., R_store, U_store) 
             case ("TVDRK3")
               U_store = qp
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 1.0  , 1.) 
+              call compute_time_step(qp, delta_t, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 1.0  , 1.) 
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 1.0  , 1.) 
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 1.0  , 1.) 
               qp = 0.75*U_store + 0.25*qp
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 1.0  , 1.) 
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 1.0  , 1.) 
               qp = (1./3.)*U_store + (2./3.)*qp
             case ("TVDRK2")
               U_store = qp
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 1.0  , 1.) 
+              call compute_time_step(qp, delta_t, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 1.0  , 1.) 
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call update_with(qp, residue, cells, scheme, flow, "conservative", 1.0  , 1.) 
+              call update_with(qp, residue, delta_t, cells, scheme, flow, "conservative", 1.0  , 1.) 
               qp = 0.5*U_store + 0.5*qp
             case ("implicit")
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with_lusgs(qp,residue, cells,Ifaces,Jfaces,Kfaces, scheme, dims)
+              call compute_time_step(qp, delta_t, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
+              call update_with_lusgs(qp,residue, delta_t, cells,Ifaces,Jfaces,Kfaces, scheme, dims)
             case ("plusgs")
               call get_total_conservative_Residue(qp, Temp, cells, residue, F,G,H, Ifaces,Jfaces,Kfaces, control, scheme, flow, bc, dims)
-              call compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
-              call update_with_plusgs(qp,cells,Ifaces,Jfaces,Kfaces, residue, scheme, dims)
+              call compute_time_step(qp, delta_t, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims) ! has to be after get_..._Residue()
+              call update_with_plusgs(qp,delta_t, cells,Ifaces,Jfaces,Kfaces, residue, scheme, dims)
             case default
               Fatal_error
         end select
       end subroutine get_next_solution
 
-      subroutine update_with(qp, residue, cells, scheme, flow, type, time_factor, store_factor, use, Rn, un)
+      subroutine update_with(qp, residue, delta_t, cells, scheme, flow, type, time_factor, store_factor, use, Rn, un)
         !< A generalized scheme to updat the solution explicitly using
         !< any RK method and even first order euler explicit.
         implicit none
         real, dimension(-2:imx+2,-2:jmx+2,-2:kmx+2,1:n_var), intent(inout), target:: qp
         type(celltype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(in) :: cells
+        real, dimension(1:imx-1,1:jmx-1,1:kmx-1), intent(in) :: delta_t
         !< Input cell quantities: volume
         real, dimension(:, :, :, :), intent(in)  :: residue
         !< Store residue at each cell-center

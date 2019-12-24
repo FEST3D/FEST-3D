@@ -16,7 +16,7 @@ module CC
 !  use global_vars, only: DCCVnX
 !  use global_vars, only: DCCVnY
 !  use global_vars, only: DCCVnZ
-  use global_vars, only: dist
+  use wall_dist, only: dist
 
   use utils, only : alloc
   implicit none

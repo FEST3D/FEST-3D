@@ -10,12 +10,12 @@ module viscosity
   !-----------------------------------------------------
 
   use vartypes
-  use global_vars , only : mu
-  use global_vars  , only : mu_t
+!  use global_vars , only : mu
+!  use global_vars  , only : mu_t
 
 !  use global_vars  , only : id
 !  use global_vars  , only : face_names
-  use global_vars  , only : dist
+  use wall_dist  , only : dist
   use global_kkl   , only : cmu
   use global_sst   , only : bstar
   use global_sst   , only : a1
@@ -51,12 +51,16 @@ module viscosity
 
   implicit none
   private
+  real, dimension(:, :, :), allocatable, target     :: mu
+   !< Cell-center molecular viscosity
+  real, dimension(:, :, :), allocatable, target     :: mu_t
+   !< Cell-center turbulent viscosity
 
 !  integer :: imx, jmx, kmx
 
   public :: setup_viscosity
-!  public :: destroy_viscosity
   public :: calculate_viscosity
+  public :: mu,mu_t
 
   contains
 

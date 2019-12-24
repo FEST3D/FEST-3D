@@ -3,8 +3,8 @@ module solver
   !< allocate/deallcoate memory, initialize, iterate
   !-------------------------------------------------
   use vartypes
-  use global_vars, only: mu_t
-  use global_vars, only: mu
+  use viscosity, only: mu_t
+  use viscosity, only: mu
   use CC,    only: setupCC
   use read, only : read_input_and_controls
   use grid,      only : setup_grid!, destroy_grid
@@ -52,6 +52,8 @@ module solver
     !< Store fluxes throught the K faces
     real, public, dimension(:, :, :, :), allocatable, target :: residue
     !< Store residue at each cell-center
+    real, dimension(:, :, :), allocatable     :: delta_t  
+    !< Local time increment value at each cell center
 
     ! Public methods
     public :: setup_solver
@@ -116,7 +118,7 @@ module solver
             call setup_gradients(control,schemes,flow,dims)
             !call setup_source
             call setup_bc(files, schemes, flow, boundary, dims)
-            call setup_time(control,dims)
+            call setup_time(delta_t, control,dims)
             call setup_update(control,schemes,flow, dims)
             call setup_interface(control,dims)
             call setup_scheme(residue, F,G,H, control, schemes, dims)
@@ -197,7 +199,7 @@ module solver
               print*, control%current_iter
             end if
 
-            call get_next_solution(qp, Temp, residue, cells, F,G,H, Ifaces,Jfaces,Kfaces,control, schemes, flow, boundary, dims)
+            call get_next_solution(qp, Temp, residue, delta_t, cells, F,G,H, Ifaces,Jfaces,Kfaces,control, schemes, flow, boundary, dims)
             call find_resnorm(files%RESNORM_FILE_UNIT, residue, F,G,H, control, schemes, dims)
             call checkpoint(files, qp, nodes, control, schemes, dims)
             control%current_iter = control%current_iter + 1

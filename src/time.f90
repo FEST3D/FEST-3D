@@ -3,9 +3,9 @@ module time
   !< Calculate the time step for the current iteration
 
   use vartypes
-  use global_vars, only : mu
-  use global_vars, only : mu_t
-  use global_vars, only : delta_t
+  use viscosity, only : mu
+  use viscosity, only : mu_t
+!  use global_vars, only : delta_t
 
   use utils, only: alloc
   use face_interpolant, only: &
@@ -42,11 +42,12 @@ module time
 
     contains
 
-        subroutine setup_time(control, dims)
+        subroutine setup_time(delta_t, control, dims)
           !< Allocate memeroy and setup initial clock
             implicit none
             type(controltype), intent(in) :: control
             type(extent), intent(in) :: dims
+            real, dimension(:,:,:), allocatable, intent(out) :: delta_t
 
             DebugCall('initmisc')
 
@@ -119,7 +120,7 @@ module time
           end if
         end function write_time
 
-        subroutine compute_local_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
+        subroutine compute_local_time_step(qp, delta_t, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
             !< Compute the time step to be used at each cell center
             !<
             !< Local time stepping can be used to get the solution 
@@ -134,6 +135,7 @@ module time
             type(flowtype), intent(in) :: flow
             type(extent), intent(in) :: dims
             real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
             !< Input cell quantities: volume
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -230,15 +232,15 @@ module time
             end do
 
             if(flow%mu_ref/=0.0) then
-              call add_viscous_time(qp, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
+              call add_viscous_time(qp, delta_t, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
             end if
             if(flow%mu_ref/=0 .and. trim(scheme%turbulence)/='none')then
-              call add_turbulent_time(qp, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
+              call add_turbulent_time(qp, delta_t, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
             end if
 
         end subroutine compute_local_time_step
 
-        subroutine compute_global_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
+        subroutine compute_global_time_step(qp, delta_t, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
             !< Compute a common time step to be used at all cell centers
             !<
             !< Global time stepping is generally used to get time 
@@ -252,6 +254,7 @@ module time
             type(flowtype), intent(in) :: flow
             type(extent), intent(in) :: dims
             real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
             !< Input cell quantities: volume
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -266,7 +269,7 @@ module time
             if (scheme%global_time_step > 0) then
                 delta_t = scheme%global_time_step
             else
-              call compute_local_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
+              call compute_local_time_step(qp, delta_t, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
                 ! The global time step is the minimum of all the local time
                 ! steps.
                 delta_t = minval(delta_t)
@@ -274,7 +277,7 @@ module time
 
         end subroutine compute_global_time_step
 
-        subroutine compute_time_step(qp, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims)
+        subroutine compute_time_step(qp, delta_t, CFL, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims)
             !< Compute the time step to be used
             !<
             !< This calls either compute_global_time_step() or 
@@ -288,6 +291,7 @@ module time
             type(flowtype), intent(in) :: flow
             type(extent), intent(in) :: dims
             real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
             !< Input cell quantities: volume
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -300,20 +304,20 @@ module time
             DebugCall('compute_time_step')
 
             if (scheme%time_stepping_method .eq. 'g') then
-                call compute_global_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
+                call compute_global_time_step(qp, delta_t, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
             else if (scheme%time_stepping_method .eq. 'l') then
-                call compute_local_time_step(qp, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
+                call compute_local_time_step(qp, delta_t, cells, Ifaces, Jfaces, Kfaces, CFL, scheme, flow, dims)
             else
                 print*,'In compute_time_step: value for time_stepping_method (' //scheme%time_stepping_method // ') not recognized.'
                 Fatal_error
             end if
             !update_simulation clock
-            call update_simulation_clock(scheme)
+            call update_simulation_clock(delta_t, scheme, dims)
 
         end subroutine compute_time_step
 
 
-      subroutine update_simulation_clock(scheme)
+      subroutine update_simulation_clock(delta_t, scheme, dims)
           !<  Update the simulation clock
           !< 
           !<  It is sometimes useful to know what the simulation time is
@@ -328,7 +332,9 @@ module time
           !-----------------------------------------------------------
 
           implicit none
+          type(extent), intent(in) :: dims
           type(schemetype), intent(in) :: scheme
+            real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
           if (scheme%time_stepping_method .eq. 'g' .and. sim_clock >= 0.) then
               sim_clock = sim_clock + minval(delta_t)
           else if (scheme%time_stepping_method .eq. 'l') then
@@ -337,7 +343,7 @@ module time
 
       end subroutine update_simulation_clock
 
-      subroutine add_viscous_time(qp, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
+      subroutine add_viscous_time(qp, delta_t, cells, Ifaces, Jfaces, Kfaces, CFL, flow, dims)
         !< Addition to local time step due to viscous effects
         implicit none
 
@@ -345,6 +351,7 @@ module time
         type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
         real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+        real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
         type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
         !< Input cell quantities: volume
         type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -415,13 +422,14 @@ module time
         end do
       end subroutine add_viscous_time
 
-      subroutine add_turbulent_time(qp,cells,Ifaces,Jfaces,Kfaces,CFL,flow,dims)
+      subroutine add_turbulent_time(qp,delta_t,cells,Ifaces,Jfaces,Kfaces,CFL,flow,dims)
         !< Addition to local time step due to turbulence 
         implicit none
         real, intent(in) :: CFL
         type(flowtype), intent(in) :: flow
         type(extent), intent(in) :: dims
         real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+        real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
         type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
         !< Input cell quantities: volume
         type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces

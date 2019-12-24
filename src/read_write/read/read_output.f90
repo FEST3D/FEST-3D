@@ -8,16 +8,16 @@ module read_output
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  use global_vars, only :        resnorm_0
-  use global_vars, only :    vis_resnorm_0
-  use global_vars, only :   turb_resnorm_0
-  use global_vars, only :   cont_resnorm_0
-  use global_vars, only :  x_mom_resnorm_0
-  use global_vars, only :  y_mom_resnorm_0
-  use global_vars, only :  z_mom_resnorm_0
-  use global_vars, only : energy_resnorm_0
-  use global_vars, only :    TKE_resnorm_0
-  use global_vars, only :  omega_resnorm_0
+  !use global_vars, only :        resnorm_0
+  !use global_vars, only :    vis_resnorm_0
+  !use global_vars, only :   turb_resnorm_0
+  !use global_vars, only :   cont_resnorm_0
+  !use global_vars, only :  x_mom_resnorm_0
+  !use global_vars, only :  y_mom_resnorm_0
+  !use global_vars, only :  z_mom_resnorm_0
+  !use global_vars, only : energy_resnorm_0
+  !use global_vars, only :    TKE_resnorm_0
+  !use global_vars, only :  omega_resnorm_0
 
   use read_output_vtk, only : read_file_vtk => read_file
   use read_output_tec, only : read_file_tec => read_file
@@ -123,19 +123,22 @@ module read_output
       implicit none
       integer, intent(in) :: RESTART_FILE_UNIT
       type(controltype), intent(inout) :: control
+      integer :: i
       read(RESTART_FILE_UNIT, *) control%previous_flow_type
 
       read(RESTART_FILE_UNIT, *)        control%last_iter
-      read(RESTART_FILE_UNIT, *)        resnorm_0
-      read(RESTART_FILE_UNIT, *)    vis_resnorm_0
-      read(RESTART_FILE_UNIT, *)   turb_resnorm_0
-      read(RESTART_FILE_UNIT, *)   cont_resnorm_0
-      read(RESTART_FILE_UNIT, *)  x_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *)  y_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *)  z_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *) energy_resnorm_0
-      read(RESTART_FILE_UNIT, *)    TKE_resnorm_0
-      read(RESTART_FILE_UNIT, *)  omega_resnorm_0
+      do i = 1,control%n_var+1
+        read(RESTART_FILE_UNIT, *)  control%previous_res(i)
+      end do
+      !read(RESTART_FILE_UNIT, *)    vis_resnorm_0
+      !read(RESTART_FILE_UNIT, *)   turb_resnorm_0
+      !read(RESTART_FILE_UNIT, *)   cont_resnorm_0
+      !read(RESTART_FILE_UNIT, *)  x_mom_resnorm_0
+      !read(RESTART_FILE_UNIT, *)  y_mom_resnorm_0
+      !read(RESTART_FILE_UNIT, *)  z_mom_resnorm_0
+      !read(RESTART_FILE_UNIT, *) energy_resnorm_0
+      !read(RESTART_FILE_UNIT, *)    TKE_resnorm_0
+      !read(RESTART_FILE_UNIT, *)  omega_resnorm_0
     end subroutine read_restart_file
 
 end module read_output

@@ -9,20 +9,16 @@ module dump_solution
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-!  use global,      only : FILE_NAME_LENGTH
-!  use global,      only : RESTART_FILE_UNIT
-!  use global_vars, only :     outfile
-!  use global_vars, only : restartfile
-  use global_vars, only :        resnorm_0
-  use global_vars, only :    vis_resnorm_0
-  use global_vars, only :   turb_resnorm_0
-  use global_vars, only :   cont_resnorm_0
-  use global_vars, only :  x_mom_resnorm_0
-  use global_vars, only :  y_mom_resnorm_0
-  use global_vars, only :  z_mom_resnorm_0
-  use global_vars, only : energy_resnorm_0
-  use global_vars, only :    TKE_resnorm_0
-  use global_vars, only :  omega_resnorm_0
+!  use resnorm, only :        resnorm_0
+!  use resnorm, only :    vis_resnorm_0
+!  use resnorm, only :   turb_resnorm_0
+!  use resnorm, only :   cont_resnorm_0
+!  use resnorm, only :  x_mom_resnorm_0
+!  use resnorm, only :  y_mom_resnorm_0
+!  use resnorm, only :  z_mom_resnorm_0
+!  use resnorm, only : energy_resnorm_0
+!  use resnorm, only :    TKE_resnorm_0
+!  use resnorm, only :  omega_resnorm_0
 !  use global_vars, only :  turbulence
   use utils
   use write_output, only : write_file
@@ -150,28 +146,32 @@ module dump_solution
         case DEFAULT
            Fatal_error
       end select
-      call write_initial_resnorm(files, control%current_iter, control%last_iter)
+      call write_initial_resnorm(files, control)
       close(files%RESTART_FILE_UNIT)
 
     end subroutine write_restart_log
 
-    subroutine write_initial_resnorm(files, current_iter, last_iter)
+    subroutine write_initial_resnorm(files, control)
       !< Writing Initial resnorom in the log file to 
       !< maintian continuity of resnorm while restrarting
       implicit none
       type(filetype), intent(in) :: files
-      integer, intent(in) :: current_iter, last_iter
-      write(files%RESTART_FILE_UNIT, '(I0)')    current_iter+last_iter
-      write(files%RESTART_FILE_UNIT, '(f0.16)')        resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)')    vis_resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)')   turb_resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)')   cont_resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)')  x_mom_resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)')  y_mom_resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)')  z_mom_resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)') energy_resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)')    TKE_resnorm_0
-      write(files%RESTART_FILE_UNIT, '(f0.16)')  omega_resnorm_0
+      type(controltype), intent(in) :: control
+      integer :: i
+      !integer, intent(in) :: current_iter, last_iter
+      write(files%RESTART_FILE_UNIT, '(I0)')    control%current_iter+control%last_iter
+      do i = 1,control%n_var+1
+        write(files%RESTART_FILE_UNIT, '(f0.16)')  control%previous_res(i)
+      end do
+      !write(files%RESTART_FILE_UNIT, '(f0.16)')    vis_resnorm_0
+      !write(files%RESTART_FILE_UNIT, '(f0.16)')   turb_resnorm_0
+      !write(files%RESTART_FILE_UNIT, '(f0.16)')   cont_resnorm_0
+      !write(files%RESTART_FILE_UNIT, '(f0.16)')  x_mom_resnorm_0
+      !write(files%RESTART_FILE_UNIT, '(f0.16)')  y_mom_resnorm_0
+      !write(files%RESTART_FILE_UNIT, '(f0.16)')  z_mom_resnorm_0
+      !write(files%RESTART_FILE_UNIT, '(f0.16)') energy_resnorm_0
+      !write(files%RESTART_FILE_UNIT, '(f0.16)')    TKE_resnorm_0
+      !write(files%RESTART_FILE_UNIT, '(f0.16)')  omega_resnorm_0
     end subroutine write_initial_resnorm
 
 end module dump_solution

@@ -21,6 +21,7 @@ module resnorm
 #include "error.inc"
 #include "mpi.inc"
   private
+
   real :: merror
   real, dimension(:), allocatable :: buffer
   integer, parameter :: Res_itr = 3
@@ -52,7 +53,7 @@ module resnorm
       !< Find the normalized residual for each processor
       implicit none
       integer, intent(in) :: file_handler
-      type(controltype), intent(in) :: control
+      type(controltype), intent(inout) :: control
       type(schemetype) , intent(in) :: scheme
       type(extent), intent(in) :: dims
       real, dimension(:, :, :, :), intent(in)  :: residue
@@ -107,16 +108,6 @@ module resnorm
       call alloc(buffer   , 1,(control%n_var+1)*control%total_process)
     end subroutine allocate_memory
 
-!    subroutine deallocate_memory()
-!      !< Deallocate memory required for MPI Communication
-!      implicit none
-!      call dealloc(Res_abs)
-!      call dealloc(Res_rel)
-!      call dealloc(Res_scale)
-!      call dealloc(Res_save)
-!      call dealloc(buffer)
-!      if(allocated(Res_list)) deallocate(Res_list)
-!    end subroutine deallocate_memory
 
     subroutine setup_scale(scheme, flow)
       !< Setup scale required for relative and absolute
@@ -215,8 +206,13 @@ module resnorm
     subroutine get_relative_resnorm(control)
       !< Get relative residual with respect to first iteration residual
       implicit none
-      type(controltype), intent(in) :: control
+      type(controltype), intent(inout) :: control
       if(control%current_iter<=Res_itr) Res_save=Res_abs
+      if(control%start_from/=0) then
+        Res_save=control%previous_Res
+      else
+        control%previous_Res = Res_save
+      end if
       Res_rel = Res_abs/Res_save
     end subroutine get_relative_resnorm
 

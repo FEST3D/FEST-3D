@@ -20,7 +20,7 @@ module bc_primitive
 !  use global_vars, only: fixed_Ttemperature
 !  use global_vars, only: fixed_Tpressure
 !  use global_vars, only: fixed_tv
-  use global_vars, only: dist
+  use wall_dist, only: dist
 !  use global_vars, only: face_names
 !  use global_vars, only: id
   use global_sst , only: beta1
