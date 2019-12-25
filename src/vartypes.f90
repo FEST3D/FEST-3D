@@ -141,23 +141,23 @@ module vartypes
         !< Counter of folder number to write in time_directories/
         integer :: current_iter=0  
         !< Current iteration number
-        integer :: res_write_interval       
+        integer :: res_write_interval=10
         !< Write resnorm after every "res_write_interval" iteration
-        integer :: purge_write    
+        integer :: purge_write=1
         !< Remove unwanted folder. If Purge_write=2, latest two folder in time_direcotires are kept and 0=no purge
         integer :: last_iter=0    
         !< Last iteration that is stored in the restart file
         integer :: write_percision=6 
         !< Number of place after decimal. Only used for resnorm file
-        character(len=FORMAT_LENGTH):: write_data_format  
+        character(len=FORMAT_LENGTH):: write_data_format='ASCII'
         !< write data type. Either ASCII or BINARY
-        character(len=FORMAT_LENGTH):: write_file_format 
+        character(len=FORMAT_LENGTH):: write_file_format='tecplot'
         !< Write file type. Either vtk or tecplot
         character(len=FORMAT_LENGTH)::  read_data_format='ASCII' 
         !< Read data type in file. Either ASCII or BINARY
-        character(len=FORMAT_LENGTH)::  read_file_format="vtk" 
+        character(len=FORMAT_LENGTH)::  read_file_format='tecplot'
         !< Read file type. Either vtk or tecplot
-        real :: tolerance
+        real :: tolerance=1e-14
         !< Minimum value of resnorm after which simulation stop
         character(len=STRING_BUFFER_LENGTH) :: tolerance_type="abs"
         !< Type of tolerance to check:absolute or relative
@@ -194,37 +194,37 @@ module vartypes
     end type controltype
 
     type, public :: schemetype
-      character(len=STRING_BUFFER_LENGTH) :: scheme_name    
+      character(len=STRING_BUFFER_LENGTH) :: scheme_name='ausm'
       !< Flux Scheme to use: ausm, ldfss0, vanleer, ausmup, ausmp, slau
-      character(len=STRING_BUFFER_LENGTH) :: interpolant
+      character(len=STRING_BUFFER_LENGTH) :: interpolant='muscl'
       !< Face state reconstruction  method to user: muscl, ppm, none, weno, and wenoNM
-      real                                      :: global_time_step   
+      real                                      :: global_time_step=1e-5
       !< Value of global time step to march the solution with
-      character                                 :: time_stepping_method
+      character                                 :: time_stepping_method='l'
       !< Either local time stepping or global time stepping
-      character(len=STRING_BUFFER_LENGTH)    :: time_step_accuracy 
+      character(len=STRING_BUFFER_LENGTH)    :: time_step_accuracy='implicit'
       !< Type of time_integration scheme: RK4, none(firt order explicit) implicit,
-      integer                                           :: ilimiter_switch
+      integer                                           :: ilimiter_switch=1
        !< Turn on/off application of limiter for MUSCL (higer order face state reconstiion) for I direction faces.
-      integer                                           :: jlimiter_switch
+      integer                                           :: jlimiter_switch=1
        !< Turn on/off application of limiter for MUSCL (higer order face state reconstiion) for J direction faces.
-      integer                                           :: klimiter_switch
+      integer                                           :: klimiter_switch=1
        !< Turn on/off application of limiter for MUSCL (higer order face state reconstiion) for K direction faces.
-      integer                                           :: itlimiter_switch
+      integer                                           :: itlimiter_switch=1
        !< Turn on/off application of limiter for MUSCL (higer order face turbulent variable state reconstiion) for I direction faces.
-      integer                                           :: jtlimiter_switch
+      integer                                           :: jtlimiter_switch=1
        !< Turn on/off application of limiter for MUSCL (higer order face turbulent variable state reconstiion) for J direction faces.
-      integer                                           :: ktlimiter_switch
+      integer                                           :: ktlimiter_switch=1
        !< Turn on/off application of limiter for MUSCL (higer order face turbulent variable state reconstiion) for K direction faces.
-      integer                                           :: iPB_switch
+      integer                                           :: iPB_switch=0
        !< Turn on/off application of pressure based switching for higher order methods for I direction faces.
-      integer                                           :: jPB_switch
+      integer                                           :: jPB_switch=0
        !< Turn on/off application of pressure based switching for higher order methods for J direction faces.
-      integer                                           :: kPB_switch
+      integer                                           :: kPB_switch=0
        !< Turn on/off application of pressure based switching for higher order methods for K direction faces.
-      character(len=8)                                  :: turbulence
+      character(len=8)                                  :: turbulence='none'
        !< Store Turbulence model name
-      character(len=8)                                  :: transition
+      character(len=8)                                  :: transition='none'
        !< Store Transition model name
       integer  :: accur=1                          
       !< Switch for higher order boundary condition
@@ -254,7 +254,7 @@ module vartypes
        !< Read freestream kL variable from control file
       real                                              :: tu_inf
        !< Read freestream turbulence intensity (percentage) from control file
-      real                                              :: tgm_inf
+      real                                              :: tgm_inf=1.0
        !< Read freestream turbulence intermittency from control file
       real                                              :: vel_mag
        !< Calulated freestream Velocity Magnitude from control file

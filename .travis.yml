@@ -1,0 +1,9 @@
+language: minimal
+
+dist: trusty
+os:
+  - linux
+  - osx
+
+script:
+  - bash install.sh

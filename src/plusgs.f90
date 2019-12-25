@@ -2211,8 +2211,6 @@ module plusgs
         real :: vort
         real :: Dp, De
         real :: Fpg
-        real :: dvdy
-        real :: lamd
         real :: density
         Dp = 0.0
         De = 0.0

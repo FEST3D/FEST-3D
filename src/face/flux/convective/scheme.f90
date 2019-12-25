@@ -23,10 +23,9 @@ module scheme
 
     contains
 
-        subroutine setup_scheme(residue, F,G,H, control, scheme, dims)
+        subroutine setup_scheme(residue, F,G,H, control, dims)
             implicit none
             type(controltype), intent(in) :: control
-            type(schemetype), intent(in) :: scheme
             type(extent), intent(in) :: dims
             !< extent of the 3D domain
             real, dimension(:, :, :, :), allocatable, intent(out), target :: residue
@@ -44,7 +43,7 @@ module scheme
 
             n_var = control%n_var
 
-            call setup_interpolant_scheme(control, scheme, dims)
+            call setup_interpolant_scheme(dims)
 
             call alloc(F, 1, imx, 1, jmx-1, 1, kmx-1, 1, n_var, &
                     errmsg='Error: Unable to allocate memory for ' // &

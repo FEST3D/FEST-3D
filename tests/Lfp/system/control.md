@@ -3,18 +3,15 @@ Control File
 ===========
 ## CFL
 2000.0
-#200.0
 
 ## Restart level
 0
 
 ## Maximum Iterations
 5000
-#500
 
 ## Save Iterations
 5000
-#500
 
 ## Output File format
 tecplot

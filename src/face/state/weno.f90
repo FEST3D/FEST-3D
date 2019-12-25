@@ -12,108 +12,25 @@ module weno
 #include "../../debug.h"
 
     use vartypes
-    use utils, only: alloc
-
     implicit none
     private
 
-    ! Private variables
-    real, dimension(:, :, :, :), allocatable, target :: x_qp_left
-      !< Store primitive state at the I-face left side
-    real, dimension(:, :, :, :), allocatable, target :: x_qp_right
-      !< Store primitive state at the I-face right side
-    real, dimension(:, :, :, :), allocatable, target :: y_qp_left
-      !< Store primitive state at the J-face left side
-    real, dimension(:, :, :, :), allocatable, target :: y_qp_right
-      !< Store primitive state at the J-face right side
-    real, dimension(:, :, :, :), allocatable, target :: z_qp_left
-      !< Store primitive state at the K-face left side
-    real, dimension(:, :, :, :), allocatable, target :: z_qp_right
-      !< Store primitive state at the K-face right side
-    
-    real, dimension(:, :, :, :), pointer :: f_qp_left
-    !< Generalized pointer for any I-J-K direction> f_qp_left can 
-    !< either point to x_qp_left, y_qp_left or z_qp_left
-    real, dimension(:, :, :, :), pointer :: f_qp_right
-    !< Generalized pointer for any I-J-K direction> f_qp_right can 
-    !< either point to x_qp_right, y_qp_right or z_qp_right
-
-    integer :: imx, jmx, kmx, n_var
     ! Public members
-    public :: setup_scheme
-!    public :: destroy_scheme
     public :: compute_weno_states
-    public :: x_qp_left, x_qp_right
-    public :: y_qp_left, y_qp_right
-    public :: z_qp_left, z_qp_right
 
     contains
         
-        subroutine setup_scheme(control, dims)
-          !< Allocate memoery to all array which store state
-          !< the face.
 
-        implicit none
-        type(controltype), intent(in) :: control
-        type(extent), intent(in) :: dims
-
-        DebugCall('setup_weno')
-
-        imx = dims%imx
-        jmx = dims%jmx
-        kmx = dims%kmx
-
-        n_var = control%n_var
-
-        call alloc(x_qp_left, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_left.')
-        call alloc(x_qp_right, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_right.')
-
-        call alloc(y_qp_left, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'y_qp_left.')
-        call alloc(y_qp_right, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'y_qp_right.')
-
-        call alloc(z_qp_left, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'z_qp_left.')
-        call alloc(z_qp_right, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'z_qp_right.')
-
-
-        end subroutine setup_scheme
-
-
-!        subroutine destroy_scheme()
-!          !< Deallocate all the array used 
-!
-!            implicit none
-!
-!            DebugCall('destroy_weno')
-!
-!            call dealloc(x_qp_left)
-!            call dealloc(x_qp_right)
-!            call dealloc(y_qp_left)
-!            call dealloc(y_qp_right)
-!            call dealloc(z_qp_left)
-!            call dealloc(z_qp_right)
-!
-!        end subroutine destroy_scheme
-!
-
-        subroutine compute_face_states(qp, dir)
+        subroutine compute_face_states(qp, f_qp_left, f_qp_right, flags, dims)
           !< Subroutine to calculate state at the face, generalized for
           !< all direction : I,J, and K.
             implicit none
 
-            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
-            character(len=*), intent(in) :: dir
+            type(extent), intent(in) :: dims
+            integer, dimension(3), intent(in) :: flags
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+            ! Character can be x or y or z
+            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
             integer :: i, j, k, l
             integer :: i_f=0, j_f=0, k_f=0
             real, dimension(3) :: P !< polynomial approximation
@@ -127,31 +44,15 @@ module weno
             g(2) = 6.0/10.0
             g(3) = 3.0/10.0
 
-            select case (dir)
-              case('x')
-              i_f=1
-              j_f=0
-              k_f=0
-              f_qp_left  => x_qp_left
-              f_qp_right => x_qp_right
-              case('y')
-              i_f=0
-              j_f=1
-              k_f=0
-              f_qp_left  => y_qp_left
-              f_qp_right => y_qp_right
-              case('z')
-              i_f=0
-              j_f=0
-              k_f=1
-              f_qp_left  => z_qp_left
-              f_qp_right => z_qp_right
-            end select
 
-            do l = 1, n_var
-             do k = 1-k_f, kmx-1+k_f
-              do j = 1-j_f, jmx-1+j_f
-               do i = 1-i_f, imx-1+i_f
+            i_f = flags(1)
+            j_f = flags(2)
+            k_f = flags(3)
+
+            do l = 1, dims%n_var
+             do k = 1-k_f, dims%kmx-1+k_f
+              do j = 1-j_f, dims%jmx-1+j_f
+               do i = 1-i_f, dims%imx-1+i_f
                  U(-2) = qp(i-2*i_f,j-2*j_f,k-2*k_f,l)  !u_{i-2}
                  U(-1) = qp(i-1*i_f,j-1*j_f,k-1*k_f,l)  !u_{i-1}
                  u( 0) = qp(i      ,j      ,k      ,l)  !u_{i}
@@ -189,14 +90,25 @@ module weno
         end subroutine compute_face_states
 
 
-        subroutine compute_weno_states(qp)
+        subroutine compute_weno_states(qp, x_qp_l, x_qp_r, y_qp_l, y_qp_r, z_qp_l, z_qp_r, dims)
           !< Call Weno scheme for all the three direction I,J, and K
 
             implicit none
-            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
-            call compute_face_states(qp, 'x')
-            call compute_face_states(qp, 'y')
-            call compute_face_states(qp, 'z')
+            type(extent), intent(in) :: dims
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            real, dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
+            !< Store primitive state at the I-face 
+            real, dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
+            !< Store primitive state at the J-face 
+            real, dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
+            !< Store primitive state at the K-face 
+            integer, dimension(3) :: flags
+            flags=(/1,0,0/)
+            call compute_face_states(qp, x_qp_l, x_qp_r, flags, dims)
+            flags=(/0,1,0/)
+            call compute_face_states(qp, y_qp_l, y_qp_r, flags, dims)
+            flags=(/0,0,1/)
+            call compute_face_states(qp, z_qp_l, z_qp_r, flags, dims)
 
         end subroutine compute_weno_states
 

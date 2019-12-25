@@ -121,7 +121,7 @@ module solver
             call setup_time(delta_t, control,dims)
             call setup_update(control,schemes,flow, dims)
             call setup_interface(control,dims)
-            call setup_scheme(residue, F,G,H, control, schemes, dims)
+            call setup_scheme(residue, F,G,H, control, dims)
             if(schemes%turbulence /= 'none') then
               call write_surfnode(files, nodes, control, boundary, dims)
               call setup_wall_dist(files, dims)

@@ -22,163 +22,43 @@ module muscl
 #include "../../debug.h"
 
     use vartypes
-    use utils, only: alloc
-
     implicit none
     private
 
-    ! Private variables
-    real, dimension(:, :, :, :), allocatable, target :: x_qp_left
-      !< Store primitive state at the I-face left side
-    real, dimension(:, :, :, :), allocatable, target :: x_qp_right
-      !< Store primitive state at the I-face right side
-    real, dimension(:, :, :, :), allocatable, target :: y_qp_left
-      !< Store primitive state at the J-face left side
-    real, dimension(:, :, :, :), allocatable, target :: y_qp_right
-      !< Store primitive state at the J-face right side
-    real, dimension(:, :, :, :), allocatable, target :: z_qp_left
-      !< Store primitive state at the K-face left side
-    real, dimension(:, :, :, :), allocatable, target :: z_qp_right
-      !< Store primitive state at the K-face right side
-    real :: phi, kappa
-    
-    real, dimension(:, :, :, :), pointer :: f_qp_left
-    !< Generalized pointer for any I-J-K direction> f_qp_left can 
-    !< either point to x_qp_left, y_qp_left or z_qp_left
-    real, dimension(:, :, :, :), pointer :: f_qp_right
-    !< Generalized pointer for any I-J-K direction> f_qp_right can 
-    !< either point to x_qp_right, y_qp_right or z_qp_right
-    real, dimension(:, :, :), allocatable :: pdif
-    !< Used for pressure based witch
+    real :: phi=1.0, kappa=1./3.
     integer :: switch_L=1
     !< Limiter switch 
 
-    integer :: imx, jmx, kmx, n_var
     ! Public members
-    public :: setup_scheme
-!    public :: destroy_scheme
     public :: compute_muscl_states
-    public :: x_qp_left, x_qp_right
-    public :: y_qp_left, y_qp_right
-    public :: z_qp_left, z_qp_right
-
- !  TVD_scheme = trim('koren')
 
     contains
         
-        subroutine setup_scheme(control, dims)
-          !< Allocate memoery to all array which store state
-          !< the face.
-
-        implicit none
-        type(controltype), intent(in) :: control
-        type(extent), intent(in) :: dims
-
-        DebugCall('setup_muscl')
-
-        imx = dims%imx
-        jmx = dims%jmx
-        kmx = dims%kmx
-
-        n_var = control%n_var
-
-        phi = 1.0
-
-        kappa = 1./3.
-
-        call alloc(x_qp_left, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_left.')
-        call alloc(x_qp_right, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'x_qp_right.')
-
-        call alloc(y_qp_left, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'y_qp_left.')
-        call alloc(y_qp_right, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'y_qp_right.')
-
-        call alloc(z_qp_left, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'z_qp_left.')
-        call alloc(z_qp_right, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
-            errmsg='Error: Unable to allocate memory for ' // &
-                'z_qp_right.')
-
-        call alloc(pdif, 0, imx, 0, jmx, 0, kmx, &
-                errmsg='Error: Unable to allocate memory for' // &
-                    'pdif')
-
-        end subroutine setup_scheme
-
-
-!        subroutine destroy_scheme()
-!          !< Deallocate all the array used 
-!
-!            implicit none
-!
-!            DebugCall('destroy_muscl')
-!
-!            call dealloc(x_qp_left)
-!            call dealloc(x_qp_right)
-!            call dealloc(y_qp_left)
-!            call dealloc(y_qp_right)
-!            call dealloc(z_qp_left)
-!            call dealloc(z_qp_right)
-!            call dealloc(pdif)
-!
-!        end subroutine destroy_scheme
-
-
-        subroutine pressure_based_switching(qp, f_dir, flow)
+        subroutine pressure_based_switching(qp, f_qp_left, f_qp_right, pdif,  flags,  flow, dims)
           !< Pressure based switching. 
           !< User x,y, or z for I,J,or K face respectively
           !----------------------------------------------
 
             implicit none
-            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
+            type(extent), intent(in) :: dims
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
             type(flowtype), intent(in) :: flow
-            character, intent(in) :: f_dir
-            !< Character can be x or y or z
+            integer, dimension(3), intent(in) :: flags
+            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            real, dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
             integer :: i, j, k, i_end, j_end, k_end
             integer :: i_f, j_f, k_f  ! Flags to determine face direction
             real :: pd2
 
             DebugCall('pressure_based_switching')
 
-            select case (f_dir)
-                case ('x')
-                    f_qp_left => x_qp_left
-                    f_qp_right => x_qp_right
-                    i_f = 1
-                    j_f = 0
-                    k_f = 0
-                    i_end = imx
-                    j_end = jmx - 1
-                    k_end = kmx - 1
-                case ('y')
-                    f_qp_left => y_qp_left
-                    f_qp_right => y_qp_right
-                    i_f = 0
-                    j_f = 1
-                    k_f = 0
-                    i_end = imx - 1
-                    j_end = jmx 
-                    k_end = kmx - 1
-                case ('z')
-                    f_qp_left => z_qp_left
-                    f_qp_right => z_qp_right
-                    i_f = 0
-                    j_f = 0
-                    k_f = 1
-                    i_end = imx - 1
-                    j_end = jmx - 1 
-                    k_end = kmx
-                case default
-                    Fatal_error
-            end select
+
+            i_f = flags(1)
+            j_f = flags(2)
+            k_f = flags(3)
+            i_end = dims%imx - 1 +i_f
+            j_end = dims%jmx - 1 +j_f
+            k_end = dims%kmx - 1 +k_f
 
             ! i_end and j_end denote number of faces
             ! Total number of cells including ghost_cells is
@@ -186,9 +66,9 @@ module muscl
             ! eta faces. 
 
             ! Loop over cells (physical)
-            do k = 1, kmx - 1
-             do j = 1, jmx - 1
-              do i = 1, imx - 1
+            do k = 1, dims%kmx - 1
+             do j = 1, dims%jmx - 1
+              do i = 1, dims%imx - 1
                 pd2 = abs(qp(i + i_f*1, j + j_f*1, k + k_f*1, 5) - &  !pressure
                           qp(i - i_f*1, j - j_f*1, k - k_f*1, 5))
                 pdif(i, j, k) = 1 - (pd2/(pd2 + flow%pressure_inf))
@@ -197,21 +77,21 @@ module muscl
             end do
 
             ! Update at ghost cells
-            pdif((1-i_f):(1-i_f)*(imx-1), (1-j_f):(1-j_f)*(jmx-1), &
-                 (1-k_f):(1-k_f)*(kmx-1)) = &
-                pdif(1:imx-1 - i_f*(imx-2), 1:jmx-1 - j_f*(jmx-2), &
-                     1:kmx-1 - k_f*(kmx-2))
+            pdif((1-i_f):(1-i_f)*(dims%imx-1), (1-j_f):(1-j_f)*(dims%jmx-1), &
+                 (1-k_f):(1-k_f)*(dims%kmx-1)) = &
+                pdif(1:dims%imx-1 - i_f*(dims%imx-2), 1:dims%jmx-1 - j_f*(dims%jmx-2), &
+                     1:dims%kmx-1 - k_f*(dims%kmx-2))
                     
-            pdif((1-i_f*(-imx+1)):(i_f)+(imx-1), (1-j_f*(-jmx+1)):(j_f)+(jmx-1), &
-                 (1-k_f*(-kmx+1)):(k_f)+(kmx-1)) = &
-                pdif(1+i_f*(imx-2):imx-1 , 1+j_f*(jmx-2):jmx-1, &
-                     1+k_f*(kmx-2):kmx-1)
+            pdif((1-i_f*(-dims%imx+1)):(i_f)+(dims%imx-1), (1-j_f*(-dims%jmx+1)):(j_f)+(dims%jmx-1), &
+                 (1-k_f*(-dims%kmx+1)):(k_f)+(dims%kmx-1)) = &
+                pdif(1+i_f*(dims%imx-2):dims%imx-1 , 1+j_f*(dims%jmx-2):dims%jmx-1, &
+                     1+k_f*(dims%kmx-2):dims%kmx-1)
              
 
             ! Loop over faces
-            do k = 1, kmx - (1 - k_f)            
-             do j = 1, jmx - (1 - j_f)
-              do i = 1, imx - (1 - i_f)
+            do k = 1, dims%kmx - (1 - k_f)            
+             do j = 1, dims%jmx - (1 - j_f)
+              do i = 1, dims%imx - (1 - i_f)
                 f_qp_left(i, j, k, :) = qp(i - i_f*1, j - j_f*1, k - k_f*1, :) + (&
                     pdif(i - i_f*1, j - j_f*1, k - k_f*1) * ( &
                     f_qp_left(i, j, k, :) - qp(i - i_f*1, j - j_f*1, k - k_f*1, :)))
@@ -226,14 +106,15 @@ module muscl
         end subroutine pressure_based_switching
 
 
-        subroutine compute_face_state(qp, f_dir, lam_switch, turb_switch)
+        subroutine compute_face_state(qp, f_qp_left, f_qp_right, flags, lam_switch, turb_switch, dims)
           !< Subroutine to calculate state at the face, generalized for
           !< all direction : I,J, and K.
             implicit none
-            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
+            type(extent), intent(in) :: dims
+            integer, dimension(3), intent(in) :: flags
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
             ! Character can be x or y or z
-            character, intent(in) :: f_dir
-            !< Input direction x,y,or, z for which subroutine is called
+            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
             integer, intent(in) :: lam_switch
             !< Limiter switch for laminar variables
             integer, intent(in) :: turb_switch
@@ -252,50 +133,26 @@ module muscl
             !< backward difference
             real :: r
             !< ratio of differences
-            real, dimension(:, :, :, :), pointer :: f_qp_left
-            !< Generalized pointer for any I-J-K direction> f_qp_left can 
-            !< either point to x_qp_left, y_qp_left or z_qp_left
-            real, dimension(:, :, :, :), pointer :: f_qp_right
-            !< Generalized pointer for any I-J-K direction> f_qp_right can 
-            !< either point to x_qp_right, y_qp_right or z_qp_right
 
             DebugCall('compute_face_state')
 
-            select case (f_dir)
-                case ('x')
-                    f_qp_left(0:imx+1, 1:jmx-1, 1:kmx-1, 1:n_var) => x_qp_left
-                    f_qp_right(0:imx+1, 1:jmx-1, 1:kmx-1, 1:n_var) => x_qp_right
-                    ii = 1
-                    jj = 0
-                    kk = 0
-                case ('y')
-                    f_qp_left(1:imx-1, 0:jmx+1, 1:kmx-1, 1:n_var) => y_qp_left
-                    f_qp_right(1:imx-1, 0:jmx+1, 1:kmx-1, 1:n_var) => y_qp_right
-                    ii = 0
-                    jj = 1
-                    kk = 0
-                case ('z')
-                    f_qp_left(1:imx-1, 1:jmx-1, 0:kmx+1, 1:n_var) => z_qp_left
-                    f_qp_right(1:imx-1, 1:jmx-1, 0:kmx+1, 1:n_var) => z_qp_right
-                    ii = 0
-                    jj = 0
-                    kk = 1
-                case default
-                    Fatal_error
-            end select
 
             alpha = 2./3. !Koren limiter 
             phi = 1.0
             kappa = 1./3.
             switch_L=lam_switch
 
-            do l = 1, n_var
+            ii = flags(1)
+            jj = flags(2)
+            kk = flags(3)
+
+            do l = 1, dims%n_var
               if(l>=6)then
                 switch_L=turb_switch
               end if
-             do k = 1-kk, kmx - 1 + kk
-              do j = 1-jj, jmx - 1 + jj
-               do i = 1-ii, imx - 1 + ii
+             do k = 1-kk, dims%kmx - 1 + kk
+              do j = 1-jj, dims%jmx - 1 + jj
+               do i = 1-ii, dims%imx - 1 + ii
                 ! Cell based
                 ! Koren limiter for now
                 ! From paper: delta: forward difference 'fd'
@@ -331,27 +188,40 @@ module muscl
         end subroutine compute_face_state
         
         
-        subroutine compute_muscl_states(qp, scheme, flow)
+        subroutine compute_muscl_states(qp, x_qp_l, x_qp_r, y_qp_l, y_qp_r, z_qp_l, z_qp_r, pdif, scheme, flow, dims)
             !< Implement MUSCL scheme to get left and right states at
             !< each face. The computation is done through all cells
             !< and first level ghost cells
             !---------------------------------------------------------
             implicit none
-            real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in):: qp
+            type(extent), intent(in) :: dims
+            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            real, dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
+            !< Store primitive state at the I-face 
+            real, dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
+            !< Store primitive state at the J-face 
+            real, dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
+            !< Store primitive state at the K-face 
+            real, dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
             type(schemetype), intent(in) :: scheme
             type(flowtype), intent(in) ::flow
+            integer, dimension(3) :: flags
+
             
-            call compute_face_state(qp, 'x', scheme%ilimiter_switch, scheme%itlimiter_switch)
+            flags=(/1,0,0/)
+            call compute_face_state(qp, x_qp_l, x_qp_r, flags, scheme%ilimiter_switch, scheme%itlimiter_switch, dims)
             if(scheme%iPB_switch==1)then
-              call pressure_based_switching(qp, 'x', flow)
+              call pressure_based_switching(qp, x_qp_l, x_qp_r, pdif, flags, flow, dims)
             end if
-            call compute_face_state(qp, 'y', scheme%jlimiter_switch, scheme%jtlimiter_switch)
+            flags=(/0,1,0/)
+            call compute_face_state(qp, y_qp_l, y_qp_r, flags, scheme%jlimiter_switch, scheme%jtlimiter_switch, dims)
             if(scheme%jPB_switch==1)then
-              call pressure_based_switching(qp, 'y', flow)
+              call pressure_based_switching(qp, y_qp_l, y_qp_r, pdif, flags, flow, dims)
             end if
-            call compute_face_state(qp, 'z', scheme%klimiter_switch, scheme%ktlimiter_switch)
+            flags=(/0,0,1/)
+            call compute_face_state(qp, z_qp_l, z_qp_r, flags, scheme%klimiter_switch, scheme%ktlimiter_switch, dims)
             if(scheme%kPB_switch==1)then
-              call pressure_based_switching(qp, 'z', flow)
+              call pressure_based_switching(qp, z_qp_l, z_qp_r, pdif, flags, flow, dims)
             end if
 
         end subroutine compute_muscl_states

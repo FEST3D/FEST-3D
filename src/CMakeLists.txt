@@ -58,4 +58,4 @@ face/flux/convective/scheme.f90 )
 
 Add_library(lib OBJECT ${Source})
 Add_executable(${EXE} ${SRC}/main.f90 $<TARGET_OBJECTS:lib>)
-target_link_libraries(${EXE} ${lib})
+target_link_libraries(${EXE} ${lib} ${MPI_Fortran_LIBRARIES})
