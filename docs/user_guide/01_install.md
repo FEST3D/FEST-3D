@@ -4,10 +4,20 @@ An installation bash script has been provided for Ubuntu(Debain), CentOs, and Ma
 ```bash
 $ . install.sh
 ```
-This will install dependecies, build executable, run unit and integrated tests, and add FEST3D as enviornment variable into either `.bashrc` or `.bash_profile`. So, after installation you can call FEST-3D using `$FEST3D` enviornment variable. The dependencies are installed using `apt-get`, `yum` or `Homebrew` based on the platform. If you are install FEST-3D on some different platform, please followoing the instruction below.
+This will install dependecies, build executable, run unit and integrated tests, and add `FEST3D` as enviornment variable into either `.bashrc` or `.bash_profile`. So, after installation you can call FEST-3D using `$FEST3D` enviornment variable. The dependencies are installed using `apt-get`, `yum` or `Homebrew` based on the platform. If you are install FEST-3D on some different platform, please follow the manual install instruction below.
 
+### Check
+Make sure `FEST3D` enviornment variable is set by
+```
+$ echo $FEST3D
+```
+If it results in a string of zero length please set the `FEST3D` variable explicitly by using the following command:
+```
+export FEST3D="<path of FEST3D source folder>bin/FEST3D"
+```
+Replace the the content with angular braces with absolute path to the root of FEST-3D on your machine. Add above line in the `.bashrc` or `.bash_profile` for permanentaly defining the FEST3D variable.
 
-#Installing FEST-3D
+# Manually installing FEST-3D
 The installation instructions are listed here for Linux platforms. Specifically, examples are given for UBUNTU distribution.
 
 ## Dependencies
@@ -53,5 +63,11 @@ $mkdir build && cd build
 $cmake ..
 $make -j 4
 ```
-
 These commands will create a binary file named FEST3D in the ```bin``` folder; located in the root directory of the FEST-3D code.
+
+Once the binary for FEST-3D is created, you can define the `FEST3D` enviornment variable by adding following line in either `.bashrc` or `.bash_profile`:
+```
+export FEST3D="<path of FEST3D source folder>bin/FEST3D"
+```
+Replace the the content with angular braces with absolute path to the root of FEST-3D on your machine.
+

@@ -64,7 +64,6 @@ module bc
       if(bc%imax_id==-5 .or. bc%imax_id==-6 .or. bc%imax_id==-7) bc%make_F_flux_zero(dims%imx)=0
       if(bc%jmax_id==-5 .or. bc%jmax_id==-6 .or. bc%jmax_id==-7) bc%make_G_flux_zero(dims%jmx)=0
       if(bc%kmax_id==-5 .or. bc%kmax_id==-6 .or. bc%kmax_id==-7) bc%make_H_flux_zero(dims%kmx)=0
-      print*, "check done"
 
     end subroutine setup_bc
 

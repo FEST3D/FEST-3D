@@ -8,7 +8,7 @@ all these input files, a Python code is provided at [**Github**](https://github.
 
 ## Dependencies
  * **C++11 compiler**
- * **Python 2.7**
+ * **Python 3**
  * **bash**
 
 ## Inputs
@@ -17,12 +17,12 @@ A python scipt is provided to ease the user interface with FEST-3D solver.
 In order to run the script provide all the input variables described below
 and run the script  using:
 ```
-python automation.py
+python edit-automaton.py
 ```
 Above command will create a new directory. This new directory host all the input files.
 Before runing the solver, change directory to newly created directory with name provide in variable *$RunDir*
 eg:<br>
-`$python automaton.py` <br>
+`$python edit-automaton.py` <br>
 `$cd <New directory>` <br>
 If required, tweak the input files, and after that, run the solver using<br>
 `$nohup bash run.sh &` <br>
@@ -44,11 +44,6 @@ at<br>
 For more details about the grid/mesh read the subsection [Mesh](./02_mesh.html)
 <hr>
 ```NumberOfBlocks = 1``` Total number of blocks<br>
-<hr>
-In order to use the executable build in the binary folder of the FEST-3D code, a soft link is created
-between the FEST3D executable ```bin``` folder and FEST3D in ```bin``` folder of Run folder.<br>
-<hr>
-```AbsBinaryPath="/home/jatinder/solver/FEST3D/bin/FEST3D"``` provide the [absolute path](https://www.geeksforgeeks.org/absolute-relative-pathnames-unix/) to the binary.<br>
 <hr>
 Now, you are required to fix different input parameter of the solver based on the problem you are simulating.
 Meaning of the most input is self-explanatory from the name.
@@ -132,7 +127,7 @@ Meaning of the most input is self-explanatory from the name.
 |<hr>|<hr>|<hr>|
 |Flow["GasConstant"] | Real | Gas Constant|
 |<hr>|<hr>|<hr>|
-|OutputControl['Out'] | [ "Velocity" , "Density" , "Pressure" , "Mu" , "Mu_t" , "TKE" , "Omega" , "kL" , "tv" , "Wall_distance" , "resnorm" , "TKE_residue" , "Mass_residue" , "X_mom_residue" , "Y_mom_residue" , "Z_mom_residue" , "energy_residue" , "DuDx",   "Dudy",   "DuDz" , "DvDx",   "DvDy",   "DvDz" , "DwDx",   "DWDy",   "DwDz" , "DTDx",   "DTDy",   "DTDz" , "DtkDx",  "DtkDy",  "DtkDz" , "DtwDx",  "DtwDy",  "DtwDz" , "DtvDx",  "DtvDy",  "DtvDz" , "DtkLDx", "DtkLDy", "DtkLDz"]| Variables to write in the output file|
+|OutputControl['Out'] | [ "Velocity" , "Density" , "Pressure" , "Mu" , "Mu_t" , "TKE" , "Omega" , "kL" , "tv" , "Wall_distance" , "DuDx",   "Dudy",   "DuDz" , "DvDx",   "DvDy",   "DvDz" , "DwDx",   "DWDy",   "DwDz" , "DTDx",   "DTDy",   "DTDz" , "DtkDx",  "DtkDy",  "DtkDz" , "DtwDx",  "DtwDy",  "DtwDz" , "DtvDx",  "DtvDy",  "DtvDz" , "DtkLDx", "DtkLDy", "DtkLDz"]| Variables to write in the output file|
 |<hr>|<hr>|<hr>|
 |OutputControl['In'] | ["Velocity" ,"Density" ,"Pressure" ,"viscosity" ,"TKE" ,"Omega" ,"kL" ,"tv"]  | Variables to read in case of restrart|
 |<hr>|<hr>|<hr>|
@@ -143,14 +138,14 @@ Meaning of the most input is self-explanatory from the name.
 
 
 ```bash 
-$python automaton.py
+$python edit-automaton.py
 ```
 @note
-Make sure to provide the absolute path of the FEST3D binary in the automaton.py script before executing. And also
+Make sure to provide the absolute path of the FEST3D binary in the edit-automaton.py script before executing. And also
 the number of files in the GridDir folder should be equal to the number of blocks as input. 
 
 ## Directory structure
-Executing automation.py will create a directory with usual directory structure:
+Executing edit-automaton.py will create a directory with usual directory structure:
 ###
  *  **system**:all the input files including the mesh files and boundary condition file is located in this directory
  *  **time\_directory**: all the output files will be stored in this folder.
@@ -159,7 +154,7 @@ Executing automation.py will create a directory with usual directory structure:
 
 
 ## Check Layout file
-Although, automaton.py python script tries to handle the boundary condition by its own; it is still not full-proof. So, always the check the __layout.md__ file in the _system/mesh/layout_ directory. Make sure all the boundary condition number are as you expect. In the case of pole boundary condition, some random number will be mentioned and required to change manually to -007. The layout file in explained in the later section.
+Although, edit-automaton.py python script tries to handle the boundary condition by its own; it is still not full-proof. So, always the check the __layout.md__ file in the _system/mesh/layout_ directory. Make sure all the boundary condition number are as you expect. In the case of pole boundary condition, some random number will be mentioned and required to change manually to -007. The layout file in explained in the later section.
 
 ## Execute
 ```bash

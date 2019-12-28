@@ -97,7 +97,6 @@ module solver
           integer :: ierr
 
           call MPI_INIT(ierr)
-          print*, wp
           call setup_solver()
 
         end subroutine start_run

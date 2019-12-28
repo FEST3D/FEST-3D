@@ -17,6 +17,7 @@ files
 
 #Boundary_condition files
 #bc_*.md
+!/tests/files/
 
 #Paper file
 paper/paper.pdf

@@ -33,8 +33,6 @@ extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
             futility: http://cmacmackin.github.io
 license: by-nc
 extra_filetypes: sh #
-#exclude: scheme.f90
-#exclude: face_interpolant.f90
 md_extensions: markdown.extensions.toc
 ---
 
