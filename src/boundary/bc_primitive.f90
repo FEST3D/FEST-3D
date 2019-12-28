@@ -1,31 +1,11 @@
   !< Apply boundary condition at every iteration
 module bc_primitive
   !< Apply boundary condition at every iteration
-  !--------------------------------------------
-  ! 170515  Jatinder Pal Singh Sandhu
-  ! Aim : applying boundary condition to domain
   !-------------------------------------------
 #include "../error.inc"
   use vartypes
-!  use global_vars, only: fixed_density
-!  use global_vars, only: fixed_x_speed
-!  use global_vars, only: fixed_y_speed
-!  use global_vars, only: fixed_z_speed
-!  use global_vars, only: fixed_pressure
-!  use global_vars, only: fixed_tk
-!  use global_vars, only: fixed_tw
-!  use global_vars, only: fixed_tkl
-!  use global_vars, only: fixed_tgm
-!  use global_vars, only: fixed_wall_temperature
-!  use global_vars, only: fixed_Ttemperature
-!  use global_vars, only: fixed_Tpressure
-!  use global_vars, only: fixed_tv
   use wall_dist, only: dist
-!  use global_vars, only: face_names
-!  use global_vars, only: id
   use global_sst , only: beta1
-
-!  use read_bc   , only : read_fixed_values
   use copy_bc   , only : copy3
   use FT_bc     , only : flow_tangency
 
@@ -36,36 +16,36 @@ module bc_primitive
   integer                        :: current_iter, imx, jmx, kmx, n_var
   !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
   character(len=32) :: turbulence, transition
-  real :: gm, R_gas, mu_ref,  T_ref, Sutherland_temp
-  real :: x_speed_inf
-  real :: y_speed_inf
-  real :: z_speed_inf
-  real :: density_inf
-  real :: pressure_inf
-  real :: tk_inf
-  real :: tw_inf
-  real :: te_inf
-  real :: tv_inf
-  real :: tgm_inf
-  real :: tkl_inf
-  real, dimension(:, :, :, :), pointer :: qp
-  real, dimension(:, :, :), pointer :: density      
+  real(wp) :: gm, R_gas, mu_ref,  T_ref, Sutherland_temp
+  real(wp) :: x_speed_inf
+  real(wp) :: y_speed_inf
+  real(wp) :: z_speed_inf
+  real(wp) :: density_inf
+  real(wp) :: pressure_inf
+  real(wp) :: tk_inf
+  real(wp) :: tw_inf
+  real(wp) :: te_inf
+  real(wp) :: tv_inf
+  real(wp) :: tgm_inf
+  real(wp) :: tkl_inf
+  real(wp), dimension(:, :, :, :), pointer :: qp
+  real(wp), dimension(:, :, :), pointer :: density      
    !< Rho pointer, point to slice of qp (:,:,:,1)
-  real, dimension(:, :, :), pointer :: x_speed      
+  real(wp), dimension(:, :, :), pointer :: x_speed      
    !< U pointer, point to slice of qp (:,:,:,2) 
-  real, dimension(:, :, :), pointer :: y_speed      
+  real(wp), dimension(:, :, :), pointer :: y_speed      
    !< V pointer, point to slice of qp (:,:,:,3) 
-  real, dimension(:, :, :), pointer :: z_speed      
+  real(wp), dimension(:, :, :), pointer :: z_speed      
    !< W pointer, point to slice of qp (:,:,:,4)
-  real, dimension(:, :, :), pointer :: pressure     
+  real(wp), dimension(:, :, :), pointer :: pressure     
    !< P pointer, point to slice of qp (:,:,:,5)
   ! state variable turbulent
-  real, dimension(:, :, :), pointer :: tk        !< TKE/mass
-  real, dimension(:, :, :), pointer :: tw        !< Omega
-  real, dimension(:, :, :), pointer :: te        !< Dissipation
-  real, dimension(:, :, :), pointer :: tv        !< SA visocity
-  real, dimension(:, :, :), pointer :: tkl       !< KL K-KL method
-  real, dimension(:, :, :), pointer :: tgm       !< Intermittency of LCTM2015
+  real(wp), dimension(:, :, :), pointer :: tk        !< TKE/mass
+  real(wp), dimension(:, :, :), pointer :: tw        !< Omega
+  real(wp), dimension(:, :, :), pointer :: te        !< Dissipation
+  real(wp), dimension(:, :, :), pointer :: tv        !< SA visocity
+  real(wp), dimension(:, :, :), pointer :: tkl       !< KL K-KL method
+  real(wp), dimension(:, :, :), pointer :: tgm       !< Intermittency of LCTM2015
 
   public :: populate_ghost_primitive
 
@@ -78,7 +58,7 @@ module bc_primitive
       !< being applied at that face
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
       !< state variables
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
       !< Input varaible which stores I faces' area and unit normal
@@ -505,9 +485,9 @@ module bc_primitive
         !< Generalized subroutine to fix particular value
         !< at particular face
         implicit none
-        real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2) , intent(out) :: var
+        real(wp), dimension(-2:imx+2, -2:jmx+2, -2:kmx+2) , intent(out) :: var
         !< Variable of which values are being fixed in the ghost cell
-        real, dimension(1:6)       , intent(in)  :: fix_val
+        real(wp), dimension(1:6)       , intent(in)  :: fix_val
         !< Amount of value that need to be fixed.
         character(len=*)         , intent(in)  :: face
         !< Name of the face at which boundary condition is called
@@ -586,9 +566,9 @@ module bc_primitive
         !< Value fixed is accourding to the SST turbulence model
         implicit none
         character(len=*), intent(in) :: face
-        real :: T_face
-        real :: mu
-        real :: rho
+        real(wp) :: T_face
+        real(wp) :: mu
+        real(wp) :: rho
         integer :: i,j,k,l
         
         select case(face)
@@ -674,16 +654,16 @@ module bc_primitive
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
       type(boundarytype), intent(in) :: bc
-      real :: cinf, cexp   ! speed of sound
-      real :: Rinf, Rexp   ! Riemann invarient
-      real :: Uninf, Unexp ! face normal speed
-      real :: Unb ! normal velocity boundary
-      real :: Cb  ! speed of sound boundary
-      real :: vel_diff
-      real :: u,v,w
-      real :: uf, vf, wf
+      real(wp) :: cinf, cexp   ! speed of sound
+      real(wp) :: Rinf, Rexp   ! Riemann invarient
+      real(wp) :: Uninf, Unexp ! face normal speed
+      real(wp) :: Unb ! normal velocity boundary
+      real(wp) :: Cb  ! speed of sound boundary
+      real(wp) :: vel_diff
+      real(wp) :: u,v,w
+      real(wp) :: uf, vf, wf
       integer :: i,j,k
-      real :: s
+      real(wp) :: s
       integer, dimension(6) :: face_already_has_fixed_values=0!0=.no.
 
       face_already_has_fixed_values=0
@@ -1266,15 +1246,15 @@ module bc_primitive
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
       type(boundarytype), intent(in) :: bc
-      real :: cinf, cexp   ! speed of sound
-      real :: Rinf, Rexp   ! Riemann invarient
-      real :: Uninf, Unexp ! face normal speed
-      real :: Unb ! normal velocity boundary
-      real :: Cb  ! speed of sound boundary
-      real :: vel_diff
-      real :: u,v,w
-      real :: uf, vf, wf
-      real :: Mb
+      real(wp) :: cinf, cexp   ! speed of sound
+      real(wp) :: Rinf, Rexp   ! Riemann invarient
+      real(wp) :: Uninf, Unexp ! face normal speed
+      real(wp) :: Unb ! normal velocity boundary
+      real(wp) :: Cb  ! speed of sound boundary
+      real(wp) :: vel_diff
+      real(wp) :: u,v,w
+      real(wp) :: uf, vf, wf
+      real(wp) :: Mb
       integer :: i,j,k
 
       select case(face)
@@ -1801,9 +1781,9 @@ module bc_primitive
       implicit none
       type(extent), intent(in) :: dims
       type(boundarytype), intent(in) :: bc
-      real, dimension(1:6)     , intent(in)  :: temperature
+      real(wp), dimension(1:6)     , intent(in)  :: temperature
       character(len=*)         , intent(in)  :: face
-      real :: stag_temp
+      real(wp) :: stag_temp
       integer :: i,j,k
 
       select case(face)

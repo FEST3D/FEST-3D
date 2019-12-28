@@ -21,13 +21,13 @@ module wall
   integer, parameter :: maxlen=70
   !< Maximum length for string
 
-  real, private, dimension(:, :), allocatable, target :: wallc 
+  real(wp), private, dimension(:, :), allocatable, target :: wallc 
   !< Centre of wall surface
-  real, private, dimension(:), pointer :: wall_x 
+  real(wp), private, dimension(:), pointer :: wall_x 
   !< X coordiante of center of wall surface
-  real, private, dimension(:), pointer :: wall_y 
+  real(wp), private, dimension(:), pointer :: wall_y 
   !< Y coordiante of center of wall surface
-  real, private, dimension(:), pointer :: wall_z 
+  real(wp), private, dimension(:), pointer :: wall_z 
   !< Z coordiante of center of wall surface
   integer, dimension(6) :: no_slip_flag=0 
   !< Flag to detect wall

@@ -4,11 +4,6 @@ module utils
 
     implicit none
     private
-!    integer, public :: DEBUG_LEVEL = 1
-    !< Debug level is an input from the control file.
-    !< 5-> important calls only, and, 
-    !< 1-> all the calls
-
     public :: alloc
     interface alloc
         module procedure alloc_rank1_real, &
@@ -22,24 +17,9 @@ module utils
                          alloc_rank3_integer
     end interface alloc
 
-!    public :: dealloc
-!    interface dealloc
-!        module procedure dealloc_rank1_real, &
-!                         dealloc_rank2_real, &
-!                         dealloc_rank3_real, &
-!                         dealloc_rank4_real, &
-!                         dealloc_rank5_real, &
-!                         dealloc_rank6_real, &
-!                         dealloc_rank1_integer,&
-!                         dealloc_rank2_integer,&
-!                         dealloc_rank3_integer
-!    end interface dealloc
-
 
     contains
 
-        !include "allocate_memory_implementation.inc"
-        !include "deallocate_memory_implementation.inc"
         subroutine alloc_rank1_real(var, start1, stop1, errmsg)
           !< Allcoate 1-Dimensional array of type: real
             implicit none

@@ -7,11 +7,11 @@ integer function test_ppm() result(r)
    type(extent) :: dims
    !imx,jmx,kmx, = 5,2,2
    !n_var = 5
-   real, dimension(-2:7,-2:4,-2:4,1:5) :: qp=0.0
-   real, dimension(0:6,1:1,1:1,5) :: x_qp_left, x_qp_right
-   real, dimension(1:4,0:3,1:1,5) :: y_qp_left, y_qp_right
-   real, dimension(1:4,1:1,0:3,5) :: z_qp_left, z_qp_right
-   real, dimension(0:5,0:2,0:2) :: pdif
+   real(wp), dimension(-2:7,-2:4,-2:4,1:5) :: qp=0.0
+   real(wp), dimension(0:6,1:1,1:1,5) :: x_qp_left, x_qp_right
+   real(wp), dimension(1:4,0:3,1:1,5) :: y_qp_left, y_qp_right
+   real(wp), dimension(1:4,1:1,0:3,5) :: z_qp_left, z_qp_right
+   real(wp), dimension(0:5,0:2,0:2) :: pdif
 
    r = 1
    

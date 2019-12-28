@@ -3,21 +3,6 @@ module bc
    !< Setup boundary condition for the domain
   !-------------------------------------------
   use vartypes
-!  use global_vars, only: imin_id
-!  use global_vars, only: imax_id
-!  use global_vars, only: jmin_id
-!  use global_vars, only: jmax_id
-!  use global_vars, only: kmin_id
-!  use global_vars, only: kmax_id
-!  use global_vars, only: c1
-!  use global_vars, only: c2
-!  use global_vars, only: c3
-!  use global_vars, only: id
-!  use global_vars, only: face_names
-!  use global_vars, only: make_F_flux_zero
-!  use global_vars, only: make_G_flux_zero
-!  use global_vars, only: make_H_flux_zero
-!  use global_vars, only: PbcId
   use utils, only: alloc
 
   use read_bc   ,  only: read_fixed_values
@@ -26,12 +11,7 @@ module bc
   implicit none
   private
 
-  !integer                        :: face_num
-  !< Number of the face : 1:imin, 2:imax, 3:jmin, 4:jmax, 5:kmin, 6:kmax
-
   public :: setup_bc
-!  public :: destroy_bc
-
 
   contains
 
@@ -84,6 +64,7 @@ module bc
       if(bc%imax_id==-5 .or. bc%imax_id==-6 .or. bc%imax_id==-7) bc%make_F_flux_zero(dims%imx)=0
       if(bc%jmax_id==-5 .or. bc%jmax_id==-6 .or. bc%jmax_id==-7) bc%make_G_flux_zero(dims%jmx)=0
       if(bc%kmax_id==-5 .or. bc%kmax_id==-6 .or. bc%kmax_id==-7) bc%make_H_flux_zero(dims%kmx)=0
+      print*, "check done"
 
     end subroutine setup_bc
 

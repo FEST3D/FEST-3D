@@ -1,4 +1,6 @@
+ !< Interpolation of primitive variable from cell centers to faces
 module face_interpolant
+ !< Interpolation of primitive variable from cell centers to faces
 
 #include "../../debug.h"
 #include "../../error.h"
@@ -12,10 +14,14 @@ module face_interpolant
     private
 
 
-    real, dimension(:, :, :, :), allocatable, target :: x_qp_left, x_qp_right
-    real, dimension(:, :, :, :), allocatable, target :: y_qp_left, y_qp_right
-    real, dimension(:, :, :, :), allocatable, target :: z_qp_left, z_qp_right
-    real, dimension(:, :, :), allocatable :: pdif
+    real(wp), dimension(:, :, :, :), allocatable, target :: x_qp_left, x_qp_right
+    !< Store primitive state at the I-face 
+    real(wp), dimension(:, :, :, :), allocatable, target :: y_qp_left, y_qp_right
+    !< Store primitive state at the J-face 
+    real(wp), dimension(:, :, :, :), allocatable, target :: z_qp_left, z_qp_right
+    !< Store primitive state at the K-face 
+    real(wp), dimension(:, :, :), allocatable :: pdif
+    !< pressure difference
    !< Used for pressure based witch
 
 
@@ -29,37 +35,10 @@ module face_interpolant
 
     contains
 
-!        subroutine allocate_memory()
-!            implicit none
-!            call alloc(x_qp_left, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-!                    errmsg='Error: Unable to allocate memory for ' // &
-!                        'x_qp_left.')
-!            call alloc(x_qp_right, 0, imx+1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-!                    errmsg='Error: Unable to allocate memory for ' // &
-!                        'x_qp_right.')
-!            call alloc(y_qp_left, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
-!                    errmsg='Error: Unable to allocate memory for ' // &
-!                        'y_qp_left.')
-!            call alloc(y_qp_right, 1, imx-1, 0, jmx+1, 1, kmx-1, 1, n_var, &
-!                    errmsg='Error: Unable to allocate memory for ' // &
-!                        'y_qp_right.')
-!            call alloc(z_qp_left, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
-!                    errmsg='Error: Unable to allocate memory for ' // &
-!                        'z_qp_left.')
-!            call alloc(z_qp_right, 1, imx-1, 1, jmx-1, 0, kmx+1, 1, n_var, &
-!                    errmsg='Error: Unable to allocate memory for ' // &
-!                        'z_qp_right.')
-!        call alloc(pdif, 0, imx, 0, jmx, 0, kmx, &
-!                errmsg='Error: Unable to allocate memory for' // &
-!                    'pdif')
-!        end subroutine allocate_memory
-
-
         subroutine setup_interpolant_scheme(dims)
             implicit none
-            !type(controltype), intent(in) :: control
-            !type(schemetype), intent(in) :: scheme
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
 
             call alloc(x_qp_left, 0, dims%imx+1, 1, dims%jmx-1, 1, dims%kmx-1, 1, dims%n_var, &
                     errmsg='Error: Unable to allocate memory for x_qp_left.')
@@ -82,7 +61,9 @@ module face_interpolant
         subroutine extrapolate_cell_averages_to_faces(qp, dims)
             implicit none
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
 
             DebugCall('extrapolate_cell_averages_to_faces')
 
@@ -98,10 +79,15 @@ module face_interpolant
         subroutine compute_face_interpolant(qp, cells, scheme, flow, dims)
             implicit none
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+            !< Cell center quantities: volume, cellCenter
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             select case (scheme%interpolant)
                 case ("none")
                     call extrapolate_cell_averages_to_faces(qp, dims)

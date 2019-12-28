@@ -2,7 +2,6 @@
 module check_output_control
   !< Check for the input from the output_control.md file
   use vartypes
-  !use str_case   , only: lcase
   implicit none
   private
   public :: verify_write_control

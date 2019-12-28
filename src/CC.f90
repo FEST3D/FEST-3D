@@ -9,31 +9,24 @@ module CC
 #include "error.h"
 
    use vartypes
-!  use global_vars, only: CCnormalX
-!  use global_vars, only: CCnormalY
-!  use global_vars, only: CCnormalZ
-!  use global_vars, only: CCVn
-!  use global_vars, only: DCCVnX
-!  use global_vars, only: DCCVnY
-!  use global_vars, only: DCCVnZ
   use wall_dist, only: dist
 
   use utils, only : alloc
   implicit none
   private
-  real, dimension(:, :, :), allocatable             :: CCnormalX 
+  real(wp), dimension(:, :, :), allocatable             :: CCnormalX 
    !< Cell-Center normal nx with respect to wall; used for transition model (pressure gradient calcualtion)
-  real, dimension(:, :, :), allocatable             :: CCnormalY
+  real(wp), dimension(:, :, :), allocatable             :: CCnormalY
    !< Cell-Center normal ny with respect to wall; used for transiton model (pressure gradient calculation)
-  real, dimension(:, :, :), allocatable             :: CCnormalZ
+  real(wp), dimension(:, :, :), allocatable             :: CCnormalZ
    !< Cell-Center normal nz with respect to wall; used for transiton model (pressure gradient calculation)
-  real, dimension(:, :, :), allocatable             :: CCVn 
+  real(wp), dimension(:, :, :), allocatable             :: CCVn 
   !< Store value at Cell-Center of dot product between velocity vector and cell-center normal. {vec(Velocity).normal}
-  real, dimension(:, :, :), allocatable             :: DCCVnX
+  real(wp), dimension(:, :, :), allocatable             :: DCCVnX
   !< Store Derivative of Cell-Center CCVn with respect to x
-  real, dimension(:, :, :), allocatable             :: DCCVnY
+  real(wp), dimension(:, :, :), allocatable             :: DCCVnY
   !< Store Derivative of Cell-Center CCVn with respect to y
-  real, dimension(:, :, :), allocatable             :: DCCVnZ
+  real(wp), dimension(:, :, :), allocatable             :: DCCVnZ
   !< Store Derivative of Cell-Center CCVn with respect to z
   public :: find_DCCVn
   public :: setupCC
@@ -123,7 +116,7 @@ module CC
       !< Taking a dot product between Cell-center velocity and unit normal
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx,-2:dims%jmx,-2:dims%kmx,-2:dims%n_var), intent(in) :: qp
+      real(wp), dimension(-2:dims%imx,-2:dims%jmx,-2:dims%kmx,-2:dims%n_var), intent(in) :: qp
       CCVn = CCnormalX*qp(:,:,:,2) + CCnormalY*qp(:,:,:,3) + CCnormalZ*qp(:,:,:,4) ! (nx,ny,nz).(u,v,w)
     end subroutine find_CCVn
 
@@ -132,7 +125,7 @@ module CC
       !< Find gradient of the dot product between cell velocity and unit normal
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx,-2:dims%jmx,-2:dims%kmx,-2:dims%n_var), intent(in) :: qp
+      real(wp), dimension(-2:dims%imx,-2:dims%jmx,-2:dims%kmx,-2:dims%n_var), intent(in) :: qp
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -152,8 +145,8 @@ module CC
       !< Generalized subroutine to calculate gradients
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(out) :: grad
-      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: var
+      real(wp), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(out) :: grad
+      real(wp), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: var
       character(len=*)                                          , intent(in) :: dir
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
@@ -164,10 +157,6 @@ module CC
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
       
-      !real, dimension(:,:,:), pointer  :: nx
-      !real, dimension(:,:,:), pointer  :: ny
-      !real, dimension(:,:,:), pointer  :: nz
-
       integer :: i
       integer :: j
       integer :: k

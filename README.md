@@ -2,6 +2,7 @@ FEST-3D: Finite-volume Explicit STructured 3-Dimensional
 ========
 ![FEST-3D](docs/media/FEST3D.png)  
 
+[![Build Status](https://travis-ci.com/FEST3D/FEST-3D.svg?branch=master)](https://travis-ci.com/FEST3D/FEST-3D)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Join the chat at https://gitter.im/FEST-3D/community](https://badges.gitter.im/FEST-3D/community.svg)](https://gitter.im/FEST-3D/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 

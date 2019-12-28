@@ -22,10 +22,15 @@ module grid
 
             implicit none
             type(filetype), intent(in) :: files
+            !< Files' name and handler
             type(controltype), intent(in) :: control
+            !< Control parameters
             type(boundarytype), intent(inout) :: bc
+            !< boundary conditions and fixed values
             type(nodetype), dimension(:,:,:), allocatable, intent(out) :: nodes
+            !< Grid points 
             type(extent), intent(out) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             
             DebugCall('setup_grid')
 
@@ -61,8 +66,11 @@ module grid
 
             implicit none
             integer, intent(in) :: file_handler
+            !< (input)file handling unit
             character(len=STRING_BUFFER_LENGTH) :: header
+            !< store header
             type(extent), intent(out) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             integer :: ios  ! io operation status
 
             DebugCall('extract_grid_size')
@@ -91,11 +99,16 @@ module grid
 
             implicit none
             integer, intent(in) :: file_handler
+            !< (input)file handling unit
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(out) :: nodes
+            !< Grid points
             character(len=STRING_BUFFER_LENGTH) :: line
+            !< store read line
             integer :: i, j, k
-            integer :: ios  ! io status
+            integer :: ios  
+            !< input/output  status
 
             DebugCall('populate_grid_point')
          !  print *, imx, jmx, kmx
@@ -125,7 +138,9 @@ module grid
           !< generate ghost grid for the various operations later.
           implicit none
           type(extent), intent(in) :: dims
+          !< Extent of the domain:imx,jmx,kmx
           type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(inout) :: nodes
+          !< grid points
 
           DebugCall('ghost_grid')
           !-------------------------------------------------------------------

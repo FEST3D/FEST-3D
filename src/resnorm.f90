@@ -22,17 +22,23 @@ module resnorm
 #include "mpi.inc"
   private
 
-  real :: merror
-  real, dimension(:), allocatable :: buffer
+  real(wp) :: merror
+  !< mass error
+  real(wp), dimension(:), allocatable :: buffer
+  !< Buffer for mpi communication
   integer, parameter :: Res_itr = 3
-  real, dimension(:), allocatable :: Res_abs       !< Absolute value
-  real, dimension(:), allocatable :: Res_rel       !< Relative value
-  real, dimension(:), allocatable :: Res_save      !< Saved iteration for relative
-  real, dimension(:), allocatable :: Res_scale     !< Scaling factor
+  !< Iteration after which Res_save is stores
+  real(wp), dimension(:), allocatable :: Res_abs       
+  !< Absolute value of residual norm
+  real(wp), dimension(:), allocatable :: Res_rel       
+  !< Relative value of residual norm
+  real(wp), dimension(:), allocatable :: Res_save      
+  !< Saved iteration for relative values
+  real(wp), dimension(:), allocatable :: Res_scale     
+  !< Scaling factor for normalization
 
   public :: setup_resnorm
   public :: Res_abs, Res_rel
-!  public :: destroy_resnorm
   public :: find_resnorm
 
   contains
@@ -41,9 +47,13 @@ module resnorm
       !< Allocate memory, setup scale and file to write
       implicit none
       type(filetype), intent(in) :: files
+      !< Files' name and handler
       type(controltype), intent(in) :: control
+      !< Control parameters
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(flowtype), intent(in) :: flow
+      !< Information about fluid flow: freestream-{u,v,rho,p}, etc.
       call allocate_memory(control)
       call setup_scale(scheme, flow)
       call setup_file(files, control)
@@ -53,16 +63,20 @@ module resnorm
       !< Find the normalized residual for each processor
       implicit none
       integer, intent(in) :: file_handler
+      !< residual file handler
       type(controltype), intent(inout) :: control
+      !< Control parameters
       type(schemetype) , intent(in) :: scheme
+      !< finite-volume Schemes
       type(extent), intent(in) :: dims
-      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
-      real, dimension(:, :, :, :), intent(in) :: F
+      real(wp), dimension(:, :, :, :), intent(in) :: F
       !< Store fluxes throught the I faces
-      real, dimension(:, :, :, :), intent(in) :: G
+      real(wp), dimension(:, :, :, :), intent(in) :: G
       !< Store fluxes throught the J faces
-      real, dimension(:, :, :, :), intent(in) :: H
+      real(wp), dimension(:, :, :, :), intent(in) :: H
       !< Store fluxes throught the K faces
       call get_absolute_resnorm(residue, F,G,H, control, dims)
       call collect_resnorm_from_all_blocks(control)
@@ -81,7 +95,9 @@ module resnorm
       !< Open the residual file to write
       implicit none
       type(filetype), intent(in) :: files
+      !< Files' name and handler
       type(controltype), intent(in) :: control
+      !< Control parameters
       integer :: i
       if(process_id==0)then
         if(control%start_from==0)then
@@ -114,7 +130,9 @@ module resnorm
       !< residual for writing in the file.
       implicit none
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(flowtype), intent(in) :: flow
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
       Res_scale(0) = 1.
       Res_scale(1) = flow%density_inf*flow%vel_mag
       Res_scale(2) = flow%density_inf*flow%vel_mag*flow%vel_mag
@@ -154,15 +172,16 @@ module resnorm
       !< Get absolute residual for current process
       implicit none
       type(controltype), intent(in) :: control
+      !< Control parameters: number of variables
       type(extent), intent(in) :: dims
       !< extent of the 3D domain
-      real, dimension(:, :, :, :), intent(in)  :: residue
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
-      real, dimension(:, :, :, :), intent(in) :: F
+      real(wp), dimension(:, :, :, :), intent(in) :: F
       !< Store fluxes throught the I faces
-      real, dimension(:, :, :, :), intent(in) :: G
+      real(wp), dimension(:, :, :, :), intent(in) :: G
       !< Store fluxes throught the J faces
-      real, dimension(:, :, :, :), intent(in) :: H
+      real(wp), dimension(:, :, :, :), intent(in) :: H
       !< Store fluxes throught the K faces
       integer :: i
       do i=1,control%n_var
@@ -183,6 +202,7 @@ module resnorm
       !< MPI Communication to gather residual from all processes
       implicit none
       type(controltype), intent(in) :: control
+      !< Control parameters: number of variables
       integer :: ierr
       call MPI_ALLGATHER(Res_abs, control%n_var+1, MPI_DOUBLE_PRECISION, &
       buffer, control%n_var+1, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, ierr)
@@ -192,6 +212,7 @@ module resnorm
       !< Sum residual obtained from all the processes after MPI_Communication
       implicit none
       type(controltype), intent(in) :: control
+      !< Control parameters: number of variables and total mpi processes
       integer :: i,j
       Res_abs=0.
       do i=0,control%total_process-1
@@ -207,6 +228,7 @@ module resnorm
       !< Get relative residual with respect to first iteration residual
       implicit none
       type(controltype), intent(inout) :: control
+      !< Control parameters: iterations
       if(control%current_iter<=Res_itr) Res_save=Res_abs
       if(control%start_from/=0) then
         Res_save=control%previous_Res
@@ -220,8 +242,11 @@ module resnorm
       !< Writing the residual in the file to save.
       implicit none
       integer, intent(in) :: RESNORM_FILE_UNIT
+      !<Resnorm file handler unit
       type(controltype), intent(in) :: control
+      !< Control parameters
       type(schemetype) , intent(in) :: scheme
+      !< turbulenca and transition schemes
       integer :: i
       integer :: n=6
       character(len=20) :: frm

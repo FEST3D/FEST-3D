@@ -2,25 +2,8 @@
 module read_bc
   !< Get all the fixed values from the bc_**.md file 
   !-----------------------------------------------------
-  ! 170516  Jatinder Pal Singh Sandhu
-  ! Aim : get all the fixed valed from bc_**.md file
-  !-----------------------------------------------------
 #include "../error.inc"
   use vartypes
-!  use global_vars, only: fixed_density
-!  use global_vars, only: fixed_x_speed
-!  use global_vars, only: fixed_y_speed
-!  use global_vars, only: fixed_z_speed
-!  use global_vars, only: fixed_pressure
-!  use global_vars, only: fixed_tk
-!  use global_vars, only: fixed_tw
-!  use global_vars, only: fixed_te
-!  use global_vars, only: fixed_tv
-!  use global_vars, only: fixed_tkl
-!  use global_vars, only: fixed_Tpressure
-!  use global_vars, only: fixed_Ttemperature
-!  use global_vars, only: fixed_wall_temperature
-
   implicit none
   private
 
@@ -65,7 +48,7 @@ module read_bc
       type(flowtype), intent(in) :: flow
       type(boundarytype), intent(inout) :: bc
       integer, intent(in) :: count
-      real :: fix_val
+      real(wp) :: fix_val
       integer :: ios
       do while(.true.)
         read(files%BOUNDARY_CONDITIONS_FILE_UNIT,"(A)") buf
@@ -218,9 +201,9 @@ module read_bc
       implicit none
       integer, intent(in) :: ios
       integer, intent(in) :: count
-      real   , intent(in) :: fix_val
-      real   , intent(in) :: inf_val
-      real   , intent(out), dimension(:) :: fixed_var
+      real(wp)   , intent(in) :: fix_val
+      real(wp)   , intent(in) :: inf_val
+      real(wp)   , intent(out), dimension(:) :: fixed_var
       if(ios==0)then
         fixed_var(count) = fix_val
       else 

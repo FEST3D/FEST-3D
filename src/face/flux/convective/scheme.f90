@@ -1,10 +1,13 @@
+ !< Inviscid flux calculation through faces
 module scheme
+ !< Inviscid flux calculation through faces
 
 #include "../../../debug.h"
 #include "../../../error.h"
     use vartypes
     use utils, only: alloc
     use face_interpolant, only: setup_interpolant_scheme
+    use face_interpolant
     use ausmP,    only: compute_fluxes_ausmP  => compute_fluxes
     use ausmUP,   only: compute_fluxes_ausmUP => compute_fluxes
     use slau,     only: compute_fluxes_slau   => compute_fluxes
@@ -26,15 +29,16 @@ module scheme
         subroutine setup_scheme(residue, F,G,H, control, dims)
             implicit none
             type(controltype), intent(in) :: control
+            !< Control parameters
             type(extent), intent(in) :: dims
             !< extent of the 3D domain
-            real, dimension(:, :, :, :), allocatable, intent(out), target :: residue
+            real(wp), dimension(:, :, :, :), allocatable, intent(out), target :: residue
             !< Store residue at each cell-center
-            real, dimension(:, :, :, :), allocatable, intent(out) :: F
+            real(wp), dimension(:, :, :, :), allocatable, intent(out) :: F
             !< Store fluxes throught the I faces
-            real, dimension(:, :, :, :), allocatable, intent(out) :: G
+            real(wp), dimension(:, :, :, :), allocatable, intent(out) :: G
             !< Store fluxes throught the J faces
-            real, dimension(:, :, :, :), allocatable, intent(out) :: H
+            real(wp), dimension(:, :, :, :), allocatable, intent(out) :: H
             !< Store fluxes throught the K faces
 
             imx = dims%imx
@@ -65,14 +69,16 @@ module scheme
         
             implicit none
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             type(extent), intent(in) :: dims
             !< extent of the 3D domain
-            real, dimension(:, :, :, :), intent(inout) :: F
+            real(wp), dimension(:, :, :, :), intent(inout) :: F
             !< Store fluxes throught the I faces
-            real, dimension(:, :, :, :), intent(inout) :: G
+            real(wp), dimension(:, :, :, :), intent(inout) :: G
             !< Store fluxes throught the J faces
-            real, dimension(:, :, :, :), intent(inout) :: H
+            real(wp), dimension(:, :, :, :), intent(inout) :: H
             !< Store fluxes throught the K faces
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
             !< Store face quantites for I faces 
@@ -81,20 +87,21 @@ module scheme
             type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
             !< Store face quantites for K faces 
             type(boundarytype), intent(in) :: bc
+            !< boundary conditions and fixed values
 
             select case (scheme%scheme_name)
                 case ("van_leer")
-                  call compute_fluxes_van_leer(F,G,H,Ifaces,Jfaces,Kfaces,flow,bc,dims)
+                  call compute_fluxes_van_leer(F,G,H,x_qp_left,x_qp_right,y_qp_left,y_qp_right,z_qp_left,z_qp_right,Ifaces,Jfaces,Kfaces,flow,bc,dims)
                 case ("ausm")
-                  call compute_fluxes_ausm(F,G,H,Ifaces,Jfaces,Kfaces,flow,bc,dims)
+                  call compute_fluxes_ausm(F,G,H,x_qp_left,x_qp_right,y_qp_left,y_qp_right,z_qp_left,z_qp_right,Ifaces,Jfaces,Kfaces,flow,bc,dims)
                 case ("ausmP")
-                  call compute_fluxes_ausmP(F,G,H,Ifaces,Jfaces,Kfaces,flow,bc,dims)
+                  call compute_fluxes_ausmP(F,G,H,x_qp_left,x_qp_right,y_qp_left,y_qp_right,z_qp_left,z_qp_right,Ifaces,Jfaces,Kfaces,flow,bc,dims)
                 case ("ausmUP")
-                  call compute_fluxes_ausmUP(F,G,H,Ifaces,Jfaces,Kfaces,flow,bc,dims)
+                  call compute_fluxes_ausmUP(F,G,H,x_qp_left,x_qp_right,y_qp_left,y_qp_right,z_qp_left,z_qp_right,Ifaces,Jfaces,Kfaces,flow,bc,dims)
                 case ("slau")
-                  call compute_fluxes_slau(F,G,H,Ifaces,Jfaces,Kfaces,flow,bc,dims)
+                  call compute_fluxes_slau(F,G,H,x_qp_left,x_qp_right,y_qp_left,y_qp_right,z_qp_left,z_qp_right,Ifaces,Jfaces,Kfaces,flow,bc,dims)
                 case ("ldfss0")
-                  call compute_fluxes_ldfss0(F,G,H,Ifaces,Jfaces,Kfaces,flow,bc,dims)
+                  call compute_fluxes_ldfss0(F,G,H,x_qp_left,x_qp_right,y_qp_left,y_qp_right,z_qp_left,z_qp_right,Ifaces,Jfaces,Kfaces,flow,bc,dims)
                 case default
                     Fatal_error
             end select
@@ -106,13 +113,13 @@ module scheme
             implicit none
             type(extent), intent(in) :: dims
             !< extent of the 3D domain
-            real, dimension(:, :, :, :), intent(out)  :: residue
+            real(wp), dimension(:, :, :, :), intent(out)  :: residue
             !< Store residue at each cell-center
-            real, dimension(:, :, :, :), intent(in) :: F
+            real(wp), dimension(:, :, :, :), intent(in) :: F
             !< Store fluxes throught the I faces
-            real, dimension(:, :, :, :), intent(in) :: G
+            real(wp), dimension(:, :, :, :), intent(in) :: G
             !< Store fluxes throught the J faces
-            real, dimension(:, :, :, :), intent(in) :: H
+            real(wp), dimension(:, :, :, :), intent(in) :: H
             !< Store fluxes throught the K faces
             
             integer :: i, j, k, l

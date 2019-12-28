@@ -14,14 +14,14 @@ module wall_dist
 
   integer                                     :: n_surfnodes
   !< Number of surfce node points
-!  real, public, dimension(:,:,:), allocatable :: dist
-  real, private,dimension(:)    , allocatable :: wall_x
+!  real(wp), public, dimension(:,:,:), allocatable :: dist
+  real(wp), private,dimension(:)    , allocatable :: wall_x
   !< X component of wall surface node point
-  real, private,dimension(:)    , allocatable :: wall_y
+  real(wp), private,dimension(:)    , allocatable :: wall_y
   !< Y component of wall surface node point
-  real, private,dimension(:)    , allocatable :: wall_z
+  real(wp), private,dimension(:)    , allocatable :: wall_z
   !< Z component of wall surface node point
-  real, dimension(:, :, :), allocatable             :: dist 
+  real(wp), dimension(:, :, :), allocatable             :: dist 
 
   integer :: imx, jmx, kmx
 
@@ -107,8 +107,8 @@ module wall_dist
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
 
       integer :: i,j,k,n
-      real :: current_dist
-      real, dimension(:,:,:), allocatable :: node_dist
+      real(wp) :: current_dist
+      real(wp), dimension(:,:,:), allocatable :: node_dist
       DebugCall('find_wall_dist')
       call alloc(node_dist,-2,imx+3,-2,jmx+3,-2,kmx+3)
 

@@ -25,7 +25,7 @@ module muscl
     implicit none
     private
 
-    real :: phi=1.0, kappa=1./3.
+    real(wp) :: phi=1.0, kappa=1./3.
     integer :: switch_L=1
     !< Limiter switch 
 
@@ -41,14 +41,20 @@ module muscl
 
             implicit none
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             integer, dimension(3), intent(in) :: flags
-            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
-            real, dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
+            !< flags for direction switch
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< primitive variable at cell faces
+            real(wp), dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
+            !< pressure difference 
             integer :: i, j, k, i_end, j_end, k_end
             integer :: i_f, j_f, k_f  ! Flags to determine face direction
-            real :: pd2
+            real(wp) :: pd2
 
             DebugCall('pressure_based_switching')
 
@@ -111,10 +117,13 @@ module muscl
           !< all direction : I,J, and K.
             implicit none
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             integer, dimension(3), intent(in) :: flags
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-            ! Character can be x or y or z
-            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< Flags for direction switch
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+            !< Store primitive variable at cell center
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< primitive variable at cell faces
             integer, intent(in) :: lam_switch
             !< Limiter switch for laminar variables
             integer, intent(in) :: turb_switch
@@ -123,15 +132,15 @@ module muscl
             !< integer used for DO loop
             integer :: ii, jj, kk
             !< Variable for ALFA family limiter
-            real :: alpha
+            real(wp) :: alpha
             !< Flags to determine face direction
-            real :: psi1, psi2
+            real(wp) :: psi1, psi2
             !< limiters
-            real :: fd
+            real(wp) :: fd
             !< forward difference
-            real :: bd
+            real(wp) :: bd
             !< backward difference
-            real :: r
+            real(wp) :: r
             !< ratio of differences
 
             DebugCall('compute_face_state')
@@ -195,17 +204,23 @@ module muscl
             !---------------------------------------------------------
             implicit none
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
-            real, dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
+            real(wp), dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
             !< Store primitive state at the I-face 
-            real, dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
+            real(wp), dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
             !< Store primitive state at the J-face 
-            real, dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
+            real(wp), dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
             !< Store primitive state at the K-face 
-            real, dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
+            real(wp), dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
+            !< pressure difference
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) ::flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             integer, dimension(3) :: flags
+            !< Flags for direction
 
             
             flags=(/1,0,0/)

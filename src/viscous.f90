@@ -59,10 +59,13 @@ module viscous
 
         implicit none
         type(schemetype), intent(in) :: scheme
+        !< finite-volume Schemes
         type(flowtype), intent(in) :: flow
+        !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
         type(extent), intent(in) :: dims
-        real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-        real, dimension(:, :, :, :), intent(inout) :: F, G, H
+        !< Extent of the domain:imx,jmx,kmx
+        real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+        real(wp), dimension(:, :, :, :), intent(inout) :: F, G, H
         type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
         !< Input cell quantities: volume
         type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -149,97 +152,64 @@ module viscous
     subroutine compute_viscous_fluxes_laminar(F, qp, cells, faces, flags, scheme, flow, dims)
       !< Compute viscous fluxes for first five Navier-Stokes equation
       implicit none
-      real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
+      real(wp), dimension(:, :, :, :), intent(inout) :: F 
+      !< Flux array
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(flowtype), intent(in) :: flow
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
       type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
       integer, dimension(3), intent(in) :: flags
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< flags for direction switch
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+     !< Store primitive variable at cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
+      !< Face quantities: area and unit normal
       ! local variables
-      real :: dudx, dudy, dudz
-      real :: dvdx, dvdy, dvdz
-      real :: dwdx, dwdy, dwdz
-      real :: dTdx, dTdy, dTdz
-      real :: normal_comp
-      real :: d_LR
-      real :: T_RE
-      real :: T_LE
-      real :: K_heat, Qx, Qy, Qz
-      real :: mu_f
-      real :: mut_f
-      real :: total_mu
-      real :: delx
-      real :: dely
-      real :: delz
-      real :: delu
-      real :: delv
-      real :: delw
-      real :: delT
-      real :: Tau_xx
-      real :: Tau_xy
-      real :: Tau_xz
-      real :: Tau_yx
-      real :: Tau_yy
-      real :: Tau_yz
-      real :: Tau_zx
-      real :: Tau_zy
-      real :: Tau_zz
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: area
-      real :: uface
-      real :: vface
-      real :: wface
-!      real, dimension(:, :, :), pointer :: fA
-!      real, dimension(:, :, :), pointer :: fnx
-!      real, dimension(:, :, :), pointer :: fny
-!      real, dimension(:, :, :), pointer :: fnz
+      real(wp) :: dudx, dudy, dudz
+      real(wp) :: dvdx, dvdy, dvdz
+      real(wp) :: dwdx, dwdy, dwdz
+      real(wp) :: dTdx, dTdy, dTdz
+      real(wp) :: normal_comp
+      real(wp) :: d_LR
+      real(wp) :: T_RE
+      real(wp) :: T_LE
+      real(wp) :: K_heat, Qx, Qy, Qz
+      real(wp) :: mu_f
+      real(wp) :: mut_f
+      real(wp) :: total_mu
+      real(wp) :: delx
+      real(wp) :: dely
+      real(wp) :: delz
+      real(wp) :: delu
+      real(wp) :: delv
+      real(wp) :: delw
+      real(wp) :: delT
+      real(wp) :: Tau_xx
+      real(wp) :: Tau_xy
+      real(wp) :: Tau_xz
+      real(wp) :: Tau_yx
+      real(wp) :: Tau_yy
+      real(wp) :: Tau_yz
+      real(wp) :: Tau_zx
+      real(wp) :: Tau_zy
+      real(wp) :: Tau_zz
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: area
+      real(wp) :: uface
+      real(wp) :: vface
+      real(wp) :: wface
       integer :: i, j, k
       integer :: ii, jj, kk
 
       ii = flags(1)
       jj = flags(2)
       kk = flags(3)
-      !--------------------------------------------------------------------
-      ! select Direction
-      !--------------------------------------------------------------------
-     ! select case(trim(direction))
-     !   case('x')
-     !     ii  =  1
-     !     jj  =  0
-     !     kk  =  0
-     !     fnx => xnx
-     !     fny => xny
-     !     fnz => xnz
-     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
-
-     !   case('y')
-     !     ii  =  0
-     !     jj  =  1
-     !     kk  =  0
-     !     fnx => ynx
-     !     fny => yny
-     !     fnz => ynz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
-
-     !   case('z')
-     !     ii  =  0
-     !     jj  =  0
-     !     kk  =  1
-     !     fnx => znx
-     !     fny => zny
-     !     fnz => znz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
-
-     !   case Default
-     !     Fatal_error
-
-     ! end select
-
 
       !---------------------------------------------------------------------
       ! Calculating the fluxes at the faces
@@ -366,84 +336,49 @@ module viscous
     subroutine compute_viscous_fluxes_sst(F, qp, cells, faces, flags, dims)
       !< Compute viscous fluxes for additianal equations due to SST turbulence model
       implicit none
-      real, dimension(:, :, :, :), intent(inout) :: F !< flux array
+      real(wp), dimension(:, :, :, :), intent(inout) :: F 
+      !< flux array
       type(extent), intent(in) :: dims
+      !< Extent of the domain: imx,jmx,kmx
       integer, dimension(3), intent(in) :: flags
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< flags for direction swithc
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+     !< Store primitive variable at cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
+      !< quantities on the face
       ! local variables
-      real :: tkface
-      real :: rhoface
-      real :: normal_comp
-      real :: d_LR
-      real :: mu_f
-      real :: mut_f
-      real :: total_mu
-      real :: delx
-      real :: dely
-      real :: delz
-      real :: deltk
-      real :: deltw
-      real :: Tau_xx
-      real :: Tau_yy
-      real :: Tau_zz
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: area
-!      real, dimension(:, :, :), pointer :: fA
-!      real, dimension(:, :, :), pointer :: fnx
-!      real, dimension(:, :, :), pointer :: fny
-!      real, dimension(:, :, :), pointer :: fnz
+      real(wp) :: tkface
+      real(wp) :: rhoface
+      real(wp) :: normal_comp
+      real(wp) :: d_LR
+      real(wp) :: mu_f
+      real(wp) :: mut_f
+      real(wp) :: total_mu
+      real(wp) :: delx
+      real(wp) :: dely
+      real(wp) :: delz
+      real(wp) :: deltk
+      real(wp) :: deltw
+      real(wp) :: Tau_xx
+      real(wp) :: Tau_yy
+      real(wp) :: Tau_zz
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: area
       integer :: i, j, k
       integer :: ii, jj, kk
       !--- sst variable requirement ---!
-      real :: dtkdx, dtkdy, dtkdz, dtwdx, dtwdy, dtwdz
-      real ::  F1
-      real ::  sigma_kf
-      real ::  sigma_wf
+      real(wp) :: dtkdx, dtkdy, dtkdz, dtwdx, dtwdy, dtwdz
+      real(wp) ::  F1
+      real(wp) ::  sigma_kf
+      real(wp) ::  sigma_wf
 
       ii = flags(1)
       jj = flags(2)
       kk = flags(3)
-      !--------------------------------------------------------------------
-      ! select Direction
-      !--------------------------------------------------------------------
-     ! select case(trim(direction))
-     !   case('x')
-     !     ii  =  1
-     !     jj  =  0
-     !     kk  =  0
-     !     fnx => xnx
-     !     fny => xny
-     !     fnz => xnz
-     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
-
-     !   case('y')
-     !     ii  =  0
-     !     jj  =  1
-     !     kk  =  0
-     !     fnx => ynx
-     !     fny => yny
-     !     fnz => ynz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
-
-     !   case('z')
-     !     ii  =  0
-     !     jj  =  0
-     !     kk  =  1
-     !     fnx => znx
-     !     fny => zny
-     !     fnz => znz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
-
-     !   case Default
-     !     Fatal_error
-
-     ! end select
-
 
       !---------------------------------------------------------------------
       ! Calculating the turbulent viscous fluxes at the faces
@@ -523,83 +458,48 @@ module viscous
     subroutine compute_viscous_fluxes_kkl(F, qp, cells, faces, flags, dims)
       !< Compute viscous fluxes for additianal equations due to k-kL turbulence model
       implicit none
-      real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
+      real(wp), dimension(:, :, :, :), intent(inout) :: F 
+      !< Flux array
       type(extent), intent(in) :: dims
+      !< Extent of the domain: imx,jmx,kmx
       integer, dimension(3), intent(in) :: flags
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< flags for directions switch
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+     !< Store primitive variable at cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
+      !< Face quantities: area and unit normal
       ! local variables
-      real :: tkface
-      real :: rhoface
-      real :: normal_comp
-      real :: d_LR
-      real :: mu_f
-      real :: mut_f
-      real :: total_mu
-      real :: delx
-      real :: dely
-      real :: delz
-      real :: deltk
-      real :: deltkl
-      real :: Tau_xx
-      real :: Tau_yy
-      real :: Tau_zz
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: area
-!      real, dimension(:, :, :), pointer :: fA
-!      real, dimension(:, :, :), pointer :: fnx
-!      real, dimension(:, :, :), pointer :: fny
-!      real, dimension(:, :, :), pointer :: fnz
+      real(wp) :: tkface
+      real(wp) :: rhoface
+      real(wp) :: normal_comp
+      real(wp) :: d_LR
+      real(wp) :: mu_f
+      real(wp) :: mut_f
+      real(wp) :: total_mu
+      real(wp) :: delx
+      real(wp) :: dely
+      real(wp) :: delz
+      real(wp) :: deltk
+      real(wp) :: deltkl
+      real(wp) :: Tau_xx
+      real(wp) :: Tau_yy
+      real(wp) :: Tau_zz
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: area
       integer :: i, j, k
       integer :: ii, jj, kk
       !--- kkl variable requirement  ---!
-      real :: dtkdx, dtkdy, dtkdz
-      real :: dtkldx, dtkldy, dtkldz
+      real(wp) :: dtkdx, dtkdy, dtkdz
+      real(wp) :: dtkldx, dtkldy, dtkldz
 
 
       ii = flags(1)
       jj = flags(2)
       kk = flags(3)
-
-      !--------------------------------------------------------------------
-      ! select Direction
-      !--------------------------------------------------------------------
-     ! select case(trim(direction))
-     !   case('x')
-     !     ii  =  1
-     !     jj  =  0
-     !     kk  =  0
-     !     fnx => xnx
-     !     fny => xny
-     !     fnz => xnz
-     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
-
-     !   case('y')
-     !     ii  =  0
-     !     jj  =  1
-     !     kk  =  0
-     !     fnx => ynx
-     !     fny => yny
-     !     fnz => ynz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
-
-     !   case('z')
-     !     ii  =  0
-     !     jj  =  0
-     !     kk  =  1
-     !     fnx => znx
-     !     fny => zny
-     !     fnz => znz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
-
-     !   case Default
-     !     Fatal_error
-
-     ! end select
 
 
       !---------------------------------------------------------------------
@@ -678,75 +578,40 @@ module viscous
     subroutine compute_viscous_fluxes_sa(F, qp, cells, faces, flags, dims)
       !< Compute viscous fluxes for additianal equations due to SA turbulence model
       implicit none
-      real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
+      real(wp), dimension(:, :, :, :), intent(inout) :: F 
+      !< Flux array
       type(extent), intent(in) :: dims
+      !< Extent of the domain: imx,jmx,kmx
       integer, dimension(3), intent(in) :: flags
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< flags for direction switch
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< Store primitive variable at cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
+      !< Face quantities: area and unit normal
       ! local variables
-      real :: rhoface
-      real :: normal_comp
-      real :: d_LR
-      real :: mu_f
-      real :: mut_f
-      real :: delx
-      real :: dely
-      real :: delz
-      real :: deltv
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: area
-!      real, dimension(:, :, :), pointer :: fA
-!      real, dimension(:, :, :), pointer :: fnx
-!      real, dimension(:, :, :), pointer :: fny
-!      real, dimension(:, :, :), pointer :: fnz
+      real(wp) :: rhoface
+      real(wp) :: normal_comp
+      real(wp) :: d_LR
+      real(wp) :: mu_f
+      real(wp) :: mut_f
+      real(wp) :: delx
+      real(wp) :: dely
+      real(wp) :: delz
+      real(wp) :: deltv
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: area
       integer :: i, j, k
       integer :: ii, jj, kk
       !--- sa variable requirement ---!
-      real :: dtvdx, dtvdy, dtvdz
+      real(wp) :: dtvdx, dtvdy, dtvdz
 
       ii = flags(1)
       jj = flags(2)
       kk = flags(3)
-      !--------------------------------------------------------------------
-      ! select Direction
-      !--------------------------------------------------------------------
-     ! select case(trim(direction))
-     !   case('x')
-     !     ii  =  1
-     !     jj  =  0
-     !     kk  =  0
-     !     fnx => xnx
-     !     fny => xny
-     !     fnz => xnz
-     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
-
-     !   case('y')
-     !     ii  =  0
-     !     jj  =  1
-     !     kk  =  0
-     !     fnx => ynx
-     !     fny => yny
-     !     fnz => ynz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
-
-     !   case('z')
-     !     ii  =  0
-     !     jj  =  0
-     !     kk  =  1
-     !     fnx => znx
-     !     fny => zny
-     !     fnz => znz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
-
-     !   case Default
-     !     Fatal_error
-
-     ! end select
-
 
       !---------------------------------------------------------------------
       ! Calculating the turbulent viscous fluxes at the faces
@@ -802,74 +667,40 @@ module viscous
     subroutine compute_viscous_fluxes_lctm2015(F, qp, cells, faces, flags,dims)
       !< Compute viscous fluxes for additianal equations due to LCTM2015 transition model
       implicit none
-      real, dimension(:, :, :, :), intent(inout) :: F !< Flux array
+      real(wp), dimension(:, :, :, :), intent(inout) :: F 
+      !< Flux array
       type(extent), intent(in) :: dims
+      !< Extent of the doamin:imx,jmx,kmx
       integer, dimension(3), intent(in) :: flags
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !<flags for direction switch
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< Store primitive variable at cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
+      !< Face quantities: area and unit normal
       ! local variables
-      real :: rhoface
-      real :: normal_comp
-      real :: d_LR
-      real :: mu_f
-      real :: mut_f
-      real :: delx
-      real :: dely
-      real :: delz
-      real :: deltgm
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: area
-!      real, dimension(:, :, :), pointer :: fA
-!      real, dimension(:, :, :), pointer :: fnx
-!      real, dimension(:, :, :), pointer :: fny
-!      real, dimension(:, :, :), pointer :: fnz
+      real(wp) :: rhoface
+      real(wp) :: normal_comp
+      real(wp) :: d_LR
+      real(wp) :: mu_f
+      real(wp) :: mut_f
+      real(wp) :: delx
+      real(wp) :: dely
+      real(wp) :: delz
+      real(wp) :: deltgm
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: area
       integer :: i, j, k
       integer :: ii, jj, kk
       !--- sa variable requirement ---!
-      real :: dtgmdx, dtgmdy, dtgmdz
+      real(wp) :: dtgmdx, dtgmdy, dtgmdz
 
       ii = flags(1)
       jj = flags(2)
       kk = flags(3)
-      !--------------------------------------------------------------------
-      ! select Direction
-      !--------------------------------------------------------------------
-     ! select case(trim(direction))
-     !   case('x')
-     !     ii  =  1
-     !     jj  =  0
-     !     kk  =  0
-     !     fnx => xnx
-     !     fny => xny
-     !     fnz => xnz
-     !     fA(-2:dims%imx+3, -2:dims%jmx+2, -2:dims%kmx+2)   => xA
-
-     !   case('y')
-     !     ii  =  0
-     !     jj  =  1
-     !     kk  =  0
-     !     fnx => ynx
-     !     fny => yny
-     !     fnz => ynz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+3, -2:dims%kmx+2)   => yA
-
-     !   case('z')
-     !     ii  =  0
-     !     jj  =  0
-     !     kk  =  1
-     !     fnx => znx
-     !     fny => zny
-     !     fnz => znz
-     !     fA(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+3)   => zA
-
-     !   case Default
-     !     Fatal_error
-
-     ! end select
 
 
       !---------------------------------------------------------------------

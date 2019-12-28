@@ -87,8 +87,6 @@ module source
   private
 
   public :: add_source_term_residue
-!  public :: Setup_source
-!  public :: destroy_source
 
   contains
 
@@ -98,10 +96,14 @@ module source
 
       implicit none
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(flowtype), intent(in) :: flow
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
@@ -153,46 +155,52 @@ module source
     end subroutine add_source_term_residue
 
 
-!    subroutine Setup_source()
-!      !< Allcoate memory to the required by the variable
-!        implicit none
-!        !nothing
-!    end subroutine Setup_source
-!
-!
-!    subroutine destroy_source()
-!      !< deallocate memory before stoping the solver
-!        implicit none
-!        !nothing
-!    end subroutine destroy_source
-
     subroutine add_sst_source(qp, residue, cells,scheme,dims)
       !< Add residual due to source terms of the SST turbulence model
       implicit none
       type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
       type(schemetype), intent(in) :: scheme
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< finite-volume Schemes
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       !< Store residue at each cell-center
       integer :: i,j,k
 
-      real :: CD
-      real :: F1
-      real :: vort
-      real :: S_k
-      real :: S_w
-      real :: D_k
-      real :: D_w
-      real :: P_k
-      real :: P_w
-      real :: lamda
+      real(wp) :: CD
+      !< cross diffusion term
+      real(wp) :: F1
+      !< single cell belding fuction 
+      real(wp) :: vort
+      !< vorticity magnitude
+      real(wp) :: S_k
+      !< Total source term of TKE equation
+      real(wp) :: S_w
+      !< Total source term of omega equation
+      real(wp) :: D_k
+      !< destruction term of TKE equation
+      real(wp) :: D_w
+      !< destruction term of omega equation
+      real(wp) :: P_k
+      !< production term of TKE equation
+      real(wp) :: P_w
+      !< production term of Omega equation
+      real(wp) :: lamda
+      !< additional source term in Omega equation
       integer :: limiter
-      real :: divergence
-      real :: density
-      real :: tk
-      real :: tw
+      !< production term limiter
+      real(wp) :: divergence
+      !< del.V
+      real(wp) :: density
+      !< single cell density
+      real(wp) :: tk
+      !< single cell TKE
+      real(wp) :: tw
+      !< single cell Omega
       
       if(trim(scheme%turbulence) == 'sst2003')then
         limiter = 10
@@ -266,9 +274,11 @@ module source
       !< Add residual due to source terms of the LCTM2015 transition model
       implicit none
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real(wp), dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
@@ -280,40 +290,66 @@ module source
       !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
 
-      real :: CD
-      real :: F1
-      real :: vort
-      real :: S_K
-      real :: S_w
-      real :: S_gm
-      real :: D_k
-      real :: D_w
-      real :: D_gm
-      real :: P_k
-      real :: P_w
-      real :: P_gm
-      real :: lamda
-      real :: Fonset1
-      real :: Fonset2
-      real :: Fonset3
-      real :: Fonset
-      real :: Rev
-      Real :: RT
-      real :: Fturb
-      real :: Re_theta
-      real :: TuL
-      real :: strain
-      real :: intermittency
-      real :: Pk_lim
-      real :: Fon_lim
-      real :: lamd
-      real :: Fpg
-      real :: divergence
-      real :: dvdy
+      real(wp) :: CD
+      !< Cross-diffustion term
+      real(wp) :: F1
+      !< single cell blending function
+      real(wp) :: vort
+      !< vorticity magnitude
+      real(wp) :: S_K
+      !< Total source term in TKE equation
+      real(wp) :: S_w
+      !< Total source term in Omega equation
+      real(wp) :: S_gm
+      !< Total source term in Gamma equation
+      real(wp) :: D_k
+      !< Destruction term in TKE equation
+      real(wp) :: D_w
+      !< Destruction term in Omega equation
+      real(wp) :: D_gm
+      !< Destruction term in Gamma equation
+      real(wp) :: P_k
+      !< production term in TKE equation
+      real(wp) :: P_w
+      !< production term in Omega equation
+      real(wp) :: P_gm
+      !< production term in Gamma equation
+      real(wp) :: lamda
+      !< additional source term in Omega equation
+      real(wp) :: Fonset1,Fonset2, Fonset3,Fonset
+      !< Transition onset term 
+      real(wp) :: Rev
+      !< Reynodlds number based on vorticity
+      real(wp) :: RT
+      !< Turbulent reynolds number
+      real(wp) :: Fturb
+      real(wp) :: Re_theta
+      !< Cutt-off reynolds number based on momentum thickness
+      real(wp) :: TuL
+      !< local turbulence intensity
+      real(wp) :: strain
+      !< Strain rate magnitude
+      real(wp) :: intermittency
+      !< intermittency
+      real(wp) :: Pk_lim
+      !< production lim term
+      real(wp) :: Fon_lim
+      real(wp) :: lamd
+      !< pressure gradient 
+      real(wp) :: Fpg
+      !< pressure gradient functin
+      real(wp) :: divergence
+      !< del.V
+      real(wp) :: dvdy
+      !< pressure gradient sensor
       integer :: limiter
-      real :: density
-      real :: tk
-      real :: tw
+      !< production limiter
+      real(wp) :: density
+      !< single cell Density
+      real(wp) :: tk
+      !< single cell TKE
+      real(wp) :: tw
+      !< single cell Omega
 
       if(trim(scheme%turbulence) == 'sst2003')then
         limiter = 10
@@ -432,42 +468,61 @@ module source
       !< Add residual due to source terms of the SST-BC transition model
       implicit none
       type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
       type(flowtype), intent(in) :: flow
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       integer :: i,j,k
 
-      real :: CD
-      real :: F1
-      real :: vort
-      real :: S_k
-      real :: S_w
-      real :: D_k
-      real :: D_w
-      real :: P_k
-      real :: P_w
-      real :: lamda
-      real :: TuL
+      real(wp) :: CD
+      !< cross-diffusion term
+      real(wp) :: F1
+      !< single cell blending function 
+      real(wp) :: vort
+      !< vorticity magnitude
+      real(wp) :: S_k
+      !< Total source term in TKE equation
+      real(wp) :: S_w
+      !< Total source term in Omega equation
+      real(wp) :: D_k
+      !< Destruction term in TKE equation
+      real(wp) :: D_w
+      !< Destruction term in Omega equation
+      real(wp) :: P_k
+      !< Production term in TKE equation
+      real(wp) :: P_w
+      !< production term in Omega equation
+      real(wp) :: lamda
+      !< addtion source term in Omega equation
+      real(wp) :: TuL
+      !< local turbulence intensity
       !--------BC model -----
-      real :: chi_1=0.002
-      real :: chi_2=5.0
-      real :: nu_BC
-      real :: nu_cr
-      real :: nu_t
-      real :: re_v
-      real :: re_theta
-      real :: re_theta_t
-      real :: term1
-      real :: term2
-      real :: term_exponential
-      real :: gamma_BC
-      real :: vmag
-      real :: density
-      real :: tk
-      real :: tw
+      real(wp) :: chi_1=0.002
+      real(wp) :: chi_2=5.0
+      real(wp) :: nu_BC
+      real(wp) :: nu_cr
+      real(wp) :: nu_t
+      real(wp) :: re_v
+      real(wp) :: re_theta
+      real(wp) :: re_theta_t
+      real(wp) :: term1
+      real(wp) :: term2
+      real(wp) :: term_exponential
+      real(wp) :: gamma_BC
+      !< intermittency function
+      real(wp) :: vmag
+      !< velocity magnitude
+      real(wp) :: density
+      !< single cell Density
+      real(wp) :: tk
+      !< single cell TKE
+      real(wp) :: tw
+      !< single cell omega
 
 
       do k = 1,dims%kmx-1
@@ -553,8 +608,9 @@ module source
       !< Add residual due to source terms of the k-kL turbulence model
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real(wp), dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
@@ -566,58 +622,58 @@ module source
       !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
 
-      real :: Tau11
-      real :: Tau12
-      real :: Tau13
+      real(wp) :: Tau11
+      real(wp) :: Tau12
+      real(wp) :: Tau13
 
-      real :: Tau21
-      real :: Tau22
-      real :: Tau23
+      real(wp) :: Tau21
+      real(wp) :: Tau22
+      real(wp) :: Tau23
 
-      real :: Tau31
-      real :: Tau32
-      real :: Tau33
+      real(wp) :: Tau31
+      real(wp) :: Tau32
+      real(wp) :: Tau33
 
-      real :: S11
-      real :: S12
-      real :: S13
+      real(wp) :: S11
+      real(wp) :: S12
+      real(wp) :: S13
 
-      real :: S21
-      real :: S22
-      real :: S23
+      real(wp) :: S21
+      real(wp) :: S22
+      real(wp) :: S23
 
-      real :: S31
-      real :: S32
-      real :: S33
+      real(wp) :: S31
+      real(wp) :: S32
+      real(wp) :: S33
 
-      real :: delv
+      real(wp) :: delv
 
-      real :: d2udx2
-      real :: d2udy2
-      real :: d2udz2
+      real(wp) :: d2udx2
+      real(wp) :: d2udy2
+      real(wp) :: d2udz2
 
-      real :: d2vdx2
-      real :: d2vdy2
-      real :: d2vdz2
+      real(wp) :: d2vdx2
+      real(wp) :: d2vdy2
+      real(wp) :: d2vdz2
 
-      real :: d2wdx2
-      real :: d2wdy2
-      real :: d2wdz2
+      real(wp) :: d2wdx2
+      real(wp) :: d2wdy2
+      real(wp) :: d2wdz2
 
-      real :: Lvk
-      real :: fp
-      real :: ud
-      real :: udd
+      real(wp) :: Lvk
+      real(wp) :: fp
+      real(wp) :: ud
+      real(wp) :: udd
 
-      real :: S_k
-      real :: S_kl
-      real :: D_k
-      real :: D_kl
-      real :: P_k
-      real :: P_kl
-      real :: density
-      real :: tk
-      real :: tkl
+      real(wp) :: S_k
+      real(wp) :: S_kl
+      real(wp) :: D_k
+      real(wp) :: D_kl
+      real(wp) :: P_k
+      real(wp) :: P_kl
+      real(wp) :: density
+      real(wp) :: tk
+      real(wp) :: tkl
 
 
       do k = 1,dims%kmx-1
@@ -780,8 +836,9 @@ module source
       !< Add residual due to source terms of SA turbulence model
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real(wp), dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
@@ -793,30 +850,30 @@ module source
       !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
 
-      real :: CD1
-      real :: CD2
-      real :: fv1
-      real :: fv2
-      real :: fw
-      real :: g
-      real :: Scap
-      real :: r
-      real :: vort
-      real :: S_v
-      real :: D_v
-      real :: P_v
-      real :: lamda
-      real :: kd2
-      real :: xi
-      real :: nu
-      real :: gradrho_x
-      real :: gradrho_y
-      real :: gradrho_z
-      real, dimension(6) :: RhoFace
-      real, dimension(6) :: Area
-      real, dimension(6,3) :: Normal
-      real :: density
-      real :: tv
+      real(wp) :: CD1
+      real(wp) :: CD2
+      real(wp) :: fv1
+      real(wp) :: fv2
+      real(wp) :: fw
+      real(wp) :: g
+      real(wp) :: Scap
+      real(wp) :: r
+      real(wp) :: vort
+      real(wp) :: S_v
+      real(wp) :: D_v
+      real(wp) :: P_v
+      real(wp) :: lamda
+      real(wp) :: kd2
+      real(wp) :: xi
+      real(wp) :: nu
+      real(wp) :: gradrho_x
+      real(wp) :: gradrho_y
+      real(wp) :: gradrho_z
+      real(wp), dimension(6) :: RhoFace
+      real(wp), dimension(6) :: Area
+      real(wp), dimension(6,3) :: Normal
+      real(wp) :: density
+      real(wp) :: tv
 
       do k = 1,dims%kmx-1
         do j = 1,dims%jmx-1
@@ -929,9 +986,12 @@ module source
       !< Add residual due to source terms of SABC transition model
       implicit none
       type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
       type(flowtype), intent(in) :: flow
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-      real, dimension(:, :, :, :), intent(inout)  :: residue
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(inout)  :: residue
       !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
@@ -943,55 +1003,55 @@ module source
       !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
 
-      real :: CD1
-      real :: CD2
-      real :: fv1
-      real :: fv2
-      real :: fw
-      real :: g
-      real :: r
-      real :: S_v
-      real :: lamda
-      real :: dist_i
-      real :: dist_i_2
-      real :: Ji
-      real :: Ji_2
-      real :: Ji_3
-      real :: S
-      real :: Omega
-      real :: k2
-      real :: inv_k2_d2
-      real :: Shat
-      real :: inv_Shat
-      real :: nu
-      real :: gradrho_x
-      real :: gradrho_y
-      real :: gradrho_z
-      real, dimension(6) :: RhoFace
-      real, dimension(6) :: Area
-      real, dimension(6,3) :: Normal
+      real(wp) :: CD1
+      real(wp) :: CD2
+      real(wp) :: fv1
+      real(wp) :: fv2
+      real(wp) :: fw
+      real(wp) :: g
+      real(wp) :: r
+      real(wp) :: S_v
+      real(wp) :: lamda
+      real(wp) :: dist_i
+      real(wp) :: dist_i_2
+      real(wp) :: Ji
+      real(wp) :: Ji_2
+      real(wp) :: Ji_3
+      real(wp) :: S
+      real(wp) :: Omega
+      real(wp) :: k2
+      real(wp) :: inv_k2_d2
+      real(wp) :: Shat
+      real(wp) :: inv_Shat
+      real(wp) :: nu
+      real(wp) :: gradrho_x
+      real(wp) :: gradrho_y
+      real(wp) :: gradrho_z
+      real(wp), dimension(6) :: RhoFace
+      real(wp), dimension(6) :: Area
+      real(wp), dimension(6,3) :: Normal
       ! transition modeling variables
-      real :: chi_1=0.002
-      real :: chi_2=5.0
-      real :: nu_BC
-      real :: nu_cr
-      real :: nu_t
-      real :: u,v,w
-      real :: glim
-      real :: g_6
-      real :: vmag
-      real :: Production
-      real :: Destruction
-      real :: re_v
-      real :: re_theta
-      real :: re_theta_t
-      real :: term1
-      real :: term2
-      real :: term_exponential
-      real :: gamma_BC
-      real :: tu
-      real :: tv
-      real :: density
+      real(wp) :: chi_1=0.002
+      real(wp) :: chi_2=5.0
+      real(wp) :: nu_BC
+      real(wp) :: nu_cr
+      real(wp) :: nu_t
+      real(wp) :: u,v,w
+      real(wp) :: glim
+      real(wp) :: g_6
+      real(wp) :: vmag
+      real(wp) :: Production
+      real(wp) :: Destruction
+      real(wp) :: re_v
+      real(wp) :: re_theta
+      real(wp) :: re_theta_t
+      real(wp) :: term1
+      real(wp) :: term2
+      real(wp) :: term_exponential
+      real(wp) :: gamma_BC
+      real(wp) :: tu
+      real(wp) :: tv
+      real(wp) :: density
 
       tu = flow%tu_inf
 

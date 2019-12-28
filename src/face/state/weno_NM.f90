@@ -24,31 +24,35 @@ module weno_NM
             implicit none
 
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             integer, dimension(3), intent(in) :: flags
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
-            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< flags for direction switch
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< primitive state at faces
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
             integer :: i, j, k, l
             integer :: i_f=0, j_f=0, k_f=0
-            real, dimension(3) :: P !< polynomial approximation
-            real, dimension(3) :: B !< smoothness factor
-            real, dimension(3) :: w !< wieght
-            real, dimension(3) :: g !< linear wieght
-            real, dimension(-2:2) :: u !<state_variable
-            real               :: eps=1e-6
+            real(wp), dimension(3) :: P !< polynomial approximation
+            real(wp), dimension(3) :: B !< smoothness factor
+            real(wp), dimension(3) :: w !< wieght
+            real(wp), dimension(3) :: g !< linear wieght
+            real(wp), dimension(-2:2) :: u !<state_variable
+            real(wp)               :: eps=1e-6
 
-            real, dimension(-2:2) :: vol
-            real               :: U11
-            real               :: U00
-            real               :: U21
-            real               :: U10
-            real               :: U01
-            real               :: U12
-            real               :: alpha12
-            real               :: alpha01
-            real               :: alpha10
-            real               :: alpha21
+            real(wp), dimension(-2:2) :: vol
+            real(wp)               :: U11
+            real(wp)               :: U00
+            real(wp)               :: U21
+            real(wp)               :: U10
+            real(wp)               :: U01
+            real(wp)               :: U12
+            real(wp)               :: alpha12
+            real(wp)               :: alpha01
+            real(wp)               :: alpha10
+            real(wp)               :: alpha21
 
             g(1) = 1.0/10.0
             g(2) = 6.0/10.0
@@ -121,15 +125,18 @@ module weno_NM
 
             implicit none
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
-            real, dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
+            real(wp), dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
             !< Store primitive state at the I-face 
-            real, dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
+            real(wp), dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
             !< Store primitive state at the J-face 
-            real, dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
+            real(wp), dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
             !< Store primitive state at the K-face 
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
             integer, dimension(3) :: flags
+            !< flags for different directions
             flags=(/1,0,0/)
             call compute_face_states(qp, x_qp_l, x_qp_r, flags, cells, dims)
             flags=(/0,1,0/)

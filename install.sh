@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-#set -eo pipefail
+#unset -xo pipefail
 
 OS="`uname`"
 dir="`pwd`"/bin/FEST3D
+echo $dir
 case ${OS} in
   'Linux')
     OS='Linux'
@@ -29,14 +30,14 @@ case ${OS} in
     if [[ -z "${FEST3D}" ]]; then
       echo 'FEST3D variable not set. Exporting FEST3D variable to .bashrc'
       echo 'export FEST3D="'${dir}'"' >> ~/.bashrc
-      source ~/.bashrc
+      export FEST3D="${dir}"
     elif [[ "${FEST3D}" == "${dir}" ]]; then
       echo 'FEST3D env variable is set to: '${FEST3D}
     else
+      echo 'export FEST3D="'${dir}'"' >> ~/.bashrc
+      export FEST3D="${dir}"
       echo 'FEST3D variable is set, but to different binary path'
       echo 'FEST3D env variable is being set to: '${FEST3D}
-      echo 'export FEST3D="'${dir}'"' >> ~/.bashrc
-      source ~/.bashrc
       echo 'Please remove the old export line from ~/.bashrc'
     fi
     ;;
@@ -55,14 +56,14 @@ case ${OS} in
     if [[ -z "${FEST3D}" ]]; then
       echo 'FEST3D variable not set. Exporting FEST3D variable to .bash_profile'
       echo 'export FEST3D="'${dir}'"' >> ~/.bash_profile
-      source ~/.bash_profile
+      export FEST3D="${dir}"
     elif [[ "${FEST3D}" == "${dir}" ]]; then
       echo 'FEST3D env variable is set to: '${FEST3D}
     else
+      echo 'export FEST3D="'${dir}'"' >> ~/.bash_profile
+      export FEST3D="${dir}"
       echo 'FEST3D variable is set, but to different binary path'
       echo 'FEST3D env variable is being set to: '${FEST3D}
-      echo 'export FEST3D="'${dir}'"' >> ~/.bash_profile
-      source ~/.bash_profile
       echo 'Please remove the old export line from ~/.bashrc'
     fi
     ;;
@@ -87,3 +88,4 @@ cmake ..
  cd ../tests/
  make
  python3 Test.py ausm muscl sst
+ cd ../

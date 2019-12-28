@@ -23,10 +23,14 @@ module ppm
 
             implicit none
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             integer, dimension(3), intent(in) :: flags
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
-            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2),&
+            !< Flags for direction switch
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2),&
             1-flags(3):dims%kmx-1+2*flags(3),1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< primitive state at faces
             integer :: i, j, k 
             integer :: i_f, j_f, k_f ! Flags to determine face direction
 
@@ -56,13 +60,17 @@ module ppm
 
             implicit none
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             integer, dimension(3), intent(in) :: flags
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
-            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2),&
+            !< flags for direction switch
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2),&
             1-flags(3):dims%kmx-1+2*flags(3),1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< primitve state variable at faces
             integer :: i, j, k, l
             integer :: i_f, j_f, k_f ! Flags to determine face direction
-            real :: dqrl, dq6
+            real(wp) :: dqrl, dq6
 
             DebugCall('remove_extrema')
             
@@ -105,16 +113,21 @@ module ppm
 
             implicit none
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             integer, dimension(3), intent(in) :: flags
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
-            real, dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2),&
+            !< flags for direction switch
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2),&
             1-flags(3):dims%kmx-1+2*flags(3),1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
-            real, dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
+            !< primitive state at faces
+            real(wp), dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
+            !< pressure difference
             type(flowtype), intent(in) :: flow
             ! Character can be x or y or z
             integer :: i, j, k, i_end, j_end, k_end
             integer :: i_f, j_f, k_f  ! Flags to determine face direction
-            real :: pd2
+            real(wp) :: pd2
 
             DebugCall('pressure_based_switching')
 
@@ -181,17 +194,23 @@ module ppm
 
             implicit none
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
-            real, dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in):: qp
+            !< Store primitive variable at cell center
+            real(wp), dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
             !< Store primitive state at the I-face 
-            real, dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
+            real(wp), dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
             !< Store primitive state at the J-face 
-            real, dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
+            real(wp), dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
             !< Store primitive state at the K-face 
-            real, dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
+            real(wp), dimension(0:dims%imx,0:dims%jmx,0:dims%kmx), intent(inout) :: pdif
+            !< pressure difference
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             integer, dimension(3) :: flags
+            !< flags for different directions
 
             flags=(/1,0,0/)
             call compute_face_estimates(qp, x_qp_l, x_qp_r, flags, dims)

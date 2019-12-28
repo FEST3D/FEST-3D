@@ -61,23 +61,23 @@ module plusgs
 #include "mpi.inc"
 
 
-  real, dimension(:,:,:,:), allocatable :: delQ
+  real(wp), dimension(:,:,:,:), allocatable :: delQ
   !< Change of state variable (solution) over one time-step
-  real, dimension(:,:,:,:), allocatable :: delQstar
+  real(wp), dimension(:,:,:,:), allocatable :: delQstar
   !< Intermediate change of state variable over one time-step
-  real, dimension(:,:,:), allocatable, target :: dummy
+  real(wp), dimension(:,:,:), allocatable, target :: dummy
   !< Dummy variable
-  real, dimension(:,:,:), pointer :: tmu
+  real(wp), dimension(:,:,:), pointer :: tmu
   !< Pointer to turbulent viscosity
-  real, dimension(:,:,:), pointer :: mmu
+  real(wp), dimension(:,:,:), pointer :: mmu
   !< Pointer to molecular viscosity
 
   integer :: imx, jmx, kmx, n_var
-  real :: gm, mu_ref, Reynolds_number, free_stream_tu
-  real :: tk_inf
-  real :: tkl_inf
-  real :: tPr, Pr, R_gas
-  real :: MInf
+  real(wp) :: gm, mu_ref, Reynolds_number, free_stream_tu
+  real(wp) :: tk_inf
+  real(wp) :: tkl_inf
+  real(wp) :: tPr, Pr, R_gas
+  real(wp) :: MInf
 
   public :: update_with_plusgs
   public :: setup_plusgs
@@ -89,11 +89,15 @@ module plusgs
       !< Allocate array memory for data communication
       implicit none
       type(controltype), intent(in) :: control
+      !< Control parameters
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(flowtype), intent(in) :: flow
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
       type(extent), intent(in) :: dims
-      character(len=*), parameter :: &
-        errmsg="module: LUSGS, subrouinte setup"
+      !< Extent of the domain:imx,jmx,kmx
+      character(len=*), parameter :: errmsg="module: LUSGS, subrouinte setup"
+      !< Error message 
 
       imx = dims%imx
       jmx = dims%jmx
@@ -132,34 +136,19 @@ module plusgs
       end if
     end subroutine setup_plusgs
 
-!    subroutine destroy_plusgs()
-!      !< Unallocate the memory required by LU-SGS module
-!      implicit none
-!      call dealloc(imin_send_buf)
-!      call dealloc(jmin_send_buf)
-!      call dealloc(kmin_send_buf)
-!      call dealloc(imin_recv_buf)
-!      call dealloc(jmin_recv_buf)
-!      call dealloc(kmin_recv_buf)
-!      call dealloc(imax_send_buf)
-!      call dealloc(jmax_send_buf)
-!      call dealloc(kmax_send_buf)
-!      call dealloc(imax_recv_buf)
-!      call dealloc(jmax_recv_buf)
-!      call dealloc(kmax_recv_buf)
-!      call dealloc(delQ)
-!      call dealloc(delQstar)
-!      call dealloc(dummy)
-!    end subroutine destroy_plusgs
 
     subroutine update_with_plusgs(qp, delta_t, cells, Ifaces,Jfaces,Kfaces,residue, scheme, dims)
       !< Time-integrate with LU_SGS method
       implicit none
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
-      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
-      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
@@ -204,10 +193,13 @@ module plusgs
       !< Update laminar flow with LU-SGS scheme
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
-      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
-      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -217,53 +209,53 @@ module plusgs
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
-        real, dimension(1:5)     :: deltaU
-        real                     :: D
-        real, dimension(1:5)     :: conservativeQ
-        real, dimension(1:5)     :: OldIminusFlux
-        real, dimension(1:5)     :: OldJminusFlux
-        real, dimension(1:5)     :: OldKminusFlux
-        real, dimension(1:5)     :: NewIminusFlux
-        real, dimension(1:5)     :: NewJminusFlux
-        real, dimension(1:5)     :: NewKminusFlux
-        real, dimension(1:5)     :: DelIminusFlux
-        real, dimension(1:5)     :: DelJminusFlux
-        real, dimension(1:5)     :: DelKminusFlux
-        real, dimension(1:6)     :: LambdaTimesArea
-        real, dimension(1:5)     :: Q0 ! state at cell
-        real, dimension(1:5)     :: Q1 ! state at neighbours 
-        real, dimension(1:5)     :: Q2
-        real, dimension(1:5)     :: Q3
-        real, dimension(1:5)     :: Q4
-        real, dimension(1:5)     :: Q5
-        real, dimension(1:5)     :: Q6
-        real, dimension(1:5)     :: DQ0! change in state
-        real, dimension(1:5)     :: DQ1
-        real, dimension(1:5)     :: DQ2
-        real, dimension(1:5)     :: DQ3
-        real, dimension(1:5)     :: DQ4
-        real, dimension(1:5)     :: DQ5
-        real, dimension(1:5)     :: DQ6
-        real, dimension(1:7)     :: Flist1
-        real, dimension(1:7)     :: Flist2
-        real, dimension(1:7)     :: Flist3
-        real, dimension(1:7)     :: Flist4
-        real, dimension(1:7)     :: Flist5
-        real, dimension(1:7)     :: Flist6
-        real, dimension(1:3)     :: C0
-        real, dimension(1:3)     :: C1
-        real, dimension(1:3)     :: C2
-        real, dimension(1:3)     :: C3
-        real, dimension(1:3)     :: C4
-        real, dimension(1:3)     :: C5
-        real, dimension(1:3)     :: C6
-        real                     :: eps
-        real                     :: M
-        real                     :: VMag
-        real                     :: SoundMag
-        real                     :: u,v,w,r,p, H
-        real                     :: factor
-        real, dimension(1:5,1:5) :: PrecondInv
+        real(wp), dimension(1:5)     :: deltaU
+        real(wp)                     :: D
+        real(wp), dimension(1:5)     :: conservativeQ
+        real(wp), dimension(1:5)     :: OldIminusFlux
+        real(wp), dimension(1:5)     :: OldJminusFlux
+        real(wp), dimension(1:5)     :: OldKminusFlux
+        real(wp), dimension(1:5)     :: NewIminusFlux
+        real(wp), dimension(1:5)     :: NewJminusFlux
+        real(wp), dimension(1:5)     :: NewKminusFlux
+        real(wp), dimension(1:5)     :: DelIminusFlux
+        real(wp), dimension(1:5)     :: DelJminusFlux
+        real(wp), dimension(1:5)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:5)     :: Q0 ! state at cell
+        real(wp), dimension(1:5)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:5)     :: Q2
+        real(wp), dimension(1:5)     :: Q3
+        real(wp), dimension(1:5)     :: Q4
+        real(wp), dimension(1:5)     :: Q5
+        real(wp), dimension(1:5)     :: Q6
+        real(wp), dimension(1:5)     :: DQ0! change in state
+        real(wp), dimension(1:5)     :: DQ1
+        real(wp), dimension(1:5)     :: DQ2
+        real(wp), dimension(1:5)     :: DQ3
+        real(wp), dimension(1:5)     :: DQ4
+        real(wp), dimension(1:5)     :: DQ5
+        real(wp), dimension(1:5)     :: DQ6
+        real(wp), dimension(1:7)     :: Flist1
+        real(wp), dimension(1:7)     :: Flist2
+        real(wp), dimension(1:7)     :: Flist3
+        real(wp), dimension(1:7)     :: Flist4
+        real(wp), dimension(1:7)     :: Flist5
+        real(wp), dimension(1:7)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,r,p, H
+        real(wp)                     :: factor
+        real(wp), dimension(1:5,1:5) :: PrecondInv
 
 
 
@@ -592,57 +584,57 @@ module plusgs
       ! calculate the total flux through face
       !---------------------------------------
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql !left state
-      real, dimension(1:n_var), intent(in) :: qr !right state
+      real(wp), dimension(1:n_var), intent(in) :: ql !<left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !<right state
       !conservative form of updated neighbour
-      real, dimension(1:n_var), intent(in) :: du
-      real, dimension(1:7)    , intent(in) :: inputs
-      real, dimension(1:n_var)             :: Flux
-      real, dimension(1:n_var)             :: U ! conservative variables
-      real, dimension(1:n_var)             :: W ! new primitive variables
-      real, dimension(1:n_var)             :: P ! primitive variables of right cell
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:7)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: U !< conservative variables
+      real(wp), dimension(1:n_var)             :: W !< new primitive variables
+      real(wp), dimension(1:n_var)             :: P !< primitive variables of right cell
 
       !for extraction of the inputs
-      real :: area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mmu
-      real :: tmu
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
 
 
-      real    :: dudx
-      real    :: dudy
-      real    :: dudz
-      real    :: dvdx
-      real    :: dvdy
-      real    :: dvdz
-      real    :: dwdx
-      real    :: dwdy
-      real    :: dwdz
-      real    :: dTdx
-      real    :: dTdy
-      real    :: dTdz
-      real    :: T1, T2
-      real    :: uface
-      real    :: vface
-      real    :: wface
-      real    :: trace
-      real    :: Tauxx
-      real    :: Tauyy
-      real    :: Tauzz
-      real    :: Tauxy
-      real    :: Tauxz
-      real    :: Tauyz
-      real    :: Qx
-      real    :: Qy
-      real    :: Qz
-      real    :: HalfRhoUsquare
-      real    :: RhoHt
-      real    :: K_heat
-      real    :: FaceNormalVelocity
-      real    :: mu
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
 
       area   = inputs(1)
       nx     = inputs(2)
@@ -732,30 +724,30 @@ module plusgs
     function SpectralRadius(ql, qr, inputs, c1, c2,eps)
       !< Calculated spectral radius
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql
-      real, dimension(1:n_var), intent(in) :: qr
-      real, dimension(1:7)    , intent(in) :: inputs
-      real, dimension(1:3)    , intent(in) :: c1
-      real, dimension(1:3)    , intent(in) :: c2
-      real                    , intent(in) :: eps
+      real(wp), dimension(1:n_var), intent(in) :: ql!<left state
+      real(wp), dimension(1:n_var), intent(in) :: qr!<right state
+      real(wp), dimension(1:7)    , intent(in) :: inputs
+      real(wp), dimension(1:3)    , intent(in) :: c1!<cell center 1
+      real(wp), dimension(1:3)    , intent(in) :: c2!<cell center 2
+      real(wp)                    , intent(in) :: eps
 
       ! local variables
-      real                                 :: SpectralRadius
-      real                                 :: NormalSpeed
-      real                                 :: SpeedOfSound
-      real                                 :: vis
-      real                                 :: mu
-      real                                 :: rho
-      real                                 :: distance
+      real(wp)                                 :: SpectralRadius
+      real(wp)                                 :: NormalSpeed
+      real(wp)                                 :: SpeedOfSound
+      real(wp)                                 :: vis
+      real(wp)                                 :: mu
+      real(wp)                                 :: rho
+      real(wp)                                 :: distance
 
       !extract inputs
-      real :: Area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mm
-      real :: tm
+      real(wp) :: Area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mm
+      real(wp) :: tm
 
       Area = inputs(1)
       nx   = inputs(2)
@@ -789,10 +781,13 @@ module plusgs
       !< Update the RANS (SST) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
-      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
-      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -802,57 +797,57 @@ module plusgs
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
-        real, dimension(1:7)     :: deltaU
-        real, dimension(1:7)     :: D
-        real, dimension(1:7)     :: conservativeQ
-        real, dimension(1:7)     :: OldIminusFlux
-        real, dimension(1:7)     :: OldJminusFlux
-        real, dimension(1:7)     :: OldKminusFlux
-        real, dimension(1:7)     :: NewIminusFlux
-        real, dimension(1:7)     :: NewJminusFlux
-        real, dimension(1:7)     :: NewKminusFlux
-        real, dimension(1:7)     :: DelIminusFlux
-        real, dimension(1:7)     :: DelJminusFlux
-        real, dimension(1:7)     :: DelKminusFlux
-        real, dimension(1:6)     :: LambdaTimesArea
-        real, dimension(1:7)     :: Q0 ! state at cell
-        real, dimension(1:7)     :: Q1 ! state at neighbours 
-        real, dimension(1:7)     :: Q2
-        real, dimension(1:7)     :: Q3
-        real, dimension(1:7)     :: Q4
-        real, dimension(1:7)     :: Q5
-        real, dimension(1:7)     :: Q6
-        real, dimension(1:7)     :: DQ0! change in state
-        real, dimension(1:7)     :: DQ1
-        real, dimension(1:7)     :: DQ2
-        real, dimension(1:7)     :: DQ3
-        real, dimension(1:7)     :: DQ4
-        real, dimension(1:7)     :: DQ5
-        real, dimension(1:7)     :: DQ6
-        real, dimension(1:8)     :: Flist1
-        real, dimension(1:8)     :: Flist2
-        real, dimension(1:8)     :: Flist3
-        real, dimension(1:8)     :: Flist4
-        real, dimension(1:8)     :: Flist5
-        real, dimension(1:8)     :: Flist6
-        real, dimension(1:3)     :: C0
-        real, dimension(1:3)     :: C1
-        real, dimension(1:3)     :: C2
-        real, dimension(1:3)     :: C3
-        real, dimension(1:3)     :: C4
-        real, dimension(1:3)     :: C5
-        real, dimension(1:3)     :: C6
-        real                     :: beta
-        real                     :: eps
-        real                     :: M
-        real                     :: VMag
-        real                     :: SoundMag
-        real                     :: u,v,w,r,p,kk,ww,H
-        real                     :: factor
-        real, dimension(1:7,1:7) :: PrecondInv
+        real(wp), dimension(1:7)     :: deltaU
+        real(wp), dimension(1:7)     :: D
+        real(wp), dimension(1:7)     :: conservativeQ
+        real(wp), dimension(1:7)     :: OldIminusFlux
+        real(wp), dimension(1:7)     :: OldJminusFlux
+        real(wp), dimension(1:7)     :: OldKminusFlux
+        real(wp), dimension(1:7)     :: NewIminusFlux
+        real(wp), dimension(1:7)     :: NewJminusFlux
+        real(wp), dimension(1:7)     :: NewKminusFlux
+        real(wp), dimension(1:7)     :: DelIminusFlux
+        real(wp), dimension(1:7)     :: DelJminusFlux
+        real(wp), dimension(1:7)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:7)     :: Q0 ! state at cell
+        real(wp), dimension(1:7)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:7)     :: Q2
+        real(wp), dimension(1:7)     :: Q3
+        real(wp), dimension(1:7)     :: Q4
+        real(wp), dimension(1:7)     :: Q5
+        real(wp), dimension(1:7)     :: Q6
+        real(wp), dimension(1:7)     :: DQ0! change in state
+        real(wp), dimension(1:7)     :: DQ1
+        real(wp), dimension(1:7)     :: DQ2
+        real(wp), dimension(1:7)     :: DQ3
+        real(wp), dimension(1:7)     :: DQ4
+        real(wp), dimension(1:7)     :: DQ5
+        real(wp), dimension(1:7)     :: DQ6
+        real(wp), dimension(1:8)     :: Flist1
+        real(wp), dimension(1:8)     :: Flist2
+        real(wp), dimension(1:8)     :: Flist3
+        real(wp), dimension(1:8)     :: Flist4
+        real(wp), dimension(1:8)     :: Flist5
+        real(wp), dimension(1:8)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: beta
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,r,p,kk,ww,H
+        real(wp)                     :: factor
+        real(wp), dimension(1:7,1:7) :: PrecondInv
 
         ! intermittency
-        real :: De, Dp
+        real(wp) :: De, Dp
 
         De = 0.0
         Dp = 0.0
@@ -1268,67 +1263,67 @@ module plusgs
       ! calculate the total flux through face
       !---------------------------------------
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql !left state
-      real, dimension(1:n_var), intent(in) :: qr !right state
+      real(wp), dimension(1:n_var), intent(in) :: ql !left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !right state
       !conservative form of updated neighbour
-      real, dimension(1:n_var), intent(in) :: du
-      real, dimension(1:8)    , intent(in) :: inputs
-      real, dimension(1:n_var)             :: Flux
-      real, dimension(1:n_var)             :: SSTFlux
-      real, dimension(1:n_var)             :: U ! conservative variables
-      real, dimension(1:n_var)             :: W ! new primitive variables
-      real, dimension(1:n_var)             :: P ! primitive variables of right cell
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:8)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: SSTFlux
+      real(wp), dimension(1:n_var)             :: U ! conservative variables
+      real(wp), dimension(1:n_var)             :: W ! new primitive variables
+      real(wp), dimension(1:n_var)             :: P ! primitive variables of right cell
 
       !for extraction of the inputs
-      real :: area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mmu
-      real :: tmu
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
 
 
-      real    :: dudx
-      real    :: dudy
-      real    :: dudz
-      real    :: dvdx
-      real    :: dvdy
-      real    :: dvdz
-      real    :: dwdx
-      real    :: dwdy
-      real    :: dwdz
-      real    :: dTdx
-      real    :: dTdy
-      real    :: dTdz
-      real    :: dtkdx
-      real    :: dtkdy
-      real    :: dtkdz
-      real    :: dtwdx
-      real    :: dtwdy
-      real    :: dtwdz
-      real    :: T1, T2
-      real    :: uface
-      real    :: vface
-      real    :: wface
-      real    :: trace
-      real    :: Tauxx
-      real    :: Tauyy
-      real    :: Tauzz
-      real    :: Tauxy
-      real    :: Tauxz
-      real    :: Tauyz
-      real    :: Qx
-      real    :: Qy
-      real    :: Qz
-      real    :: HalfRhoUsquare
-      real    :: RhoHt
-      real    :: K_heat
-      real    :: FaceNormalVelocity
-      real    :: mu
-      real    :: sigma_k
-      real    :: sigma_w
-      real    :: F1
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: dtkdx
+      real(wp)    :: dtkdy
+      real(wp)    :: dtkdz
+      real(wp)    :: dtwdx
+      real(wp)    :: dtwdy
+      real(wp)    :: dtwdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
+      real(wp)    :: sigma_k
+      real(wp)    :: sigma_w
+      real(wp)    :: F1
 
       area   = inputs(1)
       nx     = inputs(2)
@@ -1440,10 +1435,13 @@ module plusgs
       !< Update the RANS (SA) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
-      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
-      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -1453,79 +1451,79 @@ module plusgs
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
-        real, dimension(1:6)     :: deltaU
-        real, dimension(1:6)     :: D
-        real, dimension(1:6)     :: conservativeQ
-        real, dimension(1:6)     :: OldIminusFlux
-        real, dimension(1:6)     :: OldJminusFlux
-        real, dimension(1:6)     :: OldKminusFlux
-        real, dimension(1:6)     :: NewIminusFlux
-        real, dimension(1:6)     :: NewJminusFlux
-        real, dimension(1:6)     :: NewKminusFlux
-        real, dimension(1:6)     :: DelIminusFlux
-        real, dimension(1:6)     :: DelJminusFlux
-        real, dimension(1:6)     :: DelKminusFlux
-        real, dimension(1:6)     :: LambdaTimesArea
-        real, dimension(1:6)     :: Q0 ! state at cell
-        real, dimension(1:6)     :: Q1 ! state at neighbours 
-        real, dimension(1:6)     :: Q2
-        real, dimension(1:6)     :: Q3
-        real, dimension(1:6)     :: Q4
-        real, dimension(1:6)     :: Q5
-        real, dimension(1:6)     :: Q6
-        real, dimension(1:6)     :: DQ0! change in state
-        real, dimension(1:6)     :: DQ1
-        real, dimension(1:6)     :: DQ2
-        real, dimension(1:6)     :: DQ3
-        real, dimension(1:6)     :: DQ4
-        real, dimension(1:6)     :: DQ5
-        real, dimension(1:6)     :: DQ6
-        real, dimension(1:7)     :: Flist1
-        real, dimension(1:7)     :: Flist2
-        real, dimension(1:7)     :: Flist3
-        real, dimension(1:7)     :: Flist4
-        real, dimension(1:7)     :: Flist5
-        real, dimension(1:7)     :: Flist6
-        real, dimension(1:3)     :: C0
-        real, dimension(1:3)     :: C1
-        real, dimension(1:3)     :: C2
-        real, dimension(1:3)     :: C3
-        real, dimension(1:3)     :: C4
-        real, dimension(1:3)     :: C5
-        real, dimension(1:3)     :: C6
-        real                     :: eps
-        real                     :: M
-        real                     :: VMag
-        real                     :: SoundMag
-        real                     :: u,v,w,p,H,tv!r
-        real                     :: factor
-        real, dimension(1:6,1:6) :: PrecondInv
-      real :: fv1
-      real :: fv2
-      real :: fw
-      real :: g
-      real :: r
-      real :: dist_i
-      real :: dist_i_2
-      real :: Ji
-      real :: Ji_2
-      real :: Ji_3
-      real :: S
-      real :: Omega
-      real :: k2
-      real :: inv_k2_d2
-      real :: Shat
-      real :: inv_Shat
-      real :: nu
-      real :: glim
-      real :: g_6
-      real :: dfv1
-      real :: dfv2
-      real :: dfw
-      real :: dShat
-      real :: dr
-      real :: dg
-      real :: density
+        real(wp), dimension(1:6)     :: deltaU
+        real(wp), dimension(1:6)     :: D
+        real(wp), dimension(1:6)     :: conservativeQ
+        real(wp), dimension(1:6)     :: OldIminusFlux
+        real(wp), dimension(1:6)     :: OldJminusFlux
+        real(wp), dimension(1:6)     :: OldKminusFlux
+        real(wp), dimension(1:6)     :: NewIminusFlux
+        real(wp), dimension(1:6)     :: NewJminusFlux
+        real(wp), dimension(1:6)     :: NewKminusFlux
+        real(wp), dimension(1:6)     :: DelIminusFlux
+        real(wp), dimension(1:6)     :: DelJminusFlux
+        real(wp), dimension(1:6)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:6)     :: Q0 ! state at cell
+        real(wp), dimension(1:6)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:6)     :: Q2
+        real(wp), dimension(1:6)     :: Q3
+        real(wp), dimension(1:6)     :: Q4
+        real(wp), dimension(1:6)     :: Q5
+        real(wp), dimension(1:6)     :: Q6
+        real(wp), dimension(1:6)     :: DQ0! change in state
+        real(wp), dimension(1:6)     :: DQ1
+        real(wp), dimension(1:6)     :: DQ2
+        real(wp), dimension(1:6)     :: DQ3
+        real(wp), dimension(1:6)     :: DQ4
+        real(wp), dimension(1:6)     :: DQ5
+        real(wp), dimension(1:6)     :: DQ6
+        real(wp), dimension(1:7)     :: Flist1
+        real(wp), dimension(1:7)     :: Flist2
+        real(wp), dimension(1:7)     :: Flist3
+        real(wp), dimension(1:7)     :: Flist4
+        real(wp), dimension(1:7)     :: Flist5
+        real(wp), dimension(1:7)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,p,H,tv!r
+        real(wp)                     :: factor
+        real(wp), dimension(1:6,1:6) :: PrecondInv
+      real(wp) :: fv1
+      real(wp) :: fv2
+      real(wp) :: fw
+      real(wp) :: g
+      real(wp) :: r
+      real(wp) :: dist_i
+      real(wp) :: dist_i_2
+      real(wp) :: Ji
+      real(wp) :: Ji_2
+      real(wp) :: Ji_3
+      real(wp) :: S
+      real(wp) :: Omega
+      real(wp) :: k2
+      real(wp) :: inv_k2_d2
+      real(wp) :: Shat
+      real(wp) :: inv_Shat
+      real(wp) :: nu
+      real(wp) :: glim
+      real(wp) :: g_6
+      real(wp) :: dfv1
+      real(wp) :: dfv2
+      real(wp) :: dfw
+      real(wp) :: dShat
+      real(wp) :: dr
+      real(wp) :: dg
+      real(wp) :: density
 
 
 
@@ -1975,62 +1973,62 @@ module plusgs
       ! calculate the total flux through face
       !---------------------------------------
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql !left state
-      real, dimension(1:n_var), intent(in) :: qr !right state
+      real(wp), dimension(1:n_var), intent(in) :: ql !left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !right state
       !conservative form of updated neighbour
-      real, dimension(1:n_var), intent(in) :: du
-      real, dimension(1:7)    , intent(in) :: inputs
-      real, dimension(1:n_var)             :: Flux
-      real, dimension(1:n_var)             :: SAFlux
-      real, dimension(1:n_var)             :: U ! conservative variables
-      real, dimension(1:n_var)             :: W ! new primitive variables
-      real, dimension(1:n_var)             :: P ! primitive variables of right cell
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:7)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: SAFlux
+      real(wp), dimension(1:n_var)             :: U ! conservative variables
+      real(wp), dimension(1:n_var)             :: W ! new primitive variables
+      real(wp), dimension(1:n_var)             :: P ! primitive variables of right cell
 
       !for extraction of the inputs
-      real :: area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mmu
-      real :: tmu
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
 
 
-      real    :: dudx
-      real    :: dudy
-      real    :: dudz
-      real    :: dvdx
-      real    :: dvdy
-      real    :: dvdz
-      real    :: dwdx
-      real    :: dwdy
-      real    :: dwdz
-      real    :: dTdx
-      real    :: dTdy
-      real    :: dTdz
-      real    :: dtvdx
-      real    :: dtvdy
-      real    :: dtvdz
-      real    :: T1, T2
-      real    :: uface
-      real    :: vface
-      real    :: wface
-      real    :: trace
-      real    :: Tauxx
-      real    :: Tauyy
-      real    :: Tauzz
-      real    :: Tauxy
-      real    :: Tauxz
-      real    :: Tauyz
-      real    :: Qx
-      real    :: Qy
-      real    :: Qz
-      real    :: HalfRhoUsquare
-      real    :: RhoHt
-      real    :: K_heat
-      real    :: FaceNormalVelocity
-      real    :: mu
-      real    :: muCap
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: dtvdx
+      real(wp)    :: dtvdy
+      real(wp)    :: dtvdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
+      real(wp)    :: muCap
 
       area   = inputs(1)
       nx     = inputs(2)
@@ -2133,10 +2131,13 @@ module plusgs
       !< Update the RANS/transition (LCTM2015) equation with LU-SGS
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
-      real, dimension(:, :, :, :), intent(in)  :: residue
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
       !< Store residue at each cell-center
-      real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
       type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
       !< Input cell quantities: volume
       type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -2146,72 +2147,72 @@ module plusgs
       type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
       !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
-        real, dimension(1:8)     :: deltaU
-        real, dimension(1:8)     :: D
-        real, dimension(1:8)     :: conservativeQ
-        real, dimension(1:8)     :: OldIminusFlux
-        real, dimension(1:8)     :: OldJminusFlux
-        real, dimension(1:8)     :: OldKminusFlux
-        real, dimension(1:8)     :: NewIminusFlux
-        real, dimension(1:8)     :: NewJminusFlux
-        real, dimension(1:8)     :: NewKminusFlux
-        real, dimension(1:8)     :: DelIminusFlux
-        real, dimension(1:8)     :: DelJminusFlux
-        real, dimension(1:8)     :: DelKminusFlux
-        real, dimension(1:6)     :: LambdaTimesArea
-        real, dimension(1:8)     :: Q0 ! state at cell
-        real, dimension(1:8)     :: Q1 ! state at neighbours 
-        real, dimension(1:8)     :: Q2
-        real, dimension(1:8)     :: Q3
-        real, dimension(1:8)     :: Q4
-        real, dimension(1:8)     :: Q5
-        real, dimension(1:8)     :: Q6
-        real, dimension(1:8)     :: DQ0! change in state
-        real, dimension(1:8)     :: DQ1
-        real, dimension(1:8)     :: DQ2
-        real, dimension(1:8)     :: DQ3
-        real, dimension(1:8)     :: DQ4
-        real, dimension(1:8)     :: DQ5
-        real, dimension(1:8)     :: DQ6
+        real(wp), dimension(1:8)     :: deltaU
+        real(wp), dimension(1:8)     :: D
+        real(wp), dimension(1:8)     :: conservativeQ
+        real(wp), dimension(1:8)     :: OldIminusFlux
+        real(wp), dimension(1:8)     :: OldJminusFlux
+        real(wp), dimension(1:8)     :: OldKminusFlux
+        real(wp), dimension(1:8)     :: NewIminusFlux
+        real(wp), dimension(1:8)     :: NewJminusFlux
+        real(wp), dimension(1:8)     :: NewKminusFlux
+        real(wp), dimension(1:8)     :: DelIminusFlux
+        real(wp), dimension(1:8)     :: DelJminusFlux
+        real(wp), dimension(1:8)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:8)     :: Q0 ! state at cell
+        real(wp), dimension(1:8)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:8)     :: Q2
+        real(wp), dimension(1:8)     :: Q3
+        real(wp), dimension(1:8)     :: Q4
+        real(wp), dimension(1:8)     :: Q5
+        real(wp), dimension(1:8)     :: Q6
+        real(wp), dimension(1:8)     :: DQ0! change in state
+        real(wp), dimension(1:8)     :: DQ1
+        real(wp), dimension(1:8)     :: DQ2
+        real(wp), dimension(1:8)     :: DQ3
+        real(wp), dimension(1:8)     :: DQ4
+        real(wp), dimension(1:8)     :: DQ5
+        real(wp), dimension(1:8)     :: DQ6
 
-        real, dimension(1:8)     :: Flist1
-        real, dimension(1:8)     :: Flist2
-        real, dimension(1:8)     :: Flist3
-        real, dimension(1:8)     :: Flist4
-        real, dimension(1:8)     :: Flist5
-        real, dimension(1:8)     :: Flist6
-        real, dimension(1:3)     :: C0
-        real, dimension(1:3)     :: C1
-        real, dimension(1:3)     :: C2
-        real, dimension(1:3)     :: C3
-        real, dimension(1:3)     :: C4
-        real, dimension(1:3)     :: C5
-        real, dimension(1:3)     :: C6
-        real                     :: beta
-        real                     :: eps
-        real                     :: M
-        real                     :: VMag
-        real                     :: SoundMag
-        real                     :: u,v,w,r,p,kk,ww,H,im
-        real                     :: factor
-        real, dimension(1:8,1:8) :: PrecondInv
-        real, dimension(1:8,1:8) :: Identity
+        real(wp), dimension(1:8)     :: Flist1
+        real(wp), dimension(1:8)     :: Flist2
+        real(wp), dimension(1:8)     :: Flist3
+        real(wp), dimension(1:8)     :: Flist4
+        real(wp), dimension(1:8)     :: Flist5
+        real(wp), dimension(1:8)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: beta
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,r,p,kk,ww,H,im
+        real(wp)                     :: factor
+        real(wp), dimension(1:8,1:8) :: PrecondInv
+        real(wp), dimension(1:8,1:8) :: Identity
 
         ! intermittency
-        real :: Fonset1
-        real :: Fonset2
-        real :: Fonset3
-        real :: Fonset
-        real :: Rev
-        Real :: RT
-        real :: Fturb
-        real :: Re_theta
-        real :: TuL
-        real :: strain
-        real :: vort
-        real :: Dp, De
-        real :: Fpg
-        real :: density
+        real(wp) :: Fonset1
+        real(wp) :: Fonset2
+        real(wp) :: Fonset3
+        real(wp) :: Fonset
+        real(wp) :: Rev
+        real(wp) :: RT
+        real(wp) :: Fturb
+        real(wp) :: Re_theta
+        real(wp) :: TuL
+        real(wp) :: strain
+        real(wp) :: vort
+        real(wp) :: Dp, De
+        real(wp) :: Fpg
+        real(wp) :: density
         Dp = 0.0
         De = 0.0
 
@@ -2382,16 +2383,6 @@ module plusgs
                                 + 2*(gradw_z(i,j,k))**2 &
                                  )&
                            )
-              !dvdy = DCCVnX(i,j,k)*CCnormalX(i,j,k) &
-              !     + DCCVnY(i,j,k)*CCnormalY(i,j,k) &
-              !     + DCCVnZ(i,j,k)*CCnormalZ(i,j,k)
-              !lamd =(-7.57e-3)*(dvdy*dist(i,j,k)*dist(i,j,k)*density/mu(i,j,k)) + 0.0128
-              !lamd = min(max(lamd, -1.0), 1.0)
-              !if(lamd>=0.0)then
-              !    Fpg = min(1.0 + 14.68*lamd, 1.5)
-              !else
-              !    Fpg = min(1.0 - 7.34*lamd, 3.0)
-              !end if
               Fpg = 1.0!max(Fpg, 0.0)
               TuL = min(100.0*sqrt(2.0*qp(i,j,k,6)/3.0)/(qp(i,j,k,7)*dist(i,j,k)),100.0)
               Re_theta = 100.0 + 1000.0*exp(-TuL*Fpg)
@@ -2572,16 +2563,6 @@ module plusgs
                                 + 2*(gradw_z(i,j,k))**2 &
                                  )&
                            )
-              !dvdy = DCCVnX(i,j,k)*CCnormalX(i,j,k) &
-              !     + DCCVnY(i,j,k)*CCnormalY(i,j,k) &
-              !     + DCCVnZ(i,j,k)*CCnormalZ(i,j,k)
-              !lamd =(-7.57e-3)*(dvdy*dist(i,j,k)*dist(i,j,k)*density/mu(i,j,k)) + 0.0128
-              !lamd = min(max(lamd, -1.0), 1.0)
-              !if(lamd>=0.0)then
-              !    Fpg = min(1.0 + 14.68*lamd, 1.5)
-              !else
-              !    Fpg = min(1.0 - 7.34*lamd, 3.0)
-              !end if
               Fpg = 1.0!max(Fpg, 0.0)
               TuL = min(100.0*sqrt(2.0*qp(i,j,k,6)/3.0)/(qp(i,j,k,7)*dist(i,j,k)),100.0)
               Re_theta = 100.0 + 1000.0*exp(-TuL*Fpg)
@@ -2646,70 +2627,70 @@ module plusgs
       ! calculate the total flux through face
       !---------------------------------------
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql !left state
-      real, dimension(1:n_var), intent(in) :: qr !right state
+      real(wp), dimension(1:n_var), intent(in) :: ql !left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !right state
       !conservative form of updated neighbour
-      real, dimension(1:n_var), intent(in) :: du
-      real, dimension(1:8)    , intent(in) :: inputs
-      real, dimension(1:n_var)             :: Flux
-      real, dimension(1:n_var)             :: lctm2015flux
-      real, dimension(1:n_var)             :: U ! conservative variables
-      real, dimension(1:n_var)             :: W ! new primitive variables
-      real, dimension(1:n_var)             :: P ! primitive variables of right cell
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:8)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: lctm2015flux
+      real(wp), dimension(1:n_var)             :: U ! conservative variables
+      real(wp), dimension(1:n_var)             :: W ! new primitive variables
+      real(wp), dimension(1:n_var)             :: P ! primitive variables of right cell
 
       !for extraction of the inputs
-      real :: area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mmu
-      real :: tmu
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
 
 
-      real    :: dudx
-      real    :: dudy
-      real    :: dudz
-      real    :: dvdx
-      real    :: dvdy
-      real    :: dvdz
-      real    :: dwdx
-      real    :: dwdy
-      real    :: dwdz
-      real    :: dTdx
-      real    :: dTdy
-      real    :: dTdz
-      real    :: dtkdx
-      real    :: dtkdy
-      real    :: dtkdz
-      real    :: dtwdx
-      real    :: dtwdy
-      real    :: dtwdz
-      real    :: dtgmdx
-      real    :: dtgmdy
-      real    :: dtgmdz
-      real    :: T1, T2
-      real    :: uface
-      real    :: vface
-      real    :: wface
-      real    :: trace
-      real    :: Tauxx
-      real    :: Tauyy
-      real    :: Tauzz
-      real    :: Tauxy
-      real    :: Tauxz
-      real    :: Tauyz
-      real    :: Qx
-      real    :: Qy
-      real    :: Qz
-      real    :: HalfRhoUsquare
-      real    :: RhoHt
-      real    :: K_heat
-      real    :: FaceNormalVelocity
-      real    :: mu
-      real    :: sigma_k
-      real    :: sigma_w
-      real    :: F1
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: dtkdx
+      real(wp)    :: dtkdy
+      real(wp)    :: dtkdz
+      real(wp)    :: dtwdx
+      real(wp)    :: dtwdy
+      real(wp)    :: dtwdz
+      real(wp)    :: dtgmdx
+      real(wp)    :: dtgmdy
+      real(wp)    :: dtgmdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
+      real(wp)    :: sigma_k
+      real(wp)    :: sigma_w
+      real(wp)    :: F1
 
       area   = inputs(1)
       nx     = inputs(2)

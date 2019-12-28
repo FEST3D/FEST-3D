@@ -1,15 +1,12 @@
     !< Flux splitting scheme: AUSM+
 module ausmP
-    !<
+    !< Flux splitting scheme: AUSM+ module ausmP !< 
     !< Reference: Liou, M. S., “A sequel to AUSM: AUSM+,” 
-    !< Journal of Computational Physics, vol. 129, pp. 364–382, 1996
-    !-------------------------------------------------------------------
+    !< Journal of Computational Physics, vol. 129, pp. 364–382, 1996 
+    !------------------------------------------------------------------- 
 #include "../../../debug.h"
 #include "../../../error.h"    
     use vartypes
-!    use global_vars, only : make_F_flux_zero
-!    use global_vars, only : make_G_flux_zero
-!    use global_vars, only : make_H_flux_zero
     use face_interpolant, only: x_qp_left, x_qp_right 
     use face_interpolant, only: y_qp_left, y_qp_right
     use face_interpolant, only:  z_qp_left, z_qp_right
@@ -22,7 +19,7 @@ module ausmP
     
     contains
 
-        subroutine compute_flux(Flux, f_dir, faces, flags, flow, bc, dims)
+        subroutine compute_flux(Flux, f_qp_left, f_qp_right, faces, flags, flow, bc, dims)
           !< A generalized subroutine to calculate
           !< flux through the input direction, :x,y, or z
           !< which corresponds to the I,J, or K direction respectively
@@ -30,70 +27,60 @@ module ausmP
 
             implicit none
             integer, dimension(3), intent(in) :: flags
+            !< flags for direction switch
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             type(boundarytype), intent(in) :: bc
-            real, dimension(:, :, :, :), intent(inout) :: Flux
+            !< boundary conditions and fixed values
+            real(wp), dimension(:, :, :, :), intent(inout) :: Flux
             !< Store fluxes throught the any(I,J,K) faces
             type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
-            character, intent(in) :: f_dir
-            !< Input direction for which flux are calcuated and store
+            !< Face quantities: area and unit normal
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< primitve state variable at face
             integer :: i, j, k 
             !< Integer for DO loop
             integer :: i_f, j_f, k_f 
             !< Flags to determine face direction
-            real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
-            real, dimension(1:dims%n_var) :: F_plus
+            real(wp), dimension(1:dims%n_var) :: F_plus
             !< Right flux through the face
-            real, dimension(1:dims%n_var) ::F_minus
+            real(wp), dimension(1:dims%n_var) ::F_minus
             !< Left flux through  the face
-            real :: pbar
-            real :: mass
-            real :: HL, HR
+            real(wp) :: pbar
+            real(wp) :: mass
+            real(wp) :: HL, HR
             !< Enthalpy
-            real :: uL, uR
+            real(wp) :: uL, uR
             !< X-component of velocity
-            real :: vL, vR
+            real(wp) :: vL, vR
             !< Y-component of velocity
-            real :: wL, wR
+            real(wp) :: wL, wR
             !< Z-component of velocity
-            real :: pL, pR
+            real(wp) :: pL, pR
             !< Pressure
-            real :: rL, rR
+            real(wp) :: rL, rR
             !< Density
-            real :: cL, cR
+            real(wp) :: cL, cR
             !< Speed sound left/right
-            real :: C
+            real(wp) :: C
             !< Speed of sound at face
-            real :: ML, MR
+            real(wp) :: ML, MR
             !< Mach number left/right
-            real :: VnL, VnR
+            real(wp) :: VnL, VnR
             !< Face normal velocity left/right
-            real :: betaL, betaR
-            real :: alphaL, alphaR
-            real :: FmL, FmR
-            real :: Mface
-            real :: Cs
+            real(wp) :: betaL, betaR
+            real(wp) :: alphaL, alphaR
+            real(wp) :: FmL, FmR
+            real(wp) :: Mface
+            real(wp) :: Cs
 
 
             DebugCall('compute_flux '//trim(f_dir))
             i_f = flags(1)
             j_f = flags(2)
             k_f = flags(3)
-            
-            select case (f_dir)
-                case ('x')
-                    f_qp_left => x_qp_left
-                    f_qp_right => x_qp_right
-                case ('y')
-                    f_qp_left => y_qp_left
-                    f_qp_right => y_qp_right
-                case ('z')
-                    f_qp_left => z_qp_left
-                    f_qp_right => z_qp_right
-                case default
-                    Fatal_error
-            end select
             
 
             do k = 1, dims%kmx - 1 + k_f
@@ -214,18 +201,20 @@ module ausmP
         end subroutine compute_flux
 
 
-        subroutine compute_fluxes(F,G,H, Ifaces, Jfaces, Kfaces, flow, bc, dims)
+        subroutine compute_fluxes(F,G,H, x_qp_l, x_qp_r, y_qp_l, y_qp_r, z_qp_l, z_qp_r, Ifaces, Jfaces, Kfaces, flow, bc, dims)
         !subroutine compute_fluxes(F,G,H, flow, dims)
           !< Call to compute fluxes throught faces in each direction
             
             implicit none
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             type(flowtype), intent(in) :: flow
-            real, dimension(:, :, :, :), intent(inout) :: F
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+            real(wp), dimension(:, :, :, :), intent(inout) :: F
             !< Store fluxes throught the I faces
-            real, dimension(:, :, :, :), intent(inout) :: G
+            real(wp), dimension(:, :, :, :), intent(inout) :: G
             !< Store fluxes throught the J faces
-            real, dimension(:, :, :, :), intent(inout) :: H
+            real(wp), dimension(:, :, :, :), intent(inout) :: H
             !< Store fluxes throught the K faces
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
             !< Store face quantites for I faces 
@@ -233,20 +222,27 @@ module ausmP
             !< Store face quantites for J faces 
             type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
             !< Store face quantites for K faces 
+            real(wp), dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
+            !< Store primitive state at the I-face 
+            real(wp), dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
+            !< Store primitive state at the J-face 
+            real(wp), dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
+            !< Store primitive state at the K-face 
             type(boundarytype), intent(in) :: bc
+            !< boundary conditions and fixed values
             integer, dimension(3) :: flags
 
             
             DebugCall('compute_fluxes')
 
             flags=(/1,0,0/)
-            call compute_flux(F, 'x', Ifaces, flags, flow, bc, dims)
+            call compute_flux(F, x_qp_l, x_qp_r, Ifaces, flags, flow, bc, dims)
             if (any(isnan(F))) then
               Fatal_error
             end if    
 
             flags=(/0,1,0/)
-            call compute_flux(G, 'y', Jfaces, flags, flow, bc, dims)
+            call compute_flux(G, y_qp_l, y_qp_r, Jfaces, flags, flow, bc, dims)
             if (any(isnan(G))) then 
               Fatal_error
             end if    
@@ -255,7 +251,7 @@ module ausmP
               H = 0.
             else
               flags=(/0,0,1/)
-              call compute_flux(H, 'z', Kfaces, flags, flow, bc, dims)
+              call compute_flux(H, z_qp_l, z_qp_r, Kfaces, flags, flow, bc, dims)
             end if
             if (any(isnan(H))) then
               Fatal_error

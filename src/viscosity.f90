@@ -1,20 +1,9 @@
   !< Setup, destroy, calculate molecular and turbulence viscosity
 module viscosity
   !< Setup, destroy, calculate molecular and turbulence viscosity
-  !----------------------------------------------------
-  ! author   - Jatinder Pal Singh Sandhu
-  ! obective - setup     ,
-  !            destroy   , and 
-  !            calculate 
-  ! molecular and turbulence viscosity based on switch
   !-----------------------------------------------------
 
   use vartypes
-!  use global_vars , only : mu
-!  use global_vars  , only : mu_t
-
-!  use global_vars  , only : id
-!  use global_vars  , only : face_names
   use wall_dist  , only : dist
   use global_kkl   , only : cmu
   use global_sst   , only : bstar
@@ -42,21 +31,17 @@ module viscosity
   use gradients, only : gradtw_x
   use gradients, only : gradtw_y
   use gradients, only : gradtw_z
-
   use copy_bc       , only : copy1
-
   use utils       , only :   alloc
 
 #include "error.inc"
 
   implicit none
   private
-  real, dimension(:, :, :), allocatable, target     :: mu
+  real(wp), dimension(:, :, :), allocatable, target     :: mu
    !< Cell-center molecular viscosity
-  real, dimension(:, :, :), allocatable, target     :: mu_t
+  real(wp), dimension(:, :, :), allocatable, target     :: mu_t
    !< Cell-center turbulent viscosity
-
-!  integer :: imx, jmx, kmx
 
   public :: setup_viscosity
   public :: calculate_viscosity
@@ -68,47 +53,52 @@ module viscosity
       !< Calculate molecular and turbulent viscosity
       implicit none
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(flowtype), intent(in) :: flow
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
       type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
       type(boundarytype), intent(in) :: bc
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< boundary conditions and fixed values
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< Store primitive variable at cell center
       integer :: i,j,k
-      real :: T ! molecular viscosity
-      real :: c ! kkl eddy viscosity
+      real(wp) :: T ! molecular viscosity
+      real(wp) :: c ! kkl eddy viscosity
       !- sst varibales -!
-      real    :: F
-      real    :: arg2
-      real    :: vort
-      real    :: NUM
-      real    :: DENOM
+      real(wp)    :: F
+      real(wp)    :: arg2
+      real(wp)    :: vort
+      real(wp)    :: NUM
+      real(wp)    :: DENOM
       ! for arg2
-      real :: var1
-      real :: var2
+      real(wp) :: var1
+      real(wp) :: var2
       !for vorticity
-      real :: wijwij
-      real :: wx
-      real :: wy
-      real :: wz
+      real(wp) :: wijwij
+      real(wp) :: wx
+      real(wp) :: wy
+      real(wp) :: wz
       !for strain calculation
-      real :: SijSij
-      real :: Sxx, Syy, Szz
-      real :: Sxy, Szx, Syz
-      real :: strain
+      real(wp) :: SijSij
+      real(wp) :: Sxx, Syy, Szz
+      real(wp) :: Sxy, Szx, Syz
+      real(wp) :: strain
       !for arg1
-      real :: arg1
-      real :: CD
-      real :: right
-      real :: left
+      real(wp) :: arg1
+      real(wp) :: CD
+      real(wp) :: right
+      real(wp) :: left
 
       ! sa variables
-      real :: fv1
-      real :: xi
-      real :: pressure
-      real :: density
-      real :: tk
-      real :: tkl
-      real :: tw
-      real :: tv
+      real(wp) :: fv1
+      real(wp) :: xi
+      real(wp) :: pressure
+      real(wp) :: density
+      real(wp) :: tk
+      real(wp) :: tkl
+      real(wp) :: tw
+      real(wp) :: tv
       integer :: imx, jmx, kmx
 
       imx = dims%imx
@@ -555,14 +545,15 @@ module viscosity
 
     end subroutine calculate_viscosity
 
-    subroutine setup_viscosity(mu, mu_t, scheme,flow, dims)
+    subroutine setup_viscosity(scheme,flow, dims)
       !< Allocate and pointer for molecular and turbulent viscosity
       implicit none
       type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
       type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
       type(flowtype), intent(in) :: flow
-      real, dimension(:,:,:), allocatable, intent(out) :: mu
-      real, dimension(:,:,:), allocatable, intent(out) :: mu_t
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
       integer :: imx, jmx, kmx
 
       imx = dims%imx
@@ -600,44 +591,5 @@ module viscosity
 
     end subroutine setup_viscosity
 
-!    subroutine destroy_viscosity()
-!      !< Deallocate and nullify viscosity (turbulent/molecular)
-!
-!      ! destroy_molecular_viscosity ---!
-!      if (mu_ref/=0.) then
-!        call dealloc(mu)
-!      end if
-!
-!      !--- destroy_turbulent_viscosity ---!
-!      if (turbulence/='none') then
-!        select case (trim(turbulence))
-!
-!          case ('none')
-!            !do nothing
-!            continue
-!
-!          case('sa', 'saBC')
-!            !nullify(sa_mu)
-!            continue
-!
-!          case ('sst', 'sst2003')
-!            !nullify(sst_mu)
-!            !-- blending funciton F1 --!
-!            call dealloc(sst_F1)
-!            !--- sst blending funciton destoryed--!
-!
-!          case ('kkl')
-!            !nullify(kkl_mu)
-!            continue
-!
-!          case DEFAULT 
-!            Fatal_error
-!
-!        end select
-!        call dealloc(mu_t)
-!      end if
-!      !--- end of turublent viscosity destruction ---!
-!
-!    end subroutine destroy_viscosity
 
 end module viscosity

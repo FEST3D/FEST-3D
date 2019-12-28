@@ -1,19 +1,8 @@
   !< A module contains generalized subroutine to copy variable in ghost cells
 module copy_bc
   !< A module contains generalized subroutine to copy variable in ghost cells
-  !--------------------------------------------
-  ! 170515  Jatinder Pal Singh Sandhu
-  ! Aim : applying boundary condition to domain
   !-------------------------------------------
- 
    use vartypes
-!  use global_vars, only: imx
-!  use global_vars, only: jmx
-!  use global_vars, only: kmx
-!  use global_vars, only: c1
-!  use global_vars, only: c2
-!  use global_vars, only: c3
-
   implicit none
   private
 
@@ -30,9 +19,9 @@ module copy_bc
       !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
       !< Type of copy: flat, symmetry, anti-symmetry
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2), intent(inout) :: var
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2), intent(inout) :: var
       !< Varible over which these operation has to be performed
-      real :: a2=1
+      real(wp) :: a2=1
       integer :: imx, jmx, kmx
       imx = dims%imx
       jmx = dims%jmx
@@ -75,12 +64,12 @@ module copy_bc
       !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
       !< Type of copy: flat, symmetry, anti-symmetry
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2), intent(inout) :: var
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2), intent(inout) :: var
       !< Varible over which these operation has to be performed
 
-      real :: a1=1
-      real :: a2=1
-      real :: a3=0
+      real(wp) :: a1=1
+      real(wp) :: a2=1
+      real(wp) :: a3=0
 
       integer :: i1=1
       integer :: i2=2

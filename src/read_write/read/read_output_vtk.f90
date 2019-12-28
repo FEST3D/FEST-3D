@@ -14,27 +14,27 @@ module read_output_vtk
   integer :: IN_FILE_UNIT
   integer :: imx, jmx, kmx
   integer :: i,j,k
-  real, dimension(:, :, :), pointer :: density      
+  real(wp), dimension(:, :, :), pointer :: density      
    !< Rho pointer, point to slice of qp (:,:,:,1)
-  real, dimension(:, :, :), pointer :: x_speed      
+  real(wp), dimension(:, :, :), pointer :: x_speed      
    !< U pointer, point to slice of qp (:,:,:,2) 
-  real, dimension(:, :, :), pointer :: y_speed      
+  real(wp), dimension(:, :, :), pointer :: y_speed      
    !< V pointer, point to slice of qp (:,:,:,3) 
-  real, dimension(:, :, :), pointer :: z_speed      
+  real(wp), dimension(:, :, :), pointer :: z_speed      
    !< W pointer, point to slice of qp (:,:,:,4)
-  real, dimension(:, :, :), pointer :: pressure     
+  real(wp), dimension(:, :, :), pointer :: pressure     
    !< P pointer, point to slice of qp (:,:,:,5)
-  real, dimension(:, :, :), pointer :: tk        
+  real(wp), dimension(:, :, :), pointer :: tk        
   !< TKE, point to slice of qp (:,:,:,6)
-  real, dimension(:, :, :), pointer :: tw        
+  real(wp), dimension(:, :, :), pointer :: tw        
   !< Omega, point to slice of qp (:,:,:,7)
-  real, dimension(:, :, :), pointer :: te        
+  real(wp), dimension(:, :, :), pointer :: te        
   !< Dissipation, point to slice of qp (:,:,:,7)
-  real, dimension(:, :, :), pointer :: tv        
+  real(wp), dimension(:, :, :), pointer :: tv        
   !< SA visocity, point to slice of qp (:,:,:,6)
-  real, dimension(:, :, :), pointer :: tkl       
+  real(wp), dimension(:, :, :), pointer :: tkl       
   !< KL K-KL method, point to slice of qp (:,:,:,7)
-  real, dimension(:, :, :), pointer :: tgm       
+  real(wp), dimension(:, :, :), pointer :: tgm       
   !< Intermittency of LCTM2015, point to slice of qp (:,:,:,8)
 
   public :: read_file
@@ -48,7 +48,7 @@ module read_output_vtk
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
       integer :: n
 
       IN_FILE_UNIT = file_handler
@@ -201,7 +201,7 @@ module read_output_vtk
       !< Read scalar from the vtk file
       implicit none
       integer, intent(in) :: index
-      real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
+      real(wp), dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
       character(len=*), intent(in) :: name
 
       DebugCall('read_output_vtk'//trim(name))

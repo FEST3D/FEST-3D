@@ -9,17 +9,6 @@ module dump_solution
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-!  use resnorm, only :        resnorm_0
-!  use resnorm, only :    vis_resnorm_0
-!  use resnorm, only :   turb_resnorm_0
-!  use resnorm, only :   cont_resnorm_0
-!  use resnorm, only :  x_mom_resnorm_0
-!  use resnorm, only :  y_mom_resnorm_0
-!  use resnorm, only :  z_mom_resnorm_0
-!  use resnorm, only : energy_resnorm_0
-!  use resnorm, only :    TKE_resnorm_0
-!  use resnorm, only :  omega_resnorm_0
-!  use global_vars, only :  turbulence
   use utils
   use write_output, only : write_file
   use layout,      only : process_id
@@ -45,7 +34,7 @@ module dump_solution
       type(controltype), intent(inout) :: control
       type(schemetype), intent(in) :: scheme
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
-      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real(wp), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
 
 
       DebugCall('checkpoint')
@@ -118,8 +107,7 @@ module dump_solution
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
-      real, dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
-!      character(len=FILE_NAME_LENGTH) :: filename
+      real(wp), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
 
       DebugCall('dump_solution: dump_data')
       write(files%restartfile, '(A,I2.2)') trim(dump_dirname)//'/restart/process_',process_id

@@ -9,13 +9,6 @@ module boundary_state_reconstruction
 #include "../error.h"
 
    use vartypes
-!  use global_vars,          only: imin_id
-!  use global_vars,          only: jmin_id
-!  use global_vars,          only: kmin_id
-!  use global_vars,          only: imax_id
-!  use global_vars,          only: jmax_id
-!  use global_vars,          only: kmax_id
-  !use global_vars,          only: qp
   use face_interpolant,     only: x_qp_left, x_qp_right
   use face_interpolant,     only: y_qp_left, y_qp_right
   use face_interpolant,     only: z_qp_left, z_qp_right
@@ -37,7 +30,7 @@ module boundary_state_reconstruction
 
       implicit none
       type(extent), intent(in) :: dims
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(boundarytype), intent(in) :: bc
@@ -86,12 +79,12 @@ module boundary_state_reconstruction
       !< Reconstruct state at the IMIN boundary face with MUSCL scheme
 
       implicit none
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
+      real(wp), dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
       type(boundarytype), intent(in) :: bc
       integer :: i, j, k, l
-      real :: psi1, psi2, fd, bd, r
-      real :: kappa, phi
+      real(wp) :: psi1, psi2, fd, bd, r
+      real(wp) :: kappa, phi
 
       phi = 1.0
       kappa = 1./3.
@@ -144,12 +137,12 @@ module boundary_state_reconstruction
       !< Reconstruct state at the IMAX boundary face with MUSCL scheme
 
       implicit none
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
+      real(wp), dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
       type(boundarytype), intent(in) :: bc
       integer :: i, j, k, l
-      real :: psi1, psi2, fd, bd, r
-      real :: kappa, phi
+      real(wp) :: psi1, psi2, fd, bd, r
+      real(wp) :: kappa, phi
 
       phi = 1.0
       kappa = 1./3.
@@ -199,12 +192,12 @@ module boundary_state_reconstruction
       !< Reconstruct state at the JMIN boundary face with MUSCL scheme
 
       implicit none
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
+      real(wp), dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
       type(boundarytype), intent(in) :: bc
       integer :: i, j, k, l
-      real :: psi1, psi2, fd, bd, r
-      real :: kappa, phi
+      real(wp) :: psi1, psi2, fd, bd, r
+      real(wp) :: kappa, phi
 
       phi = 1.0
       kappa = 1./3.
@@ -254,12 +247,12 @@ module boundary_state_reconstruction
       !< Reconstruct state at the JMAX boundary face with MUSCL scheme
 
       implicit none
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
+      real(wp), dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
       type(boundarytype), intent(in) :: bc
       integer :: i, j, k, l
-      real :: psi1, psi2, fd, bd, r
-      real :: kappa, phi
+      real(wp) :: psi1, psi2, fd, bd, r
+      real(wp) :: kappa, phi
 
       phi = 1.0
       kappa = 1./3.
@@ -308,12 +301,12 @@ module boundary_state_reconstruction
       !< Reconstruct state at the KMIN boundary face with MUSCL scheme
 
       implicit none
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
+      real(wp), dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
       type(boundarytype), intent(in) :: bc
-      real :: psi1, psi2, fd, bd, r
+      real(wp) :: psi1, psi2, fd, bd, r
       integer :: i, j, k, l
-      real :: kappa, phi
+      real(wp) :: kappa, phi
       
       phi = 1.0
       kappa = 1./3.
@@ -364,12 +357,12 @@ module boundary_state_reconstruction
       !< Reconstruct state at the KMAX boundary face with MUSCL scheme
 
       implicit none
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
+      real(wp), dimension(-2:imx+2, -2:jmx+2, -2:kmx+2, 1:n_var), intent(in) :: qp
       type(schemetype), intent(in) :: scheme
       type(boundarytype), intent(in) :: bc
-      real :: psi1, psi2, fd, bd, r
+      real(wp) :: psi1, psi2, fd, bd, r
       integer :: i, j, k, l
-      real :: kappa, phi
+      real(wp) :: kappa, phi
     
       phi = 1.0
       kappa = 1./3.

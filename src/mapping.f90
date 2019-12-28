@@ -2,9 +2,6 @@
 module mapping
   !< Setup the indicies map at interface between two blocks
   use vartypes
-!  use global_vars, only: PbcId
-!  use global_vars, only: otherface
-!  use global_vars, only: dir_switch
 
   implicit none
   private
@@ -68,9 +65,13 @@ module mapping
         !< Read mapping file in the system/mesh/layout/mapping.txt
         implicit none
         type(filetype), intent(in) :: files
+        !< Files' name and handler
         type(controltype), intent(in) :: control
+        !< Control parameters
         type(extent), intent(in) :: dims
+        !< Extent of the domain:imx,jmx,kmx
         type(boundarytype), intent(inout) :: bc
+        !< boundary conditions and fixed values
         integer :: ios
         integer :: max_call
 
@@ -261,8 +262,11 @@ module mapping
         !< Read periodic.md file in the system/mesh/layout/periodic.md
         implicit none
         type(filetype), intent(in) :: files
+        !< Files' name and handler
         type(controltype), intent(in) :: control
+        !< Control parameters
         type(boundarytype), intent(inout) :: bc
+        !< boundary conditions and fixed values
         integer :: ios
         integer :: max_call
         integer :: i

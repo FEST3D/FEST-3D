@@ -6,9 +6,6 @@ module write_output
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-!  use global                 ,only : OUT_FILE_UNIT
-!  use global_vars            ,only : outfile
-!  use global_vars            ,only : outfile
   use utils
   use write_output_vtk       ,only : write_file_vtk     => write_file
   use write_output_tec       ,only : write_file_tec => write_file
@@ -77,7 +74,7 @@ module write_output
       type(controltype), intent(in) :: control
       type(schemetype), intent(in) :: scheme
       type(nodetype), dimension(-2:dims%imx+3, -2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2,-2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
       integer:: file_handler
 
       file_handler = files%OUT_FILE_UNIT

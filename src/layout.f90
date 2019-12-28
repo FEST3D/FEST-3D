@@ -4,34 +4,11 @@ module layout
   !< Contains routine to load layout file and sets the layout variables
   !< and gets process id and total process 
   !------------------------------
-!  use global, only: CONFIG_FILE_UNIT, RESNORM_FILE_UNIT, FILE_NAME_LENGTH, &
-!       STRING_BUFFER_LENGTH, INTERPOLANT_NAME_LENGTH
-!  use global, only: layout_file
-
   use vartypes
-!  use global_vars, only : total_process
-!  use global_vars, only : total_entries
-!  use global_vars, only : process_id
-!  use global_vars, only : imin_id
-!  use global_vars, only : imax_id
-!  use global_vars, only : jmin_id
-!  use global_vars, only : jmax_id
-!  use global_vars, only : kmin_id
-!  use global_vars, only : kmax_id
-
-
 #include "error.h"
 #include "debug.h"
 #include "mpi.inc"
   
-  ! process layout
-!  character(len=FILE_NAME_LENGTH) :: grid_file_buf
-!  !< Name of the gridfile to load
-!  character(len=FILE_NAME_LENGTH) :: bc_file
-!  !< Name of the boundary condition file to load.
-!  integer, parameter :: STRING_BUFFER_LENGTH = 128
-!  !< User to define a string of medium length
-!  public :: get_next_token_parallel
   public :: read_layout_file
   public :: get_process_data
 
@@ -42,6 +19,7 @@ contains
     !<Get Processor Id and total number of processors
   implicit none
   type(controltype), intent(inout) :: control
+  !< Control parameters
     ! Finds and sets process data
     integer :: ierr
     call MPI_COMM_RANK(MPI_COMM_WORLD,control%process_id,ierr)
@@ -96,8 +74,11 @@ contains
     !< Read the layout file for particular processor
     implicit none
     type(filetype), intent(inout) :: files
+    !< Files' name and handler
     type(boundarytype), intent(inout) :: bc
+    !< boundary conditions and fixed values
     character(len=STRING_BUFFER_LENGTH) :: buf
+    !< read buffer
     character(len=128) :: grid_file_buf
     !< Name of the gridfile to load
     character(len=128) :: bc_file

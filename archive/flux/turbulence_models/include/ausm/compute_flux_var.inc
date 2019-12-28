@@ -1,9 +1,0 @@
-!should be included in ausm file in compte flux subroutine
-
-  real, dimension(:, :, :), pointer :: f_tk_left, f_tk_right, &
-                                       f_tw_left, f_tw_right, &
-                                       f_tkl_left, f_tkl_right, &
-                                       f_te_left, f_te_right
-
-  real, dimension(:, :, :), pointer :: f_tv_left, f_tv_right
-

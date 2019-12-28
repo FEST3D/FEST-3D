@@ -28,7 +28,7 @@ FUNCTION (ADD_FORTRAN_TEST_EXECUTABLE TARGET)
 
     add_library (${TARGET}_fortran ${TEST_FILES} $<TARGET_OBJECTS:lib>)
     add_executable (${TARGET} main.c)
-    target_link_libraries (${TARGET} ${TARGET}_fortran)
+    target_link_libraries (${TARGET} ${TARGET}_fortran ${MPI_Fortran_LIBRARIES})
 
     SET (INDEX 0)
     list (LENGTH TEST_FILES LEN)

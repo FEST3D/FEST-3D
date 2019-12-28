@@ -3,8 +3,6 @@ module solver
   !< allocate/deallcoate memory, initialize, iterate
   !-------------------------------------------------
   use vartypes
-  use viscosity, only: mu_t
-  use viscosity, only: mu
   use CC,    only: setupCC
   use read, only : read_input_and_controls
   use grid,      only : setup_grid!, destroy_grid
@@ -32,27 +30,36 @@ module solver
     private
 
     type(extent) :: dims
+    !< Extent of the domain:imx,jmx,kmx
     type(nodetype), dimension(:,:,:), allocatable :: nodes
+    !< Grid points 
     type(celltype), dimension(:,:,:), allocatable :: cells
+    !< Cell center quantities: volume, cellCenter
     type(facetype), dimension(:,:,:), allocatable :: Ifaces, Jfaces, Kfaces
+    !< Face quantities: area and unit normal
     type(controltype), public :: control
+    !< Control parameters
     type(schemetype), public :: schemes
+    !< finite-volume Schemes
     type(flowtype) :: flow
+    !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
     type(filetype) :: files
+    !< Files' name and handler
     type(boundarytype) :: boundary
-    real, dimension(:, :, :, :), allocatable :: qp           
-     !< Store primitive variable at cell center
-    real, dimension(:, :, :   ), allocatable :: Temp
-     !< Store Temperature variable at cell center
-    real, public, dimension(:, :, :, :), allocatable, target :: F
+    !< boundary conditions and fixed values
+    real(wp), dimension(:, :, :, :), allocatable :: qp           
+    !< Store primitive variable at cell center
+    real(wp), dimension(:, :, :   ), allocatable :: Temp
+    !< Store Temperature variable at cell center
+    real(wp), public, dimension(:, :, :, :), allocatable, target :: F
     !< Store fluxes throught the I faces
-    real, public, dimension(:, :, :, :), allocatable, target :: G
+    real(wp), public, dimension(:, :, :, :), allocatable, target :: G
     !< Store fluxes throught the J faces
-    real, public, dimension(:, :, :, :), allocatable, target :: H
+    real(wp), public, dimension(:, :, :, :), allocatable, target :: H
     !< Store fluxes throught the K faces
-    real, public, dimension(:, :, :, :), allocatable, target :: residue
+    real(wp), public, dimension(:, :, :, :), allocatable, target :: residue
     !< Store residue at each cell-center
-    real, dimension(:, :, :), allocatable     :: delta_t  
+    real(wp), dimension(:, :, :), allocatable     :: delta_t  
     !< Local time increment value at each cell center
 
     ! Public methods
@@ -68,11 +75,8 @@ module solver
         subroutine abort_run()
           !< Aborting the solver
           implicit none
-          integer :: ierr
 
-    !      call close_all_files()
-          call destroy_solver()
-          call MPI_FINALIZE(ierr)
+          call finish_run()
           stop
 
         end subroutine abort_run
@@ -82,7 +86,6 @@ module solver
           implicit none
           integer :: ierr
 
-    !      call close_all_files()
           call destroy_solver()
           call MPI_FINALIZE(ierr)
 
@@ -94,6 +97,7 @@ module solver
           integer :: ierr
 
           call MPI_INIT(ierr)
+          print*, wp
           call setup_solver()
 
         end subroutine start_run
@@ -112,7 +116,8 @@ module solver
             call read_input_and_controls(files, control, schemes, flow)
             call setup_grid(files, nodes, control, boundary, dims)
             call setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, boundary, dims)
-            call setup_viscosity(mu, mu_t, schemes, flow, dims)
+            !call setup_viscosity(mu, mu_t, schemes, flow, dims)
+            call setup_viscosity(schemes, flow, dims)
             call setup_state(files, qp, control, schemes, flow, dims)
             allocate(Temp(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2))
             call setup_gradients(control,schemes,flow,dims)

@@ -18,8 +18,10 @@ module convergence
 
         implicit none
         type(controltype), intent(in) :: control
+        !< control parameters
         logical :: c
-        real    :: check=10.
+        !< convergence result:True or false
+        real(wp)    :: check=10.
 
         select case(trim(control%tolerance_type))
           case('Mass_abs')

@@ -41,10 +41,6 @@ integer function test_geometry() result(r)
 
    r = 1
    call setup_geometry(cell, Iface, Jface, Kface, points, bc, dims)
-   print*, cell(:,:,:)%volume
-   print*, Iface(:,:,:)%nx
-   print*, Iface(:,:,:)%ny
-   print*, Iface(:,:,:)%nz
    if( cell(-2,-2,-2)%volume==1. .and. Iface(-2,-2,-2)%nx==1 .and. Iface(-2,-2,-2)%ny==0)then
        r = 0
    end if

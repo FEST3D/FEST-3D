@@ -39,11 +39,17 @@ module state
 
             implicit none
             type(filetype), intent(inout) :: files
+            !< Files' name and handler
             type(controltype), intent(inout) :: control
+            !< Control parameters
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(inout) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             type(extent), intent(inout) :: dims
-            real, dimension(:,:,:,:), allocatable, intent(inout), target :: qp
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(:,:,:,:), allocatable, intent(inout), target :: qp
+            !< Store primitive variable at cell center
 
             DebugCall("setup_state")
 
@@ -72,15 +78,12 @@ module state
 
             implicit none
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes: turbulence, transition model, etc
             type(flowtype), intent(inout) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             
             DebugCall("init_infinity_values")
 
-            !density_inf = free_stream_density
-            !x_speed_inf = free_stream_x_speed
-            !y_speed_inf = free_stream_y_speed
-            !z_speed_inf = free_stream_z_speed
-            !pressure_inf = free_stream_pressure
             flow%vel_mag = sqrt(flow%x_speed_inf**2 + flow%y_speed_inf**2 + flow%z_speed_inf**2)
             flow%MInf    = flow%vel_mag/sqrt(flow%gm*flow%pressure_inf/flow%density_inf)
             flow%Reynolds_number = flow%density_inf*flow%vel_mag*1.0/flow%mu_ref
@@ -137,7 +140,9 @@ module state
 
             implicit none
             type(flowtype), intent(in) :: flow
-            real :: a
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+            real(wp) :: a
+            !< output variable: speed of sound
 
             a = sqrt(flow%gm * flow%pressure_inf / flow%density_inf)
 
@@ -154,11 +159,17 @@ module state
 
             implicit none
             type(filetype), intent(inout) :: files
+            !< Files' name and handler
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             type(controltype), intent(inout) :: control
+            !< Control parameters
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) :: flow
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
+            !< Store primitive variable at cell center
             
             DebugCall("initstate")
 
@@ -187,9 +198,13 @@ module state
             
             implicit none
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
+            !< Store primitive variable at cell center
             
             DebugCall("init_state_with_infinity_values")
 
@@ -267,7 +282,9 @@ module state
           !< the tubulence and transition model being used
           implicit none
           type(controltype), intent(inout) :: control
+          !< Control parameters
           type(schemetype),  intent(in) ::scheme
+          !< finite-volume Schemes
 
           DebugCall("set_n_var_value")
 

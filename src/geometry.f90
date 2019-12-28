@@ -7,13 +7,6 @@ module geometry
 #include "error.inc"
 #include "debug.h"
     use vartypes
-!    use global_vars, only : imin_id
-!    use global_vars, only : imax_id
-!    use global_vars, only : jmin_id
-!    use global_vars, only : jmax_id
-!    use global_vars, only : kmin_id
-!    use global_vars, only : kmax_id
-    
     use utils, only: alloc
 
     implicit none
@@ -30,9 +23,13 @@ module geometry
             !-----------------------------------------------------------
             implicit none
             type(celltype), dimension(:,:,:), allocatable, intent(out) :: cells
+            !< Store cell center quantities: volume, cell center coordinate
             type(facetype), dimension(:,:,:), allocatable, intent(out) :: Ifaces
+            !< Store face quantites for I faces: normal and area
             type(facetype), dimension(:,:,:), allocatable, intent(out) :: Jfaces
+            !< Store face quantites for J faces: normal and area
             type(facetype), dimension(:,:,:), allocatable, intent(out) :: Kfaces
+            !< Store face quantites for K faces: normal and area
 
             DebugCall('allocate_memory')
 
@@ -57,8 +54,11 @@ module geometry
             
             implicit none
             type(facetype), dimension(-2:imx+3,-2:jmx+2,-2:kmx+2), intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
             type(facetype), dimension(-2:imx+2,-2:jmx+3,-2:kmx+2), intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
             type(facetype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+3), intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
             type(boundarytype), intent(in) :: bc
             integer :: i,j,k
 
@@ -206,8 +206,11 @@ module geometry
             
             implicit none
             type(facetype), dimension(-2:imx+3,-2:jmx+2,-2:kmx+2), intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
             type(facetype), dimension(-2:imx+2,-2:jmx+3,-2:kmx+2), intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
             type(facetype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+3), intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
             type(boundarytype), intent(in) :: bc
 
             Ifaces(:,:,:)%A = sqrt((Ifaces(:,:,:)%nx)**2 + (Ifaces(:,:,:)%ny)**2 + &
@@ -243,12 +246,16 @@ module geometry
             
             implicit none
             type(facetype), dimension(-2:imx+3,-2:jmx+2,-2:kmx+2), intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
             type(facetype), dimension(-2:imx+2,-2:jmx+3,-2:kmx+2), intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
             type(facetype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+3), intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
             type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+            !< Grid points
 
     
-            real :: d1x, d2x, d1y, d2y, d1z, d2z
+            real(wp) :: d1x, d2x, d1y, d2y, d1z, d2z
             integer :: i, j, k
 
             do k = -2, kmx+2
@@ -315,10 +322,15 @@ module geometry
 
             implicit none
             type(facetype), dimension(-2:imx+3,-2:jmx+2,-2:kmx+2), intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
             type(facetype), dimension(-2:imx+2,-2:jmx+3,-2:kmx+2), intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
             type(facetype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+3), intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
             type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+            !< Grid points
             type(boundarytype), intent(in) :: bc
+            !< boundary condition and fixed values
 
             call compute_face_area_vectors(Ifaces,Jfaces,Kfaces, nodes)
             call compute_face_areas(Ifaces,Jfaces,Kfaces, bc)
@@ -334,9 +346,9 @@ module geometry
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(:), intent(in):: p1, p2, p3, p4
-            real, dimension(1:3,1:3) :: A
-            real :: vol_tetrahedron
+            real(wp), dimension(:), intent(in):: p1, p2, p3, p4
+            real(wp), dimension(1:3,1:3) :: A
+            real(wp) :: vol_tetrahedron
 
             A(:, 1) = p1 - p4
             A(:, 2) = p2 - p4
@@ -392,9 +404,9 @@ module geometry
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(1:3, 1:8), intent(in) :: p_list
-            real :: vol_hexahedron
-            real :: vol_hexahedron1
+            real(wp), dimension(1:3, 1:8), intent(in) :: p_list
+            real(wp) :: vol_hexahedron
+            real(wp) :: vol_hexahedron1
             
             vol_hexahedron1 = 0.
             vol_hexahedron1 = vol_hexahedron1 + &
@@ -441,9 +453,11 @@ module geometry
 
             implicit none
             type(celltype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(out) :: cells
+            !< Cell center quanties: volume and coordiantes of cell center
             type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+            !< Grid points
             integer :: i,j,k
-            real, dimension(1:3, 1:8) :: p_list
+            real(wp), dimension(1:3, 1:8) :: p_list
 
             cells(:,:,:)%volume=1.
             do k = 0, kmx+0
@@ -487,7 +501,9 @@ module geometry
           !< Compute cell center of all cell including ghost cells
           implicit none
           type(celltype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(out) :: cells
+          !< Cell center quanties: volume and coordiantes of cell center
           type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+          !< Grid points
           integer :: i,j,k
 
           do k = -2, kmx+2
@@ -538,11 +554,17 @@ module geometry
             implicit none
             type(extent), intent(in) :: dims
             type(celltype), dimension(:,:,:), allocatable, intent(inout) :: cells
+            !< Cell center quanties: volume and coordiantes of cell center
             type(facetype), dimension(:,:,:), allocatable, intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
             type(facetype), dimension(:,:,:), allocatable, intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
             type(facetype), dimension(:,:,:), allocatable, intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
             type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+            !< Grid points
             type(boundarytype), intent(in) :: bc
+            !< boundary conditions and fixed values
 
             DebugCall('setup_geometry')
 

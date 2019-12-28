@@ -8,17 +8,6 @@ module read_output
 #include "../../debug.h"
 #include "../../error.h"
   use vartypes
-  !use global_vars, only :        resnorm_0
-  !use global_vars, only :    vis_resnorm_0
-  !use global_vars, only :   turb_resnorm_0
-  !use global_vars, only :   cont_resnorm_0
-  !use global_vars, only :  x_mom_resnorm_0
-  !use global_vars, only :  y_mom_resnorm_0
-  !use global_vars, only :  z_mom_resnorm_0
-  !use global_vars, only : energy_resnorm_0
-  !use global_vars, only :    TKE_resnorm_0
-  !use global_vars, only :  omega_resnorm_0
-
   use read_output_vtk, only : read_file_vtk => read_file
   use read_output_tec, only : read_file_tec => read_file
   use check_output_control, only: verify_read_control
@@ -44,7 +33,7 @@ module read_output
       type(extent), intent(in) :: dims
       type(controltype), intent(inout) :: control
       type(schemetype) , intent(in) :: scheme
-      real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
       call setup_file(control)
       call open_file(files,  control)
       call read_restart_file(files%RESTART_FILE_UNIT, control)

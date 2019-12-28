@@ -1,37 +1,32 @@
   !< Calculate the time step for the current iteration
 module time
   !< Calculate the time step for the current iteration
-
   use vartypes
   use viscosity, only : mu
   use viscosity, only : mu_t
-!  use global_vars, only : delta_t
-
   use utils, only: alloc
   use face_interpolant, only: &
           x_qp_left, x_qp_right, &
           y_qp_left, y_qp_right, &
           z_qp_left, z_qp_right
-
   use read, only : read_input_and_controls
-!  use geometry, only : CellCenter
 
 #include "debug.h"
 #include "error.h"
 #include "mpi.inc"
 
     private
-    INTEGER :: &
+    integer :: &
     nb_ticks_initial, & !< Initial value of the clock tick counter
     nb_ticks_final,   & !< Final value of the clock tick counter
     nb_ticks_max,     & !< Maximum value of the clock counter
     nb_ticks_sec,     & !< Number of clock ticks per second
     nb_ticks           !< Number of clock ticks of the code
-    REAL :: elapsed_time  !< Real time in seconds
-    REAL :: t1         !< Start clock time
-    REAL :: t2         !< Finish clock time
-    real :: cpu_time_elapsed
-    real :: sim_clock=0.0
+    real(wp) :: elapsed_time  !< real(wp) time in seconds
+    real(wp) :: t1         !< Start clock time
+    real(wp) :: t2         !< Finish clock time
+    real(wp) :: cpu_time_elapsed
+    real(wp) :: sim_clock=0.0
 
     integer :: imx, jmx, kmx, n_var
     ! Public methods
@@ -46,8 +41,11 @@ module time
           !< Allocate memeroy and setup initial clock
             implicit none
             type(controltype), intent(in) :: control
+            !< Control parameters
             type(extent), intent(in) :: dims
-            real, dimension(:,:,:), allocatable, intent(out) :: delta_t
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(:,:,:), allocatable, intent(out) :: delta_t
+            !< Local time increment value at each cell center
 
             DebugCall('initmisc')
 
@@ -67,8 +65,11 @@ module time
           !< Deallocate memory and find simulation time.
             implicit none
             type(controltype), intent(in) :: control
-            real, dimension(:), allocatable :: total_time 
+            !< Control parameters
+            real(wp), dimension(:), allocatable :: total_time 
+            !< Total time of executation for each block
             integer :: ierr
+            !< error variable for mpi communication
             
             DebugCall('deallocate_misc')
 
@@ -103,7 +104,7 @@ module time
         function write_time(time_in_seconds) result(string)
           !< Particular format to write time in output log file
           implicit none
-          real, intent(in) :: time_in_seconds
+          real(wp), intent(in) :: time_in_seconds
           !< Time to output
           character(len=64):: string
           !< Time as string in particlar format
@@ -130,12 +131,18 @@ module time
             !-----------------------------------------------------------
 
             implicit none
-            real, intent(in) :: CFL
+            real(wp), intent(in) :: CFL
+            !< CFL number
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
-            real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            !< Store primitive variable at cell center
+            real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+            !< Local time increment value at each cell center
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
             !< Input cell quantities: volume
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -145,8 +152,8 @@ module time
             type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
             !< Store face quantites for K faces 
 
-            real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
-            real :: x_sound_speed_avg, y_sound_speed_avg, z_sound_speed_avg
+            real(wp) :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
+            real(wp) :: x_sound_speed_avg, y_sound_speed_avg, z_sound_speed_avg
             integer :: i, j, k
 
             DebugCall('compute_local_time_step')
@@ -249,12 +256,18 @@ module time
             !<-----------------------------------------------------------
 
             implicit none
-            real, intent(in) :: CFL
+            real(wp), intent(in) :: CFL
+            !< CFL number
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
-            real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            !< Store primitive variable at cell center
+            real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+            !< Local time increment value at each cell center
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
             !< Input cell quantities: volume
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -286,12 +299,18 @@ module time
             !-----------------------------------------------------------
 
             implicit none
-            real, intent(in) :: CFL
+            real(wp), intent(in) :: CFL
+            !< CFL number
             type(schemetype), intent(in) :: scheme
+            !< finite-volume Schemes
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             type(extent), intent(in) :: dims
-            real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
-            real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+            !< Extent of the domain:imx,jmx,kmx
+            real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+            !< Store primitive variable at cell center
+            real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+            !< Local time increment value at each cell center
             type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
             !< Input cell quantities: volume
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -333,8 +352,11 @@ module time
 
           implicit none
           type(extent), intent(in) :: dims
+          !< Extent of the domain:imx,jmx,kmx
           type(schemetype), intent(in) :: scheme
-            real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+          !< finite-volume Schemes: time stepping methods
+          real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+          !< Local time increment value at each cell center
           if (scheme%time_stepping_method .eq. 'g' .and. sim_clock >= 0.) then
               sim_clock = sim_clock + minval(delta_t)
           else if (scheme%time_stepping_method .eq. 'l') then
@@ -347,11 +369,16 @@ module time
         !< Addition to local time step due to viscous effects
         implicit none
 
-        real, intent(in) :: CFL
+        real(wp), intent(in) :: CFL
+        !< CFL number
         type(flowtype), intent(in) :: flow
+        !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
         type(extent), intent(in) :: dims
-        real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
-        real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+        !< Extent of the domain:imx,jmx,kmx
+        real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+        !< Store primitive variable at cell center
+        real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+        !< Local time increment value at each cell center
         type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
         !< Input cell quantities: volume
         type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -360,7 +387,7 @@ module time
         !< Store face quantites for J faces 
         type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
         !< Store face quantites for K faces 
-        real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
+        real(wp) :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
         integer :: i, j, k
 
         DebugCall('add_viscous_time_step')
@@ -425,11 +452,16 @@ module time
       subroutine add_turbulent_time(qp,delta_t,cells,Ifaces,Jfaces,Kfaces,CFL,flow,dims)
         !< Addition to local time step due to turbulence 
         implicit none
-        real, intent(in) :: CFL
+        real(wp), intent(in) :: CFL
+        !< CFL number
         type(flowtype), intent(in) :: flow
+        !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
         type(extent), intent(in) :: dims
-        real, dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
-        real , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+        !< Extent of the domain:imx,jmx,kmx
+        real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: qp
+        !< Store primitive variable at cell center
+        real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(inout) :: delta_t
+        !< Local time increment value at each cell center
         type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
         !< Input cell quantities: volume
         type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
@@ -438,7 +470,7 @@ module time
         !< Store face quantites for J faces 
         type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
         !< Store face quantites for K faces 
-        real :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
+        real(wp) :: lmx1, lmx2, lmx3, lmx4, lmx5, lmx6, lmxsum
         integer :: i, j, k
 
         DebugCall('add_viscous_time_step')

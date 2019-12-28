@@ -7,7 +7,7 @@ integer function test_first_order() result(r)
    type(extent) :: dims
    !imx,jmx,kmx, = 5,2,2
    !n_var = 5
-   real, dimension(-2:7,-2:4,-2:4,1:5) :: qp=0.0
+   real(wp), dimension(-2:7,-2:4,-2:4,1:5) :: qp=0.0
    type(celltype), dimension(-2:7,-2:4,-2:4)  :: cells
 
    r = 1

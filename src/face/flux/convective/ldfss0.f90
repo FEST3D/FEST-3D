@@ -8,13 +8,6 @@ module ldfss0
 #include "../../../debug.h"
 #include "../../../error.h"
     use vartypes
-!    use global_vars, only : make_F_flux_zero
-!    use global_vars, only : make_G_flux_zero
-!    use global_vars, only : make_H_flux_zero
-    use face_interpolant, only: x_qp_left, x_qp_right 
-    use face_interpolant, only: y_qp_left, y_qp_right
-    use face_interpolant, only:  z_qp_left, z_qp_right
-
     implicit none
     private
 
@@ -22,7 +15,7 @@ module ldfss0
     
     contains
 
-        subroutine compute_flux(Flux, f_dir, faces, flags, flow, bc, dims)
+        subroutine compute_flux(Flux, f_qp_left, f_qp_right, faces, flags, flow, bc, dims)
           !< A generalized subroutine to calculate
           !< flux through the input-argument direction, :x,y, or z
           !< which corresponds to the I,J, or K direction respectively
@@ -30,47 +23,37 @@ module ldfss0
 
             implicit none
             integer, dimension(3), intent(in) :: flags
+            !< flags for direction switch
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
             type(boundarytype), intent(in) :: bc
-            real, dimension(:, :, :, :), intent(inout) :: Flux
+            !< boundary conditions and fixed values
+            real(wp), dimension(:, :, :, :), intent(inout) :: Flux
             !< Store fluxes throught the any(I,J,K) faces
             type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
-            character, intent(in) :: f_dir
-            !< Input direction for which flux are calcuated and store
+            !< Face quantities: area and unit normal
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< primitve state variable at face
             integer :: i, j, k 
             integer :: i_f, j_f, k_f ! Flags to determine face direction
-            real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
-            real, dimension(1:dims%n_var) :: F_plus, F_minus
-            real :: M_perp_left, M_perp_right
-            real :: alpha_plus, alpha_minus
-            real :: beta_left, beta_right
-            real :: M_plus, M_minus
-            real :: D_plus, D_minus
-            real :: c_plus, c_minus
-            real :: scrD_plus, scrD_minus
-            real :: sound_speed_avg, face_normal_speeds
-            real :: M_ldfss, M_plus_ldfss, M_minus_ldfss
+            real(wp), dimension(1:dims%n_var) :: F_plus, F_minus
+            real(wp) :: M_perp_left, M_perp_right
+            real(wp) :: alpha_plus, alpha_minus
+            real(wp) :: beta_left, beta_right
+            real(wp) :: M_plus, M_minus
+            real(wp) :: D_plus, D_minus
+            real(wp) :: c_plus, c_minus
+            real(wp) :: scrD_plus, scrD_minus
+            real(wp) :: sound_speed_avg, face_normal_speeds
+            real(wp) :: M_ldfss, M_plus_ldfss, M_minus_ldfss
 
             DebugCall('compute_flux')
             i_f = flags(1)
             j_f = flags(2)
             k_f = flags(3)
             
-            select case (f_dir)
-                case ('x')
-                    f_qp_left => x_qp_left
-                    f_qp_right => x_qp_right
-                case ('y')
-                    f_qp_left => y_qp_left
-                    f_qp_right => y_qp_right
-                case ('z')
-                    f_qp_left => z_qp_left
-                    f_qp_right => z_qp_right
-                case default
-                    Fatal_error
-            end select
-
             do k = 1, dims%kmx - 1 + k_f
              do j = 1, dims%jmx - 1 + j_f 
               do i = 1, dims%imx - 1 + i_f
@@ -180,18 +163,20 @@ module ldfss0
 
         end subroutine compute_flux
 
-        subroutine compute_fluxes(F,G,H, Ifaces, Jfaces, Kfaces, flow, bc, dims)
+        subroutine compute_fluxes(F,G,H, x_qp_l, x_qp_r, y_qp_l, y_qp_r, z_qp_l, z_qp_r, Ifaces, Jfaces, Kfaces, flow, bc, dims)
         !subroutine compute_fluxes(F,G,H, flow, dims)
           !< Call to compute fluxes throught faces in each direction
             
             implicit none
             type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
             type(flowtype), intent(in) :: flow
-            real, dimension(:, :, :, :), intent(inout) :: F
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+            real(wp), dimension(:, :, :, :), intent(inout) :: F
             !< Store fluxes throught the I faces
-            real, dimension(:, :, :, :), intent(inout) :: G
+            real(wp), dimension(:, :, :, :), intent(inout) :: G
             !< Store fluxes throught the J faces
-            real, dimension(:, :, :, :), intent(inout) :: H
+            real(wp), dimension(:, :, :, :), intent(inout) :: H
             !< Store fluxes throught the K faces
             type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
             !< Store face quantites for I faces 
@@ -199,20 +184,27 @@ module ldfss0
             !< Store face quantites for J faces 
             type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
             !< Store face quantites for K faces 
+            real(wp), dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
+            !< Store primitive state at the I-face 
+            real(wp), dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
+            !< Store primitive state at the J-face 
+            real(wp), dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
+            !< Store primitive state at the K-face 
             type(boundarytype), intent(in) :: bc
+            !< boundary conditions and fixed values
             integer, dimension(3) :: flags
 
             
             DebugCall('compute_fluxes')
 
             flags=(/1,0,0/)
-            call compute_flux(F, 'x', Ifaces, flags, flow, bc, dims)
+            call compute_flux(F, x_qp_l, x_qp_r, Ifaces, flags, flow, bc, dims)
             if (any(isnan(F))) then
               Fatal_error
             end if    
 
             flags=(/0,1,0/)
-            call compute_flux(G, 'y', Jfaces, flags, flow, bc, dims)
+            call compute_flux(G, y_qp_l, y_qp_r,  Jfaces, flags, flow, bc, dims)
             if (any(isnan(G))) then 
               Fatal_error
             end if    
@@ -221,7 +213,7 @@ module ldfss0
               H = 0.
             else
               flags=(/0,0,1/)
-              call compute_flux(H, 'z', Kfaces, flags, flow, bc, dims)
+              call compute_flux(H, z_qp_l, z_qp_r, Kfaces, flags, flow, bc, dims)
             end if
             if (any(isnan(H))) then
               Fatal_error

@@ -1,5 +1,6 @@
 module vartypes
-  !use global
+  !< Derived data types
+  use iso_fortran_env, only : wp => real64
     implicit none
     integer :: process_id=0
     !< Id no. of each processor assinged by MPICH library
@@ -11,9 +12,9 @@ module vartypes
     !< Length of string used for file format: tecplot or vtk
 
     type, public :: nodetype
-        real :: x
-        real :: y
-        real :: z
+        real(wp) :: x
+        real(wp) :: y
+        real(wp) :: z
     end type nodetype
 
 
@@ -26,21 +27,21 @@ module vartypes
 
 
     type, public :: celltype
-      real :: volume
+      real(wp) :: volume
       !< Store cell volume
-      real :: centerx
-      real :: centery
-      real :: centerz
+      real(wp) :: centerx
+      real(wp) :: centery
+      real(wp) :: centerz
       !< Store Cell-center location 
     end type celltype
 
 
     type, public :: facetype
-      real :: A
+      real(wp) :: A
        !< Store magnitude of face area vector of direction faces
-      real :: nx
-      real :: ny
-      real :: nz
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
        !< Store unit face normal vector for all faces 
     end type facetype
 
@@ -127,7 +128,7 @@ module vartypes
 
 
     type, public :: controltype
-        real :: CFL=1.0
+        real(wp) :: CFL=1.0
         !< Courant–Friedrichs–Lewy (CFL) (Read from input)
         integer :: start_from=0 
         !< Number of the folder (in time_directories) to load stored state from to restart computation
@@ -157,7 +158,7 @@ module vartypes
         !< Read data type in file. Either ASCII or BINARY
         character(len=FORMAT_LENGTH)::  read_file_format='tecplot'
         !< Read file type. Either vtk or tecplot
-        real :: tolerance=1e-14
+        real(wp) :: tolerance=1e-14
         !< Minimum value of resnorm after which simulation stop
         character(len=STRING_BUFFER_LENGTH) :: tolerance_type="abs"
         !< Type of tolerance to check:absolute or relative
@@ -189,7 +190,7 @@ module vartypes
         !< 0: continue the solver; 1=Stop the solver
         logical :: Halt = .FALSE.
         !< Logical value used to stop the solver in main program file.
-        real, dimension(:), allocatable :: previous_res
+        real(wp), dimension(:), allocatable :: previous_res
         !< starting resnrom of previous run
     end type controltype
 
@@ -198,7 +199,7 @@ module vartypes
       !< Flux Scheme to use: ausm, ldfss0, vanleer, ausmup, ausmp, slau
       character(len=STRING_BUFFER_LENGTH) :: interpolant='muscl'
       !< Face state reconstruction  method to user: muscl, ppm, none, weno, and wenoNM
-      real                                      :: global_time_step=1e-5
+      real(wp)                                      :: global_time_step=1e-5
       !< Value of global time step to march the solution with
       character                                 :: time_stepping_method='l'
       !< Either local time stepping or global time stepping
@@ -232,55 +233,55 @@ module vartypes
 
 
    type, public ::  flowtype
-      real                                              :: density_inf
+      real(wp)                                              :: density_inf=1.2
        !< Read freestream Density from control file
-      real                                              :: x_speed_inf
+      real(wp)                                              :: x_speed_inf=100.0
        !< Read freestream U from control file
-      real                                              :: y_speed_inf
+      real(wp)                                              :: y_speed_inf=0.0
        !< Read freestream V from control file
-      real                                              :: z_speed_inf
+      real(wp)                                              :: z_speed_inf=0.0
        !< Read freestream W from control file
-      real                                              :: pressure_inf
+      real(wp)                                              :: pressure_inf=101325
        !< Read freestream Pressure from control file
-      real                                              :: tk_inf
+      real(wp)                                              :: tk_inf=0.0
        !< Read freestream turbulent kinetic energy rate from control file
-      real                                              :: tw_inf       
+      real(wp)                                              :: tw_inf=0.0
        !< Read freestream turbulent dissipation rate from control file
-      real                                              :: te_inf
+      real(wp)                                              :: te_inf=0.0
        !< Read freestream turbulent dissipation from control file
-      real                                              :: tv_inf
+      real(wp)                                              :: tv_inf=0.0
        !< Read freestream turbulent viscosity(SA) from control file
-      real                                              :: tkl_inf
+      real(wp)                                              :: tkl_inf=0.0
        !< Read freestream kL variable from control file
-      real                                              :: tu_inf
+      real(wp)                                              :: tu_inf=1.0
        !< Read freestream turbulence intensity (percentage) from control file
-      real                                              :: tgm_inf=1.0
+      real(wp)                                              :: tgm_inf=1.0
        !< Read freestream turbulence intermittency from control file
-      real                                              :: vel_mag
+      real(wp)                                              :: vel_mag=100.0
        !< Calulated freestream Velocity Magnitude from control file
-      real                                              :: MInf
+      real(wp)                                              :: MInf=0.0
        !< Calulated freestream Mach number
-      real                                              :: Reynolds_number 
+      real(wp)                                              :: Reynolds_number=0.0
        !< Calculated free_stream Reynolds_number
-      real                                              :: mu_ratio_inf 
+      real(wp)                                              :: mu_ratio_inf=1.0
        !< Read freestream turbulent viscosity to molecular viscosity ratio
-      real                                              :: Turb_intensity_inf 
+      real(wp)                                              :: Turb_intensity_inf=0.01
        !< Calculate free_stream turbulence intensity 
-      real                                              :: gm=1.4    
+      real(wp)                                              :: gm=1.4    
       !< Gamma commonly 1.4
-      real                                              :: R_gas=287 
+      real(wp)                                              :: R_gas=287 
       !< Univarsal gas constant
-      real                                              :: mu_ref=0.0
+      real(wp)                                              :: mu_ref=0.0
       !< Molecular viscoity reference
       character(len=FILE_NAME_LENGTH)                   :: mu_variation="constant"
       !< Type of viscosity variaiton: Sutherland or constant
-      real                                              :: T_ref=300
+      real(wp)                                              :: T_ref=300
       !< Reference Temperature of flow for viscosity calculation
-      real                                              :: Sutherland_temp=110
+      real(wp)                                              :: Sutherland_temp=110
       !< Sutherland temperature for viscosity calculation
-      real                                              :: Pr=0.7 
+      real(wp)                                              :: Pr=0.7 
       !< prandtl number
-      real                                              :: tPr=0.9 
+      real(wp)                                              :: tPr=0.9 
       !< turbulent Prandtl number
     end type flowtype
 
@@ -302,41 +303,41 @@ module vartypes
       !< Store name of all six boundary faces
       integer,          dimension(6) :: id         
       !< Store the boundary condition ID of all six faces
-      real                           :: c1         
+      real(wp)                           :: c1         
       !< First coefficient user for higher order boundary condition
-      real                           :: c2         
+      real(wp)                           :: c2         
       !< Second coefficient user for higher order boundary condition
-      real                           :: c3         
+      real(wp)                           :: c3         
       !< Third coefficient user for higher order boundary condition
 
       ! store fix values for 6 faces of domain
-      real, dimension(6) :: fixed_density  = 0.
+      real(wp), dimension(6) :: fixed_density  = 0.
       !< Density value to fix at particular boundary
-      real, dimension(6) :: fixed_pressure = 0.
+      real(wp), dimension(6) :: fixed_pressure = 0.
       !< Pressure value to fix at particular boundary
-      real, dimension(6) :: fixed_x_speed  = 0.
+      real(wp), dimension(6) :: fixed_x_speed  = 0.
       !< X component of velocity to fix at particular boundary condition
-      real, dimension(6) :: fixed_y_speed  = 0.
+      real(wp), dimension(6) :: fixed_y_speed  = 0.
       !< Y component of velocity to fix at particular boundary condition
-      real, dimension(6) :: fixed_z_speed  = 0.
+      real(wp), dimension(6) :: fixed_z_speed  = 0.
       !< Z component of velocity to fix at particular boundary condition
-      real, dimension(6) :: fixed_tk       = 0.
+      real(wp), dimension(6) :: fixed_tk       = 0.
       !< Turbulent kinetic energy value to fix at particular boundary condition
-      real, dimension(6) :: fixed_tw       = 0.
+      real(wp), dimension(6) :: fixed_tw       = 0.
       !< Turbulent kinetic energy dissiaption rate value to fix at particular boundary condition(k-omega and SST model)
-      real, dimension(6) :: fixed_te       = 0.
+      real(wp), dimension(6) :: fixed_te       = 0.
       !< Turbulent kinetic energy dissiaption value to fix at particular boundary condition (K-eplision model)
-      real, dimension(6) :: fixed_tv       = 0.
+      real(wp), dimension(6) :: fixed_tv       = 0.
       !< Turbulent viscosity varialble value to fix at particular boundary condition (for SA turbulence model)
-      real, dimension(6) :: fixed_tkl       = 0.
+      real(wp), dimension(6) :: fixed_tkl       = 0.
       !< (Turbulent kinetic energy x length) varialble value to fix at particular boundary condition (for k-kL turbulence model)
-      real, dimension(6) :: fixed_tgm       = 0.
+      real(wp), dimension(6) :: fixed_tgm       = 0.
       !<  Fixed intermittency value to apply at particular boundary condition (for SST2003-gamma transition model)
-      real, dimension(6) :: fixed_wall_temperature  = 0.
+      real(wp), dimension(6) :: fixed_wall_temperature  = 0.
       !<  Fixed wall temperature value to apply at isothermal wall boundary condition.
-      real, dimension(6) :: fixed_Tpressure         = 0.
+      real(wp), dimension(6) :: fixed_Tpressure         = 0.
       !<  Fixed Total Pressure value to apply at particular boundary condition
-      real, dimension(6) :: fixed_Ttemperature      = 0.
+      real(wp), dimension(6) :: fixed_Ttemperature      = 0.
       !<  Fixed Total Temperature value to apply at particular boundary condition
 
 
