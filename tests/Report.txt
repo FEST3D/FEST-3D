@@ -1,0 +1,37 @@
+Ran Test number 1  --->  Subsonic flow over a smooth bump
+  __________Report__________   
+ ---------- Inviscid Test case: Smooth Bump ---------- 
+ Flux Scheme        : ausm
+ Higher order method: muscl
+ Turbulence model   : none
+ Expected Change in entropy           : 0.000E+00
+ Calculated relative change in entropy: 7.883E-07
+ Difference                           : 7.883E-05 %
+ Allowed Tolerance                    : 0.1 %
+------------ >>> Test Passed  <<< --------------
+
+
+Ran Test number 2  --->  Laminar flow over a flat plate
+  __________Report__________   
+ ------ Laminar Test case: Flat plate ------ 
+ Flux Scheme        : ausm
+ Higher order method: muscl
+ Turbulence model   : none
+ Expected drag coeffcient    : 1.330E-03
+ Calculated drag coefficient : 1.329E-03
+ Difference                  : 5.001E-02 %
+ Allowed Tolerance           : 1 %
+------------ >>> Test Passed  <<< --------------
+
+
+Ran Test number 3  --->  Turbulent flow over a flat plate
+  __________Report__________   
+ ------ Turbulent Test case: Flat plate ------ 
+ Flux Scheme        : ausm
+ Higher order method: muscl
+ Turbulence model   : sst
+ Expected drag coeffcient    : 2.900E-03
+ Calculated drag coefficient : 2.872E-03
+ Difference                  : 9.586E-01 %
+ Allowed Tolerance           : 2 %
+------------ >>> Test Passed  <<< --------------

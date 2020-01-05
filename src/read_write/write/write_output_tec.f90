@@ -6,116 +6,138 @@ module write_output_tec
   !---------------------------------------------------------
 #include "../../debug.h"
 #include "../../error.h"
-  use global     , only : OUT_FILE_UNIT
-  use global     , only : OUTIN_FILE_UNIT
-  use global     , only : outin_file
-
-  use global_vars, only : write_data_format
-  use global_vars, only : write_file_format
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
-  use global_vars, only : density 
-  use global_vars, only : x_speed 
-  use global_vars, only : y_speed 
-  use global_vars, only : z_speed 
-  use global_vars, only : pressure 
-  use global_vars, only : tk 
-  use global_vars, only : tw 
-  use global_vars, only : tkl
-  use global_vars, only : tv
-  use global_vars, only : tgm
-  use global_vars, only : mu 
-  use global_vars, only : mu_t 
-  use global_vars, only : density_inf
-  use global_vars, only : x_speed_inf
-  use global_vars, only : y_speed_inf
-  use global_vars, only : z_speed_inf
-  use global_vars, only : pressure_inf 
-  use global_vars, only : gm
-  use global_vars, only : dist
-  use global_vars, only : vis_resnorm
-  use global_vars, only : cont_resnorm
-  use global_vars, only : x_mom_resnorm
-  use global_vars, only : y_mom_resnorm
-  use global_vars, only : z_mom_resnorm
-  use global_vars, only : energy_resnorm
-  use global_vars, only : resnorm
-  use global_vars, only :   mass_residue
-  use global_vars, only :  x_mom_residue
-  use global_vars, only :  y_mom_residue
-  use global_vars, only :  z_mom_residue
-  use global_vars, only : energy_residue
-  use global_vars, only : TKE_residue
-  use global_vars, only : omega_residue
-  use global_vars, only : tv_residue
-  use global_vars, only : intermittency
-  use global_vars, only : ExtraVar1
-  use global_vars, only : ExtraVar2
-  use global_vars, only : ExtraVar3
-  use global_vars, only : ExtraVar4
-  use global_vars, only : ExtraVar5
-
-  use global_vars, only : turbulence
-  use global_vars, only : mu_ref
-  use global_vars, only : current_iter
-  use global_vars, only : max_iters
-  use global_vars, only : w_count
-  use global_vars, only : w_list
-
+  use vartypes
+  use viscosity, only : mu 
+  use viscosity, only : mu_t 
+  use wall_dist, only : dist
   use global_sst , only : sst_F1
-  use global_vars, only : gradu_x
-  use global_vars, only : gradu_y
-  use global_vars, only : gradu_z
-  use global_vars, only : gradv_x
-  use global_vars, only : gradv_y
-  use global_vars, only : gradv_z
-  use global_vars, only : gradw_x
-  use global_vars, only : gradw_y
-  use global_vars, only : gradw_z
-  use global_vars, only : gradT_x
-  use global_vars, only : gradT_y
-  use global_vars, only : gradT_z
-  use global_vars, only : gradtk_x
-  use global_vars, only : gradtk_y
-  use global_vars, only : gradtk_z
-  use global_vars, only : gradtw_x
-  use global_vars, only : gradtw_y
-  use global_vars, only : gradtw_z
-  use global_vars, only : process_id
-  use global_vars, only : checkpoint_iter_count
+  use gradients, only : gradu_x
+  use gradients, only : gradu_y
+  use gradients, only : gradu_z
+  use gradients, only : gradv_x
+  use gradients, only : gradv_y
+  use gradients, only : gradv_z
+  use gradients, only : gradw_x
+  use gradients, only : gradw_y
+  use gradients, only : gradw_z
+  use gradients, only : gradT_x
+  use gradients, only : gradT_y
+  use gradients, only : gradT_z
+  use gradients, only : gradtk_x
+  use gradients, only : gradtk_y
+  use gradients, only : gradtk_z
+  use gradients, only : gradtw_x
+  use gradients, only : gradtw_y
+  use gradients, only : gradtw_z
 
   use utils
-  use string
 
   implicit none
   private
+  integer :: OUT_FILE_UNIT
   integer :: i,j,k
-  real    :: speed_inf
-  character(len=8) :: file_format
-  character(len=16) :: data_format
-  character                          :: newline=achar(10)
   character(len=*), parameter :: format="(1ES28.15E4)"
+  integer :: imx, jmx, kmx
+  real(wp), dimension(:, :, :), pointer :: density      
+   !< Rho pointer, point to slice of qp (:,:,:,1)
+  real(wp), dimension(:, :, :), pointer :: x_speed      
+   !< U pointer, point to slice of qp (:,:,:,2) 
+  real(wp), dimension(:, :, :), pointer :: y_speed      
+   !< V pointer, point to slice of qp (:,:,:,3) 
+  real(wp), dimension(:, :, :), pointer :: z_speed      
+   !< W pointer, point to slice of qp (:,:,:,4)
+  real(wp), dimension(:, :, :), pointer :: pressure     
+   !< P pointer, point to slice of qp (:,:,:,5)
+  real(wp), dimension(:, :, :), pointer :: tk        
+  !< TKE, point to slice of qp (:,:,:,6)
+  real(wp), dimension(:, :, :), pointer :: tw        
+  !< Omega, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: te        
+  !< Dissipation, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: tv        
+  !< SA visocity, point to slice of qp (:,:,:,6)
+  real(wp), dimension(:, :, :), pointer :: tkl       
+  !< KL K-KL method, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: tgm       
+  !< Intermittency of LCTM2015, point to slice of qp (:,:,:,8)
   public :: write_file
 
   contains
 
-    subroutine write_file()
+    subroutine write_file(file_handler, state, nodes, control, scheme, dims)
       !< Write the header and variables in the file "process_xx.dat".
       implicit none
+      integer, intent(in) :: file_handler
+      type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
+      type(extent), intent(in) :: dims
+      type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: state
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
 
       DebugCall("write_file")
-      call write_header()
-      call write_grid()
 
-      do n = 1,w_count
+      OUT_FILE_UNIT = file_handler
 
-        select case (trim(w_list(n)))
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      density(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 1)
+      x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 2)
+      y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 3)
+      z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 4)
+      pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 5)
+
+      select case (trim(scheme%turbulence))
+          case ("none")
+              !include nothing
+              continue
+          
+          case ("sst", "sst2003", "bsl", "des-sst", "kw")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("kkl")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("sa", "saBC")
+              tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+
+          case ("ke")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              te(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("les")
+            continue
+            ! todo
+
+          case DEFAULT
+            Fatal_error
+      end select
+
+      ! Transition modeling
+      select case(trim(scheme%transition))
+        case('lctm2015')
+          tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 8)
+!          tgm_inf => qp_inf(n_var)
+
+        case('bc', 'none')
+          !do nothing
+          continue
+
+        case DEFAULT
+          Fatal_error
+      end Select
+
+      call write_header(control)
+      call write_grid(nodes)
+
+      do n = 1,control%w_count
+
+        select case (trim(control%w_list(n)))
         
           case('Velocity')
             call write_scalar(x_speed, "u", -2)
@@ -209,74 +231,12 @@ module write_output_tec
           case('Dtwdz')                        
             call write_scalar(gradtw_z,"dtwdz", 0)
 
-          case('Mass_residue')
-            call write_scalar(mass_residue, "Mass_residue", 1)
-
-          case('X_mom_residue')
-            call write_scalar(x_mom_residue, "X_mom_residue", 1)
-
-          case('Y_mom_residue')
-            call write_scalar(y_mom_residue, "Y_mom_residue", 1)
-
-          case('Z_mom_residue')
-            call write_scalar(z_mom_residue, "Z_mom_residue", 1)
-
-          case('Energy_residue')
-            call write_scalar(energy_residue, "Energy_residue", 1)
-
-          case('TKE_residue')
-            call write_scalar(tke_residue, "TKE_residue", 1)
-
-          case('Omega_residue')
-            call write_scalar(omega_residue, "Omega_residue", 1)
-
-          case('Tv_residue')
-            call write_scalar(tv_residue, "Tv_residue", 1)
-
-          case('Intermittency')
-            call write_scalar(intermittency, "Intermittency", -2)
-
-          case('extravar1')
-            if(allocated(ExtraVar1))then
-              call write_scalar(ExtraVar1, "ExtraVar1", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar2')
-            if(allocated(ExtraVar2))then
-              call write_scalar(ExtraVar2, "ExtraVar2", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar3')
-            if(allocated(ExtraVar3))then
-              call write_scalar(ExtraVar3, "ExtraVar3", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar4')
-            if(allocated(ExtraVar4))then
-              call write_scalar(ExtraVar4, "ExtraVar4", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar5')
-            if(allocated(ExtraVar5))then
-              call write_scalar(ExtraVar5, "ExtraVar5", -2)
-            else
-              Issue_warning
-            end if
-          
           case('do not write')
             ! do not write
             continue
 
           case Default
-            print*, err//trim(w_list(n))//" to file"
+            print*, err//trim(control%w_list(n))//" to file"
 
         end select
       end do
@@ -285,9 +245,10 @@ module write_output_tec
     end subroutine write_file
 
 
-    subroutine write_header()
+    subroutine write_header(control)
       !< Write the header in the output file in the tecplot format
       implicit none
+      type(controltype), intent(in) :: control
       integer :: n
       integer :: total
 
@@ -295,9 +256,9 @@ module write_output_tec
       write(OUT_FILE_UNIT,'(a)') "variables = x y z "
 
       total=3
-      do n = 1,w_count
+      do n = 1,control%w_count
 
-        select case (trim(w_list(n)))
+        select case (trim(control%w_list(n)))
         
           case('Velocity')
             write(OUT_FILE_UNIT, '(a)') " u v w "
@@ -308,7 +269,7 @@ module write_output_tec
             continue
 
           case Default
-            write(OUT_FILE_UNIT, '(a)') trim(w_list(n))//" "
+            write(OUT_FILE_UNIT, '(a)') trim(control%w_list(n))//" "
             total = total+1
 
         end select
@@ -319,20 +280,21 @@ module write_output_tec
       write(OUT_FILE_UNIT,*) "Varlocation=([1-3]=Nodal)"
       write(OUT_FILE_UNIT,'(a,i2.2,a)') "Varlocation=([4-",total,"]=CELLCENTERED)"
       write(OUT_FILE_UNIT,"(a,i4.4)") "STRANDID=",1
-      write(OUT_FILE_UNIT,"(a,i4.4)") "SOLUTIONTIME=",checkpoint_iter_count
+      write(OUT_FILE_UNIT,"(a,i4.4)") "SOLUTIONTIME=",control%checkpoint_iter_count
 
 
     end subroutine write_header
 
-    subroutine write_grid()
+    subroutine write_grid(nodes)
       !< Write the grid information in the output file
       implicit none
+      type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in) :: nodes 
 
       ! write grid point coordinates
       DebugCall("write_grid")
-      write(OUT_FILE_UNIT, format) (((grid_x(i, j, k),i=1,imx), j=1,jmx), k=1,kmx)
-      write(OUT_FILE_UNIT, format) (((grid_y(i, j, k),i=1,imx), j=1,jmx), k=1,kmx)
-      write(OUT_FILE_UNIT, format) (((grid_z(i, j, k),i=1,imx), j=1,jmx), k=1,kmx)
+      write(OUT_FILE_UNIT, format) (((nodes(i, j, k)%x,i=1,imx), j=1,jmx), k=1,kmx)
+      write(OUT_FILE_UNIT, format) (((nodes(i, j, k)%y,i=1,imx), j=1,jmx), k=1,kmx)
+      write(OUT_FILE_UNIT, format) (((nodes(i, j, k)%z,i=1,imx), j=1,jmx), k=1,kmx)
 
     end subroutine write_grid
 
@@ -340,7 +302,7 @@ module write_output_tec
       !< Write the scalar variable in the output file
       implicit none
       integer, intent(in) :: index
-      real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var
+      real(wp), dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var
       character(len=*),       intent(in):: name
 
       DebugCall("write_scalar: "//trim(name))

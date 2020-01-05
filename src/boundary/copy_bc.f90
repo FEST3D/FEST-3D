@@ -1,18 +1,8 @@
   !< A module contains generalized subroutine to copy variable in ghost cells
 module copy_bc
   !< A module contains generalized subroutine to copy variable in ghost cells
-  !--------------------------------------------
-  ! 170515  Jatinder Pal Singh Sandhu
-  ! Aim : applying boundary condition to domain
   !-------------------------------------------
- 
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
-  use global_vars, only: c1
-  use global_vars, only: c2
-  use global_vars, only: c3
-
+   use vartypes
   implicit none
   private
 
@@ -21,16 +11,21 @@ module copy_bc
 
   contains
 
-    subroutine copy1(var, type, face)
+    subroutine copy1(var, type, face, dims)
       !< Copy 1 layer of interior cell to first ghost cell layer
       implicit none
+      type(extent), intent(in) :: dims
       character(len=*), intent(in) :: face
       !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
       !< Type of copy: flat, symmetry, anti-symmetry
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2), intent(inout) :: var
       !< Varible over which these operation has to be performed
-      real :: a2=1
+      real(wp) :: a2=1
+      integer :: imx, jmx, kmx
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
       select case(type)
         case("anti")
@@ -60,23 +55,30 @@ module copy_bc
     end subroutine copy1
 
     
-    subroutine copy3(var, type, face)
+    subroutine copy3(var, type, face, bc, dims)
       !< Copy 3 layer of interior cell to three ghost cell layer
       implicit none
+      type(extent), intent(in) :: dims
+      type(boundarytype), intent(in) :: bc
       character(len=*), intent(in) :: face
       !< Face over which boundary condition is being called
       character(len=*), intent(in) :: type
       !< Type of copy: flat, symmetry, anti-symmetry
-      real, dimension(-2:imx+2, -2:jmx+2, -2:kmx+2), intent(inout) :: var
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2), intent(inout) :: var
       !< Varible over which these operation has to be performed
 
-      real :: a1=1
-      real :: a2=1
-      real :: a3=0
+      real(wp) :: a1=1
+      real(wp) :: a2=1
+      real(wp) :: a3=0
 
       integer :: i1=1
       integer :: i2=2
       integer :: i3=3
+
+      integer :: imx, jmx, kmx
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
       select case(type)
         case("anti")
@@ -88,9 +90,9 @@ module copy_bc
           a2 =  1. ; i2 = 1
           a3 =  0. ; i3 = 1
         case("symm")
-          a1 =  c1 ; i1 = 1
-          a2 =  c2 ; i2 = 2
-          a3 =  c3 ; i3 = 3
+          a1 =  bc%c1 ; i1 = 1
+          a2 =  bc%c2 ; i2 = 2
+          a3 =  bc%c3 ; i3 = 3
           ! do nothing
           ! use default value
           continue

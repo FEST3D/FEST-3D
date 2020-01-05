@@ -2,31 +2,18 @@
 module wall
  !< Detect all the grid points on the wall boundary condition
  !< and store them in a single file
-  use global     , only : surface_node_points
-  use global     , only : NODESURF_FILE_UNIT
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
-  use global_vars, only : process_id
-  use global_vars, only : total_process
-  use global_vars, only : id
+  use vartypes
+  use utils, only: alloc
 
-  use string
-  use bitwise
-  use utils, only: alloc, dealloc, dmsg, DEBUG_LEVEL
-
-#include "../error.inc"
+#include "../debug.h"
+#include "../error.h"
 #include "../mpi.inc"
 
   private
   integer :: ierr
   !< Integer to store error 
-  real :: buf
-  integer :: BUFSIZE
-  !< Size of buffer for mpi
+!  integer :: BUFSIZE
+!  !< Size of buffer for mpi
   integer :: new_type
   !< Create new type for MPI
   integer :: thisfile
@@ -34,13 +21,13 @@ module wall
   integer, parameter :: maxlen=70
   !< Maximum length for string
 
-  real, private, dimension(:, :), allocatable, target :: wallc 
+  real(wp), private, dimension(:, :), allocatable, target :: wallc 
   !< Centre of wall surface
-  real, private, dimension(:), pointer :: wall_x 
+  real(wp), private, dimension(:), pointer :: wall_x 
   !< X coordiante of center of wall surface
-  real, private, dimension(:), pointer :: wall_y 
+  real(wp), private, dimension(:), pointer :: wall_y 
   !< Y coordiante of center of wall surface
-  real, private, dimension(:), pointer :: wall_z 
+  real(wp), private, dimension(:), pointer :: wall_z 
   !< Z coordiante of center of wall surface
   integer, dimension(6) :: no_slip_flag=0 
   !< Flag to detect wall
@@ -62,29 +49,40 @@ module wall
   integer, dimension(:), allocatable :: write_flag
   !< Check if current processor has any wall points to write
 
+  integer :: imx, jmx, kmx
   public :: write_surfnode
 
   contains 
 
-    subroutine write_surfnode()
+    subroutine write_surfnode(files, nodes, control, bc, dims)
       !< Extract and write the wall surface node points
       !< in a file shared by all the MPI processes
       implicit none
+      type(filetype), intent(in) :: files
+      type(controltype), intent(in) :: control
+      type(extent), intent(in) :: dims
+      type(boundarytype), intent(in) :: bc
+      type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes
       integer :: count
       integer :: i
-      call setup_surface()
-      call surface_points()
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      call setup_surface(files, control, bc)
+      call surface_points(nodes)
       call MPI_GATHER(n_wall, 1, MPI_Integer, n_wall_buf, 1, &
                       MPI_integer,0, MPI_COMM_WORLD, ierr)
       total_n_wall = sum(n_wall_buf(:))
       call MPI_Bcast(total_n_wall,1, MPI_Integer, 0, &
                        MPI_COMM_WORLD, ierr)
-      call MPI_Bcast(n_wall_buf, total_process, MPI_Integer, 0, &
+      call MPI_Bcast(n_wall_buf, control%total_process, MPI_Integer, 0, &
                        MPI_COMM_WORLD, ierr)
 
       write_flag=0
       count=0
-      do i=1,total_process
+      do i=1,control%total_process
         if(n_wall_buf(i)>0) then
           write_flag(i)=count
           count = count+1
@@ -110,16 +108,18 @@ module wall
       end do
       end if
       call mpi_barrier(MPI_COMM_WORLD,ierr)
-      call destroy_surface()
+      !call destroy_surface()
+      call MPI_FILE_CLOSE(thisfile, ierr)
 
     end subroutine write_surfnode
 
 
-    subroutine allocate_memory()
+    subroutine allocate_memory(control)
       !< Allocate memory to str and wallc variable array
         implicit none
+        type(controltype), intent(in) :: control
 
-        call dmsg(1, 'wall_find', 'setup_surface')
+        DebugCall('setup_surface')
 
         n_wall = -1
 
@@ -135,8 +135,8 @@ module wall
         call alloc(wallc, 1, n_wall, 1, 3 ,&
                   errmsg='Error: Unable to allocate memory for wallc')
 
-        allocate(n_wall_buf(1:total_process))
-        allocate(write_flag(1:total_process))
+        allocate(n_wall_buf(1:control%total_process))
+        allocate(write_flag(1:control%total_process))
     end subroutine allocate_memory
 
 
@@ -146,7 +146,7 @@ module wall
 
       implicit none
 
-      call dmsg(1, 'wall_find', 'link_aliases')
+      DebugCall('link_aliases')
       wall_x(1:n_wall) => wallc(1:n_wall,1)
       wall_y(1:n_wall) => wallc(1:n_wall,2)
       wall_z(1:n_wall) => wallc(1:n_wall,3)
@@ -155,96 +155,102 @@ module wall
 
 
 
-    subroutine unlink_aliases()
-      !< Unlink all the pointer used in this module
+!    subroutine unlink_aliases()
+!      !< Unlink all the pointer used in this module
+!
+!      implicit none
+!
+!      DebugCall('unlink_aliases')
+!      nullify(wall_x)
+!      nullify(wall_y)
+!      nullify(wall_z)
+!
+!    end subroutine unlink_aliases
+!
 
-      implicit none
 
-      call dmsg(1, 'wall_find', 'unlink_aliases')
-      nullify(wall_x)
-      nullify(wall_y)
-      nullify(wall_z)
-
-    end subroutine unlink_aliases
-
-
-
-    subroutine deallocate_memory()
-      !< Deallocate memory from the Wallc array
-
-      implicit none
-
-      call dmsg(1, 'wall_find', 'dealloate_memory')
-      call dealloc(wallc)
-
-    end subroutine deallocate_memory
+!    subroutine deallocate_memory()
+!      !< Deallocate memory from the Wallc array
+!
+!      implicit none
+!
+!      DebugCall('dealloate_memory')
+!      call dealloc(wallc)
+!
+!    end subroutine deallocate_memory
 
     
 
-    subroutine setup_surface()
+    subroutine setup_surface(files, control, bc)
       !< Open MPI_shared write file, allocate memory and
       !< setup pointers
 
       implicit none
+      type(boundarytype), intent(in) :: bc
+      type(filetype), intent(in) :: files
+      type(controltype), intent(in) :: control
       integer :: stat
 
-      call dmsg(1, 'wall_find', 'setup_surface')
+      DebugCall('setup_surface')
       if(process_id==0)then
-      open(NODESURF_FILE_UNIT, file=surface_node_points, iostat=stat)
-      if(stat==0) close(NODESURF_FILE_UNIT, status='delete')
+      open(files%NODESURF_FILE_UNIT, file=files%surface_node_points, iostat=stat)
+      if(stat==0) close(files%NODESURF_FILE_UNIT, status='delete')
       end if
       call mpi_barrier(MPI_COMM_WORLD,ierr)
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, surface_node_points, &
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, files%surface_node_points, &
                         MPI_MODE_WRONLY + MPI_MODE_CREATE + MPI_MODE_EXCL, &
                         MPI_INFO_NULL, thisfile, ierr)
-      call find_wall()
-      call allocate_memory()
+      call find_wall(bc)
+      call allocate_memory(control)
       call link_aliases()
 
     end subroutine setup_surface
 
 
 
-    subroutine destroy_surface()
-      !< Deallocate memory, unlink pointers, and close MPI_shared file
+!    subroutine destroy_surface()
+!      !< Deallocate memory, unlink pointers, and close MPI_shared file
+!
+!      implicit none
+!
+!      DebugCall('destroy_surface')
+!!      call deallocate_memory()
+!!      call unlink_aliases()
+!!      call MPI_FILE_CLOSE(thisfile, ierr)
+!
+!    end subroutine destroy_surface
 
-      implicit none
 
-      call dmsg(1, 'wall_find', 'destroy_surface')
-      call deallocate_memory()
-      call unlink_aliases()
-      call MPI_FILE_CLOSE(thisfile, ierr)
-
-    end subroutine destroy_surface
-
-
-    subroutine find_wall()
+    subroutine find_wall(bc)
       !< Setup wall flag for all six boundary of the block
 
       implicit none
+      type(boundarytype), intent(in) :: bc
       integer :: i
 
       NO_slip_flag=0
       do i = 1,6
-        if(id(i)==-5) NO_SLIP_FLAG(i)=1
+        if(bc%id(i)==-5) NO_SLIP_FLAG(i)=1
       end do
 
     end subroutine find_wall
 
 
 
-    subroutine surface_points()
+    subroutine surface_points(nodes)
       !< Extract surface points and store them
       !< in a string vector str(ind)
 
+
       implicit none
+      type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in) :: nodes
       integer :: OL
       integer :: i, j, k, ind
       integer :: im=1, ix=1
       integer :: jm=1, jx=1
       integer :: km=1, kx=1
 
-      call dmsg(1, 'wall_find', 'surface_points')
+      DebugCall('surface_points')
 
 
       ind = 0
@@ -296,7 +302,7 @@ module wall
               jx = jmx
               ix = imx
             case DEFAULT
-              call dmsg(5, "wall_find", 'Surface_points', 'FATAL  ERROR: select case')
+              Fatal_error
               km = 1
               jm = 1
               im = 1
@@ -309,9 +315,9 @@ module wall
           do j = jm,jx
             do i = im,ix 
               ind = ind + 1
-              wall_x(ind) = grid_x(i, j, k )        
-              wall_y(ind) = grid_y(i, j, k )        
-              wall_z(ind) = grid_z(i, j, k )        
+              wall_x(ind) = nodes(i, j, k )%x
+              wall_y(ind) = nodes(i, j, k )%y
+              wall_z(ind) = nodes(i, j, k )%z
               write(str(ind),'(3(f0.16, 4x))') wall_x(ind), wall_y(ind), wall_z(ind)
             end do
           end do

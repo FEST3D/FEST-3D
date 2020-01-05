@@ -22,9 +22,9 @@ ELSEIF (USE_MPI)
     IF (NOT MPI_Fortran_FOUND)
         FIND_PACKAGE (MPI REQUIRED)
     ENDIF (NOT MPI_Fortran_FOUND)
-    #Add_definitions(${MPI_Fortran_COMPILE_FLAGS})
-    #Include_directories(${MPI_Fortran_INCLUDE_PATH})
-    #link_directories(${MPI_Fortran_LIBRARIES})
+    Add_definitions(${MPI_Fortran_COMPILE_FLAGS})
+    Include_directories(${MPI_Fortran_INCLUDE_PATH})
+    link_directories(${MPI_Fortran_LIBRARIES})
     # Turn off OpenMP
     SET (OMP_NUM_PROCS 0 CACHE
          STRING "Number of processors OpenMP may use" FORCE)

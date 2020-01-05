@@ -5,181 +5,70 @@ module geometry
     !< face-normals, face-areas and cell-volumes to be used in computations. 
     !-------------------------------------------------------------------
 #include "error.inc"
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
-    use global_vars, only : grid_x
-    use global_vars, only : grid_y
-    use global_vars, only : grid_z
-
-    use global_vars, only : xn           !face unit norm x
-    use global_vars, only : yn           !face unit norm y
-    use global_vars, only : zn           !face unit norm z
-    use global_vars, only : xnx, xny, xnz !face unit normal x
-    use global_vars, only : ynx, yny, ynz !face unit normal y
-    use global_vars, only : znx, zny, znz !face unit normal z
-    use global_vars, only : xA, yA, zA    !face area
-    use global_vars, only : volume
-    use global_vars, only :   left_ghost_centroid
-    use global_vars, only :  right_ghost_centroid
-    use global_vars, only :  front_ghost_centroid
-    use global_vars, only :   back_ghost_centroid
-    use global_vars, only :    top_ghost_centroid
-    use global_vars, only : bottom_ghost_centroid
-    use global_vars, only : imin_id
-    use global_vars, only : imax_id
-    use global_vars, only : jmin_id
-    use global_vars, only : jmax_id
-    use global_vars, only : kmin_id
-    use global_vars, only : kmax_id
-    use global_vars, only : process_id
-    
-    use utils, only: alloc, dealloc, dmsg
+#include "debug.h"
+    use vartypes
+    use utils, only: alloc
 
     implicit none
     private
-
-    real, dimension(:,:,:,:), allocatable, public:: CellCenter
-    !< Store Cell-center location 
+      integer :: imx, jmx, kmx
 
     ! Public methods
     public :: setup_geometry
-    public :: destroy_geometry
 
     contains
 
-        subroutine allocate_memory_volumes()
-            !< Allocate memory for the volume variables.
-            !-----------------------------------------------------------
-            
-            implicit none
-
-            call alloc(volume, -2, imx+2, -2, jmx+2, -2, kmx+2, &
-                    errmsg='Error: Unable to allocate memory for volume.')
-
-        end subroutine allocate_memory_volumes
-
-        subroutine allocate_memory_areas()
-            !< Allocate memory for the area variables.
-            !-----------------------------------------------------------
-            
-            implicit none
-
-            call alloc(xA, -2, imx+3, -2, jmx+2, -2, kmx+2, &
-                    errmsg='Error: Unable to allocate memory for xA.')
-            call alloc(yA, -2, imx+2, -2, jmx+3, -2, kmx+2, &
-                    errmsg='Error: Unable to allocate memory for yA.')
-            call alloc(zA, -2, imx+2, -2, jmx+2, -2, kmx+3, &
-                    errmsg='Error: Unable to allocate memory for yA.')
-
-        end subroutine allocate_memory_areas
-
-        subroutine allocate_memory_normals()
-            !< Allocate memory for the normal variables.
-            !-----------------------------------------------------------
-                        
-            implicit none
-
-            call alloc(xn, -2, imx+3, -2, jmx+2, -2, kmx+2, 1,3, &
-                    errmsg='Error: Unable to allocate memory for xnx.')
-            call alloc(yn, -2, imx+2, -2, jmx+3, -2, kmx+2, 1,3, &
-                    errmsg='Error: Unable to allocate memory for ynx.')
-            call alloc(zn, -2, imx+2, -2, jmx+2, -2, kmx+3, 1,3, &
-                    errmsg='Error: Unable to allocate memory for ynx.')
-
-            xnx(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,1)
-            xny(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,2)
-            xnz(-2:imx+3,-2:jmx+2,-2:kmx+2) => xn(:,:,:,3)
-
-            ynx(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,1)
-            yny(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,2)
-            ynz(-2:imx+2,-2:jmx+3,-2:kmx+2) => yn(:,:,:,3)
-
-            znx(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,1)
-            zny(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,2)
-            znz(-2:imx+2,-2:jmx+2,-2:kmx+3) => zn(:,:,:,3)
-
-        end subroutine allocate_memory_normals
-
-        subroutine allocate_memory_ghost_centroids()
-            !< Allocate memory for centroids of ghost cells
-            !-----------------------------------------------------------
-            
-            implicit none
-
-            call alloc(CellCenter, -2, imx+2, -2, jmx+2, -2, kmx+2, 1, 3, &
-                    errmsg='Error: Unable to allocate memory for volume.')
-
-!
-!            call alloc(left_ghost_centroid, 1, jmx-1, 1, kmx-1, 1, 3, &
-!                    errmsg='Error: Unable to allocate memory for left_ghost_centroid')
-!            call alloc(right_ghost_centroid, 1, jmx-1, 1, kmx-1, 1, 3, &
-!                    errmsg='Error: Unable to allocate memory for right_ghost_centroid')
-!            call alloc(front_ghost_centroid, 1, imx-1, 1, kmx-1, 1, 3, &
-!                    errmsg='Error: Unable to allocate memory for front_ghost_centroid')
-!            call alloc(back_ghost_centroid, 1, imx-1, 1, kmx-1, 1, 3, &
-!                    errmsg='Error: Unable to allocate memory for back_ghost_centroid')
-!            call alloc(top_ghost_centroid, 1, imx-1, 1, jmx-1, 1, 3, &
-!                    errmsg='Error: Unable to allocate memory for top_ghost_centroid')
-!            call alloc(bottom_ghost_centroid, 1, imx-1, 1, jmx-1, 1, 3, &
-!                    errmsg='Error: Unable to allocate memory for bottom_ghost_centroid')
-
-        end subroutine allocate_memory_ghost_centroids
-
-        subroutine allocate_memory()
+        subroutine allocate_memory(cells, Ifaces, Jfaces, Kfaces)
             !< Allocate memory for the required variables.
             !-----------------------------------------------------------
-            
             implicit none
+            type(celltype), dimension(:,:,:), allocatable, intent(out) :: cells
+            !< Store cell center quantities: volume, cell center coordinate
+            type(facetype), dimension(:,:,:), allocatable, intent(out) :: Ifaces
+            !< Store face quantites for I faces: normal and area
+            type(facetype), dimension(:,:,:), allocatable, intent(out) :: Jfaces
+            !< Store face quantites for J faces: normal and area
+            type(facetype), dimension(:,:,:), allocatable, intent(out) :: Kfaces
+            !< Store face quantites for K faces: normal and area
 
-            call dmsg(1, 'geometry', 'allocate_memory')
+            DebugCall('allocate_memory')
 
-            call allocate_memory_normals()
-            call allocate_memory_areas()
-            call allocate_memory_volumes()
-            call allocate_memory_ghost_centroids()
+            allocate(cells(-2:imx+2, -2:jmx+2, -2:kmx+2))
+            !< Allocate memory for cells
+            !-----------------------------------------------------------
+
+            allocate(Ifaces(-2:imx+3, -2:jmx+2, -2:kmx+2))
+            allocate(Jfaces(-2:imx+2, -2:jmx+3, -2:kmx+2))
+            allocate(Kfaces(-2:imx+2, -2:jmx+2, -2:kmx+3))
+            !< Allocate memory for the face variables.
+            !-----------------------------------------------------------
+
 
         end subroutine allocate_memory
 
-        subroutine deallocate_memory()
-          !< Deallocate the memoery used by the geometry variables
 
-            implicit none
-
-            call dmsg(1, 'geometry', 'deallocate_memory')
-
-            call dealloc(xn)
-            call dealloc(yn)
-            call dealloc(zn)
-            call dealloc(xA)
-            call dealloc(yA)
-            call dealloc(zA)
-            call dealloc(volume)
-            call dealloc(CellCenter)
-!            call dealloc(left_ghost_centroid)
-!            call dealloc(right_ghost_centroid)
-!            call dealloc(front_ghost_centroid)
-!            call dealloc(back_ghost_centroid)
-!            call dealloc(top_ghost_centroid)
-!            call dealloc(bottom_ghost_centroid)
-    
-        end subroutine deallocate_memory
-
-        subroutine normalize_face_normals()
+        subroutine normalize_face_normals(Ifaces, Jfaces, Kfaces, bc)
             !< Normalize the face normal vectors computed to get unit
             !< vectors
             !-----------------------------------------------------------
             
             implicit none
+            type(facetype), dimension(-2:imx+3,-2:jmx+2,-2:kmx+2), intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
+            type(facetype), dimension(-2:imx+2,-2:jmx+3,-2:kmx+2), intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
+            type(facetype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+3), intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
+            type(boundarytype), intent(in) :: bc
             integer :: i,j,k
 
             do k = -2,kmx+2
               do j = -2,jmx+2
                 do i = -2,imx+3
-                  if(xA(i,j,k)/=0.) then
-                    xnx(i,j,k) = xnx(i,j,k) / xA(i,j,k)
-                    xny(i,j,k) = xny(i,j,k) / xA(i,j,k)
-                    xnz(i,j,k) = xnz(i,j,k) / xA(i,j,k)
+                  if(Ifaces(i,j,k)%A/=0.) then
+                    Ifaces(i,j,k)%nx = Ifaces(i,j,k)%nx/Ifaces(i,j,k)%A
+                    Ifaces(i,j,k)%ny = Ifaces(i,j,k)%ny/Ifaces(i,j,k)%A
+                    Ifaces(i,j,k)%nz = Ifaces(i,j,k)%nz/Ifaces(i,j,k)%A
                   end if
                 end do
               end do
@@ -188,10 +77,10 @@ module geometry
             do k = -2,kmx+2
               do j = -2,jmx+3
                 do i = -2,imx+2
-                  if(yA(i,j,k)/=0.) then
-                    ynx(i,j,k) = ynx(i,j,k) / yA(i,j,k)
-                    yny(i,j,k) = yny(i,j,k) / yA(i,j,k)
-                    ynz(i,j,k) = ynz(i,j,k) / yA(i,j,k)
+                  if(Jfaces(i,j,k)%A/=0.) then
+                    Jfaces(i,j,k)%nx = Jfaces(i,j,k)%nx/Jfaces(i,j,k)%A
+                    Jfaces(i,j,k)%ny = Jfaces(i,j,k)%ny/Jfaces(i,j,k)%A
+                    Jfaces(i,j,k)%nz = Jfaces(i,j,k)%nz/Jfaces(i,j,k)%A
                   end if
                 end do
               end do
@@ -200,62 +89,110 @@ module geometry
             do k = -2,kmx+3
               do j = -2,jmx+2
                 do i = -2,imx+2
-                  if(zA(i,j,k)/=0.) then
-                    znx(i,j,k) = znx(i,j,k) / zA(i,j,k)
-                    zny(i,j,k) = zny(i,j,k) / zA(i,j,k)
-                    znz(i,j,k) = znz(i,j,k) / zA(i,j,k)
+                  if(Kfaces(i,j,k)%A/=0.) then
+                    Kfaces(i,j,k)%nx = Kfaces(i,j,k)%nx/Kfaces(i,j,k)%A
+                    Kfaces(i,j,k)%ny = Kfaces(i,j,k)%ny/Kfaces(i,j,k)%A
+                    Kfaces(i,j,k)%nz = Kfaces(i,j,k)%nz/Kfaces(i,j,k)%A
                   end if
                 end do
               end do
             end do
 
             ! pole boundary condition
-            if(imin_id==-7) then
-              xn( 1,:,:,:)=xn(2,:,:,:)
-              xn( 0,:,:,:)=xn(2,:,:,:)
-              xn(-1,:,:,:)=xn(2,:,:,:)
-              xn(-2,:,:,:)=xn(2,:,:,:)
+            if(bc%imin_id==-7) then
+              Ifaces( 1,:,:)%nx=Ifaces(2,:,:)%nx
+              Ifaces( 0,:,:)%nx=Ifaces(2,:,:)%nx
+              Ifaces(-1,:,:)%nx=Ifaces(2,:,:)%nx
+              Ifaces(-2,:,:)%nx=Ifaces(2,:,:)%nx
+              Ifaces( 1,:,:)%ny=Ifaces(2,:,:)%ny
+              Ifaces( 0,:,:)%ny=Ifaces(2,:,:)%ny
+              Ifaces(-1,:,:)%ny=Ifaces(2,:,:)%ny
+              Ifaces(-2,:,:)%ny=Ifaces(2,:,:)%ny
+              Ifaces( 1,:,:)%nz=Ifaces(2,:,:)%nz
+              Ifaces( 0,:,:)%nz=Ifaces(2,:,:)%nz
+              Ifaces(-1,:,:)%nz=Ifaces(2,:,:)%nz
+              Ifaces(-2,:,:)%nz=Ifaces(2,:,:)%nz
             end if
 
-            if(imax_id==-7) then
-              xn(imx+0,:,:,:)=xn(imx-1,:,:,:)
-              xn(imx+1,:,:,:)=xn(imx-1,:,:,:)
-              xn(imx+2,:,:,:)=xn(imx-1,:,:,:)
-              xn(imx+3,:,:,:)=xn(imx-1,:,:,:)
+            if(bc%imax_id==-7) then
+              Ifaces(imx+0,:,:)%nx=Ifaces(imx-1,:,:)%nx
+              Ifaces(imx+1,:,:)%nx=Ifaces(imx-1,:,:)%nx
+              Ifaces(imx+2,:,:)%nx=Ifaces(imx-1,:,:)%nx
+              Ifaces(imx+3,:,:)%nx=Ifaces(imx-1,:,:)%nx
+              Ifaces(imx+0,:,:)%ny=Ifaces(imx-1,:,:)%ny
+              Ifaces(imx+1,:,:)%ny=Ifaces(imx-1,:,:)%ny
+              Ifaces(imx+2,:,:)%ny=Ifaces(imx-1,:,:)%ny
+              Ifaces(imx+3,:,:)%ny=Ifaces(imx-1,:,:)%ny
+              Ifaces(imx+0,:,:)%nz=Ifaces(imx-1,:,:)%nz
+              Ifaces(imx+1,:,:)%nz=Ifaces(imx-1,:,:)%nz
+              Ifaces(imx+2,:,:)%nz=Ifaces(imx-1,:,:)%nz
+              Ifaces(imx+3,:,:)%nz=Ifaces(imx-1,:,:)%nz
             end if
 
-            if(jmin_id==-7) then
-              yn(:, 1,:,:)=yn(:,2,:,:)
-              yn(:, 0,:,:)=yn(:,2,:,:)
-              yn(:,-1,:,:)=yn(:,2,:,:)
-              yn(:,-2,:,:)=yn(:,2,:,:)
+            if(bc%jmin_id==-7) then
+              Jfaces(:, 1,:)%nx=Jfaces(:,2,:)%nx
+              Jfaces(:, 0,:)%nx=Jfaces(:,2,:)%nx
+              Jfaces(:,-1,:)%nx=Jfaces(:,2,:)%nx
+              Jfaces(:,-2,:)%nx=Jfaces(:,2,:)%nx
+              Jfaces(:, 1,:)%ny=Jfaces(:,2,:)%ny
+              Jfaces(:, 0,:)%ny=Jfaces(:,2,:)%ny
+              Jfaces(:,-1,:)%ny=Jfaces(:,2,:)%ny
+              Jfaces(:,-2,:)%ny=Jfaces(:,2,:)%ny
+              Jfaces(:, 1,:)%nz=Jfaces(:,2,:)%nz
+              Jfaces(:, 0,:)%nz=Jfaces(:,2,:)%nz
+              Jfaces(:,-1,:)%nz=Jfaces(:,2,:)%nz
+              Jfaces(:,-2,:)%nz=Jfaces(:,2,:)%nz
             end if
 
-            if(jmax_id==-7) then
-              yn(:,jmx+0,:,:)=yn(:,jmx-1,:,:)
-              yn(:,jmx+1,:,:)=yn(:,jmx-1,:,:)
-              yn(:,jmx+2,:,:)=yn(:,jmx-1,:,:)
-              yn(:,jmx+3,:,:)=yn(:,jmx-1,:,:)
+            if(bc%jmax_id==-7) then
+              Jfaces(:,jmx+0,:)%nx=Jfaces(:,jmx-1,:)%nx
+              Jfaces(:,jmx+1,:)%nx=Jfaces(:,jmx-1,:)%nx
+              Jfaces(:,jmx+2,:)%nx=Jfaces(:,jmx-1,:)%nx
+              Jfaces(:,jmx+3,:)%nx=Jfaces(:,jmx-1,:)%nx
+              Jfaces(:,jmx+0,:)%ny=Jfaces(:,jmx-1,:)%ny
+              Jfaces(:,jmx+1,:)%ny=Jfaces(:,jmx-1,:)%ny
+              Jfaces(:,jmx+2,:)%ny=Jfaces(:,jmx-1,:)%ny
+              Jfaces(:,jmx+3,:)%ny=Jfaces(:,jmx-1,:)%ny
+              Jfaces(:,jmx+0,:)%nz=Jfaces(:,jmx-1,:)%nz
+              Jfaces(:,jmx+1,:)%nz=Jfaces(:,jmx-1,:)%nz
+              Jfaces(:,jmx+2,:)%nz=Jfaces(:,jmx-1,:)%nz
+              Jfaces(:,jmx+3,:)%nz=Jfaces(:,jmx-1,:)%nz
             end if
 
-            if(kmin_id==-7) then
-              zn(:,:, 1,:)=zn(:,:,2,:)
-              zn(:,:, 0,:)=zn(:,:,2,:)
-              zn(:,:,-1,:)=zn(:,:,2,:)
-              zn(:,:,-2,:)=zn(:,:,2,:)
+            if(bc%kmin_id==-7) then
+              Kfaces(:,:, 1)%nx=Kfaces(:,:,2)%nx
+              Kfaces(:,:, 0)%nx=Kfaces(:,:,2)%nx
+              Kfaces(:,:,-1)%nx=Kfaces(:,:,2)%nx
+              Kfaces(:,:,-2)%nx=Kfaces(:,:,2)%nx
+              Kfaces(:,:, 1)%ny=Kfaces(:,:,2)%ny
+              Kfaces(:,:, 0)%ny=Kfaces(:,:,2)%ny
+              Kfaces(:,:,-1)%ny=Kfaces(:,:,2)%ny
+              Kfaces(:,:,-2)%ny=Kfaces(:,:,2)%ny
+              Kfaces(:,:, 1)%nz=Kfaces(:,:,2)%nz
+              Kfaces(:,:, 0)%nz=Kfaces(:,:,2)%nz
+              Kfaces(:,:,-1)%nz=Kfaces(:,:,2)%nz
+              Kfaces(:,:,-2)%nz=Kfaces(:,:,2)%nz
             end if
 
-            if(kmax_id==-7) then
-              zn(:,:,kmx+0,:)=zn(:,:,kmx-1,:)
-              zn(:,:,kmx+1,:)=zn(:,:,kmx-1,:)
-              zn(:,:,kmx+2,:)=zn(:,:,kmx-1,:)
-              zn(:,:,kmx+3,:)=zn(:,:,kmx-1,:)
+            if(bc%kmax_id==-7) then
+              Kfaces(:,:,kmx+0)%nx=Kfaces(:,:,kmx-1)%nx
+              Kfaces(:,:,kmx+1)%nx=Kfaces(:,:,kmx-1)%nx
+              Kfaces(:,:,kmx+2)%nx=Kfaces(:,:,kmx-1)%nx
+              Kfaces(:,:,kmx+3)%nx=Kfaces(:,:,kmx-1)%nx
+              Kfaces(:,:,kmx+0)%ny=Kfaces(:,:,kmx-1)%ny
+              Kfaces(:,:,kmx+1)%ny=Kfaces(:,:,kmx-1)%ny
+              Kfaces(:,:,kmx+2)%ny=Kfaces(:,:,kmx-1)%ny
+              Kfaces(:,:,kmx+3)%ny=Kfaces(:,:,kmx-1)%ny
+              Kfaces(:,:,kmx+0)%nz=Kfaces(:,:,kmx-1)%nz
+              Kfaces(:,:,kmx+1)%nz=Kfaces(:,:,kmx-1)%nz
+              Kfaces(:,:,kmx+2)%nz=Kfaces(:,:,kmx-1)%nz
+              Kfaces(:,:,kmx+3)%nz=Kfaces(:,:,kmx-1)%nz
             end if
 
             
         end subroutine normalize_face_normals
 
-        subroutine compute_face_areas()
+        subroutine compute_face_areas(Ifaces, Jfaces, Kfaces, bc)
             !< Compute face areas based on area vectors
             !<
             !< The face areas are computed using the face area vectors. 
@@ -268,28 +205,35 @@ module geometry
             !-----------------------------------------------------------
             
             implicit none
+            type(facetype), dimension(-2:imx+3,-2:jmx+2,-2:kmx+2), intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
+            type(facetype), dimension(-2:imx+2,-2:jmx+3,-2:kmx+2), intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
+            type(facetype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+3), intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
+            type(boundarytype), intent(in) :: bc
 
-            xA(:, :, :) = sqrt((xnx(:, :, :)) ** 2. + (xny(:, :, :)) ** 2. + &
-                          (xnz(:, :, :)) ** 2.)
+            Ifaces(:,:,:)%A = sqrt((Ifaces(:,:,:)%nx)**2 + (Ifaces(:,:,:)%ny)**2 + &
+                                  (Ifaces(:,:,:)%nz)**2)
 
-            yA(:, :, :) = sqrt((ynx(:, :, :)) ** 2. + (yny(:, :, :)) ** 2. + &
-                          (ynz(:, :, :)) ** 2.)
-            
-            zA(:, :, :) = sqrt((znx(:, :, :)) ** 2. + (zny(:, :, :)) ** 2. + &
-                          (znz(:, :, :)) ** 2.)
+            Jfaces(:,:,:)%A = sqrt((Jfaces(:,:,:)%nx)**2 + (Jfaces(:,:,:)%ny)**2 + &
+                                  (Jfaces(:,:,:)%nz)**2)
+
+            Kfaces(:,:,:)%A = sqrt((Kfaces(:,:,:)%nx)**2 + (Kfaces(:,:,:)%ny)**2 + &
+                                  (Kfaces(:,:,:)%nz)**2)
 
             ! Pole boundary conditions
             ! making sure face area is exactly equal zero
-            if(imin_id==-7) xA(-2:1     ,  :,  :)=0.
-            if(imax_id==-7) xA(imx:imx+3,  :,  :)=0.
-            if(jmin_id==-7) yA(  :,     -2:1,  :)=0.
-            if(jmax_id==-7) yA(  :,jmx:jmx+3,  :)=0.
-            if(kmin_id==-7) zA(  :,  :,     -2:1)=0.
-            if(kmax_id==-7) zA(  :,  :,kmx:kmx+3)=0.
+            if(bc%imin_id==-7) Ifaces(-2:1     ,  :,  :)%A=0.
+            if(bc%imax_id==-7) Ifaces(imx:imx+3,  :,  :)%A=0.
+            if(bc%jmin_id==-7) Jfaces(  :,     -2:1,  :)%A=0.
+            if(bc%jmax_id==-7) Jfaces(  :,jmx:jmx+3,  :)%A=0.
+            if(bc%kmin_id==-7) Kfaces(  :,  :,     -2:1)%A=0.
+            if(bc%kmax_id==-7) Kfaces(  :,  :,kmx:kmx+3)%A=0.
 
         end subroutine compute_face_areas
 
-        subroutine compute_face_area_vectors()
+        subroutine compute_face_area_vectors(Ifaces, Jfaces, Kfaces, nodes)
             !< Compute face area vectors
             !<
             !< The face area vectors denote the face area both in 
@@ -301,23 +245,31 @@ module geometry
             !-----------------------------------------------------------
             
             implicit none
+            type(facetype), dimension(-2:imx+3,-2:jmx+2,-2:kmx+2), intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
+            type(facetype), dimension(-2:imx+2,-2:jmx+3,-2:kmx+2), intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
+            type(facetype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+3), intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
+            type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+            !< Grid points
 
     
-            real :: d1x, d2x, d1y, d2y, d1z, d2z
+            real(wp) :: d1x, d2x, d1y, d2y, d1z, d2z
             integer :: i, j, k
 
             do k = -2, kmx+2
              do j = -2, jmx+2
               do i = -2, imx+3
-                d1x = grid_x(i, j+1, k+1) - grid_x(i, j, k)
-                d1y = grid_y(i, j+1, k+1) - grid_y(i, j, k)
-                d1z = grid_z(i, j+1, k+1) - grid_z(i, j, k)
-                d2x = grid_x(i, j, k+1) - grid_x(i, j+1, k)
-                d2y = grid_y(i, j, k+1) - grid_y(i, j+1, k)
-                d2z = grid_z(i, j, k+1) - grid_z(i, j+1, k)
-                xnx(i, j, k) = 0.5 * (d1y*d2z - d1z*d2y)
-                xny(i, j, k) = 0.5 * (d1z*d2x - d1x*d2z)
-                xnz(i, j, k) = 0.5 * (d1x*d2y - d1y*d2x)
+                d1x = nodes(i, j+1, k+1)%x - nodes(i, j, k)%x
+                d1y = nodes(i, j+1, k+1)%y - nodes(i, j, k)%y
+                d1z = nodes(i, j+1, k+1)%z - nodes(i, j, k)%z
+                d2x = nodes(i, j, k+1)%x - nodes(i, j+1, k)%x
+                d2y = nodes(i, j, k+1)%y - nodes(i, j+1, k)%y
+                d2z = nodes(i, j, k+1)%z - nodes(i, j+1, k)%z
+                Ifaces(i, j, k)%nx = 0.5 * (d1y*d2z - d1z*d2y)
+                Ifaces(i, j, k)%ny = 0.5 * (d1z*d2x - d1x*d2z)
+                Ifaces(i, j, k)%nz = 0.5 * (d1x*d2y - d1y*d2x)
                end do
               end do
              end do
@@ -326,16 +278,16 @@ module geometry
             do k = -2, kmx+2
              do j = -2, jmx+3
               do i = -2, imx+2
-               d1x = grid_x(i+1, j, k+1) - grid_x(i, j, k)
-               d1y = grid_y(i+1, j, k+1) - grid_y(i, j, k)
-               d1z = grid_z(i+1, j, k+1) - grid_z(i, j, k)
-               d2x = grid_x(i+1, j, k) - grid_x(i, j, k+1)
-               d2y = grid_y(i+1, j, k) - grid_y(i, j, k+1)
-               d2z = grid_z(i+1, j, k) - grid_z(i, j, k+1)
+               d1x = nodes(i+1, j, k+1)%x - nodes(i, j, k)%x
+               d1y = nodes(i+1, j, k+1)%y - nodes(i, j, k)%y
+               d1z = nodes(i+1, j, k+1)%z - nodes(i, j, k)%z
+               d2x = nodes(i+1, j, k)%x - nodes(i, j, k+1)%x
+               d2y = nodes(i+1, j, k)%y - nodes(i, j, k+1)%y
+               d2z = nodes(i+1, j, k)%z - nodes(i, j, k+1)%z
             
-               ynx(i, j, k) = 0.5 * (d1y*d2z - d1z*d2y)
-               yny(i, j, k) = 0.5 * (d1z*d2x - d1x*d2z)
-               ynz(i, j, k) = 0.5 * (d1x*d2y - d1y*d2x)
+               Jfaces(i, j, k)%nx = 0.5 * (d1y*d2z - d1z*d2y)
+               Jfaces(i, j, k)%ny = 0.5 * (d1z*d2x - d1x*d2z)
+               Jfaces(i, j, k)%nz = 0.5 * (d1x*d2y - d1y*d2x)
               end do
              end do
             end do
@@ -344,16 +296,16 @@ module geometry
             do k = -2, kmx+3
              do j = -2, jmx+2
               do i = -2, imx+2
-               d1x = grid_x(i+1, j+1, k) - grid_x(i, j, k)
-               d1y = grid_y(i+1, j+1, k) - grid_y(i, j, k)
-               d1z = grid_z(i+1, j+1, k) - grid_z(i, j, k)
-               d2x = grid_x(i, j+1, k) - grid_x(i+1, j, k)
-               d2y = grid_y(i, j+1, k) - grid_y(i+1, j, k)
-               d2z = grid_z(i, j+1, k) - grid_z(i+1, j, k)
+               d1x = nodes(i+1, j+1, k)%x - nodes(i, j, k)%x
+               d1y = nodes(i+1, j+1, k)%y - nodes(i, j, k)%y
+               d1z = nodes(i+1, j+1, k)%z - nodes(i, j, k)%z
+               d2x = nodes(i, j+1, k)%x - nodes(i+1, j, k)%x
+               d2y = nodes(i, j+1, k)%y - nodes(i+1, j, k)%y
+               d2z = nodes(i, j+1, k)%z - nodes(i+1, j, k)%z
             
-               znx(i, j, k) = 0.5 * (d1y*d2z - d1z*d2y)
-               zny(i, j, k) = 0.5 * (d1z*d2x - d1x*d2z)
-               znz(i, j, k) = 0.5 * (d1x*d2y - d1y*d2x)
+               Kfaces(i, j, k)%nx = 0.5 * (d1y*d2z - d1z*d2y)
+               Kfaces(i, j, k)%ny = 0.5 * (d1z*d2x - d1x*d2z)
+               Kfaces(i, j, k)%nz = 0.5 * (d1x*d2y - d1y*d2x)
               end do
              end do
             end do
@@ -361,7 +313,7 @@ module geometry
 
         end subroutine compute_face_area_vectors
 
-        subroutine compute_face_areas_and_normals()
+        subroutine compute_face_areas_and_normals(Ifaces,Jfaces,Kfaces, nodes, bc)
             !< Compute the face areas and normals
             !<
             !< This is the 2-dimensional version. In this case, the face 
@@ -369,10 +321,20 @@ module geometry
             !-----------------------------------------------------------
 
             implicit none
+            type(facetype), dimension(-2:imx+3,-2:jmx+2,-2:kmx+2), intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
+            type(facetype), dimension(-2:imx+2,-2:jmx+3,-2:kmx+2), intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
+            type(facetype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+3), intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
+            type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+            !< Grid points
+            type(boundarytype), intent(in) :: bc
+            !< boundary condition and fixed values
 
-            call compute_face_area_vectors()
-            call compute_face_areas()
-            call normalize_face_normals()
+            call compute_face_area_vectors(Ifaces,Jfaces,Kfaces, nodes)
+            call compute_face_areas(Ifaces,Jfaces,Kfaces, bc)
+            call normalize_face_normals(Ifaces,Jfaces,Kfaces, bc)
         
         end subroutine compute_face_areas_and_normals
        
@@ -384,9 +346,9 @@ module geometry
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(:), intent(in):: p1, p2, p3, p4
-            real, dimension(1:3,1:3) :: A
-            real :: vol_tetrahedron
+            real(wp), dimension(:), intent(in):: p1, p2, p3, p4
+            real(wp), dimension(1:3,1:3) :: A
+            real(wp) :: vol_tetrahedron
 
             A(:, 1) = p1 - p4
             A(:, 2) = p2 - p4
@@ -442,9 +404,9 @@ module geometry
             !-----------------------------------------------------------
 
             implicit none
-            real, dimension(1:3, 1:8), intent(in) :: p_list
-            real :: vol_hexahedron
-            real :: vol_hexahedron1
+            real(wp), dimension(1:3, 1:8), intent(in) :: p_list
+            real(wp) :: vol_hexahedron
+            real(wp) :: vol_hexahedron1
             
             vol_hexahedron1 = 0.
             vol_hexahedron1 = vol_hexahedron1 + &
@@ -483,34 +445,38 @@ module geometry
             
         end function vol_hexahedron
         
-        subroutine compute_volumes()
+        subroutine compute_volumes(cells, nodes)
             !< Compute the grid cell volumes
             !< Each grid is a hexahedron, whose volume is calculated by
             !< splitting it into 5 tetrahedrons, whose volume is known
             !-----------------------------------------------------------
 
             implicit none
+            type(celltype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(out) :: cells
+            !< Cell center quanties: volume and coordiantes of cell center
+            type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+            !< Grid points
             integer :: i,j,k
-            real, dimension(1:3, 1:8) :: p_list
+            real(wp), dimension(1:3, 1:8) :: p_list
 
-            volume=1.
+            cells(:,:,:)%volume=1.
             do k = 0, kmx+0
                 do j = 0, jmx+0
                     do i = 0, imx+0
                         p_list(:, :) = 0.
-                        p_list(:, 1) = (/ grid_x(i,j,k), grid_y(i,j,k), grid_z(i,j,k) /)
-                        p_list(:, 2) = (/ grid_x(i+1,j,k), grid_y(i+1,j,k), grid_z(i+1,j,k) /)
-                        p_list(:, 3) = (/ grid_x(i+1,j+1,k), grid_y(i+1,j+1,k), grid_z(i+1,j+1,k) /)
-                        p_list(:, 4) = (/ grid_x(i,j+1,k), grid_y(i,j+1,k), grid_z(i,j+1,k) /)
-                        p_list(:, 5) = (/ grid_x(i,j,k+1), grid_y(i,j,k+1), grid_z(i,j,k+1) /)
-                        p_list(:, 6) = (/ grid_x(i+1,j,k+1), grid_y(i+1,j,k+1), grid_z(i+1,j,k+1) /)
-                        p_list(:, 7) = (/ grid_x(i+1,j+1,k+1), grid_y(i+1,j+1,k+1), grid_z(i+1,j+1,k+1) /)
-                        p_list(:, 8) = (/ grid_x(i,j+1,k+1), grid_y(i,j+1,k+1), grid_z(i,j+1,k+1) /)
-                        volume(i, j, k) = (vol_hexahedron(p_list))
-                        if(volume(i,j,k)<=0.0) then
+                        p_list(:, 1) = (/ nodes(i,j,k)%x, nodes(i,j,k)%y, nodes(i,j,k)%z /)
+                        p_list(:, 2) = (/ nodes(i+1,j,k)%x, nodes(i+1,j,k)%y, nodes(i+1,j,k)%z /)
+                        p_list(:, 3) = (/ nodes(i+1,j+1,k)%x, nodes(i+1,j+1,k)%y, nodes(i+1,j+1,k)%z /)
+                        p_list(:, 4) = (/ nodes(i,j+1,k)%x, nodes(i,j+1,k)%y, nodes(i,j+1,k)%z /)
+                        p_list(:, 5) = (/ nodes(i,j,k+1)%x, nodes(i,j,k+1)%y, nodes(i,j,k+1)%z /)
+                        p_list(:, 6) = (/ nodes(i+1,j,k+1)%x, nodes(i+1,j,k+1)%y, nodes(i+1,j,k+1)%z /)
+                        p_list(:, 7) = (/ nodes(i+1,j+1,k+1)%x, nodes(i+1,j+1,k+1)%y, nodes(i+1,j+1,k+1)%z /)
+                        p_list(:, 8) = (/ nodes(i,j+1,k+1)%x, nodes(i,j+1,k+1)%y, nodes(i,j+1,k+1)%z /)
+                        cells(i, j, k)%volume = (vol_hexahedron(p_list))
+                        if(cells(i,j,k)%volume<=0.0) then
                           if(i==0 .or. i==imx .or. j==0 .or. j==jmx .or. k==0 .or. k==kmx) then
                             !print*, "Ghost Cell volume negative"
-                            volume(i, j, k) = abs(vol_hexahedron(p_list))
+                            cells(i, j, k)%volume = (vol_hexahedron(p_list))
                           else
                             print*, process_id, i,j,k
                             print*, "negative volume :", (vol_hexahedron(p_list))
@@ -520,67 +486,57 @@ module geometry
                     end do
                 end do
             end do
-            if(any(volume==0.0))then
+            if(any(cells(:,:,:)%volume==0.0))then
               Fatal_error
             end if
-            if(any((volume)<0.0))then
+            if(any((cells(:,:,:)%volume)<0.0))then
               Fatal_error
             end if
             
         end subroutine compute_volumes
 
-        subroutine compute_geometric_parameters()
-            !< Compute the geometric parameters based on the grid points
-            !<
-            !< The geometric parameters include the face normals and 
-            !< areas and the cell volumes.
-            !-----------------------------------------------------------
-            
-            implicit none
 
-            call dmsg(1, 'geometry', 'compute_geometric_parameters')
 
-            call compute_face_areas_and_normals()
-            call compute_volumes()
-
-        end subroutine compute_geometric_parameters
-
-        subroutine compute_ghost_cell_centroid()
+        subroutine compute_ghost_cell_centroid(cells, nodes)
           !< Compute cell center of all cell including ghost cells
           implicit none
+          type(celltype), dimension(-2:imx+2,-2:jmx+2,-2:kmx+2), intent(out) :: cells
+          !< Cell center quanties: volume and coordiantes of cell center
+          type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+          !< Grid points
           integer :: i,j,k
 
           do k = -2, kmx+2
             do j = -2, jmx+2
               do i = -2, imx+2
-                CellCenter(i,j,k,1) = 0.125 * ( grid_x(i  ,j  ,k  ) &
-                                              + grid_x(i+1,j  ,k  ) &
-                                              + grid_x(i+1,j+1,k  ) &
-                                              + grid_x(i+1,j+1,k+1) &
-                                              + grid_x(i+1,j  ,k+1) &
-                                              + grid_x(i  ,j+1,k  ) &
-                                              + grid_x(i  ,j+1,k+1) &
-                                              + grid_x(i  ,j  ,k+1) &
+                cells(i,j,k)%centerx = 0.125 *( nodes(i  ,j  ,k  )%x &
+                                              + nodes(i+1,j  ,k  )%x &
+                                              + nodes(i+1,j+1,k  )%x &
+                                              + nodes(i+1,j+1,k+1)%x &
+                                              + nodes(i+1,j  ,k+1)%x &
+                                              + nodes(i  ,j+1,k  )%x &
+                                              + nodes(i  ,j+1,k+1)%x &
+                                              + nodes(i  ,j  ,k+1)%x &
                                               )
 
-                CellCenter(i,j,k,2) = 0.125 * ( grid_y(i  ,j  ,k  ) &
-                                              + grid_y(i+1,j  ,k  ) &
-                                              + grid_y(i+1,j+1,k  ) &
-                                              + grid_y(i+1,j+1,k+1) &
-                                              + grid_y(i+1,j  ,k+1) &
-                                              + grid_y(i  ,j+1,k  ) &
-                                              + grid_y(i  ,j+1,k+1) &
-                                              + grid_y(i  ,j  ,k+1) &
+                cells(i,j,k)%centery = 0.125 *( nodes(i  ,j  ,k  )%y &
+                                              + nodes(i+1,j  ,k  )%y &
+                                              + nodes(i+1,j+1,k  )%y &
+                                              + nodes(i+1,j+1,k+1)%y &
+                                              + nodes(i+1,j  ,k+1)%y &
+                                              + nodes(i  ,j+1,k  )%y &
+                                              + nodes(i  ,j+1,k+1)%y &
+                                              + nodes(i  ,j  ,k+1)%y &
                                               )
 
-                CellCenter(i,j,k,3) = 0.125 * ( grid_z(i  ,j  ,k  ) &
-                                              + grid_z(i+1,j  ,k  ) &
-                                              + grid_z(i+1,j+1,k  ) &
-                                              + grid_z(i+1,j+1,k+1) &
-                                              + grid_z(i+1,j  ,k+1) &
-                                              + grid_z(i  ,j+1,k  ) &
-                                              + grid_z(i  ,j+1,k+1) &
-                                              + grid_z(i  ,j  ,k+1) &
+                cells(i,j,k)%centerz = 0.125 *( nodes(i  ,j  ,k  )%z  &
+                                              + nodes(i+1,j  ,k  )%z  &
+                                              + nodes(i+1,j+1,k  )%z  &
+                                              + nodes(i+1,j+1,k+1)%z  &
+                                              + nodes(i+1,j  ,k+1)%z  &
+                                              + nodes(i  ,j+1,k  )%z  &
+                                              + nodes(i  ,j+1,k+1)%z  &
+                                              + nodes(i  ,j  ,k+1)%z  &
                                               )
               end do
             end do
@@ -588,40 +544,40 @@ module geometry
 
         end subroutine compute_ghost_cell_centroid
 
-        subroutine setup_geometry()
+
+        subroutine setup_geometry(cells, Ifaces, Jfaces, Kfaces, nodes, bc, dims)
             !< Make the geometry module useful
             !<
             !< Allocates memory to the variables and initializes them.
             !-----------------------------------------------------------
 
             implicit none
+            type(extent), intent(in) :: dims
+            type(celltype), dimension(:,:,:), allocatable, intent(inout) :: cells
+            !< Cell center quanties: volume and coordiantes of cell center
+            type(facetype), dimension(:,:,:), allocatable, intent(inout) :: Ifaces
+            !< Store face quantites for I faces: normal and area
+            type(facetype), dimension(:,:,:), allocatable, intent(inout) :: Jfaces
+            !< Store face quantites for J faces: normal and area
+            type(facetype), dimension(:,:,:), allocatable, intent(inout) :: Kfaces
+            !< Store face quantites for K faces: normal and area
+            type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in)  :: nodes
+            !< Grid points
+            type(boundarytype), intent(in) :: bc
+            !< boundary conditions and fixed values
 
-            call dmsg(1, 'geometry', 'setup_geometry')
+            DebugCall('setup_geometry')
 
-            call allocate_memory()
-            call compute_geometric_parameters()
-            call compute_ghost_cell_centroid()
+            imx = dims%imx
+            jmx = dims%jmx
+            kmx = dims%kmx
+
+            call allocate_memory(cells, Ifaces, Jfaces, Kfaces)
+            call compute_face_areas_and_normals(Ifaces,Jfaces,Kfaces, nodes, bc)
+            call compute_volumes(cells, nodes)
+            call compute_ghost_cell_centroid(cells, nodes)
 
         end subroutine setup_geometry
 
-        subroutine destroy_geometry()
-          !< Nullify all the face normal pionter 
-
-            implicit none
-            
-            call dmsg(1, 'geometry', 'destroy_geometry')
-
-            nullify(xnx)
-            nullify(xny)
-            nullify(xnz)
-            nullify(ynx)
-            nullify(yny)
-            nullify(ynz)
-            nullify(znx)
-            nullify(zny)
-            nullify(znz)
-            call deallocate_memory()
-
-        end subroutine destroy_geometry
 
 end module geometry

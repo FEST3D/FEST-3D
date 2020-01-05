@@ -4,101 +4,110 @@ module read_output_tec
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
-  use global     , only : IN_FILE_UNIT
-  use global     , only : OUTIN_FILE_UNIT
-  use global     , only : outin_file
-
-  use global_vars, only : read_data_format
-  use global_vars, only : read_file_format
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
-  use global_vars, only : density 
-  use global_vars, only : x_speed 
-  use global_vars, only : y_speed 
-  use global_vars, only : z_speed 
-  use global_vars, only : pressure 
-  use global_vars, only : tk 
-  use global_vars, only : tw 
-  use global_vars, only : tkl
-  use global_vars, only : tv
-  use global_vars, only : tgm
-  use global_vars, only : mu 
-  use global_vars, only : mu_t 
-  use global_vars, only : density_inf
-  use global_vars, only : x_speed_inf
-  use global_vars, only : y_speed_inf
-  use global_vars, only : z_speed_inf
-  use global_vars, only : pressure_inf 
-  use global_vars, only : gm
-  use global_vars, only : dist
-  use global_vars, only : vis_resnorm
-  use global_vars, only : cont_resnorm
-  use global_vars, only : x_mom_resnorm
-  use global_vars, only : y_mom_resnorm
-  use global_vars, only : z_mom_resnorm
-  use global_vars, only : energy_resnorm
-  use global_vars, only : resnorm
-  use global_vars, only :   mass_residue
-  use global_vars, only :  x_mom_residue
-  use global_vars, only :  y_mom_residue
-  use global_vars, only :  z_mom_residue
-  use global_vars, only : energy_residue
-  use global_vars, only : TKE_residue
-  use global_vars, only : intermittency
-
-  use global_vars, only : turbulence
-  use global_vars, only : mu_ref
-  use global_vars, only : current_iter
-  use global_vars, only : max_iters
-  use global_vars, only : r_count
-  use global_vars, only : r_list
-
-  use global_sst , only : sst_F1
-  use global_vars, only : gradu_x
-  use global_vars, only : gradu_y
-  use global_vars, only : gradu_z
-  use global_vars, only : gradv_x
-  use global_vars, only : gradv_y
-  use global_vars, only : gradv_z
-  use global_vars, only : gradw_x
-  use global_vars, only : gradw_y
-  use global_vars, only : gradw_z
-  use global_vars, only : gradT_x
-  use global_vars, only : gradT_y
-  use global_vars, only : gradT_z
-  use global_vars, only : gradtk_x
-  use global_vars, only : gradtk_y
-  use global_vars, only : gradtk_z
-  use global_vars, only : gradtw_x
-  use global_vars, only : gradtw_y
-  use global_vars, only : gradtw_z
-  use global_vars, only : process_id
-
+#include "../../debug.h"
+#include "../../error.h"
+  use vartypes
   use utils
-  use string
 
   implicit none
   private
+  integer :: IN_FILE_UNIT
+  integer :: imx, jmx, kmx
   integer :: i,j,k
+  real(wp), dimension(:, :, :), pointer :: density      
+   !< Rho pointer, point to slice of qp (:,:,:,1)
+  real(wp), dimension(:, :, :), pointer :: x_speed      
+   !< U pointer, point to slice of qp (:,:,:,2) 
+  real(wp), dimension(:, :, :), pointer :: y_speed      
+   !< V pointer, point to slice of qp (:,:,:,3) 
+  real(wp), dimension(:, :, :), pointer :: z_speed      
+   !< W pointer, point to slice of qp (:,:,:,4)
+  real(wp), dimension(:, :, :), pointer :: pressure     
+   !< P pointer, point to slice of qp (:,:,:,5)
+  real(wp), dimension(:, :, :), pointer :: tk        
+  !< TKE, point to slice of qp (:,:,:,6)
+  real(wp), dimension(:, :, :), pointer :: tw        
+  !< Omega, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: te        
+  !< Dissipation, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: tv        
+  !< SA visocity, point to slice of qp (:,:,:,6)
+  real(wp), dimension(:, :, :), pointer :: tkl       
+  !< KL K-KL method, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: tgm       
+  !< Intermittency of LCTM2015, point to slice of qp (:,:,:,8)
   public :: read_file
 
   contains
 
-    subroutine read_file()
+    subroutine read_file(file_handler, state, control, scheme, dims)
       !< Read all the variable for the tecplot restart file
       implicit none
+      integer, intent(in) :: file_handler
+      type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
+      type(extent), intent(in) :: dims
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
       integer :: n
 
-      call read_header()
+      IN_FILE_UNIT = file_handler
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      density(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 1)
+      x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 2)
+      y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 3)
+      z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 4)
+      pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 5)
+
+      select case (trim(scheme%turbulence))
+          case ("none")
+              !include nothing
+              continue
+          
+          case ("sst", "sst2003", "bsl", "des-sst", "kw")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("kkl")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("sa", "saBC")
+              tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+
+          case ("ke")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              te(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("les")
+            continue
+            ! todo
+
+          case DEFAULT
+            Fatal_error
+      end select
+
+      ! Transition modeling
+      select case(trim(scheme%transition))
+        case('lctm2015')
+          tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 8)
+!          tgm_inf => qp_inf(n_var)
+
+        case('bc', 'none')
+          !do nothing
+          continue
+
+        case DEFAULT
+          Fatal_error
+      end Select
+      call read_header(control)
       call read_grid()
 
-      do n = 1,r_count
+      do n = 1,control%r_count
 
-        select case (trim(r_list(n)))
+        select case (trim(control%r_list(n)))
         
           case('Velocity')
             call read_scalar(x_speed, "u", -2)
@@ -126,14 +135,11 @@ module read_output_tec
           case('tgm')
             call read_scalar(tgm, 'tgm', -2)
 
-          case('Intermittency')
-            call read_scalar(intermittency, 'Intermittency', -2)
-
           case('do not read')
             call skip_scalar()
 
           case Default
-            Print*, "read error: list var : "//trim(r_list(n))
+            Print*, "read error: list var : "//trim(control%r_list(n))
 
         end select
       end do
@@ -141,15 +147,16 @@ module read_output_tec
     end subroutine read_file
 
 
-    subroutine read_header()
+    subroutine read_header(control)
       !< Skip read the header in the tecplot file
       implicit none
+      type(controltype), intent(in) :: control
       integer :: n
 
-      call dmsg(1, 'read_output_tec', 'read_header')
+      DebugCall('read_output_tec: read_header')
       read(IN_FILE_UNIT, *) !"variables = x y z "
 
-      do n = 1,r_count
+      do n = 1,control%r_count
         read(IN_FILE_UNIT, *) !trim(w_list(n))
       end do
 
@@ -165,10 +172,10 @@ module read_output_tec
     subroutine read_grid()
       !< Skip the grid read in the restart file
       implicit none
-      real :: dummy
+      real(wp) :: dummy
 
       ! read grid point coordinates
-      call dmsg(1, 'read_output_tec', 'read_grid')
+      DebugCall('read_output_tec: read_grid')
       read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
       read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
       read(IN_FILE_UNIT, *) (((dummy,i=1,imx), j=1,jmx), k=1,kmx)
@@ -179,10 +186,10 @@ module read_output_tec
       !< Read scalar from the tecplot file
       implicit none
       integer, intent(in) :: index
-      real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
+      real(wp), dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
       character(len=*),       intent(in):: name
 
-      call dmsg(1, 'read_output_tec', trim(name))
+      DebugCall('read_output_tec'//trim(name))
       read(IN_FILE_UNIT, *) (((var(i, j, k),i=1,imx-1), j=1,jmx-1), k=1,kmx-1)
 
     end subroutine read_scalar
@@ -190,9 +197,9 @@ module read_output_tec
     subroutine skip_scalar()
       !< Skip read scalar from the tecplot file
       implicit none
-      real :: dummy
+      real(wp) :: dummy
 
-      call dmsg(1, 'read_output_tec',"skip_scalar")
+      DebugCall('read_output_tec: skip_scalar')
       read(IN_FILE_UNIT, *) (((dummy ,i=1,imx-1), j=1,jmx-1), k=1,kmx-1)
 
     end subroutine skip_scalar

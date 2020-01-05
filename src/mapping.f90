@@ -1,33 +1,7 @@
   !< Setup the indicies map at interface between two blocks
 module mapping
   !< Setup the indicies map at interface between two blocks
-
-  use global, only: MAP_FILE_UNIT
-  use global, only: mapfile
-  use global, only: PERIODIC_FILE_UNIT
-  use global, only: periodicfile
-
-  use global_vars, only: total_process
-  use global_vars, only: process_id
-  use global_vars, only: PbcId
-
-  use utils      , only: DEBUG_LEVEL
-  use utils      , only: dmsg
-  use string
-  use fclose     , only: close_file
-
-  !map variablews
-  use global_vars, only: imx
-  use global_vars, only: jmx
-  use global_vars, only: kmx
-  use global_vars, only: otherface
-  use global_vars, only: dir_switch
-  use global_vars, only: imin_id
-  use global_vars, only: imax_id
-  use global_vars, only: jmin_id
-  use global_vars, only: jmax_id
-  use global_vars, only: kmin_id
-  use global_vars, only: kmax_id
+  use vartypes
 
   implicit none
   private
@@ -87,9 +61,17 @@ module mapping
 
     contains
 
-      subroutine read_interface_map()
+      subroutine read_interface_map(files, control, bc, dims)
         !< Read mapping file in the system/mesh/layout/mapping.txt
         implicit none
+        type(filetype), intent(in) :: files
+        !< Files' name and handler
+        type(controltype), intent(in) :: control
+        !< Control parameters
+        type(extent), intent(in) :: dims
+        !< Extent of the domain:imx,jmx,kmx
+        type(boundarytype), intent(inout) :: bc
+        !< boundary conditions and fixed values
         integer :: ios
         integer :: max_call
 
@@ -100,93 +82,93 @@ module mapping
         integer :: switch
         integer :: class
         !--- initialize indicies --!
-        max_call = total_process*6
+        max_call = control%total_process*6
         ilo(1) = 1  ; ihi(1) = 1
-        ilo(2) = imx; ihi(2) = imx
-        ilo(3) = 1  ; ihi(3) = imx
-        ilo(4) = 1  ; ihi(4) = imx
-        ilo(5) = 1  ; ihi(5) = imx
-        ilo(6) = 1  ; ihi(6) = imx
+        ilo(2) = dims%imx; ihi(2) = dims%imx
+        ilo(3) = 1  ; ihi(3) = dims%imx
+        ilo(4) = 1  ; ihi(4) = dims%imx
+        ilo(5) = 1  ; ihi(5) = dims%imx
+        ilo(6) = 1  ; ihi(6) = dims%imx
 
-        jlo(1) = 1  ; jhi(1) = jmx
-        jlo(2) = 1  ; jhi(2) = jmx
+        jlo(1) = 1  ; jhi(1) = dims%jmx
+        jlo(2) = 1  ; jhi(2) = dims%jmx
         jlo(3) = 1  ; jhi(3) = 1
-        jlo(4) = jmx; jhi(4) = jmx
-        jlo(5) = 1  ; jhi(5) = jmx
-        jlo(6) = 1  ; jhi(6) = jmx
+        jlo(4) = dims%jmx; jhi(4) = dims%jmx
+        jlo(5) = 1  ; jhi(5) = dims%jmx
+        jlo(6) = 1  ; jhi(6) = dims%jmx
 
-        klo(1) = 1  ; khi(1) = kmx
-        klo(2) = 1  ; khi(2) = kmx
-        klo(3) = 1  ; khi(3) = kmx
-        klo(4) = 1  ; khi(4) = kmx
+        klo(1) = 1  ; khi(1) = dims%kmx
+        klo(2) = 1  ; khi(2) = dims%kmx
+        klo(3) = 1  ; khi(3) = dims%kmx
+        klo(4) = 1  ; khi(4) = dims%kmx
         klo(5) = 1  ; khi(5) = 1
-        klo(6) = kmx; khi(6) = kmx
+        klo(6) = dims%kmx; khi(6) = dims%kmx
 
-        otherface(1)=2
-        otherface(2)=1
-        otherface(3)=4
-        otherface(4)=3
-        otherface(5)=6
-        otherface(6)=5
-        dir_switch = 0
+        bc%otherface(1)=2
+        bc%otherface(2)=1
+        bc%otherface(3)=4
+        bc%otherface(4)=3
+        bc%otherface(5)=6
+        bc%otherface(6)=5
+        bc%dir_switch = 0
         !--- end of variable intializaiton --!
 
         !--- reading map file  ---!
 
-        open(MAP_FILE_UNIT, file=mapfile, status='old', action='read')
-        read(MAP_FILE_UNIT,*) ! ignore header
+        open(files%MAP_FILE_UNIT, file=files%mapfile, status='old', action='read')
+        read(files%MAP_FILE_UNIT,*) ! ignore header
         do i=1,max_call
-          read(MAP_FILE_UNIT,*, iostat=ios) b1,f1,s11,e11,s12,e12,&
+          read(files%MAP_FILE_UNIT,*, iostat=ios) b1,f1,s11,e11,s12,e12,&
                                             b2,f2,s21,e21,s22,e22,switch,class
           if(is_iostat_end(ios)) EXIT
-          if(b1==process_id)then
+          if(b1==control%process_id)then
             if(f1==1) then
-              otherface(1)=f2
+              bc%otherface(1)=f2
               jlo(1)=s21
               jhi(1)=e21
               klo(1)=s22
               khi(1)=e22
-              dir_switch(1)=switch
+              bc%dir_switch(1)=switch
               mpi_class(1)=class
             elseif(f1==2) then
-              otherface(2)=f2
+              bc%otherface(2)=f2
               jlo(2)=s21
               jhi(2)=e21
               klo(2)=s22
               khi(2)=e22
-              dir_switch(2)=switch
+              bc%dir_switch(2)=switch
               mpi_class(2)=class
             elseif(f1==3) then
-              otherface(3)=f2
+              bc%otherface(3)=f2
               ilo(3)=s21
               ihi(3)=e21
               klo(3)=s22
               khi(3)=e22
-              dir_switch(3)=switch
+              bc%dir_switch(3)=switch
               mpi_class(3)=class
             elseif(f1==4) then
-              otherface(4)=f2
+              bc%otherface(4)=f2
               ilo(4)=s21
               ihi(4)=e21
               klo(4)=s22
               khi(4)=e22
-              dir_switch(4)=switch
+              bc%dir_switch(4)=switch
               mpi_class(4)=class
             elseif(f1==5) then
-              otherface(5)=f2
+              bc%otherface(5)=f2
               ilo(5)=s21
               ihi(5)=e21
               jlo(5)=s22
               jhi(5)=e22
-              dir_switch(5)=switch
+              bc%dir_switch(5)=switch
               mpi_class(5)=class
             elseif(f1==6) then
-              otherface(6)=f2
+              bc%otherface(6)=f2
               ilo(6)=s21
               ihi(6)=e21
               jlo(6)=s22
               jhi(6)=e22
-              dir_switch(6)=switch
+              bc%dir_switch(6)=switch
               mpi_class(6)=class
             end if
           else 
@@ -194,10 +176,10 @@ module mapping
           end if
         end do
 
-        call close_file(MAP_FILE_UNIT)
+        close(files%MAP_FILE_UNIT)
         call change_map_to_particular_range()
 
-        call read_periodic_bc_file()
+        call read_periodic_bc_file(files, control, bc)
       end subroutine read_interface_map
 
       subroutine change_map_to_particular_range()
@@ -276,9 +258,15 @@ module mapping
       end subroutine change_map_to_particular_range
           
 
-      subroutine read_periodic_bc_file()
+      subroutine read_periodic_bc_file(files, control, bc)
         !< Read periodic.md file in the system/mesh/layout/periodic.md
         implicit none
+        type(filetype), intent(in) :: files
+        !< Files' name and handler
+        type(controltype), intent(in) :: control
+        !< Control parameters
+        type(boundarytype), intent(inout) :: bc
+        !< boundary conditions and fixed values
         integer :: ios
         integer :: max_call
         integer :: i
@@ -286,17 +274,17 @@ module mapping
         integer :: f1, f2
         integer :: class
 
-        open(PERIODIC_FILE_UNIT, file=periodicfile, status='old', action='read')
-        read(PERIODIC_FILE_UNIT,*) !ignore first line (header)
-        max_call = total_process*6
+        open(files%PERIODIC_FILE_UNIT, file=files%periodicfile, status='old', action='read')
+        read(files%PERIODIC_FILE_UNIT,*) !ignore first line (header)
+        max_call = control%total_process*6
         do i=1,max_call
-          read(PERIODIC_FILE_UNIT,*, iostat=ios) b1,b2,f1,f2, class
+          read(files%PERIODIC_FILE_UNIT,*, iostat=ios) b1,b2,f1,f2, class
           if(is_iostat_end(ios)) EXIT
-          if(b1==process_id)then
-            PbcId(f1) = b2
+          if(b1==control%process_id)then
+            bc%PbcId(f1) = b2
           end if
         end do
-        close(PERIODIC_FILE_UNIT)
+        close(files%PERIODIC_FILE_UNIT)
       end subroutine read_periodic_bc_file
 
 end module mapping

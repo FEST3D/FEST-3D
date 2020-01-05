@@ -14,82 +14,7 @@ module read
   !------------------------------------------------------
 
 #include "../../debug.h"
-
-  use global, only: CONTROL_FILE_UNIT
-  use global, only:  SCHEME_FILE_UNIT
-  use global, only:    FLOW_FILE_UNIT
-  use global, only: control_file
-  use global, only:  scheme_file
-  use global, only:    flow_file
-  use global, only: STRING_BUFFER_LENGTH
-  use global, only: OUTIN_FILE_UNIT
-  use global, only: outin_file
-  use global, only: RES_CONTROL_FILE_UNIT
-  use global, only: res_control_file
-
-  use global_vars, only: CFL
-  use global_vars, only: max_iters
-  use global_vars, only: start_from
-  use global_vars, only: checkpoint_iter
-  use global_vars, only: res_write_interval
-  use global_vars, only: write_file_format
-  use global_vars, only: write_data_format
-  use global_vars, only: read_file_format
-  use global_vars, only: read_data_format
-  use global_vars, only: write_percision
-  use global_vars, only: purge_write
-  use global_vars, only: tolerance
-  use global_vars, only: tolerance_type
-  use global_vars, only: process_id
-
-  use global_vars, only: time_stepping_method
-  use global_vars, only: time_step_accuracy
-  use global_vars, only: global_time_step
-
-  use global_vars, only: n_var
-  use global_vars, only: free_stream_density
-  use global_vars, only: free_stream_x_speed
-  use global_vars, only: free_stream_y_speed
-  use global_vars, only: free_stream_z_speed
-  use global_vars, only: free_stream_pressure
-  use global_vars, only: free_stream_tu
-  use global_vars, only: free_stream_tgm
-  use global_vars, only: mu_ratio_inf
-  use global_vars, only: gm    !gamma
-  use global_vars, only: R_gas !univarsal gas constant
-  use global_vars, only: mu_ref !viscoity
-  use global_vars, only: mu_variation !viscoity variation type
-  use global_vars, only: T_ref
-  use global_vars, only: Sutherland_temp
-  use global_vars, only: Pr !prandtl number
-  use global_vars, only: tPr !Turbulent prandtl number
-  use global_vars, only: ilimiter_switch
-  use global_vars, only: jlimiter_switch
-  use global_vars, only: klimiter_switch
-  use global_vars, only: itlimiter_switch
-  use global_vars, only: jtlimiter_switch
-  use global_vars, only: ktlimiter_switch
-  use global_vars, only: iPB_switch
-  use global_vars, only: jPB_switch
-  use global_vars, only: kPB_switch
-  use global_vars, only: accur
-  
-  use global_vars, only: interpolant
-  use global_vars, only: scheme_name
-  use global_vars, only: turbulence
-  use global_vars, only: transition
-  use global_vars, only: r_list
-  use global_vars, only: w_list
-  use global_vars, only: r_count
-  use global_vars, only: w_count
-  use global_vars, only: Res_list
-  use global_vars, only: Res_count
-  use utils      , only: DEBUG_LEVEL
-  use utils      , only: dmsg
-  use string
-  use fclose     , only: close_file
-
-
+  use vartypes
   implicit none
   private
 
@@ -97,14 +22,18 @@ module read
 
     contains
 
-      subroutine read_input_and_controls()
+      subroutine read_input_and_controls(files, control, scheme, flow)
         !< Read all the input control files
         implicit none
-        call read_controls()
-        call read_scheme()
-        call read_flow()
-        call read_output_control()
-        call read_Res_list()
+        type(filetype), intent(in) :: files
+        type(controltype), intent(inout) :: control
+        type(schemetype), intent(inout) :: scheme
+        type(flowtype), intent(inout) :: flow
+        call read_controls(files, control)
+        call read_scheme(files, scheme)
+        call read_flow(files, control, flow)
+        call read_output_control(files, control)
+        call read_Res_list(files, control)
       end subroutine read_input_and_controls
 
 
@@ -145,371 +74,387 @@ module read
                 exit
             end if
         end do
-        call dmsg(0, 'read', 'get_next_token', 'Returning: ' // trim(buf))
 
       end subroutine get_next_token
 
 
 
-      subroutine read_controls()
+      subroutine read_controls(files, control)
         !< Read control.md file
         !---------------------------------------------
         implicit none
+        type(filetype), intent(in) :: files
+        type(controltype), intent(inout) :: control
         character(len=STRING_BUFFER_LENGTH) :: buf
 
         DebugCall('read_controls')
 
-        open(CONTROL_FILE_UNIT, file=control_file, status='old', action='read')
+        open(files%CONTROL_FILE_UNIT, file=files%control_file, status='old', action='read')
 
         !ignoring file header
-        read(CONTROL_FILE_UNIT,*)
-        read(CONTROL_FILE_UNIT,*)
-        read(CONTROL_FILE_UNIT,*)
+        read(files%CONTROL_FILE_UNIT,*)
+        read(files%CONTROL_FILE_UNIT,*)
+        read(files%CONTROL_FILE_UNIT,*)
 
         ! READ CFL
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) CFL
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%CFL
         DebugInfo("CFL = "//trim(buf))
 
         ! READ start_from
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) start_from
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%start_from
         DebugInfo('Start from  level = '//trim(buf))
 
         ! READ max_iters
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) max_iters
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%max_iters
         DebugInfo('Stop at iteration = '//trim(buf))
 
         ! READ checkpoint_iter
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) checkpoint_iter
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%checkpoint_iter
         DebugInfo(' Solution write interval = '//trim(buf))
 
         ! READ write_file_format
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) write_file_format
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%write_file_format
         DebugInfo('Solution file format  = '//trim(buf))
 
         ! READ write_data_format
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) write_data_format
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%write_data_format
         DebugInfo('solution file data format = '//trim(buf))
 
         ! READ read_file_format
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) read_file_format
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%read_file_format
         DebugInfo('Restart file format  = '//trim(buf))
 
         ! READ_read data_format
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) read_data_format
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%read_data_format
         DebugInfo('Restart file data format = '//trim(buf))
 
         ! READ write_percision
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) write_percision
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%write_percision
         DebugInfo('File write percision = '//trim(buf))
 
         ! READ purge_write
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) purge_write
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%purge_write
         DebugInfo('Purge folder more then  = '//trim(buf))
 
         ! READ res_write_interval
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) res_write_interval
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%res_write_interval
         DebugInfo('resnorm write interval  = '//trim(buf))
 
         ! READ tolerance
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) tolerance, tolerance_type
-        DebugInfo(trim(tolerance_type)//' Tolerance  = '//trim(buf))
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%tolerance, control%tolerance_type
+        DebugInfo(trim(control%tolerance_type)//' Tolerance  = '//trim(buf))
 
         ! READ DEBUG_LEVEL
-        call get_next_token(CONTROL_FILE_UNIT, buf)
-        read(buf, *) DEBUG_LEVEL
+        call get_next_token(files%CONTROL_FILE_UNIT, buf)
+        read(buf, *) control%DEBUG_LEVEL
         DebugInfo('DEBUG_LEVEL = '//trim(buf))
 
-        close(CONTROL_FILE_UNIT)
+        close(files%CONTROL_FILE_UNIT)
 
       end subroutine read_controls
 
 
-      subroutine read_scheme()
+      subroutine read_scheme(files, scheme)
         !< Read fvscheme.md control file
         !--------------------------------------------
         implicit none
+        type(filetype), intent(in) ::  files
+        type(schemetype), intent(inout) :: scheme
         character(len=STRING_BUFFER_LENGTH) :: buf
         integer                             :: ios
 
         DebugCall('read_scheme')
 
-        open(SCHEME_FILE_UNIT, file=scheme_file, status='old', action='read')
+        open(files%SCHEME_FILE_UNIT, file=files%scheme_file, status='old', action='read')
 
         ! ignoring file header
-        read(SCHEME_FILE_UNIT,*)
-        read(SCHEME_FILE_UNIT,*)
-        read(SCHEME_FILE_UNIT,*)
+        read(files%SCHEME_FILE_UNIT,*)
+        read(files%SCHEME_FILE_UNIT,*)
+        read(files%SCHEME_FILE_UNIT,*)
        
         ! read scheme name
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) scheme_name
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *) scheme%scheme_name
         DebugInfo('scheme_name = '//trim(buf))
 
         ! read interpolant
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) interpolant
-        interpolant = trim(interpolant)
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *) scheme%interpolant
+        scheme%interpolant = trim(scheme%interpolant)
         DebugInfo('interpolant = '//trim(buf))
 
         ! read ilimiter and PB switch
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) ilimiter_switch,jlimiter_switch,klimiter_switch, &
-                     iPB_switch, jPB_switch, kPB_switch
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *) scheme%ilimiter_switch, scheme%jlimiter_switch, scheme%klimiter_switch, &
+                     scheme%iPB_switch, scheme%jPB_switch, scheme%kPB_switch
         DebugInfo('ilimiter switch = '//trim(buf) )
         DebugInfo('jlimiter switch = '//trim(buf) )
         DebugInfo('klimiter switch = '//trim(buf) )
           DebugInfo('PB switch = '//trim(buf) )
 
         ! read turbulent limiter
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) itlimiter_switch,jtlimiter_switch,ktlimiter_switch 
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *) scheme%itlimiter_switch,scheme%jtlimiter_switch,scheme%ktlimiter_switch 
         DebugInfo('ilimiter switch = '//trim(buf) )
         DebugInfo('jlimiter switch = '//trim(buf) )
         DebugInfo('klimiter switch = '//trim(buf) )
 
         ! read turbulence model
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) turbulence
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *) scheme%turbulence
         DebugInfo('Turbulence Model = '//trim(buf))
 
         ! read transition model
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) transition
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *) scheme%transition
         DebugInfo('Transition Model = '//trim(buf))
 
         ! read time stepping method
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *, iostat=ios) time_stepping_method, global_time_step
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *, iostat=ios) scheme%time_stepping_method, scheme%global_time_step
         if (ios /= 0) then
-            read(buf, *) time_stepping_method
-            global_time_step = -1
+            read(buf, *) scheme%time_stepping_method
+            scheme%global_time_step = -1
         end if
         DebugInfo('time_stepping_method = '//trim(buf))
         DebugInfo('global_time_step = '//trim(buf))
 
         ! read time integration method
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) time_step_accuracy
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *) scheme%time_step_accuracy
         DebugInfo('time_step_accuracy  = '//trim(buf))
 
         ! read higher order boundary
-        call get_next_token(SCHEME_FILE_UNIT, buf)
-        read(buf, *) accur
+        call get_next_token(files%SCHEME_FILE_UNIT, buf)
+        read(buf, *) scheme%accur
         DebugInfo('higher order boundary  = '//trim(buf))
 
 
-        close(SCHEME_FILE_UNIT)
+        close(files%SCHEME_FILE_UNIT)
 
       end subroutine read_scheme
 
-      subroutine read_flow()
+      subroutine read_flow(files, control, flow)
         !< Read flow.md control file
         !--------------------------------------------
         implicit none
+        type(filetype), intent(in) :: files
+        type(controltype), intent(inout) :: control
+        type(flowtype), intent(inout) :: flow
 
         character(len=STRING_BUFFER_LENGTH) :: buf
 
         DebugCall('read_flow')
 
-        open(FLOW_FILE_UNIT, file=flow_file, status='old', action='read')
+        open(files%FLOW_FILE_UNIT, file=files%flow_file, status='old', action='read')
 
         ! ignoring file header
-        read(FLOW_FILE_UNIT,*)
-        read(FLOW_FILE_UNIT,*)
-        read(FLOW_FILE_UNIT,*)
+        read(files%FLOW_FILE_UNIT,*)
+        read(files%FLOW_FILE_UNIT,*)
+        read(files%FLOW_FILE_UNIT,*)
        
         ! read number of variable
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) n_var
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) control%n_var
         DebugInfo('Number of variables = '//trim(buf))
 
         ! read rho_inf
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_density
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%density_inf
         DebugInfo('free_stream_density = '//trim(buf))
 
         ! read u_inf
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_x_speed
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%x_speed_inf
         DebugInfo('free_stream_x_speed = '//trim(buf))
 
         ! read v_inf
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_y_speed
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%y_speed_inf
         DebugInfo('free_stream_y_speed = '//trim(buf))
 
         ! read w_inf
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_z_speed
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%z_speed_inf
         DebugInfo('free_stream_z_speed = '//trim(buf))
 
         ! read P_inf
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_pressure
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%pressure_inf
         DebugInfo('free_stream_pressure = '//trim(buf))
 
         ! read turbulence intensity in percentage
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_tu
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%tu_inf
         DebugInfo('free_stream_Turb_intensity = '//trim(buf))
 
         ! read viscosity ratio
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) mu_ratio_inf
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%mu_ratio_inf
         DebugInfo('free_stream_mu_ratio = '//trim(buf))
 
         ! read intermittency
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) free_stream_tgm
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%tgm_inf
         DebugInfo('free_stream_Intermittency = '//trim(buf))
 
         ! read reference viscosity
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) mu_ref
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%mu_ref
         DebugInfo('mu_reference = '//trim(buf))
 
         ! Type of variation for viscosity
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) mu_variation
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%mu_variation
         DebugInfo('mu_variation = '//trim(buf))
 
         ! read T_red
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) T_ref
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%T_ref
         DebugInfo('T_reference = '//trim(buf))
 
         ! read Sutherland temp
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) Sutherland_temp
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%Sutherland_temp
         DebugInfo('Sutherland temperature = '//trim(buf))
 
         ! read prandtl number
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) Pr, tPr
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%Pr, flow%tPr
         DebugInfo('Prandtl Number = '//trim(buf))
 
         ! read gamma
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) gm
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%gm
         DebugInfo('gamma = '//trim(buf))
 
         ! read universal gas constant
-        call get_next_token(FLOW_FILE_UNIT, buf)
-        read(buf, *) R_gas
+        call get_next_token(files%FLOW_FILE_UNIT, buf)
+        read(buf, *) flow%R_gas
         DebugInfo('R_gas = '//trim(buf))
           
 
-        close(FLOW_FILE_UNIT)
+        close(files%FLOW_FILE_UNIT)
 
       end subroutine read_flow
 
         
 
-      subroutine read_output_control()
+      subroutine read_output_control(files, control)
         !< Read output_contorl.md file
         implicit none
+        type(filetype), intent(in) :: files
+        type(controltype), intent(inout) :: control
         integer           :: i
         character(len=64) :: buf
         integer :: ios
+        logical :: ok
         
-        call get_rw_count()
-        call close_file(OUTIN_FILE_UNIT)
-        open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
+        call get_rw_count(files, control)
+        inquire(files%OUTIN_FILE_UNIT, opened=ok)
+        if(ok)  close(files%OUTIN_FILE_UNIT)
+        !call close_file(files%OUTIN_FILE_UNIT)
+        open(files%OUTIN_FILE_UNIT, file=files%outin_file, status='old', action='read')
 
         ! variables to write
         do while(.true.)
-          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          read(files%OUTIN_FILE_UNIT, *, iostat=ios) buf
           if(trim(buf)=='{') EXIT
           if(is_iostat_end(ios)) EXIT
         end do
-        do i = 1,w_count
-          read(OUTIN_FILE_UNIT, *) buf
-          read(buf,*) w_list(i)
+        do i = 1,control%w_count
+          read(files%OUTIN_FILE_UNIT, *) buf
+          read(buf,*) control%w_list(i)
         end do
 
         ! restart variables to read
         do while(.true.)
-          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          read(files%OUTIN_FILE_UNIT, *, iostat=ios) buf
           if(trim(buf)=='{') EXIT
           if(is_iostat_end(ios)) EXIT
         end do
-        do i = 1,r_count
-          read(OUTIN_FILE_UNIT, *) buf
-          read(buf,*) r_list(i)
+        do i = 1,control%r_count
+          read(files%OUTIN_FILE_UNIT, *) buf
+          read(buf,*) control%r_list(i)
         end do
-        if(r_count==0) r_list=w_list
+        if(control%r_count==0) control%r_list=control%w_list
 
-        close(OUTIN_FILE_UNIT)
+        close(files%OUTIN_FILE_UNIT)
 
       end subroutine read_output_control
 
-      subroutine get_rw_count()
+      subroutine get_rw_count(files, control)
         !< Get read/write count
         implicit none
+        type(filetype), intent(in) :: files
+        type(controltype), intent(inout) :: control
         integer :: ios
         character(len=64) :: buf
+        logical :: ok
 
-        r_count=0
-        w_count=0
-        call close_file(OUTIN_FILE_UNIT)
-        open(OUTIN_FILE_UNIT, file=outin_file, status='old', action='read')
+        control%r_count=0
+        control%w_count=0
+        inquire(files%OUTIN_FILE_UNIT, opened=ok)
+        if(ok)  close(files%OUTIN_FILE_UNIT)
+        !call close_file(files%OUTIN_FILE_UNIT)
+        open(files%OUTIN_FILE_UNIT, file=files%outin_file, status='old', action='read')
 
         ! write list dimension
         do while(.true.)
-          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          read(files%OUTIN_FILE_UNIT, *, iostat=ios) buf
           if(trim(buf)=='{') EXIT
           if(is_iostat_end(ios)) EXIT
         end do
-        w_count = 0
+        control%w_count = 0
         do while (.true.)
-          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          read(files%OUTIN_FILE_UNIT, *, iostat=ios) buf
           if (trim(buf)=='}') EXIT
           if(is_iostat_end(ios)) EXIT
-          w_count = w_count + 1
+          control%w_count = control%w_count + 1
         end do
 
-        if(w_count>0) then
-          allocate(w_list(1:w_count))
+        if(control%w_count>0) then
+          allocate(control%w_list(1:control%w_count))
         else
-          w_count=3
-          allocate(w_list(1:w_count))
-          w_list(1) = "Velocity"
-          w_list(2) = "Density"
-          w_list(3) = "Pressure"
+          control%w_count=3
+          allocate(control%w_list(1:control%w_count))
+          control%w_list(1) = "Velocity"
+          control%w_list(2) = "Density"
+          control%w_list(3) = "Pressure"
         end if
 
         ! read list dimesnion 
         do while(.true.)
-          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          read(files%OUTIN_FILE_UNIT, *, iostat=ios) buf
           if(trim(buf)=='{') EXIT
           if(is_iostat_end(ios)) EXIT
         end do
-        r_count = 0
+        control%r_count = 0
         do while (.true.)
-          read(OUTIN_FILE_UNIT, *, iostat=ios) buf
+          read(files%OUTIN_FILE_UNIT, *, iostat=ios) buf
           if (trim(buf)=='}') EXIT
           if(is_iostat_end(ios)) EXIT
-          r_count = r_count + 1
+          control%r_count = control%r_count + 1
         end do
-        if(r_count==0) then
-          allocate(r_list(1:w_count))
+        if(control%r_count==0) then
+          allocate(control%r_list(1:control%w_count))
         else
-          allocate(r_list(1:r_count))
+          allocate(control%r_list(1:control%r_count))
         end if
 
-        close(OUTIN_FILE_UNIT)
+        close(files%OUTIN_FILE_UNIT)
 
       end subroutine get_rw_count
 
@@ -549,35 +494,39 @@ module read
       end function get_number_of_line
 
 
-      subroutine read_Res_list()
+      subroutine read_Res_list(files, control)
         !< Read Residual file: res_control.md
         implicit none
+        type(filetype), intent(in) :: files
+        type(controltype), intent(inout) :: control
         integer           :: i
         integer           :: skip
+        logical :: ok
 
-        open(RES_CONTROL_FILE_UNIT, file=res_control_file, status='old', action='read')
-        call get_count_within_braces(RES_CONTROL_FILE_UNIT, Res_count)
-        call close_file(RES_CONTROL_FILE_UNIT)
+        open(files%RES_CONTROL_FILE_UNIT, file=files%res_control_file, status='old', action='read')
+        call get_count_within_braces(files%RES_CONTROL_FILE_UNIT, control%Res_count)
+        !call close_file(files%RES_CONTROL_FILE_UNIT)
+        inquire(files%RES_CONTROL_FILE_UNIT, opened=ok)
+        if(ok)  close(files%RES_CONTROL_FILE_UNIT)
 
-        open(RES_CONTROL_FILE_UNIT, file=res_control_file, status='old', action='read')
+        open(files%RES_CONTROL_FILE_UNIT, file=files%res_control_file, status='old', action='read')
         ! skipping line
-        skip  = get_number_of_line('{', RES_CONTROL_FILE_UNIT)
+        skip  = get_number_of_line('{',files%RES_CONTROL_FILE_UNIT)
 
         !reading vaules
-        if(Res_count==0)then
-          allocate(Res_list(1:2))
-          Res_count=2
-          Res_list(1)="Mass_abs"
-          Res_list(2)="Resnorm_abs"
+        if(control%Res_count==0)then
+          allocate(control%Res_list(1:2))
+          control%Res_count=2
+          control%Res_list(1)="Mass_abs"
+          control%Res_list(2)="Resnorm_abs"
         else
-          allocate(Res_list(1:Res_count))
+          allocate(control%Res_list(1:control%Res_count))
         end if
-        do i = 1,Res_count
-          read(RES_CONTROL_FILE_UNIT, *) Res_list(i)
+        do i = 1,control%Res_count
+          read(files%RES_CONTROL_FILE_UNIT, *) control%Res_list(i)
         end do
 
-
-        call close_file(RES_CONTROL_FILE_UNIT)
+        close(files%RES_CONTROL_FILE_UNIT)
 
       end subroutine read_Res_list
 

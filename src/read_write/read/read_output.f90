@@ -5,93 +5,73 @@ module read_output
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
-  use global     , only :      IN_FILE_UNIT
-  use global     , only : RESTART_FILE_UNIT
-  use global_vars, only :      infile
-  use global_vars, only : restartfile
-
-  use global_vars, only : read_data_format
-  use global_vars, only : read_file_format
-  use global_vars, only : start_from
-  use global_vars, only : process_id
-  use global_vars, only :        resnorm_0
-  use global_vars, only :    vis_resnorm_0
-  use global_vars, only :   turb_resnorm_0
-  use global_vars, only :   cont_resnorm_0
-  use global_vars, only :  x_mom_resnorm_0
-  use global_vars, only :  y_mom_resnorm_0
-  use global_vars, only :  z_mom_resnorm_0
-  use global_vars, only : energy_resnorm_0
-  use global_vars, only :    TKE_resnorm_0
-  use global_vars, only :  omega_resnorm_0
-  use global_vars, only : previous_flow_type
-  use global_vars, only : last_iter
-  use global_vars, only : mu_ref
-
+#include "../../debug.h"
+#include "../../error.h"
+  use vartypes
   use read_output_vtk, only : read_file_vtk => read_file
   use read_output_tec, only : read_file_tec => read_file
   use check_output_control, only: verify_read_control
 
   use utils
-  use string
 
   implicit none
   private
-  integer :: i,j,k
-  real    :: speed_inf
   !< Free-stream velocity magnitude
   character(len=8) :: file_format
   !< Read file format
   character(len=16) :: data_format
   !< Read file data type
-  character(len=16) :: read_flow_type
-  !< Previous flow type 
 
   public :: read_file
 
   contains
 
-    subroutine read_file()
+    subroutine read_file(files, qp, control, scheme, dims)
       !< Read restart file
       implicit none
-      call setup_file
-      call open_file(infile)
-      call read_restart_file()
-      call verify_read_control()
+      type(filetype), intent(inout) :: files
+      type(extent), intent(in) :: dims
+      type(controltype), intent(inout) :: control
+      type(schemetype) , intent(in) :: scheme
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: qp
+      call setup_file(control)
+      call open_file(files,  control)
+      call read_restart_file(files%RESTART_FILE_UNIT, control)
+      call verify_read_control(control, scheme)
         
-      select case (read_file_format)
+      select case (control%read_file_format)
         
         case ('vtk')
-          call read_file_vtk()
+          call read_file_vtk(files%IN_FILE_UNIT, qp, control, scheme, dims)
         
         case ('tecplot')
-          call read_file_tec()
+          call read_file_tec(files%IN_FILE_UNIT, qp, control, scheme, dims)
         
         case DEFAULT
-        call dmsg(5, 'read_output', 'read_file',&
-          'ERROR: read file format not recognised. READ format -> '//read_file_format)
+          Fatal_error
       end select
 
-      call close_file()
+      call close_file(files)
     end subroutine read_file
 
 
-    subroutine setup_file()
+    subroutine setup_file(control)
       !< Steup the file to read the restart state.
       implicit none
-      call dmsg(1, 'read_output_vtk', 'setup_file')
-      if (read_file_format == "vtk") then
+      type(controltype), intent(in) :: control
+      DebugCall('setup_file')
+      if (control%read_file_format == "vtk") then
         file_format = ".vtk"
-      elseif (read_file_format == "tecplot") then
+      elseif (control%read_file_format == "tecplot") then
         file_format = ".dat"
       else
         print*, "File format not recoganised. Accepted formats are"
         print*, "'vtk' and 'tecplot' "
       end if
 
-      if (read_data_format == "ASCII") then
+      if (control%read_data_format == "ASCII") then
         data_format = "formatted"
-      elseif (read_data_format == "BINARY") then
+      elseif (control%read_data_format == "BINARY") then
         data_format = "unformatted"
       else
         print*, "Data format not recoganised. Accepted formats are"
@@ -102,45 +82,52 @@ module read_output
 
     end subroutine setup_file
 
-    subroutine open_file(filename)
+    subroutine open_file(files, control)
       !< Open file from the restart folder 
       implicit none
-      character(len=*), intent(in) :: filename 
-      call dmsg(1, 'read_output_vtk', 'open_file')
+      type(filetype), intent(inout) :: files
+      type(controltype), intent(in) :: control
+      DebugCall('open_file')
 
-      write(restartfile, '(A,I4.4,A,I2.2)') 'time_directories/',start_from,&
+      write(files%restartfile, '(A,I4.4,A,I2.2)') 'time_directories/',control%start_from,&
                           '/restart/process_', process_id
-      open(IN_FILE_UNIT, file=trim(filename)//trim(file_format))!, form=trim(data_format))
-      open(RESTART_FILE_UNIT, file=restartfile, status='old')
+      open(files%IN_FILE_UNIT, file=trim(files%infile)//trim(file_format))!, form=trim(data_format))
+      open(files%RESTART_FILE_UNIT, file=files%restartfile, status='old')
 
     end subroutine open_file
 
-    subroutine close_file()
+    subroutine close_file(files)
       !< Close the file after reading 
       implicit none
+      type(filetype), intent(in) :: files
 
-      call dmsg(1, 'read_output_vtk', 'close_files')
-      close(IN_FILE_UNIT)
-      close(RESTART_FILE_UNIT)
+      DebugCall('close_files')
+      close(files%IN_FILE_UNIT)
+      close(files%RESTART_FILE_UNIT)
 
     end subroutine close_file
 
-    subroutine read_restart_file()
+    subroutine read_restart_file(RESTART_FILE_UNIT, control)
       !< Read the sub-directory log file in the restart folder
       implicit none
-      read(RESTART_FILE_UNIT, *) previous_flow_type
+      integer, intent(in) :: RESTART_FILE_UNIT
+      type(controltype), intent(inout) :: control
+      integer :: i
+      read(RESTART_FILE_UNIT, *) control%previous_flow_type
 
-      read(RESTART_FILE_UNIT, *)        last_iter
-      read(RESTART_FILE_UNIT, *)        resnorm_0
-      read(RESTART_FILE_UNIT, *)    vis_resnorm_0
-      read(RESTART_FILE_UNIT, *)   turb_resnorm_0
-      read(RESTART_FILE_UNIT, *)   cont_resnorm_0
-      read(RESTART_FILE_UNIT, *)  x_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *)  y_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *)  z_mom_resnorm_0
-      read(RESTART_FILE_UNIT, *) energy_resnorm_0
-      read(RESTART_FILE_UNIT, *)    TKE_resnorm_0
-      read(RESTART_FILE_UNIT, *)  omega_resnorm_0
+      read(RESTART_FILE_UNIT, *)        control%last_iter
+      do i = 1,control%n_var+1
+        read(RESTART_FILE_UNIT, *)  control%previous_res(i)
+      end do
+      !read(RESTART_FILE_UNIT, *)    vis_resnorm_0
+      !read(RESTART_FILE_UNIT, *)   turb_resnorm_0
+      !read(RESTART_FILE_UNIT, *)   cont_resnorm_0
+      !read(RESTART_FILE_UNIT, *)  x_mom_resnorm_0
+      !read(RESTART_FILE_UNIT, *)  y_mom_resnorm_0
+      !read(RESTART_FILE_UNIT, *)  z_mom_resnorm_0
+      !read(RESTART_FILE_UNIT, *) energy_resnorm_0
+      !read(RESTART_FILE_UNIT, *)    TKE_resnorm_0
+      !read(RESTART_FILE_UNIT, *)  omega_resnorm_0
     end subroutine read_restart_file
 
 end module read_output

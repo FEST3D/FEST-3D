@@ -4,90 +4,112 @@ module read_output_vtk
   !---------------------------------------------------------
   ! This module read state + other variable in output file
   !---------------------------------------------------------
-  use global     , only :    IN_FILE_UNIT
-  use global     , only : OUTIN_FILE_UNIT
-  use global     , only : outin_file
-
-  use global_vars, only : read_data_format
-  use global_vars, only : read_file_format
-  use global_vars, only : start_from
-  use global_vars, only : process_id
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
-  use global_vars, only : density
-  use global_vars, only : x_speed
-  use global_vars, only : y_speed
-  use global_vars, only : z_speed
-  use global_vars, only : pressure
-  use global_vars, only : tk
-  use global_vars, only : tw
-  use global_vars, only : tkl
-  use global_vars, only : tv
-  use global_vars, only : tgm
-  use global_vars, only : intermittency
-  use global_vars, only : density_inf
-  use global_vars, only : x_speed_inf
-  use global_vars, only : y_speed_inf
-  use global_vars, only : z_speed_inf
-  use global_vars, only : pressure_inf 
-  use global_vars, only : mu
-  use global_vars, only : mu_t
-  use global_vars, only : gm
-  use global_vars, only : dist
-  use global_vars, only : turbulence
-  use global_vars, only : vis_resnorm
-  use global_vars, only : cont_resnorm
-  use global_vars, only : x_mom_resnorm
-  use global_vars, only : y_mom_resnorm
-  use global_vars, only : z_mom_resnorm
-  use global_vars, only : energy_resnorm
-  use global_vars, only : resnorm
-  use global_vars, only :   mass_residue
-  use global_vars, only :  x_mom_residue
-  use global_vars, only :  y_mom_residue
-  use global_vars, only :  z_mom_residue
-  use global_vars, only : energy_residue
-  use global_vars, only :        resnorm_0
-  use global_vars, only :    vis_resnorm_0
-  use global_vars, only :   turb_resnorm_0
-  use global_vars, only :   cont_resnorm_0
-  use global_vars, only :  x_mom_resnorm_0
-  use global_vars, only :  y_mom_resnorm_0
-  use global_vars, only :  z_mom_resnorm_0
-  use global_vars, only : energy_resnorm_0
-  use global_vars, only :    TKE_resnorm_0
-  use global_vars, only :  omega_resnorm_0
-
-  use global_vars, only : mu_ref
-  use global_vars, only : r_count
-  use global_vars, only : r_list
-  use global_vars, only : previous_flow_type
-
+#include "../../debug.h"
+#include "../../error.h"
+  use vartypes
   use utils
-  use string
 
   implicit none
   private
+  integer :: IN_FILE_UNIT
+  integer :: imx, jmx, kmx
   integer :: i,j,k
+  real(wp), dimension(:, :, :), pointer :: density      
+   !< Rho pointer, point to slice of qp (:,:,:,1)
+  real(wp), dimension(:, :, :), pointer :: x_speed      
+   !< U pointer, point to slice of qp (:,:,:,2) 
+  real(wp), dimension(:, :, :), pointer :: y_speed      
+   !< V pointer, point to slice of qp (:,:,:,3) 
+  real(wp), dimension(:, :, :), pointer :: z_speed      
+   !< W pointer, point to slice of qp (:,:,:,4)
+  real(wp), dimension(:, :, :), pointer :: pressure     
+   !< P pointer, point to slice of qp (:,:,:,5)
+  real(wp), dimension(:, :, :), pointer :: tk        
+  !< TKE, point to slice of qp (:,:,:,6)
+  real(wp), dimension(:, :, :), pointer :: tw        
+  !< Omega, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: te        
+  !< Dissipation, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: tv        
+  !< SA visocity, point to slice of qp (:,:,:,6)
+  real(wp), dimension(:, :, :), pointer :: tkl       
+  !< KL K-KL method, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: tgm       
+  !< Intermittency of LCTM2015, point to slice of qp (:,:,:,8)
 
   public :: read_file
 
   contains
 
-    subroutine read_file()
+    subroutine read_file(file_handler, state, control, scheme, dims)
       !< Read all the variable for the vtk restart file
       implicit none
+      integer, intent(in) :: file_handler
+      type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
+      type(extent), intent(in) :: dims
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout), target :: state
       integer :: n
+
+      IN_FILE_UNIT = file_handler
+
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      density(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 1)
+      x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 2)
+      y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 3)
+      z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 4)
+      pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 5)
+
+      select case (trim(scheme%turbulence))
+          case ("none")
+              !include nothing
+              continue
+          
+          case ("sst", "sst2003", "bsl", "des-sst", "kw")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("kkl")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("sa", "saBC")
+              tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+
+          case ("ke")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              te(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("les")
+            continue
+            ! todo
+
+          case DEFAULT
+            Fatal_error
+      end select
+
+      ! Transition modeling
+      select case(trim(scheme%transition))
+        case('lctm2015')
+          tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 8)
+!          tgm_inf => qp_inf(n_var)
+
+        case('bc', 'none')
+          !do nothing
+          continue
+
+        case DEFAULT
+          Fatal_error
+      end Select
 
       call read_header()
       call read_grid()
-      do n = 1,r_count
+      do n = 1,control%r_count
 
-        select case (trim(r_list(n)))
+        select case (trim(control%r_list(n)))
         
           case('Velocity')
             call read_velocity()
@@ -113,14 +135,11 @@ module read_output_vtk
           case('tgm')
             call read_scalar(tgm, 'tgm', -2)
 
-          case('Intermittecny')
-            call read_scalar(intermittency, 'Intermittecny', -2)
-
           case('do not read')
             call skip_scalar()
 
           case Default
-            Print*, "read error: list var : "//trim(r_list(n))
+            Print*, "read error: list var : "//trim(control%r_list(n))
 
         end select
       end do
@@ -131,7 +150,7 @@ module read_output_vtk
       !< Skip read the header in the vtk file
       implicit none
 
-      call dmsg(1, 'read_output_vtk', 'read_header')
+      DebugCall('read_output_vtk: read_header')
       read(IN_FILE_UNIT, *) !'# vtk DataFile Version 3.1'
       read(IN_FILE_UNIT, *) !'cfd-iitm output'   ! comment line
       read(IN_FILE_UNIT, *) !trim(read_data_format)
@@ -146,13 +165,13 @@ module read_output_vtk
       implicit none
 
       ! read grid point coordinates
-      call dmsg(1, 'read_output_vtk', 'read_grid')
+      DebugCall('read_output_vtk: read_grid')
       read(IN_FILE_UNIT, * ) !'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
       read(IN_FILE_UNIT, * ) !'POINTS ', imx*jmx*kmx, ' DOUBLE'
       do k = 1, kmx
        do j = 1, jmx
         do i = 1, imx
-          read(IN_FILE_UNIT, *) !grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
+          read(IN_FILE_UNIT, *) !point(i, j, k)%x, ' ', point(i, j, k)%y, ' ', point(i, j, k)%z
         end do
        end do
       end do
@@ -164,7 +183,7 @@ module read_output_vtk
       !< Read velocity vector from the vtk file
       implicit none
 
-      call dmsg(1, 'read_output_vtk', 'read_velocity')
+      DebugCall('read_output_vtk: read_velocity')
       read(IN_FILE_UNIT, *) !'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
       read(IN_FILE_UNIT, *) !'VECTORS Velocity FLOAT'
       do k = 1, kmx - 1
@@ -182,10 +201,10 @@ module read_output_vtk
       !< Read scalar from the vtk file
       implicit none
       integer, intent(in) :: index
-      real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
+      real(wp), dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(out) :: var
       character(len=*), intent(in) :: name
 
-      call dmsg(1, 'read_output_vtk', trim(name))
+      DebugCall('read_output_vtk'//trim(name))
       read(IN_FILE_UNIT, *) !'SCALARS '//trim(name)//' FLOAT'
       read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
       do k = 1, kmx - 1
@@ -203,7 +222,7 @@ module read_output_vtk
       !< Skip read scalar from the vtk file
       implicit none
 
-      call dmsg(1, 'read_output_vtk', "skip_scalar")
+      DebugCall('read_output_vtk: skip_scalar')
       read(IN_FILE_UNIT, *) !'SCALARS '//trim(name)//' FLOAT'
       read(IN_FILE_UNIT, *) !'LOOKUP_TABLE default'
       do k = 1, kmx - 1

@@ -5,193 +5,92 @@ module ausmUP
     !< AUSM+-up for all speeds,” Journal of Computational Physics, 
     !< vol. 214, 2006, pp. 137–170
     !-------------------------------------------------------------------
-    
-    use global_vars, only : imx
-    use global_vars, only : jmx
-    use global_vars, only : kmx
+#include "../../../debug.h"
+#include "../../../error.h"    
 
-    use global_vars, only : xnx, xny, xnz !face unit normal x
-    use global_vars, only : ynx, yny, ynz !face unit normal y
-    use global_vars, only : znx, zny, znz !face unit normal z
-    use global_vars, only : xA, yA, zA    !face area
-
-    use global_vars, only : gm
-    use global_vars, only : MInf
-    use global_vars, only : n_var
-    use global_vars, only : turbulence
-    use global_vars, only : process_id
-    use global_vars, only : current_iter
-    use global_vars, only : max_iters
-    use global_vars, only : make_F_flux_zero
-    use global_vars, only : make_G_flux_zero
-    use global_vars, only : make_H_flux_zero
-
-    use utils, only: alloc, dealloc, dmsg
-    use face_interpolant, only: x_qp_left, x_qp_right 
-    use face_interpolant, only: y_qp_left, y_qp_right
-    use face_interpolant, only:  z_qp_left, z_qp_right
-
-
+    use vartypes
     implicit none
     private
 
-    real, public, dimension(:, :, :, :), allocatable, target :: F
-    !< Store fluxes throught the I faces
-    real, public, dimension(:, :, :, :), allocatable, target :: G
-    !< Store fluxes throught the J faces
-    real, public, dimension(:, :, :, :), allocatable, target :: H
-    !< Store fluxes throught the K faces
-    real, public, dimension(:, :, :, :), allocatable, target :: residue
-    !< Store residue at each cell-center
-    real, dimension(:, :, :, :), pointer :: flux_p
-    !< Pointer/alias for the either F, G, or H
-
-    ! Public members
-    public :: setup_scheme
-    public :: destroy_scheme
     public :: compute_fluxes
-    public :: get_residue
     
     contains
 
-        subroutine setup_scheme()
-          !< Allocate memory to the flux variables
-
-            implicit none
-
-            call dmsg(1, 'AUSM+-UP', 'setup_scheme')
-
-            call alloc(F, 1, imx, 1, jmx-1, 1, kmx-1, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for ' // &
-                        'F - AUSM+-UP.')
-            call alloc(G, 1, imx-1, 1, jmx, 1, kmx-1, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for ' // &
-                        'G - AUSM+-UP.')
-            call alloc(H, 1, imx-1, 1, jmx-1, 1, kmx, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for ' // &
-                        'H - AUSM+-UP.')
-            call alloc(residue, 1, imx-1, 1, jmx-1, 1, kmx-1, 1, n_var, &
-                    errmsg='Error: Unable to allocate memory for ' // &
-                        'residue - AUSM+-UP.')
-
-        end subroutine setup_scheme
-
-        subroutine destroy_scheme()
-          !< Deallocate memory
-
-            implicit none
-
-            call dmsg(1, 'AUSM+-UP', 'destroy_scheme')
-            
-            call dealloc(F)
-            call dealloc(G)
-            call dealloc(H)
-
-        end subroutine destroy_scheme
-
-        subroutine compute_flux(f_dir)
+        subroutine compute_flux(Flux, f_qp_left, f_qp_right, faces, flags, flow, bc, dims)
           !< A generalized subroutine to calculate
           !< flux through the input direction, :x,y, or z
           !< which corresponds to the I,J, or K direction respectively
           !------------------------------------------------------------
 
             implicit none
-            character, intent(in) :: f_dir
-            !< Input direction for which flux are calcuated and store
+            integer, dimension(3), intent(in) :: flags
+            !< flags for direction switch
+            type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
+            type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+            type(boundarytype), intent(in) :: bc
+            !< boundary conditions and fixed values
+            real(wp), dimension(:, :, :, :), intent(inout) :: Flux
+            !< Store fluxes throught the any(I,J,K) faces
+            type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
+            !< Face quantities: area and unit normal
+            real(wp), dimension(1-flags(1):dims%imx-1+2*flags(1), 1-flags(2):dims%jmx-1+2*flags(2), 1-flags(3):dims%kmx-1+2*flags(3), 1:dims%n_var), intent(inout) :: f_qp_left, f_qp_right
+            !< primitve state variable at face
             integer :: i, j, k 
             !< Integer for DO loop
             integer :: i_f, j_f, k_f
             !< Flags to determine face direction
-            real, dimension(:, :, :), pointer :: fA, nx, ny, nz
-            !< Pointer to the face area and normal
-            real, dimension(:,:,:,:), pointer :: f_qp_left, f_qp_right
-            real, dimension(1:n_var) :: F_plus
+            real(wp), dimension(1:dims%n_var) :: F_plus
             !< Right flux through the face
-            real, dimension(1:n_var) ::F_minus
+            real(wp), dimension(1:dims%n_var) ::F_minus
             !< Left flux through  the face
-            real :: pbar
-            real :: mass
-            real :: HL, HR 
+            real(wp) :: pbar
+            real(wp) :: mass
+            real(wp) :: HL, HR 
             !< Enthalpy
-            real :: uL, uR
+            real(wp) :: uL, uR
             !< X-component of velocity
-            real :: vL, vR
+            real(wp) :: vL, vR
             !< Y-component of velocity
-            real :: wL, wR
+            real(wp) :: wL, wR
             !< Z-component of velocity
-            real :: pL, pR
+            real(wp) :: pL, pR
             !< Pressure
-            real :: rL, rR
+            real(wp) :: rL, rR
             !< Density
-            real :: cL, cR
+            real(wp) :: cL, cR
             !< Speed sound left/right
-            real :: C
+            real(wp) :: C
             !< Speed of sound at face
-            real :: ML, MR
+            real(wp) :: ML, MR
             !< Mach number left/right
-            real :: VnL, VnR
+            real(wp) :: VnL, VnR
             !< Face normal velocity left/right
-            real :: betaL, betaR
-            real :: alphaL, alphaR
-            real :: FmL, FmR
-            real :: Mface
-            real :: Cs
-            real :: Mb
-            real :: Mo
-            real :: fna
-            real :: Pu
-            real :: Mp
-            real :: alfa
-            real, parameter :: Kp = 0.25
-            real, parameter :: Ku = 0.75
-            real, parameter :: sigma = 1.0
+            real(wp) :: betaL, betaR
+            real(wp) :: alphaL, alphaR
+            real(wp) :: FmL, FmR
+            real(wp) :: Mface
+            real(wp) :: Cs
+            real(wp) :: Mb
+            real(wp) :: Mo
+            real(wp) :: fna
+            real(wp) :: Pu
+            real(wp) :: Mp
+            real(wp) :: alfa
+            real(wp), parameter :: Kp = 0.25
+            real(wp), parameter :: Ku = 0.75
+            real(wp), parameter :: sigma = 1.0
 
-            call dmsg(1, 'ausm+-UP', 'compute_flux '//trim(f_dir))
-            
-            select case (f_dir)
-                case ('x')
-                    i_f = 1
-                    j_f = 0
-                    k_f = 0
-                    flux_p => F
-                    fA => xA
-                    nx => xnx
-                    ny => xny
-                    nz => xnz
-                    f_qp_left => x_qp_left
-                    f_qp_right => x_qp_right
-                case ('y')
-                    i_f = 0
-                    j_f = 1
-                    k_f = 0
-                    flux_p => G
-                    fA => yA
-                    nx => ynx
-                    ny => yny
-                    nz => ynz
-                    f_qp_left => y_qp_left
-                    f_qp_right => y_qp_right
-                case ('z')
-                    i_f = 0
-                    j_f = 0
-                    k_f = 1
-                    flux_p => H
-                    fA => zA
-                    nx => znx
-                    ny => zny
-                    nz => znz
-                    f_qp_left => z_qp_left
-                    f_qp_right => z_qp_right
-                case default
-                    call dmsg(5, 'AUSM+-UP', 'compute_flux', &
-                            'Direction not recognised')
-                    stop
-            end select
+            DebugCall('compute_flux '//trim(f_dir))
+            i_f = flags(1)
+            j_f = flags(2)
+            k_f = flags(3)
             
 
-            do k = 1, kmx - 1 + k_f
-             do j = 1, jmx - 1 + j_f 
-              do i = 1, imx - 1 + i_f
+            do k = 1, dims%kmx - 1 + k_f
+             do j = 1, dims%jmx - 1 + j_f 
+              do i = 1, dims%imx - 1 + i_f
 
                 ! -- primitve face state assignment --
                 ! ---- left face quantities ----
@@ -210,15 +109,15 @@ module ausmUP
 
                 !-- calculated quntaties --
                 ! ---- total enthalpy ----
-                HL = (0.5*(uL*uL + vL*vL + wL*wL)) + ((gm/(gm - 1.))*pL/rL)
-                HR = (0.5*(uR*uR + vR*vR + wR*wR)) + ((gm/(gm - 1.))*pR/rR)
+                HL = (0.5*(uL*uL + vL*vL + wL*wL)) + ((flow%gm/(flow%gm - 1.))*pL/rL)
+                HR = (0.5*(uR*uR + vR*vR + wR*wR)) + ((flow%gm/(flow%gm - 1.))*pR/rR)
 
                 ! ---- face normal velocity ----
-                VnL = uL*nx(i, j, k) + vL*ny(i, j, k) + wL*nz(i, j, k)
-                VnR = uR*nx(i, j, k) + vR*ny(i, j, k) + wR*nz(i, j, k)
+                VnL = uL*faces(i, j, k)%nx + vL*faces(i, j, k)%ny + wL*faces(i, j, k)%nz
+                VnR = uR*faces(i, j, k)%nx + vR*faces(i, j, k)%ny + wR*faces(i, j, k)%nz
 
                 ! ---- speed of sound ----
-                cs = sqrt(2.0*(gm-1.0)*(0.5*(HL + HR))/(gm+1.0))
+                cs = sqrt(2.0*(flow%gm-1.0)*(0.5*(HL + HR))/(flow%gm+1.0))
                 cL = cs*cs/(max(cs, VnL))
                 cR = cs*cs/(max(cs,-VnR))
                 C  = min(cL, CR)
@@ -229,7 +128,7 @@ module ausmUP
                 Mb = sqrt(0.5*((VnL*VnL) + (VnR*VnR))/(C*C))
 
                 ! ---- function at face ----
-                 Mo   = sqrt(min(1.0, max(Mb*Mb, MInf*MInf)))
+                 Mo   = sqrt(min(1.0, max(Mb*Mb, flow%MInf*flow%MInf)))
                  fna  = Mo*(2.0 - Mo)
                  alfa = 3.0*(-4.0 + (5.0*fna*fna))/16.0
 
@@ -276,9 +175,9 @@ module ausmUP
                     mass = Mface*c*rR
                 end if
 
-                mass = mass *(i_f*make_F_flux_zero(i) &
-                            + j_f*make_G_flux_zero(j) &
-                            + k_f*make_H_flux_zero(k))
+                mass = mass *(i_f*bc%make_F_flux_zero(i) &
+                            + j_f*bc%make_G_flux_zero(j) &
+                            + k_f*bc%make_H_flux_zero(k))
 
 
                 ! F plus mass flux
@@ -298,80 +197,84 @@ module ausmUP
                 F_minus(5) = (F_minus(1) * HR)
 
                 !! -- Turbulence variables mass flux --
-                if(n_var>5) then
+                if(dims%n_var>5) then
                   F_plus(6:)  = F_Plus(1)  * f_qp_left(i,j,k,6:)
                   F_minus(6:) = F_minus(1) * f_qp_right(i,j,k,6:)
                 end if
 
                 ! total flux
-                flux_p(i, j, k, :) = F_plus(:) + F_minus(:)
+                Flux(i, j, k, :) = F_plus(:) + F_minus(:)
 
                 ! Get the total flux for a face
                 ! -- Pressure flux addition --
-                flux_p(i, j, K, 2) = flux_p(i, j, k, 2) + (pbar * nx(i, j, k))
-                flux_p(i, j, K, 3) = flux_p(i, j, k, 3) + (pbar * ny(i, j, k))
-                flux_p(i, j, K, 4) = flux_p(i, j, k, 4) + (pbar * nz(i, j, k))
+                Flux(i, j, K, 2) = Flux(i, j, k, 2) + (pbar * faces(i, j, k)%nx)
+                Flux(i, j, K, 3) = Flux(i, j, k, 3) + (pbar * faces(i, j, k)%ny)
+                Flux(i, j, K, 4) = Flux(i, j, k, 4) + (pbar * faces(i, j, k)%nz)
 
-                flux_p(i, j, k, :) = flux_p(i, j, k, :)*fA(i,j,k)
+                Flux(i, j, k, :) = Flux(i, j, k, :)*faces(i,j,k)%A
               end do
              end do
             end do 
 
         end subroutine compute_flux
 
-        subroutine compute_fluxes()
+        subroutine compute_fluxes(F,G,H,x_qp_l,x_qp_r,y_qp_l,y_qp_r,z_qp_l,z_qp_r, Ifaces, Jfaces, Kfaces, flow, bc, dims)
+        !subroutine compute_fluxes(F,G,H, flow, dims)
           !< Call to compute fluxes throught faces in each direction
             
             implicit none
-            
-            call dmsg(1, 'AUSM+-UP', 'compute_fluxes')
+            type(extent), intent(in) :: dims
+            !< Extent of the domain:imx,jmx,kmx
+            type(flowtype), intent(in) :: flow
+            !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+            real(wp), dimension(:, :, :, :), intent(inout) :: F
+            !< Store fluxes throught the I faces
+            real(wp), dimension(:, :, :, :), intent(inout) :: G
+            !< Store fluxes throught the J faces
+            real(wp), dimension(:, :, :, :), intent(inout) :: H
+            !< Store fluxes throught the K faces
+            type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+            !< Store face quantites for I faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+            !< Store face quantites for J faces 
+            type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+            !< Store face quantites for K faces 
+            real(wp), dimension(0:dims%imx+1,1:dims%jmx-1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: x_qp_l, x_qp_r
+            !< Store primitive state at the I-face 
+            real(wp), dimension(1:dims%imx-1,0:dims%jmx+1,1:dims%kmx-1,1:dims%n_var), intent(inout) :: y_qp_l, y_qp_r
+            !< Store primitive state at the J-face 
+            real(wp), dimension(1:dims%imx-1,1:dims%jmx-1,0:dims%kmx+1,1:dims%n_var), intent(inout) :: z_qp_l, z_qp_r
+            !< Store primitive state at the K-face 
+            type(boundarytype), intent(in) :: bc
+            !< boundary conditions and fixed values
+            integer, dimension(3) :: flags
 
-            call compute_flux('x')
+            
+            DebugCall('compute_fluxes')
+
+            flags=(/1,0,0/)
+            call compute_flux(F, x_qp_l, x_qp_r, Ifaces, flags, flow, bc, dims)
             if (any(isnan(F))) then
-                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: F flux Nan detected')
-                stop
+              Fatal_error
             end if    
 
-            call compute_flux('y')
+            flags=(/0,1,0/)
+            call compute_flux(G, y_qp_l, y_qp_r, Jfaces, flags, flow, bc, dims)
             if (any(isnan(G))) then 
-                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: G flux Nan detected')
-                stop
+              Fatal_error
             end if    
             
-            if(kmx==2) then
+            if(dims%kmx==2) then
               H = 0.
             else
-              call compute_flux('z')
+              flags=(/0,0,1/)
+              call compute_flux(H, z_qp_l, z_qp_r, Kfaces, flags, flow, bc, dims)
             end if
             if (any(isnan(H))) then
-                call dmsg(5, 'ausmUP', 'compute_residue', 'ERROR: H flux Nan detected')
-                stop
+              Fatal_error
             end if
 
         end subroutine compute_fluxes
 
-        subroutine get_residue()
-            !< Compute the residue for the ausm+-UP scheme
-            !-----------------------------------------------------------
-
-            implicit none
-            
-            integer :: i, j, k, l
-
-            call dmsg(1, 'AUSM+-UP', 'compute_residue')
-
-            do l = 1, n_var
-             do k = 1, kmx - 1
-              do j = 1, jmx - 1
-               do i = 1, imx - 1
-               residue(i, j, k, l) = (F(i+1, j, k, l) - F(i, j, k, l)) &
-                                   + (G(i, j+1, k, l) - G(i, j, k, l)) &
-                                   + (H(i, j, k+1, l) - H(i, j, k, l))
-               end do
-              end do
-             end do
-            end do
-        
-        end subroutine get_residue
 
 end module ausmUP

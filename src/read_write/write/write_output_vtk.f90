@@ -6,115 +6,137 @@ module write_output_vtk
   !---------------------------------------------------------
 #include "../../debug.h"
 #include "../../error.h"
-  use global     , only : OUT_FILE_UNIT
-  use global     , only : OUTIN_FILE_UNIT
-  use global     , only : outin_file
-
-  use global_vars, only : write_data_format
-  use global_vars, only : write_file_format
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use global_vars, only : grid_x
-  use global_vars, only : grid_y
-  use global_vars, only : grid_z
-  use global_vars, only : density
-  use global_vars, only : x_speed
-  use global_vars, only : y_speed
-  use global_vars, only : z_speed
-  use global_vars, only : pressure
-  use global_vars, only : tk
-  use global_vars, only : tw
-  use global_vars, only : tkl
-  use global_vars, only : tv
-  use global_vars, only : tgm
-  use global_vars, only : te
-  use global_vars, only : mu
-  use global_vars, only : mu_t
-  use global_vars, only : density_inf
-  use global_vars, only : x_speed_inf
-  use global_vars, only : y_speed_inf
-  use global_vars, only : z_speed_inf
-  use global_vars, only : pressure_inf
-  use global_vars, only : gm
-  use global_vars, only : dist
-  use global_vars, only : vis_resnorm
-  use global_vars, only : cont_resnorm
-  use global_vars, only : x_mom_resnorm
-  use global_vars, only : y_mom_resnorm
-  use global_vars, only : z_mom_resnorm
-  use global_vars, only : energy_resnorm
-  use global_vars, only : resnorm
-  use global_vars, only :   mass_residue
-  use global_vars, only :  x_mom_residue
-  use global_vars, only :  y_mom_residue
-  use global_vars, only :  z_mom_residue
-  use global_vars, only : energy_residue
-  use global_vars, only : TKE_residue
-  use global_vars, only : Tv_residue
-  use global_vars, only : intermittency
-  use global_vars, only : ExtraVar1
-  use global_vars, only : ExtraVar2
-  use global_vars, only : ExtraVar3
-  use global_vars, only : ExtraVar4
-  use global_vars, only : ExtraVar5
-
-  use global_vars, only : process_id
-  use global_vars, only : turbulence
-  use global_vars, only : mu_ref
-  use global_vars, only : current_iter
-  use global_vars, only : max_iters
-  use global_vars, only : w_count
-  use global_vars, only : w_list
-
+  use vartypes
+  use viscosity, only : mu
+  use viscosity, only : mu_t
+  use wall_dist, only : dist
   use global_sst , only : sst_F1
-  use global_vars, only : gradu_x
-  use global_vars, only : gradu_y
-  use global_vars, only : gradu_z
-  use global_vars, only : gradv_x
-  use global_vars, only : gradv_y
-  use global_vars, only : gradv_z
-  use global_vars, only : gradw_x
-  use global_vars, only : gradw_y
-  use global_vars, only : gradw_z
-  use global_vars, only : gradT_x
-  use global_vars, only : gradT_y
-  use global_vars, only : gradT_z
-  use global_vars, only : gradtk_x
-  use global_vars, only : gradtk_y
-  use global_vars, only : gradtk_z
-  use global_vars, only : gradtw_x
-  use global_vars, only : gradtw_y
-  use global_vars, only : gradtw_z
+  use gradients, only : gradu_x
+  use gradients, only : gradu_y
+  use gradients, only : gradu_z
+  use gradients, only : gradv_x
+  use gradients, only : gradv_y
+  use gradients, only : gradv_z
+  use gradients, only : gradw_x
+  use gradients, only : gradw_y
+  use gradients, only : gradw_z
+  use gradients, only : gradT_x
+  use gradients, only : gradT_y
+  use gradients, only : gradT_z
+  use gradients, only : gradtk_x
+  use gradients, only : gradtk_y
+  use gradients, only : gradtk_z
+  use gradients, only : gradtw_x
+  use gradients, only : gradtw_y
+  use gradients, only : gradtw_z
 
   use utils
-  use string
 
   implicit none
   private
+  integer :: OUT_FILE_UNIT
   integer :: i,j,k
-  real    :: speed_inf
-  character(len=8) :: file_format
-  character(len=16) :: data_format
-  character                          :: newline=achar(10)
+  integer :: imx, jmx, kmx
+  real(wp), dimension(:, :, :), pointer :: density      
+   !< Rho pointer, point to slice of qp (:,:,:,1)
+  real(wp), dimension(:, :, :), pointer :: x_speed      
+   !< U pointer, point to slice of qp (:,:,:,2) 
+  real(wp), dimension(:, :, :), pointer :: y_speed      
+   !< V pointer, point to slice of qp (:,:,:,3) 
+  real(wp), dimension(:, :, :), pointer :: z_speed      
+   !< W pointer, point to slice of qp (:,:,:,4)
+  real(wp), dimension(:, :, :), pointer :: pressure     
+   !< P pointer, point to slice of qp (:,:,:,5)
+  real(wp), dimension(:, :, :), pointer :: tk        
+  !< TKE, point to slice of qp (:,:,:,6)
+  real(wp), dimension(:, :, :), pointer :: tw        
+  !< Omega, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: te        
+  !< Dissipation, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: tv        
+  !< SA visocity, point to slice of qp (:,:,:,6)
+  real(wp), dimension(:, :, :), pointer :: tkl       
+  !< KL K-KL method, point to slice of qp (:,:,:,7)
+  real(wp), dimension(:, :, :), pointer :: tgm       
+  !< Intermittency of LCTM2015, point to slice of qp (:,:,:,8)
 
   public :: write_file
 
   contains
 
-    subroutine write_file()
+    subroutine write_file(file_handler, state, nodes, control, scheme, dims)
       !< Write the header and variables in the file "process_xx.dat"
       implicit none
+      integer, intent(in) :: file_handler
+      type(controltype), intent(in) :: control
+      type(schemetype), intent(in) :: scheme
+      type(extent), intent(in) :: dims
+      type(nodetype), dimension(-2:dims%imx+3,-2:dims%jmx+3,-2:dims%kmx+3), intent(in) :: nodes 
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in), target :: state
       integer :: n
       character(len=*), parameter :: err="Write error: Asked to write non-existing variable- "
       DebugCall("write_file")
 
-      call write_header()
-      call write_grid()
+      OUT_FILE_UNIT = file_handler
 
-      do n = 1,w_count
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
 
-        select case (trim(w_list(n)))
+      density(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 1)
+      x_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 2)
+      y_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 3)
+      z_speed(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 4)
+      pressure(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 5)
+
+      select case (trim(scheme%turbulence))
+          case ("none")
+              !include nothing
+              continue
+          
+          case ("sst", "sst2003", "bsl", "des-sst", "kw")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("kkl")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              tkl(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("sa", "saBC")
+              tv(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+
+          case ("ke")
+              tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
+              te(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
+
+          case ("les")
+            continue
+            ! todo
+
+          case DEFAULT
+            Fatal_error
+      end select
+
+      ! Transition modeling
+      select case(trim(scheme%transition))
+        case('lctm2015')
+          tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 8)
+!          tgm_inf => qp_inf(n_var)
+
+        case('bc', 'none')
+          !do nothing
+          continue
+
+        case DEFAULT
+          Fatal_error
+      end Select
+
+      call write_header(control%Write_data_format)
+      call write_grid(nodes)
+
+      do n = 1,control%w_count
+
+        select case (trim(control%w_list(n)))
 
           case('Velocity')
             call write_velocity()
@@ -151,15 +173,6 @@ module write_output_vtk
 
           case('Wall_distance')
             call write_scalar(dist, "dist", -2)
-
-          case('Resnorm')
-            call write_resnorm()
-
-          case('TKE_residue')
-            call write_scalar(TKE_residue ,"TKE_residue", 1)
-
-          case('Tv_residue')
-            call write_scalar(Tv_residue ,"Tv_residue", 1)
 
           case('F1')
             call write_scalar(sst_F1 ,"F1", -2)
@@ -218,53 +231,12 @@ module write_output_vtk
           case('Dtwdz')
             call write_scalar(gradtw_z,"dtwdz", 0)
 
-          case('y-mom-residue')
-            call write_scalar(y_mom_residue, 'Y_mom_residue', 1)
-
-          case('Intermittency')
-            call write_scalar(intermittency, "Intermittency", -2)
-          
-          case('extravar1')
-            if(allocated(ExtraVar1))then
-              call write_scalar(ExtraVar1, "ExtraVar1", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar2')
-            if(allocated(ExtraVar2))then
-              call write_scalar(ExtraVar2, "ExtraVar2", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar3')
-            if(allocated(ExtraVar3))then
-              call write_scalar(ExtraVar3, "ExtraVar3", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar4')
-            if(allocated(ExtraVar4))then
-              call write_scalar(ExtraVar4, "ExtraVar4", -2)
-            else
-              Issue_warning
-            end if
-          
-          case('extravar5')
-            if(allocated(ExtraVar5))then
-              call write_scalar(ExtraVar5, "ExtraVar5", -2)
-            else
-              Issue_warning
-            end if
-          
           case('do not write')
             ! do nothing
             continue
 
           case Default
-            print*, err//trim(w_list(n))//" to file"
+            print*, err//trim(control%w_list(n))//" to file"
 
         end select
       end do
@@ -273,36 +245,29 @@ module write_output_vtk
     end subroutine write_file
 
 
-    subroutine write_header()
-      !< Write the header in the output file in the tecplot format
-      implicit none
+    subroutine write_header(Write_data_format)
+        !< Write the header in the output file in the tecplot format
+        implicit none
+        character(len=*), intent(in) :: Write_data_format
 
-      DebugCall("write_header")
+        DebugCall("write_header")
 
-      if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, fmt='(a)') '# vtk DataFile Version 3.1'
         write(OUT_FILE_UNIT, '(a)') 'cfd-iitm output'   ! comment line
         write(OUT_FILE_UNIT, '(a)') trim(Write_data_format)
         write(OUT_FILE_UNIT, '(a)') 'DATASET STRUCTURED_GRID'
         !write(OUT_FILE_UNIT, *)
-      elseif (write_data_format == 'BINARY') then
-        write(OUT_FILE_UNIT) '# vtk DataFile Version 3.1'//newline
-        write(OUT_FILE_UNIT) 'cfd-iitm output'//newline
-        write(OUT_FILE_UNIT) trim(Write_data_format)//newline
-        write(OUT_FILE_UNIT) 'DATASET STRUCTURED_GRID'//newline
-        write(OUT_FILE_UNIT) newline
-      end if
 
 
     end subroutine write_header
 
-    subroutine write_grid()
-      !< Write the grid information in the output file
-      implicit none
+    subroutine write_grid(nodes)
+        !< Write the grid information in the output file
+        implicit none
+        type(nodetype), dimension(-2:imx+3,-2:jmx+3,-2:kmx+3), intent(in) :: nodes 
 
-      ! write grid point coordinates
-      DebugCall("write_grid")
-      if (Write_data_format == "ASCII") then
+        ! write grid point coordinates
+        DebugCall("write_grid")
         write(OUT_FILE_UNIT, fmt='(a, i0, a, i0, a, i0)') &
             'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
         write(OUT_FILE_UNIT, fmt='(a, i0, a)') &
@@ -311,37 +276,21 @@ module write_output_vtk
          do j = 1, jmx
           do i = 1, imx
               write(OUT_FILE_UNIT, fmt='(f0.16, a, f0.16, a, f0.16)') &
-                  grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k)
+                  nodes(i, j, k)%x, ' ', nodes(i, j, k)%y, ' ', nodes(i, j, k)%z
           end do
          end do
         end do
         write(OUT_FILE_UNIT, *)
-      elseif (write_data_format == 'BINARY') then
-        write(OUT_FILE_UNIT) &
-            'DIMENSIONS ', imx, ' ', jmx, ' ', kmx
-        write(OUT_FILE_UNIT) &
-            'POINTS ', imx*jmx*kmx, ' DOUBLE'
-        do k = 1, kmx
-         do j = 1, jmx
-          do i = 1, imx
-              write(OUT_FILE_UNIT) &
-                  grid_x(i, j, k), ' ', grid_y(i, j, k), ' ', grid_z(i, j, k), newline
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT)
-      end if
 
     end subroutine write_grid
 
     subroutine write_velocity()
-      !< Write the velocity vector in the output file
-      implicit none
-      DebugCall("write_velocity")
+        !< Write the velocity vector in the output file
+        implicit none
+        DebugCall("write_velocity")
 
         ! Cell data
         ! Writing Velocity
-      if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, fmt='(a, i0)') 'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
         write(OUT_FILE_UNIT, '(a)') 'VECTORS Velocity FLOAT'
         do k = 1, kmx - 1
@@ -353,142 +302,20 @@ module write_output_vtk
          end do
         end do
         write(OUT_FILE_UNIT, *)
-      elseif (write_data_format == 'BINARY') then
-        write(OUT_FILE_UNIT) 'CELL_DATA ', (imx-1)*(jmx-1)*(kmx-1)
-        write(OUT_FILE_UNIT) 'VECTORS Velocity DOUBLE'
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            write(OUT_FILE_UNIT) &
-                x_speed(i, j, k), ' ', y_speed(i, j, k), ' ', z_speed(i, j, k), newline
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT)
-      end if
 
     end subroutine write_velocity
 
-    subroutine write_resnorm()
-      !< Write the residual information in the output file
-      implicit none
-
-      DebugCall("write_resnorm")
-      ! Writing resnorm for each cell
-      if (Write_data_format == "ASCII") then
-        write(OUT_FILE_UNIT, '(a)') 'SCALARS Resnorm FLOAT'
-        write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
-        speed_inf = sqrt(x_speed_inf**2 + y_speed_inf**2 &
-                    + z_speed_inf**2)
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-
-            energy_resnorm = (                                      &
-                              (                                     &
-                               energy_residue(i, j, k) /            &
-                              (density_inf * speed_inf *            &
-                              ((0.5 * speed_inf * speed_inf) +      &
-                              (gm/(gm-1)*pressure_inf/density_inf)))&
-                              ) ** 2                                &
-                            )
-
-            x_mom_resnorm = (                                      &
-                              (x_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )
-
-            y_mom_resnorm = (                                      &
-                              (y_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )
-
-            z_mom_resnorm = (                                      &
-                              (z_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )
-            cont_resnorm =(                                       &
-                             (mass_residue(i, j, k) /             &
-                             (density_inf * speed_inf)) ** 2      &
-                            )
-            vis_resnorm =    sqrt(                    &
-                                    cont_resnorm    + &
-                                    x_mom_resnorm   + &
-                                    y_mom_resnorm   + &
-                                    z_mom_resnorm   + &
-                                    energy_resnorm    &
-                                 )
-
-            write(OUT_FILE_UNIT, fmt='(f0.16)') vis_resnorm
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT, *)
-      elseif (write_data_format == 'BINARY') then
-        write(OUT_FILE_UNIT) 'SCALARS Resnorm DOUBLE'
-        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'
-        speed_inf = sqrt(x_speed_inf**2 + y_speed_inf**2 &
-                    + z_speed_inf**2)
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-
-            energy_resnorm = (                                      &
-                              (                                     &
-                               energy_residue(i, j, k) /            &
-                              (density_inf * speed_inf *            &
-                              ((0.5 * speed_inf * speed_inf) +      &
-                              (gm/(gm-1)*pressure_inf/density_inf)))&
-                              ) ** 2                                &
-                            )
-
-            x_mom_resnorm = (                                      &
-                              (x_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )
-
-            y_mom_resnorm = (                                      &
-                              (y_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )
-
-            z_mom_resnorm = (                                      &
-                              (z_mom_residue(i, j, k) /            &
-                              (density_inf * speed_inf ** 2)) ** 2 &
-                             )
-            cont_resnorm =(                                       &
-                             (mass_residue(i, j, k) /             &
-                             (density_inf * speed_inf)) ** 2      &
-                            )
-            vis_resnorm =    sqrt(                    &
-                                    cont_resnorm    + &
-                                    x_mom_resnorm   + &
-                                    y_mom_resnorm   + &
-                                    z_mom_resnorm   + &
-                                    energy_resnorm    &
-                                 )
-
-            write(OUT_FILE_UNIT) vis_resnorm
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT)
-      end if
-
-    end subroutine write_resnorm
 
 
     subroutine write_scalar(var, name, index)
-      !< Write the scalar variable in the output file
-      implicit none
-      integer, intent(in) :: index
-      real, dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var
-      character(len=*),       intent(in):: name
-      character(len=128)                  :: line
+        !< Write the scalar variable in the output file
+        implicit none
+        integer, intent(in) :: index
+        real(wp), dimension(index:imx-index,index:jmx-index,index:kmx-index), intent(in) :: var
+        character(len=*),       intent(in):: name
 
-      DebugCall("write_scalar: "//trim(name))
+        DebugCall("write_scalar: "//trim(name))
 
-      if (Write_data_format == "ASCII") then
         write(OUT_FILE_UNIT, '(a)') 'SCALARS '//trim(name)//' FLOAT'
         write(OUT_FILE_UNIT, '(a)') 'LOOKUP_TABLE default'
         do k = 1, kmx - 1
@@ -499,19 +326,6 @@ module write_output_vtk
          end do
         end do
         write(OUT_FILE_UNIT, *)
-      elseif (write_data_format == 'BINARY') then
-        write(OUT_FILE_UNIT) 'SCALARS '//trim(name)//' FLOAT'//newline
-        write(OUT_FILE_UNIT) 'LOOKUP_TABLE default'//newline
-        do k = 1, kmx - 1
-         do j = 1, jmx - 1
-          do i = 1, imx - 1
-            write(line, "(ES28.16E4)") var(i,j,k)
-            write(OUT_FILE_UNIT) trim(line)//newline
-          end do
-         end do
-        end do
-        write(OUT_FILE_UNIT)  newline
-      end if
 
     end subroutine write_scalar
 

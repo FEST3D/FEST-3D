@@ -7,6 +7,7 @@ module plusgs
   !< Performance of low-dissipation Euler fluxes and preconditioned LU-SGS 
   !< at low speeds, Communications in Computational Physics, vol. 10 no. 1, pp.90-119, 2011
   !-----------------------------------------------
+  use vartypes
   use global_kkl , only : cphi1
   use global_kkl , only : cphi2
   use global_kkl , only : fphi
@@ -28,87 +29,22 @@ module plusgs
   use global_sa , only : kappa_sa
   use global_sa , only : cv1_3
   use global_sa , only : cw3_6
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use global_vars, only : R_gas
-  use global_vars, only : gm
-  use global_vars, only : Pr
-  use global_vars, only : tPr
-  use global_vars, only : DCCVnX
-  use global_vars, only : DCCVnY
-  use global_vars, only : DCCVnZ
-  use global_vars, only : CCnormalX
-  use global_vars, only : CCnormalY
-  use global_vars, only : CCnormalZ
 
-  use global_vars, only : volume
-  use global_vars, only : xnx, xny, xnz !face unit normal x
-  use global_vars, only : ynx, yny, ynz !face unit normal y
-  use global_vars, only : znx, zny, znz !face unit normal z
-  use global_vars, only : xA, yA, zA    !face area
-    
-  use global_vars, only : n_var
-  use global_vars, only : imx
-  use global_vars, only : jmx
-  use global_vars, only : kmx
-  use global_vars, only : gm
-  use global_vars, only : sst_n_var
-  use global_vars, only : qp
-  use global_vars, only : qp_inf
-  use global_vars, only : density
-  use global_vars, only : x_speed
-  use global_vars, only : y_speed
-  use global_vars, only : z_speed
-  use global_vars, only : pressure
-  use global_vars, only : dist
-  use global_vars, only : mu
-  use global_vars, only : mu_t
-  use global_vars, only : tk_inf
-  use global_vars, only : tkl_inf
-  use global_vars, only : free_stream_tu
-  use global_vars, only : tk
-  use global_vars, only : tw
-  use global_vars, only : vel_mag
-  use global_vars, only : Minf
+  use wall_dist, only : dist
+  use viscosity, only : mu
+  use viscosity, only : mu_t
 
-  use global_vars, only : delta_t
-  use global_vars, only : turbulence
-  use global_vars, only : transition
-  use global_vars, only : Reynolds_number
-  use global_vars, only : process_id
-
-  use global_vars, only: F_p
-  use global_vars, only: G_p
-  use global_vars, only: H_p
-  use global_vars, only: mass_residue
-  use global_vars, only: x_mom_residue
-  use global_vars, only: y_mom_residue
-  use global_vars, only: z_mom_residue
-  use global_vars, only: energy_residue
-  use global_vars, only: TKE_residue
-  use global_vars, only: omega_residue
-  use global_vars, only: kl_residue
-  use global_vars, only: residue
-  use global_vars, only: mu_ref
-
-  use global_vars, only: gradu_x
-  use global_vars, only: gradu_y
-  use global_vars, only: gradu_z
-  use global_vars, only: gradv_x
-  use global_vars, only: gradv_y
-  use global_vars, only: gradv_z
-  use global_vars, only: gradw_x
-  use global_vars, only: gradw_y
-  use global_vars, only: gradw_z
-  use geometry   , only: CellCenter
+  use gradients  , only: gradu_x
+  use gradients  , only: gradu_y
+  use gradients  , only: gradu_z
+  use gradients  , only: gradv_x
+  use gradients  , only: gradv_y
+  use gradients  , only: gradv_z
+  use gradients  , only: gradw_x
+  use gradients  , only: gradw_y
+  use gradients  , only: gradw_z
 
   use utils, only: alloc
-  use utils, only:  dealloc 
-  use utils, only:  dmsg
-  use utils, only:  DEBUG_LEVEL
-
-  use string
 
   !--- sst implicit update ---!
   use global_sst, only : sst_F1
@@ -120,107 +56,71 @@ module plusgs
   use global_kkl, only : sigma_k
   use global_kkl, only : sigma_phi
 
-  !-------mapping --------------!
-  use mapping, only : PiDir
-  use mapping, only : PjDir
-  use mapping, only : PkDir
-  use mapping, only : Pilo
-  use mapping, only : Pjlo
-  use mapping, only : Pklo
-  use mapping, only : Pihi
-  use mapping, only : Pjhi
-  use mapping, only : Pkhi
-  use mapping, only : mpi_class
-  use global_vars, only: imin_id
-  use global_vars, only: jmin_id
-  use global_vars, only: kmin_id
-  use global_vars, only: imax_id
-  use global_vars, only: jmax_id
-  use global_vars, only: kmax_id
-  use global_vars, only : dir_switch
-  use global_vars, only: PbcId
-
-
-#include "error.inc"
+#include "debug.h"
+#include "error.h"
 #include "mpi.inc"
 
 
-  real, dimension(:,:,:,:), allocatable :: delQ
+  real(wp), dimension(:,:,:,:), allocatable :: delQ
   !< Change of state variable (solution) over one time-step
-  real, dimension(:,:,:,:), allocatable :: delQstar
+  real(wp), dimension(:,:,:,:), allocatable :: delQstar
   !< Intermediate change of state variable over one time-step
-  real, dimension(:,:,:), allocatable, target :: dummy
+  real(wp), dimension(:,:,:), allocatable, target :: dummy
   !< Dummy variable
-  real, dimension(:,:,:), pointer :: tmu
+  real(wp), dimension(:,:,:), pointer :: tmu
   !< Pointer to turbulent viscosity
-  real, dimension(:,:,:), pointer :: mmu
+  real(wp), dimension(:,:,:), pointer :: mmu
   !< Pointer to molecular viscosity
 
-  !parallel communication
-  integer :: ibuf_size
-  !< Size of the buffer for I face interface
-  integer :: jbuf_size
-  !< Size of the buffer for J face interface
-  integer :: kbuf_size
-  !< Size of the buffer for K face interface
-  real, dimension(:), allocatable :: imin_send_buf
-  !< Array to store data to send data for Imin face
-  real, dimension(:), allocatable :: jmin_send_buf
-  !< Array to store data to send data for Jmin face
-  real, dimension(:), allocatable :: kmin_send_buf
-  !< Array to store data to send data for Kmin face
-  real, dimension(:), allocatable :: imin_recv_buf
-  !< Array to store data to receive data for Imin face
-  real, dimension(:), allocatable :: jmin_recv_buf
-  !< Array to store data to receive data for Jmin face
-  real, dimension(:), allocatable :: kmin_recv_buf
-  !< Array to store data to receive data for Kmin face
-  real, dimension(:), allocatable :: imax_send_buf
-  !< Array to store data to send data for Imax face
-  real, dimension(:), allocatable :: jmax_send_buf
-  !< Array to store data to send data for Jmax face
-  real, dimension(:), allocatable :: kmax_send_buf
-  !< Array to store data to send data for Kmax face
-  real, dimension(:), allocatable :: imax_recv_buf
-  !< Array to store data to receive data for Imax face
-  real, dimension(:), allocatable :: jmax_recv_buf
-  !< Array to store data to receive data for Jmax face
-  real, dimension(:), allocatable :: kmax_recv_buf
-  !< Array to store data to receive data for Kmax face
+  integer :: imx, jmx, kmx, n_var
+  real(wp) :: gm, mu_ref, Reynolds_number, free_stream_tu
+  real(wp) :: tk_inf
+  real(wp) :: tkl_inf
+  real(wp) :: tPr, Pr, R_gas
+  real(wp) :: MInf
 
   public :: update_with_plusgs
   public :: setup_plusgs
-  public :: destroy_plusgs
+!  public :: destroy_plusgs
 
   contains
 
-    subroutine setup_plusgs()
+    subroutine setup_plusgs(control, scheme, flow, dims)
       !< Allocate array memory for data communication
       implicit none
-      character(len=*), parameter :: &
-        errmsg="module: LUSGS, subrouinte setup"
+      type(controltype), intent(in) :: control
+      !< Control parameters
+      type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
+      type(flowtype), intent(in) :: flow
+      !< Information about fluid flow: freestream-speed, ref-viscosity,etc.
+      type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
+      character(len=*), parameter :: errmsg="module: LUSGS, subrouinte setup"
+      !< Error message 
 
-      ibuf_size = (jmx-1)*(kmx-1)*n_var*1
-      jbuf_size = (imx-1)*(kmx-1)*n_var*1
-      kbuf_size = (imx-1)*(jmx-1)*n_var*1
-      call alloc(imin_send_buf,1,ibuf_size, errmsg)
-      call alloc(jmin_send_buf,1,jbuf_size, errmsg)
-      call alloc(kmin_send_buf,1,kbuf_size, errmsg)
-      call alloc(imin_recv_buf,1,ibuf_size, errmsg)
-      call alloc(jmin_recv_buf,1,jbuf_size, errmsg)
-      call alloc(kmin_recv_buf,1,kbuf_size, errmsg)
-      call alloc(imax_send_buf,1,ibuf_size, errmsg)
-      call alloc(jmax_send_buf,1,jbuf_size, errmsg)
-      call alloc(kmax_send_buf,1,kbuf_size, errmsg)
-      call alloc(imax_recv_buf,1,ibuf_size, errmsg)
-      call alloc(jmax_recv_buf,1,jbuf_size, errmsg)
-      call alloc(kmax_recv_buf,1,kbuf_size, errmsg)
+      imx = dims%imx
+      jmx = dims%jmx
+      kmx = dims%kmx
+
+      n_var = control%n_var
+      gm = flow%gm
+      mu_ref = flow%mu_ref
+      Reynolds_number = flow%Reynolds_number
+      free_stream_tu = flow%tu_inf
+      tk_inf = flow%tk_inf
+      tkl_inf = flow%tkl_inf
+      tpr = flow%tpr
+      pr = flow%pr
+      MInf = flow%MInf
+      R_gas = flow%R_gas
+
 
       call alloc(delQ, 0, imx, 0, jmx, 0, kmx, 1, n_var)
       call alloc(delQstar, 0, imx, 0, jmx, 0, kmx, 1, n_var)
 
 
-      if(mu_ref==0.0 .or. turbulence=='none') then
+      if(mu_ref==0.0 .or. scheme%turbulence=='none') then
         call alloc(dummy, 0, imx, 0, jmx, 0, kmx)
         dummy = 0.0
       end if
@@ -229,47 +129,46 @@ module plusgs
       else
         mmu => mu
       end if
-      if(trim(turbulence)=='none')then
+      if(trim(scheme%turbulence)=='none')then
         tmu => dummy
       else
         tmu => mu_t
       end if
     end subroutine setup_plusgs
 
-    subroutine destroy_plusgs()
-      !< Unallocate the memory required by LU-SGS module
-      implicit none
-      call dealloc(imin_send_buf)
-      call dealloc(jmin_send_buf)
-      call dealloc(kmin_send_buf)
-      call dealloc(imin_recv_buf)
-      call dealloc(jmin_recv_buf)
-      call dealloc(kmin_recv_buf)
-      call dealloc(imax_send_buf)
-      call dealloc(jmax_send_buf)
-      call dealloc(kmax_send_buf)
-      call dealloc(imax_recv_buf)
-      call dealloc(jmax_recv_buf)
-      call dealloc(kmax_recv_buf)
-      call dealloc(delQ)
-      call dealloc(delQstar)
-      call dealloc(dummy)
-    end subroutine destroy_plusgs
 
-    subroutine update_with_plusgs()
+    subroutine update_with_plusgs(qp, delta_t, cells, Ifaces,Jfaces,Kfaces,residue, scheme, dims)
       !< Time-integrate with LU_SGS method
       implicit none
+      type(schemetype), intent(in) :: scheme
+      !< finite-volume Schemes
+      type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
 
-      select case(trim(turbulence))
+      select case(trim(scheme%turbulence))
         case('none')
-          call update_laminar_variables()
+          call update_laminar_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
 
         case('sst', 'sst2003')
-          select case(trim(transition))
+          select case(trim(scheme%transition))
             case('none', 'bc')
-              call update_SST_variables()
+              call update_SST_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
             case('lctm2015')
-              call update_lctm2015()
+              call update_lctm2015(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
             case DEFAULT
               Fatal_error
           end select
@@ -278,7 +177,7 @@ module plusgs
 !          call update_KKL_variables()
 
         case('sa', 'saBC')
-          call update_SA_variables()
+          call update_SA_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
 
         case Default
           Fatal_error
@@ -290,57 +189,73 @@ module plusgs
 
 
 
-    subroutine update_laminar_variables()
+    subroutine update_laminar_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update laminar flow with LU-SGS scheme
       implicit none
+      type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
-        real, dimension(1:5)     :: deltaU
-        real                     :: D
-        real, dimension(1:5)     :: conservativeQ
-        real, dimension(1:5)     :: OldIminusFlux
-        real, dimension(1:5)     :: OldJminusFlux
-        real, dimension(1:5)     :: OldKminusFlux
-        real, dimension(1:5)     :: NewIminusFlux
-        real, dimension(1:5)     :: NewJminusFlux
-        real, dimension(1:5)     :: NewKminusFlux
-        real, dimension(1:5)     :: DelIminusFlux
-        real, dimension(1:5)     :: DelJminusFlux
-        real, dimension(1:5)     :: DelKminusFlux
-        real, dimension(1:6)     :: LambdaTimesArea
-        real, dimension(1:5)     :: Q0 ! state at cell
-        real, dimension(1:5)     :: Q1 ! state at neighbours 
-        real, dimension(1:5)     :: Q2
-        real, dimension(1:5)     :: Q3
-        real, dimension(1:5)     :: Q4
-        real, dimension(1:5)     :: Q5
-        real, dimension(1:5)     :: Q6
-        real, dimension(1:5)     :: DQ0! change in state
-        real, dimension(1:5)     :: DQ1
-        real, dimension(1:5)     :: DQ2
-        real, dimension(1:5)     :: DQ3
-        real, dimension(1:5)     :: DQ4
-        real, dimension(1:5)     :: DQ5
-        real, dimension(1:5)     :: DQ6
-        real, dimension(1:7)     :: Flist1
-        real, dimension(1:7)     :: Flist2
-        real, dimension(1:7)     :: Flist3
-        real, dimension(1:7)     :: Flist4
-        real, dimension(1:7)     :: Flist5
-        real, dimension(1:7)     :: Flist6
-        real, dimension(1:3)     :: C0
-        real, dimension(1:3)     :: C1
-        real, dimension(1:3)     :: C2
-        real, dimension(1:3)     :: C3
-        real, dimension(1:3)     :: C4
-        real, dimension(1:3)     :: C5
-        real, dimension(1:3)     :: C6
-        real                     :: eps
-        real                     :: M
-        real                     :: VMag
-        real                     :: SoundMag
-        real                     :: u,v,w,r,p, H
-        real                     :: factor
-        real, dimension(1:5,1:5) :: PrecondInv
+        real(wp), dimension(1:5)     :: deltaU
+        real(wp)                     :: D
+        real(wp), dimension(1:5)     :: conservativeQ
+        real(wp), dimension(1:5)     :: OldIminusFlux
+        real(wp), dimension(1:5)     :: OldJminusFlux
+        real(wp), dimension(1:5)     :: OldKminusFlux
+        real(wp), dimension(1:5)     :: NewIminusFlux
+        real(wp), dimension(1:5)     :: NewJminusFlux
+        real(wp), dimension(1:5)     :: NewKminusFlux
+        real(wp), dimension(1:5)     :: DelIminusFlux
+        real(wp), dimension(1:5)     :: DelJminusFlux
+        real(wp), dimension(1:5)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:5)     :: Q0 ! state at cell
+        real(wp), dimension(1:5)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:5)     :: Q2
+        real(wp), dimension(1:5)     :: Q3
+        real(wp), dimension(1:5)     :: Q4
+        real(wp), dimension(1:5)     :: Q5
+        real(wp), dimension(1:5)     :: Q6
+        real(wp), dimension(1:5)     :: DQ0! change in state
+        real(wp), dimension(1:5)     :: DQ1
+        real(wp), dimension(1:5)     :: DQ2
+        real(wp), dimension(1:5)     :: DQ3
+        real(wp), dimension(1:5)     :: DQ4
+        real(wp), dimension(1:5)     :: DQ5
+        real(wp), dimension(1:5)     :: DQ6
+        real(wp), dimension(1:7)     :: Flist1
+        real(wp), dimension(1:7)     :: Flist2
+        real(wp), dimension(1:7)     :: Flist3
+        real(wp), dimension(1:7)     :: Flist4
+        real(wp), dimension(1:7)     :: Flist5
+        real(wp), dimension(1:7)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,r,p, H
+        real(wp)                     :: factor
+        real(wp), dimension(1:5,1:5) :: PrecondInv
 
 
 
@@ -348,16 +263,16 @@ module plusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:5)
               Q1  = qp(i-1, j  , k  , 1:5)
@@ -372,51 +287,51 @@ module plusgs
               DQ2 = delQstar(i  , j-1, k  , 1:5)
               DQ3 = delQstar(i  , j  , k-1, 1:5)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
 
@@ -452,7 +367,7 @@ module plusgs
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
               PrecondInv(1,1) = 1.0 - factor*1*VMag*VMag/2.0
@@ -495,16 +410,16 @@ module plusgs
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:5)
               Q1  = qp(i-1, j  , k  , 1:5)
@@ -519,51 +434,51 @@ module plusgs
               DQ5 = delQ(i  , j+1, k  , 1:5)
               DQ6 = delQ(i  , j  , k+1, 1:5)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
 
@@ -600,7 +515,7 @@ module plusgs
               DelJminusFlux =  NewJminusFlux - OldJminusFlux
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
 
               PrecondInv(1,1) = 1.0 - factor*1*VMag*VMag/2.0
               PrecondInv(2,1) = 0.0 - factor*u*VMag*VMag/2.0
@@ -638,9 +553,9 @@ module plusgs
           end do
         end do
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -669,57 +584,57 @@ module plusgs
       ! calculate the total flux through face
       !---------------------------------------
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql !left state
-      real, dimension(1:n_var), intent(in) :: qr !right state
+      real(wp), dimension(1:n_var), intent(in) :: ql !<left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !<right state
       !conservative form of updated neighbour
-      real, dimension(1:n_var), intent(in) :: du
-      real, dimension(1:7)    , intent(in) :: inputs
-      real, dimension(1:n_var)             :: Flux
-      real, dimension(1:n_var)             :: U ! conservative variables
-      real, dimension(1:n_var)             :: W ! new primitive variables
-      real, dimension(1:n_var)             :: P ! primitive variables of right cell
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:7)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: U !< conservative variables
+      real(wp), dimension(1:n_var)             :: W !< new primitive variables
+      real(wp), dimension(1:n_var)             :: P !< primitive variables of right cell
 
       !for extraction of the inputs
-      real :: area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mmu
-      real :: tmu
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
 
 
-      real    :: dudx
-      real    :: dudy
-      real    :: dudz
-      real    :: dvdx
-      real    :: dvdy
-      real    :: dvdz
-      real    :: dwdx
-      real    :: dwdy
-      real    :: dwdz
-      real    :: dTdx
-      real    :: dTdy
-      real    :: dTdz
-      real    :: T1, T2
-      real    :: uface
-      real    :: vface
-      real    :: wface
-      real    :: trace
-      real    :: Tauxx
-      real    :: Tauyy
-      real    :: Tauzz
-      real    :: Tauxy
-      real    :: Tauxz
-      real    :: Tauyz
-      real    :: Qx
-      real    :: Qy
-      real    :: Qz
-      real    :: HalfRhoUsquare
-      real    :: RhoHt
-      real    :: K_heat
-      real    :: FaceNormalVelocity
-      real    :: mu
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
 
       area   = inputs(1)
       nx     = inputs(2)
@@ -809,30 +724,30 @@ module plusgs
     function SpectralRadius(ql, qr, inputs, c1, c2,eps)
       !< Calculated spectral radius
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql
-      real, dimension(1:n_var), intent(in) :: qr
-      real, dimension(1:7)    , intent(in) :: inputs
-      real, dimension(1:3)    , intent(in) :: c1
-      real, dimension(1:3)    , intent(in) :: c2
-      real                    , intent(in) :: eps
+      real(wp), dimension(1:n_var), intent(in) :: ql!<left state
+      real(wp), dimension(1:n_var), intent(in) :: qr!<right state
+      real(wp), dimension(1:7)    , intent(in) :: inputs
+      real(wp), dimension(1:3)    , intent(in) :: c1!<cell center 1
+      real(wp), dimension(1:3)    , intent(in) :: c2!<cell center 2
+      real(wp)                    , intent(in) :: eps
 
       ! local variables
-      real                                 :: SpectralRadius
-      real                                 :: NormalSpeed
-      real                                 :: SpeedOfSound
-      real                                 :: vis
-      real                                 :: mu
-      real                                 :: rho
-      real                                 :: distance
+      real(wp)                                 :: SpectralRadius
+      real(wp)                                 :: NormalSpeed
+      real(wp)                                 :: SpeedOfSound
+      real(wp)                                 :: vis
+      real(wp)                                 :: mu
+      real(wp)                                 :: rho
+      real(wp)                                 :: distance
 
       !extract inputs
-      real :: Area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mm
-      real :: tm
+      real(wp) :: Area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mm
+      real(wp) :: tm
 
       Area = inputs(1)
       nx   = inputs(2)
@@ -862,77 +777,77 @@ module plusgs
     end function SpectralRadius
 
 
-    subroutine update_SST_variables()
+    subroutine update_SST_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS (SST) equation with LU-SGS
       implicit none
+      type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
-        real, dimension(1:7)     :: deltaU
-        real, dimension(1:7)     :: D
-        real, dimension(1:7)     :: conservativeQ
-        real, dimension(1:7)     :: OldIminusFlux
-        real, dimension(1:7)     :: OldJminusFlux
-        real, dimension(1:7)     :: OldKminusFlux
-        real, dimension(1:7)     :: NewIminusFlux
-        real, dimension(1:7)     :: NewJminusFlux
-        real, dimension(1:7)     :: NewKminusFlux
-        real, dimension(1:7)     :: DelIminusFlux
-        real, dimension(1:7)     :: DelJminusFlux
-        real, dimension(1:7)     :: DelKminusFlux
-        real, dimension(1:6)     :: LambdaTimesArea
-        real, dimension(1:7)     :: Q0 ! state at cell
-        real, dimension(1:7)     :: Q1 ! state at neighbours 
-        real, dimension(1:7)     :: Q2
-        real, dimension(1:7)     :: Q3
-        real, dimension(1:7)     :: Q4
-        real, dimension(1:7)     :: Q5
-        real, dimension(1:7)     :: Q6
-        real, dimension(1:7)     :: DQ0! change in state
-        real, dimension(1:7)     :: DQ1
-        real, dimension(1:7)     :: DQ2
-        real, dimension(1:7)     :: DQ3
-        real, dimension(1:7)     :: DQ4
-        real, dimension(1:7)     :: DQ5
-        real, dimension(1:7)     :: DQ6
-        real, dimension(1:8)     :: Flist1
-        real, dimension(1:8)     :: Flist2
-        real, dimension(1:8)     :: Flist3
-        real, dimension(1:8)     :: Flist4
-        real, dimension(1:8)     :: Flist5
-        real, dimension(1:8)     :: Flist6
-        real, dimension(1:3)     :: C0
-        real, dimension(1:3)     :: C1
-        real, dimension(1:3)     :: C2
-        real, dimension(1:3)     :: C3
-        real, dimension(1:3)     :: C4
-        real, dimension(1:3)     :: C5
-        real, dimension(1:3)     :: C6
-        real                     :: beta
-        real                     :: eps
-        real                     :: M
-        real                     :: VMag
-        real                     :: SoundMag
-        real                     :: u,v,w,r,p,kk,ww,H
-        real                     :: factor
-        real, dimension(1:7,1:7) :: PrecondInv
+        real(wp), dimension(1:7)     :: deltaU
+        real(wp), dimension(1:7)     :: D
+        real(wp), dimension(1:7)     :: conservativeQ
+        real(wp), dimension(1:7)     :: OldIminusFlux
+        real(wp), dimension(1:7)     :: OldJminusFlux
+        real(wp), dimension(1:7)     :: OldKminusFlux
+        real(wp), dimension(1:7)     :: NewIminusFlux
+        real(wp), dimension(1:7)     :: NewJminusFlux
+        real(wp), dimension(1:7)     :: NewKminusFlux
+        real(wp), dimension(1:7)     :: DelIminusFlux
+        real(wp), dimension(1:7)     :: DelJminusFlux
+        real(wp), dimension(1:7)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:7)     :: Q0 ! state at cell
+        real(wp), dimension(1:7)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:7)     :: Q2
+        real(wp), dimension(1:7)     :: Q3
+        real(wp), dimension(1:7)     :: Q4
+        real(wp), dimension(1:7)     :: Q5
+        real(wp), dimension(1:7)     :: Q6
+        real(wp), dimension(1:7)     :: DQ0! change in state
+        real(wp), dimension(1:7)     :: DQ1
+        real(wp), dimension(1:7)     :: DQ2
+        real(wp), dimension(1:7)     :: DQ3
+        real(wp), dimension(1:7)     :: DQ4
+        real(wp), dimension(1:7)     :: DQ5
+        real(wp), dimension(1:7)     :: DQ6
+        real(wp), dimension(1:8)     :: Flist1
+        real(wp), dimension(1:8)     :: Flist2
+        real(wp), dimension(1:8)     :: Flist3
+        real(wp), dimension(1:8)     :: Flist4
+        real(wp), dimension(1:8)     :: Flist5
+        real(wp), dimension(1:8)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: beta
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,r,p,kk,ww,H
+        real(wp)                     :: factor
+        real(wp), dimension(1:7,1:7) :: PrecondInv
 
         ! intermittency
-        real :: Fonset1
-        real :: Fonset2
-        real :: Fonset3
-        real :: Fonset
-        real :: Rev
-        Real :: RT
-        real :: Fturb
-        real :: Re_theta
-        real :: TuL
-        real :: gradtk
-        real :: strain
-        real :: vort
-        real :: De, Dp
-        real :: Fpg
-        real :: dvdy
-        real :: lamd
-        real :: intermittency
+        real(wp) :: De, Dp
 
         De = 0.0
         Dp = 0.0
@@ -942,16 +857,16 @@ module plusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:7)
               Q1  = qp(i-1, j  , k  , 1:7)
@@ -966,56 +881,56 @@ module plusgs
               DQ2 = delQstar(i  , j-1, k  , 1:7)
               DQ3 = delQstar(i  , j  , k-1, 1:7)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
               Flist1(8) = 0.5*(sst_F1(i-1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
               Flist2(8) = 0.5*(sst_F1(i  , j-1, k  ) + sst_F1(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
               Flist3(8) = 0.5*(sst_F1(i  , j  , k-1) + sst_F1(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
               Flist4(8) = 0.5*(sst_F1(i+1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
               Flist5(8) = 0.5*(sst_F1(i  , j+1, k  ) + sst_F1(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
               Flist6(8) = 0.5*(sst_F1(i  , j  , k+1) + sst_F1(i,j,k))
@@ -1108,10 +1023,10 @@ module plusgs
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               beta = sst_F1(i,j,k)*beta1 + (1.0-sst_F1(i,j,k))*beta2
-              D(6) = (D(6) + (bstar*qp(i,j,k,7))*volume(i,j,k))
-              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*volume(i,j,k))
+              D(6) = (D(6) + (bstar*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*cells(i,j,k)%volume)
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
               
@@ -1128,16 +1043,16 @@ module plusgs
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:7)
               Q1  = qp(i-1, j  , k  , 1:7)
@@ -1152,56 +1067,56 @@ module plusgs
               DQ5 = delQ(i  , j+1, k  , 1:7)
               DQ6 = delQ(i  , j  , k+1, 1:7)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
               Flist1(8) = 0.5*(sst_F1(i-1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
               Flist2(8) = 0.5*(sst_F1(i  , j-1, k  ) + sst_F1(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
               Flist3(8) = 0.5*(sst_F1(i  , j  , k-1) + sst_F1(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
               Flist4(8) = 0.5*(sst_F1(i+1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
               Flist5(8) = 0.5*(sst_F1(i  , j+1, k  ) + sst_F1(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
               Flist6(8) = 0.5*(sst_F1(i  , j  , k+1) + sst_F1(i,j,k))
@@ -1293,10 +1208,10 @@ module plusgs
               DelJminusFlux =  NewJminusFlux - OldJminusFlux
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               beta = sst_F1(i,j,k)*beta1 + (1.0-sst_F1(i,j,k))*beta2
-              D(6) = (D(6) + (bstar*qp(i,j,k,7))*volume(i,j,k))
-              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*volume(i,j,k))
+              D(6) = (D(6) + (bstar*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*cells(i,j,k)%volume)
 
 
               delQ(i,j,k,1:7) = delQstar(i,j,k,1:7) &
@@ -1309,9 +1224,9 @@ module plusgs
         end do
 
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -1348,67 +1263,67 @@ module plusgs
       ! calculate the total flux through face
       !---------------------------------------
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql !left state
-      real, dimension(1:n_var), intent(in) :: qr !right state
+      real(wp), dimension(1:n_var), intent(in) :: ql !left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !right state
       !conservative form of updated neighbour
-      real, dimension(1:n_var), intent(in) :: du
-      real, dimension(1:8)    , intent(in) :: inputs
-      real, dimension(1:n_var)             :: Flux
-      real, dimension(1:n_var)             :: SSTFlux
-      real, dimension(1:n_var)             :: U ! conservative variables
-      real, dimension(1:n_var)             :: W ! new primitive variables
-      real, dimension(1:n_var)             :: P ! primitive variables of right cell
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:8)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: SSTFlux
+      real(wp), dimension(1:n_var)             :: U ! conservative variables
+      real(wp), dimension(1:n_var)             :: W ! new primitive variables
+      real(wp), dimension(1:n_var)             :: P ! primitive variables of right cell
 
       !for extraction of the inputs
-      real :: area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mmu
-      real :: tmu
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
 
 
-      real    :: dudx
-      real    :: dudy
-      real    :: dudz
-      real    :: dvdx
-      real    :: dvdy
-      real    :: dvdz
-      real    :: dwdx
-      real    :: dwdy
-      real    :: dwdz
-      real    :: dTdx
-      real    :: dTdy
-      real    :: dTdz
-      real    :: dtkdx
-      real    :: dtkdy
-      real    :: dtkdz
-      real    :: dtwdx
-      real    :: dtwdy
-      real    :: dtwdz
-      real    :: T1, T2
-      real    :: uface
-      real    :: vface
-      real    :: wface
-      real    :: trace
-      real    :: Tauxx
-      real    :: Tauyy
-      real    :: Tauzz
-      real    :: Tauxy
-      real    :: Tauxz
-      real    :: Tauyz
-      real    :: Qx
-      real    :: Qy
-      real    :: Qz
-      real    :: HalfRhoUsquare
-      real    :: RhoHt
-      real    :: K_heat
-      real    :: FaceNormalVelocity
-      real    :: mu
-      real    :: sigma_k
-      real    :: sigma_w
-      real    :: F1
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: dtkdx
+      real(wp)    :: dtkdy
+      real(wp)    :: dtkdz
+      real(wp)    :: dtwdx
+      real(wp)    :: dtwdy
+      real(wp)    :: dtwdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
+      real(wp)    :: sigma_k
+      real(wp)    :: sigma_w
+      real(wp)    :: F1
 
       area   = inputs(1)
       nx     = inputs(2)
@@ -1516,89 +1431,99 @@ module plusgs
 
     end function SSTFlux 
 
-    subroutine update_SA_variables()
+    subroutine update_SA_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS (SA) equation with LU-SGS
       implicit none
+      type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
-        real, dimension(1:6)     :: deltaU
-        real, dimension(1:6)     :: D
-        real, dimension(1:6)     :: conservativeQ
-        real, dimension(1:6)     :: OldIminusFlux
-        real, dimension(1:6)     :: OldJminusFlux
-        real, dimension(1:6)     :: OldKminusFlux
-        real, dimension(1:6)     :: NewIminusFlux
-        real, dimension(1:6)     :: NewJminusFlux
-        real, dimension(1:6)     :: NewKminusFlux
-        real, dimension(1:6)     :: DelIminusFlux
-        real, dimension(1:6)     :: DelJminusFlux
-        real, dimension(1:6)     :: DelKminusFlux
-        real, dimension(1:6)     :: LambdaTimesArea
-        real, dimension(1:6)     :: Q0 ! state at cell
-        real, dimension(1:6)     :: Q1 ! state at neighbours 
-        real, dimension(1:6)     :: Q2
-        real, dimension(1:6)     :: Q3
-        real, dimension(1:6)     :: Q4
-        real, dimension(1:6)     :: Q5
-        real, dimension(1:6)     :: Q6
-        real, dimension(1:6)     :: DQ0! change in state
-        real, dimension(1:6)     :: DQ1
-        real, dimension(1:6)     :: DQ2
-        real, dimension(1:6)     :: DQ3
-        real, dimension(1:6)     :: DQ4
-        real, dimension(1:6)     :: DQ5
-        real, dimension(1:6)     :: DQ6
-        real, dimension(1:7)     :: Flist1
-        real, dimension(1:7)     :: Flist2
-        real, dimension(1:7)     :: Flist3
-        real, dimension(1:7)     :: Flist4
-        real, dimension(1:7)     :: Flist5
-        real, dimension(1:7)     :: Flist6
-        real, dimension(1:3)     :: C0
-        real, dimension(1:3)     :: C1
-        real, dimension(1:3)     :: C2
-        real, dimension(1:3)     :: C3
-        real, dimension(1:3)     :: C4
-        real, dimension(1:3)     :: C5
-        real, dimension(1:3)     :: C6
-        real                     :: eps
-        real                     :: M
-        real                     :: VMag
-        real                     :: SoundMag
-        real                     :: u,v,w,p,H,tv!r
-        real                     :: factor
-        real, dimension(1:6,1:6) :: PrecondInv
-      real :: fv1
-      real :: fv2
-      real :: fw
-      real :: g
-      real :: Scap
-      real :: r
-      real :: S_v
-      real :: D_v
-      real :: P_v
-      real :: lamda
-      real :: dist_i
-      real :: dist_i_2
-      real :: Ji
-      real :: Ji_2
-      real :: Ji_3
-      real :: S
-      real :: Omega
-      real :: k2
-      real :: inv_k2_d2
-      real :: Shat
-      real :: inv_Shat
-      real :: nu
-      real :: nu_t
-      real :: glim
-      real :: g_6
-      real :: gamma_BC
-      real :: dfv1
-      real :: dfv2
-      real :: dfw
-      real :: dShat
-      real :: dr
-      real :: dg
+        real(wp), dimension(1:6)     :: deltaU
+        real(wp), dimension(1:6)     :: D
+        real(wp), dimension(1:6)     :: conservativeQ
+        real(wp), dimension(1:6)     :: OldIminusFlux
+        real(wp), dimension(1:6)     :: OldJminusFlux
+        real(wp), dimension(1:6)     :: OldKminusFlux
+        real(wp), dimension(1:6)     :: NewIminusFlux
+        real(wp), dimension(1:6)     :: NewJminusFlux
+        real(wp), dimension(1:6)     :: NewKminusFlux
+        real(wp), dimension(1:6)     :: DelIminusFlux
+        real(wp), dimension(1:6)     :: DelJminusFlux
+        real(wp), dimension(1:6)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:6)     :: Q0 ! state at cell
+        real(wp), dimension(1:6)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:6)     :: Q2
+        real(wp), dimension(1:6)     :: Q3
+        real(wp), dimension(1:6)     :: Q4
+        real(wp), dimension(1:6)     :: Q5
+        real(wp), dimension(1:6)     :: Q6
+        real(wp), dimension(1:6)     :: DQ0! change in state
+        real(wp), dimension(1:6)     :: DQ1
+        real(wp), dimension(1:6)     :: DQ2
+        real(wp), dimension(1:6)     :: DQ3
+        real(wp), dimension(1:6)     :: DQ4
+        real(wp), dimension(1:6)     :: DQ5
+        real(wp), dimension(1:6)     :: DQ6
+        real(wp), dimension(1:7)     :: Flist1
+        real(wp), dimension(1:7)     :: Flist2
+        real(wp), dimension(1:7)     :: Flist3
+        real(wp), dimension(1:7)     :: Flist4
+        real(wp), dimension(1:7)     :: Flist5
+        real(wp), dimension(1:7)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,p,H,tv!r
+        real(wp)                     :: factor
+        real(wp), dimension(1:6,1:6) :: PrecondInv
+      real(wp) :: fv1
+      real(wp) :: fv2
+      real(wp) :: fw
+      real(wp) :: g
+      real(wp) :: r
+      real(wp) :: dist_i
+      real(wp) :: dist_i_2
+      real(wp) :: Ji
+      real(wp) :: Ji_2
+      real(wp) :: Ji_3
+      real(wp) :: S
+      real(wp) :: Omega
+      real(wp) :: k2
+      real(wp) :: inv_k2_d2
+      real(wp) :: Shat
+      real(wp) :: inv_Shat
+      real(wp) :: nu
+      real(wp) :: glim
+      real(wp) :: g_6
+      real(wp) :: dfv1
+      real(wp) :: dfv2
+      real(wp) :: dfw
+      real(wp) :: dShat
+      real(wp) :: dr
+      real(wp) :: dg
+      real(wp) :: density
 
 
 
@@ -1606,16 +1531,17 @@ module plusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
+              density = qp(i,j,k,1)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:6)
               Q1  = qp(i-1, j  , k  , 1:6)
@@ -1630,51 +1556,51 @@ module plusgs
               DQ2 = delQstar(i  , j-1, k  , 1:6)
               DQ3 = delQstar(i  , j  , k-1, 1:6)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
 
@@ -1753,7 +1679,7 @@ module plusgs
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
               ! -- source term derivatives -- !
@@ -1765,7 +1691,7 @@ module plusgs
               dist_i = dist(i,j,k)
               dist_i_2 = dist_i*dist_i
               k2 = kappa_sa*kappa_sa
-              nu   = mu(i,j,k)/density(i,j,k)
+              nu   = mu(i,j,k)/density
               Ji   = Q0(6)/nu
               Ji_2 = Ji*Ji
               Ji_3 = Ji_2*ji
@@ -1785,7 +1711,7 @@ module plusgs
               dfv2 = -((1.0/nu) - Ji_2*dfv1)/((1.0+Ji*fv1)**2)
               dShat = (fv2+Q0(6)*dfv2)*inv_k2_d2
 
-              D = D - cb1*(Q0(6)*dShat+Shat)*Volume(i,j,k)
+              D = D - cb1*(Q0(6)*dShat+Shat)*cells(i,j,k)%volume
 
               ! ___ Destruction term___ !
               r    = min(Q0(6)*inv_Shat*inv_k2_d2, 10.0)
@@ -1797,7 +1723,7 @@ module plusgs
               dg = dr*(1.0+cw2*(6.0*(r**5)-1.0))
               dfw= dg*glim*(1.0-g_6/(g_6+cw3_6))
 
-              D = D+cw1*(dfw*Q0(6) + 2*fw)*Q0(6)/dist_i_2*volume(i,j,k)
+              D = D+cw1*(dfw*Q0(6) + 2*fw)*Q0(6)/dist_i_2*cells(i,j,k)%volume
               ! --  end of source term -- !
 
               deltaU(1:6) = -matmul(PrecondInv,residue(i,j,k,1:6)) &
@@ -1810,20 +1736,20 @@ module plusgs
           end do
         end do
 
-        !call apply_interface(delQstar, 1)
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
+              density = qp(i,j,k,1)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:6)
               Q1  = qp(i-1, j  , k  , 1:6)
@@ -1838,51 +1764,51 @@ module plusgs
               DQ5 = delQ(i  , j+1, k  , 1:6)
               DQ6 = delQ(i  , j  , k+1, 1:6)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
 
@@ -1959,7 +1885,7 @@ module plusgs
               DelJminusFlux =  NewJminusFlux - OldJminusFlux
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
 
               ! -- source term derivatives -- !
               Omega = sqrt( ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
@@ -1970,7 +1896,7 @@ module plusgs
               dist_i = dist(i,j,k)
               dist_i_2 = dist_i*dist_i
               k2 = kappa_sa*kappa_sa
-              nu   = mu(i,j,k)/density(i,j,k)
+              nu   = mu(i,j,k)/density
               Ji   = Q0(6)/nu
               Ji_2 = Ji*Ji
               Ji_3 = Ji_2*ji
@@ -1989,7 +1915,7 @@ module plusgs
               dfv2 = -((1.0/nu) - Ji_2*dfv1)/((1.0+Ji*fv1)**2)
               dShat = (fv2+Q0(6)*dfv2)*inv_k2_d2
 
-              D = D - cb1*(Q0(6)*dShat+Shat)*Volume(i,j,k)
+              D = D - cb1*(Q0(6)*dShat+Shat)*cells(i,j,k)%volume
 
               ! ___ Destruction term___ !
               r    = min(Q0(6)*inv_Shat*inv_k2_d2, 10.0)
@@ -2001,7 +1927,7 @@ module plusgs
               dg = dr*(1.0+cw2*(6.0*(r**5)-1.0))
               dfw= dg*glim*(1.0-g_6/(g_6+cw3_6))
 
-              D = D+cw1*(dfw*Q0(6) + 2*fw)*Q0(6)/dist_i_2*volume(i,j,k)
+              D = D+cw1*(dfw*Q0(6) + 2*fw)*Q0(6)/dist_i_2*cells(i,j,k)%volume
               ! --  end of source term -- !
 
               delQ(i,j,k,1:6) = delQstar(i,j,k,1:6) &
@@ -2013,9 +1939,9 @@ module plusgs
           end do
         end do
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -2047,62 +1973,62 @@ module plusgs
       ! calculate the total flux through face
       !---------------------------------------
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql !left state
-      real, dimension(1:n_var), intent(in) :: qr !right state
+      real(wp), dimension(1:n_var), intent(in) :: ql !left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !right state
       !conservative form of updated neighbour
-      real, dimension(1:n_var), intent(in) :: du
-      real, dimension(1:7)    , intent(in) :: inputs
-      real, dimension(1:n_var)             :: Flux
-      real, dimension(1:n_var)             :: SAFlux
-      real, dimension(1:n_var)             :: U ! conservative variables
-      real, dimension(1:n_var)             :: W ! new primitive variables
-      real, dimension(1:n_var)             :: P ! primitive variables of right cell
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:7)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: SAFlux
+      real(wp), dimension(1:n_var)             :: U ! conservative variables
+      real(wp), dimension(1:n_var)             :: W ! new primitive variables
+      real(wp), dimension(1:n_var)             :: P ! primitive variables of right cell
 
       !for extraction of the inputs
-      real :: area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mmu
-      real :: tmu
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
 
 
-      real    :: dudx
-      real    :: dudy
-      real    :: dudz
-      real    :: dvdx
-      real    :: dvdy
-      real    :: dvdz
-      real    :: dwdx
-      real    :: dwdy
-      real    :: dwdz
-      real    :: dTdx
-      real    :: dTdy
-      real    :: dTdz
-      real    :: dtvdx
-      real    :: dtvdy
-      real    :: dtvdz
-      real    :: T1, T2
-      real    :: uface
-      real    :: vface
-      real    :: wface
-      real    :: trace
-      real    :: Tauxx
-      real    :: Tauyy
-      real    :: Tauzz
-      real    :: Tauxy
-      real    :: Tauxz
-      real    :: Tauyz
-      real    :: Qx
-      real    :: Qy
-      real    :: Qz
-      real    :: HalfRhoUsquare
-      real    :: RhoHt
-      real    :: K_heat
-      real    :: FaceNormalVelocity
-      real    :: mu
-      real    :: muCap
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: dtvdx
+      real(wp)    :: dtvdy
+      real(wp)    :: dtvdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
+      real(wp)    :: muCap
 
       area   = inputs(1)
       nx     = inputs(2)
@@ -2201,78 +2127,92 @@ module plusgs
     end function SAFlux 
 
 
-    subroutine update_lctm2015()
+    subroutine update_lctm2015(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS/transition (LCTM2015) equation with LU-SGS
       implicit none
+      type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
       integer :: i,j,k
-        real, dimension(1:8)     :: deltaU
-        real, dimension(1:8)     :: D
-        real, dimension(1:8)     :: conservativeQ
-        real, dimension(1:8)     :: OldIminusFlux
-        real, dimension(1:8)     :: OldJminusFlux
-        real, dimension(1:8)     :: OldKminusFlux
-        real, dimension(1:8)     :: NewIminusFlux
-        real, dimension(1:8)     :: NewJminusFlux
-        real, dimension(1:8)     :: NewKminusFlux
-        real, dimension(1:8)     :: DelIminusFlux
-        real, dimension(1:8)     :: DelJminusFlux
-        real, dimension(1:8)     :: DelKminusFlux
-        real, dimension(1:6)     :: LambdaTimesArea
-        real, dimension(1:8)     :: Q0 ! state at cell
-        real, dimension(1:8)     :: Q1 ! state at neighbours 
-        real, dimension(1:8)     :: Q2
-        real, dimension(1:8)     :: Q3
-        real, dimension(1:8)     :: Q4
-        real, dimension(1:8)     :: Q5
-        real, dimension(1:8)     :: Q6
-        real, dimension(1:8)     :: DQ0! change in state
-        real, dimension(1:8)     :: DQ1
-        real, dimension(1:8)     :: DQ2
-        real, dimension(1:8)     :: DQ3
-        real, dimension(1:8)     :: DQ4
-        real, dimension(1:8)     :: DQ5
-        real, dimension(1:8)     :: DQ6
+        real(wp), dimension(1:8)     :: deltaU
+        real(wp), dimension(1:8)     :: D
+        real(wp), dimension(1:8)     :: conservativeQ
+        real(wp), dimension(1:8)     :: OldIminusFlux
+        real(wp), dimension(1:8)     :: OldJminusFlux
+        real(wp), dimension(1:8)     :: OldKminusFlux
+        real(wp), dimension(1:8)     :: NewIminusFlux
+        real(wp), dimension(1:8)     :: NewJminusFlux
+        real(wp), dimension(1:8)     :: NewKminusFlux
+        real(wp), dimension(1:8)     :: DelIminusFlux
+        real(wp), dimension(1:8)     :: DelJminusFlux
+        real(wp), dimension(1:8)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:8)     :: Q0 ! state at cell
+        real(wp), dimension(1:8)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:8)     :: Q2
+        real(wp), dimension(1:8)     :: Q3
+        real(wp), dimension(1:8)     :: Q4
+        real(wp), dimension(1:8)     :: Q5
+        real(wp), dimension(1:8)     :: Q6
+        real(wp), dimension(1:8)     :: DQ0! change in state
+        real(wp), dimension(1:8)     :: DQ1
+        real(wp), dimension(1:8)     :: DQ2
+        real(wp), dimension(1:8)     :: DQ3
+        real(wp), dimension(1:8)     :: DQ4
+        real(wp), dimension(1:8)     :: DQ5
+        real(wp), dimension(1:8)     :: DQ6
 
-        real, dimension(1:8)     :: Flist1
-        real, dimension(1:8)     :: Flist2
-        real, dimension(1:8)     :: Flist3
-        real, dimension(1:8)     :: Flist4
-        real, dimension(1:8)     :: Flist5
-        real, dimension(1:8)     :: Flist6
-        real, dimension(1:3)     :: C0
-        real, dimension(1:3)     :: C1
-        real, dimension(1:3)     :: C2
-        real, dimension(1:3)     :: C3
-        real, dimension(1:3)     :: C4
-        real, dimension(1:3)     :: C5
-        real, dimension(1:3)     :: C6
-        real                     :: beta
-        real                     :: eps
-        real                     :: M
-        real                     :: VMag
-        real                     :: SoundMag
-        real                     :: u,v,w,r,p,kk,ww,H,im
-        real                     :: factor
-        real, dimension(1:8,1:8) :: PrecondInv
-        real, dimension(1:8,1:8) :: Identity
+        real(wp), dimension(1:8)     :: Flist1
+        real(wp), dimension(1:8)     :: Flist2
+        real(wp), dimension(1:8)     :: Flist3
+        real(wp), dimension(1:8)     :: Flist4
+        real(wp), dimension(1:8)     :: Flist5
+        real(wp), dimension(1:8)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: beta
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,r,p,kk,ww,H,im
+        real(wp)                     :: factor
+        real(wp), dimension(1:8,1:8) :: PrecondInv
+        real(wp), dimension(1:8,1:8) :: Identity
 
         ! intermittency
-        real :: Fonset1
-        real :: Fonset2
-        real :: Fonset3
-        real :: Fonset
-        real :: Rev
-        Real :: RT
-        real :: Fturb
-        real :: Re_theta
-        real :: TuL
-        real :: gradtk
-        real :: strain
-        real :: vort
-        real :: Dp, De
-        real :: Fpg
-        real :: dvdy
-        real :: lamd
+        real(wp) :: Fonset1
+        real(wp) :: Fonset2
+        real(wp) :: Fonset3
+        real(wp) :: Fonset
+        real(wp) :: Rev
+        real(wp) :: RT
+        real(wp) :: Fturb
+        real(wp) :: Re_theta
+        real(wp) :: TuL
+        real(wp) :: strain
+        real(wp) :: vort
+        real(wp) :: Dp, De
+        real(wp) :: Fpg
+        real(wp) :: density
         Dp = 0.0
         De = 0.0
 
@@ -2287,16 +2227,17 @@ module plusgs
         delQstar = 0.0
 
         !forward sweep
-        do k=1,kmx-1
-          do j=1,jmx-1
-            do i=1,imx-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
+              density = qp(i,j,k,1)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:8)
               Q1  = qp(i-1, j  , k  , 1:8)
@@ -2311,56 +2252,56 @@ module plusgs
               DQ2 = delQstar(i  , j-1, k  , 1:8)
               DQ3 = delQstar(i  , j  , k-1, 1:8)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
               Flist1(8) = 0.5*(sst_F1(i-1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
               Flist2(8) = 0.5*(sst_F1(i  , j-1, k  ) + sst_F1(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
               Flist3(8) = 0.5*(sst_F1(i  , j  , k-1) + sst_F1(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
               Flist4(8) = 0.5*(sst_F1(i+1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
               Flist5(8) = 0.5*(sst_F1(i  , j+1, k  ) + sst_F1(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
               Flist6(8) = 0.5*(sst_F1(i  , j  , k+1) + sst_F1(i,j,k))
@@ -2378,6 +2319,9 @@ module plusgs
               v  = Q0(3)
               w  = Q0(4)
               p  = Q0(5)
+              kk = Q0(6)
+              ww = Q0(7)
+              im = Q0(8)
               VMag     = sqrt(u*u + v*v + w*w)
               SoundMag = sqrt(gm*p/r)
               M        = VMag/SoundMag 
@@ -2419,11 +2363,11 @@ module plusgs
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               beta = sst_F1(i,j,k)*beta1 + (1.0-sst_F1(i,j,k))*beta2
-              !D(6) = (D(6) + bstar*qp(i,j,k,7)*volume(i,j,k))
-              D(6) = (D(6) + (bstar*qp(i,j,k,7))*volume(i,j,k))
-              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*volume(i,j,k))
+              !D(6) = (D(6) + bstar*qp(i,j,k,7)*cells(i,j,k)%volume)
+              D(6) = (D(6) + (bstar*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*cells(i,j,k)%volume)
               !gamma
               vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
                               + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
@@ -2439,29 +2383,19 @@ module plusgs
                                 + 2*(gradw_z(i,j,k))**2 &
                                  )&
                            )
-              dvdy = DCCVnX(i,j,k)*CCnormalX(i,j,k) &
-                   + DCCVnY(i,j,k)*CCnormalY(i,j,k) &
-                   + DCCVnZ(i,j,k)*CCnormalZ(i,j,k)
-              lamd =(-7.57e-3)*(dvdy*dist(i,j,k)*dist(i,j,k)*density(i,j,k)/mu(i,j,k)) + 0.0128
-              lamd = min(max(lamd, -1.0), 1.0)
-              if(lamd>=0.0)then
-                  Fpg = min(1.0 + 14.68*lamd, 1.5)
-              else
-                  Fpg = min(1.0 - 7.34*lamd, 3.0)
-              end if
-              Fpg = max(Fpg, 0.0)
-              TuL = min(100.0*sqrt(2.0*tk(i,j,k)/3.0)/(tw(i,j,k)*dist(i,j,k)),100.0)
+              Fpg = 1.0!max(Fpg, 0.0)
+              TuL = min(100.0*sqrt(2.0*qp(i,j,k,6)/3.0)/(qp(i,j,k,7)*dist(i,j,k)),100.0)
               Re_theta = 100.0 + 1000.0*exp(-TuL*Fpg)
-              Rev = density(i,j,k)*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
-              RT = density(i,j,k)*tk(i,j,k)/(mu(i,j,k)*tw(i,j,k))
+              Rev = density*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
+              RT = density*qp(i,j,k,6)/(mu(i,j,k)*qp(i,j,k,7))
               Fturb = exp(-(0.5*Rt)**4)
               Fonset1 = Rev/(2.2*Re_theta)
               Fonset2 = min(Fonset1, 2.0)
               Fonset3 = max(1.0 - (RT/3.5)**3, 0.0)
               Fonset  = max(Fonset2 - Fonset3, 0.0)
-              Dp = 100*density(i,j,k)*strain*Fonset*(1.0-2.0*Q0(8))
-              De = 0.06*vort*Fturb*density(i,j,k)*(2.0*50.0*Q0(8) - 1.0)
-              D(8) = (D(8) + (-Dp + DE )*volume(i,j,k))
+              Dp = 100*density*strain*Fonset*(1.0-2.0*Q0(8))
+              De = 0.06*vort*Fturb*density*(2.0*50.0*Q0(8) - 1.0)
+              D(8) = (D(8) + (-Dp + DE )*cells(i,j,k)%volume)
               !storing D in Iflux array for backward sweep
               !F_p(i,j,k,1) = D
 
@@ -2477,16 +2411,17 @@ module plusgs
 
         delQ=0.0
         !backward sweep
-            do i=imx-1,1,-1
-          do j=jmx-1,1,-1
-        do k=kmx-1,1,-1
-              C0  = CellCenter(i  ,j  ,k  ,:)
-              C1  = CellCenter(i-1,j  ,k  ,:)
-              C2  = CellCenter(i  ,j-1,k  ,:)
-              C3  = CellCenter(i  ,j  ,k-1,:)
-              C4  = CellCenter(i+1,j  ,k  ,:)
-              C5  = CellCenter(i  ,j+1,k  ,:)
-              C6  = CellCenter(i  ,j  ,k+1,:)
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
+              density = qp(i,j,k,1)
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
 
               Q0  = qp(i  , j  , k  , 1:8)
               Q1  = qp(i-1, j  , k  , 1:8)
@@ -2501,56 +2436,56 @@ module plusgs
               DQ5 = delQ(i  , j+1, k  , 1:8)
               DQ6 = delQ(i  , j  , k+1, 1:8)
 
-              Flist1(1) =   xA(i,j,k)
-              Flist1(2) = -xnx(i,j,k)
-              Flist1(3) = -xny(i,j,k)
-              Flist1(4) = -xnz(i,j,k)
-              Flist1(5) = 0.5*(volume(i-1, j  , k  ) + volume(i,j,k))
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
               Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
               Flist1(8) = 0.5*(sst_F1(i-1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist2(1) =   yA(i,j,k)
-              Flist2(2) = -ynx(i,j,k)
-              Flist2(3) = -yny(i,j,k)
-              Flist2(4) = -ynz(i,j,k)
-              Flist2(5) = 0.5*(volume(i  , j-1, k  ) + volume(i,j,k))
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
               Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
               Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
               Flist2(8) = 0.5*(sst_F1(i  , j-1, k  ) + sst_F1(i,j,k))
 
-              Flist3(1) =   zA(i,j,k)
-              Flist3(2) = -znx(i,j,k)
-              Flist3(3) = -zny(i,j,k)
-              Flist3(4) = -znz(i,j,k)
-              Flist3(5) = 0.5*(volume(i  , j  , k-1) + volume(i,j,k))
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
               Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
               Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
               Flist3(8) = 0.5*(sst_F1(i  , j  , k-1) + sst_F1(i,j,k))
 
-              Flist4(1) =   xA(i+1,j,k)
-              Flist4(2) = +xnx(i+1,j,k)
-              Flist4(3) = +xny(i+1,j,k)
-              Flist4(4) = +xnz(i+1,j,k)
-              Flist4(5) = 0.5*(volume(i+1, j  , k  ) + volume(i,j,k))
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
               Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
               Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
               Flist4(8) = 0.5*(sst_F1(i+1, j  , k  ) + sst_F1(i,j,k))
 
-              Flist5(1) =   yA(i,j+1,k)
-              Flist5(2) = +ynx(i,j+1,k)
-              Flist5(3) = +yny(i,j+1,k)
-              Flist5(4) = +ynz(i,j+1,k)
-              Flist5(5) = 0.5*(volume(i  , j+1, k  ) + volume(i,j,k))
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
               Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
               Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
               Flist5(8) = 0.5*(sst_F1(i  , j+1, k  ) + sst_F1(i,j,k))
 
-              Flist6(1) =   zA(i,j,k+1)
-              Flist6(2) = +znx(i,j,k+1)
-              Flist6(3) = +zny(i,j,k+1)
-              Flist6(4) = +znz(i,j,k+1)
-              Flist6(5) = 0.5*(volume(i  , j  , k+1) + volume(i,j,k))
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
               Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
               Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
               Flist6(8) = 0.5*(sst_F1(i  , j  , k+1) + sst_F1(i,j,k))
@@ -2608,11 +2543,11 @@ module plusgs
               DelJminusFlux =  NewJminusFlux - OldJminusFlux
               DelKminusFlux =  NewKminusFlux - OldKminusFlux
 
-              D = (volume(i,j,k)/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
               beta = sst_F1(i,j,k)*beta1 + (1.0-sst_F1(i,j,k))*beta2
-              !D(6) = (D(6) + bstar*qp(i,j,k,7)*volume(i,j,k))
-              D(6) = (D(6) + (bstar*qp(i,j,k,7))*volume(i,j,k))
-              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*volume(i,j,k))
+              !D(6) = (D(6) + bstar*qp(i,j,k,7)*cells(i,j,k)%volume)
+              D(6) = (D(6) + (bstar*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta*qp(i,j,k,7)*cells(i,j,k)%volume)
               !gamma
               vort = sqrt(     ((gradw_y(i,j,k)- gradv_z(i,j,k))**2 &
                               + (gradu_z(i,j,k)- gradw_x(i,j,k))**2 &
@@ -2628,29 +2563,19 @@ module plusgs
                                 + 2*(gradw_z(i,j,k))**2 &
                                  )&
                            )
-              dvdy = DCCVnX(i,j,k)*CCnormalX(i,j,k) &
-                   + DCCVnY(i,j,k)*CCnormalY(i,j,k) &
-                   + DCCVnZ(i,j,k)*CCnormalZ(i,j,k)
-              lamd =(-7.57e-3)*(dvdy*dist(i,j,k)*dist(i,j,k)*density(i,j,k)/mu(i,j,k)) + 0.0128
-              lamd = min(max(lamd, -1.0), 1.0)
-              if(lamd>=0.0)then
-                  Fpg = min(1.0 + 14.68*lamd, 1.5)
-              else
-                  Fpg = min(1.0 - 7.34*lamd, 3.0)
-              end if
-              Fpg = max(Fpg, 0.0)
-              TuL = min(100.0*sqrt(2.0*tk(i,j,k)/3.0)/(tw(i,j,k)*dist(i,j,k)),100.0)
+              Fpg = 1.0!max(Fpg, 0.0)
+              TuL = min(100.0*sqrt(2.0*qp(i,j,k,6)/3.0)/(qp(i,j,k,7)*dist(i,j,k)),100.0)
               Re_theta = 100.0 + 1000.0*exp(-TuL*Fpg)
-              Rev = density(i,j,k)*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
-              RT = density(i,j,k)*tk(i,j,k)/(mu(i,j,k)*tw(i,j,k))
+              Rev = density*dist(i,j,k)*dist(i,j,k)*strain/mu(i,j,k)
+              RT = density*qp(i,j,k,6)/(mu(i,j,k)*qp(i,j,k,7))
               Fturb = exp(-(0.5*Rt)**4)
               Fonset1 = Rev/(2.2*Re_theta)
               Fonset2 = min(Fonset1, 2.0)
               Fonset3 = max(1.0 - (RT/3.5)**3, 0.0)
               Fonset  = max(Fonset2 - Fonset3, 0.0)
-              Dp = 100*density(i,j,k)*strain*Fonset*(1.0-2.0*Q0(8))
-              De = 0.06*vort*Fturb*density(i,j,k)*(2.0*50.0*Q0(8) - 1.0)
-              D(8) = (D(8) + (-Dp + DE )*volume(i,j,k))
+              Dp = 100*density*strain*Fonset*(1.0-2.0*Q0(8))
+              De = 0.06*vort*Fturb*density*(2.0*50.0*Q0(8) - 1.0)
+              D(8) = (D(8) + (-Dp + DE )*cells(i,j,k)%volume)
 
               delQ(i,j,k,1:8) = delQstar(i,j,k,1:8) &
                 - 0.5*((matmul(PrecondInv,DelIminusFlux) - LambdaTimesArea(4)*delQ(i+1,j,k,1:8)) &
@@ -2661,9 +2586,9 @@ module plusgs
           end do
         end do
         
-        do k=1,kmx-1
-          do j = 1,jmx-1
-            do i = 1,imx-1
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
               conservativeQ(1) = qp(i,j,k,1)
               conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
               conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
@@ -2702,70 +2627,70 @@ module plusgs
       ! calculate the total flux through face
       !---------------------------------------
       implicit none
-      real, dimension(1:n_var), intent(in) :: ql !left state
-      real, dimension(1:n_var), intent(in) :: qr !right state
+      real(wp), dimension(1:n_var), intent(in) :: ql !left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !right state
       !conservative form of updated neighbour
-      real, dimension(1:n_var), intent(in) :: du
-      real, dimension(1:8)    , intent(in) :: inputs
-      real, dimension(1:n_var)             :: Flux
-      real, dimension(1:n_var)             :: lctm2015flux
-      real, dimension(1:n_var)             :: U ! conservative variables
-      real, dimension(1:n_var)             :: W ! new primitive variables
-      real, dimension(1:n_var)             :: P ! primitive variables of right cell
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:8)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: lctm2015flux
+      real(wp), dimension(1:n_var)             :: U ! conservative variables
+      real(wp), dimension(1:n_var)             :: W ! new primitive variables
+      real(wp), dimension(1:n_var)             :: P ! primitive variables of right cell
 
       !for extraction of the inputs
-      real :: area
-      real :: nx
-      real :: ny
-      real :: nz
-      real :: volume
-      real :: mmu
-      real :: tmu
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
 
 
-      real    :: dudx
-      real    :: dudy
-      real    :: dudz
-      real    :: dvdx
-      real    :: dvdy
-      real    :: dvdz
-      real    :: dwdx
-      real    :: dwdy
-      real    :: dwdz
-      real    :: dTdx
-      real    :: dTdy
-      real    :: dTdz
-      real    :: dtkdx
-      real    :: dtkdy
-      real    :: dtkdz
-      real    :: dtwdx
-      real    :: dtwdy
-      real    :: dtwdz
-      real    :: dtgmdx
-      real    :: dtgmdy
-      real    :: dtgmdz
-      real    :: T1, T2
-      real    :: uface
-      real    :: vface
-      real    :: wface
-      real    :: trace
-      real    :: Tauxx
-      real    :: Tauyy
-      real    :: Tauzz
-      real    :: Tauxy
-      real    :: Tauxz
-      real    :: Tauyz
-      real    :: Qx
-      real    :: Qy
-      real    :: Qz
-      real    :: HalfRhoUsquare
-      real    :: RhoHt
-      real    :: K_heat
-      real    :: FaceNormalVelocity
-      real    :: mu
-      real    :: sigma_k
-      real    :: sigma_w
-      real    :: F1
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: dtkdx
+      real(wp)    :: dtkdy
+      real(wp)    :: dtkdz
+      real(wp)    :: dtwdx
+      real(wp)    :: dtwdy
+      real(wp)    :: dtwdz
+      real(wp)    :: dtgmdx
+      real(wp)    :: dtgmdy
+      real(wp)    :: dtgmdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
+      real(wp)    :: sigma_k
+      real(wp)    :: sigma_w
+      real(wp)    :: F1
 
       area   = inputs(1)
       nx     = inputs(2)
@@ -2882,486 +2807,4 @@ module plusgs
     end function lctm2015flux
 
 
-    subroutine apply_interface(qp, layers)
-      !< Apply inter-block interface boundary condition
-      implicit none
-      integer, intent(in):: layers
-      real, dimension(0:imx,0:jmx,0:kmx,1:n_var), intent(inout):: qp
-      integer:: i,j,k,n,l
-      integer:: status(MPI_STATUS_SIZE)
-      integer:: ierr
-      integer:: tag=1
-      integer:: count=0
-
-
-      !--- IMIN ---!
-      call dmsg(1, 'interface', 'apply_interface')
-      if(imin_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                imin_send_buf(count) = qp(l,j,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
-                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imin_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(1)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do k=Pklo(1),Pkhi(1),PkDir(1)
-                do j=Pjlo(1),Pjhi(1),PjDir(1)
-                  count=count+1
-                 qp(1-l,j,k,n) = imin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do j=Pjlo(1),Pjhi(1),PjDir(1)
-                do k=Pklo(1),Pkhi(1),PkDir(1)
-                  count=count+1
-                  qp(1-l,j,k,n) = imin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-      !--- IMAX ---!
-      if(imax_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                imax_send_buf(count) = qp(imx-l,j,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
-                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, imax_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(2)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do k=Pklo(2),Pkhi(2),PkDir(2)
-                do j=Pjlo(2),Pjhi(2),PjDir(2)
-                  count=count+1
-                   qp(imx+l-1,j,k,n) = imax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do j=Pjlo(2),Pjhi(2),Pjdir(2)
-                do k=Pklo(2),Pkhi(2),PkDir(2)
-                  count=count+1
-                   qp(imx+l-1,j,k,n) = imax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-
-
-      !--- JMIN ---!
-      if(jmin_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                jmin_send_buf(count) = qp(i,l,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmin_id,tag,&
-                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmin_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(3)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do k=Pklo(3),Pkhi(3),PkDir(3)
-                do i=Pilo(3),Pihi(3),PiDir(3)
-                  count=count+1
-                  qp(i,1-l,k,n) = jmin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do i=Pilo(3),Pihi(3),PiDir(3)
-                do k=Pklo(3),Pkhi(3),PkDir(3)
-                  count=count+1
-                  qp(i,1-l,k,n) = jmin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-      !--- JMAX ---!
-      if(jmax_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                jmax_send_buf(count) = qp(i,jmx-l,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmax_id,tag,&
-                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, jmax_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(4)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do k=Pklo(4),Pkhi(4),PkDir(4)
-                do i=Pilo(4),Pihi(4),PiDir(4)
-                  count=count+1
-                  qp(i,jmx+l-1,k,n) = jmax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do i=Pilo(4),Pihi(4),PiDir(4)
-                do k=Pklo(4),Pkhi(4),PkDir(4)
-                  count=count+1
-                  qp(i,jmx+l-1,k,n) = jmax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-      !--- KMIN ---!
-      if(kmin_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                kmin_send_buf(count) = qp(i,j,l,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmin_id,tag,&
-                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmin_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(5)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do j=Pjlo(5),Pjhi(5),PjDir(5)
-                do i=Pilo(5),Pihi(5),PiDir(5)
-                  count=count+1
-                  qp(i,j,1-l,n) = kmin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do i=Pilo(5),Pihi(5),PiDir(5)
-                do j=Pjlo(5),Pjhi(5),PjDir(5)
-                  count=count+1
-                  qp(i,j,1-l,n) = kmin_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-
-      !--- KMAX ---!
-      if(kmax_id>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                kmax_send_buf(count) = qp(i,j,kmx-l,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmax_id,tag,&
-                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, kmax_id,tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        if(dir_switch(6)==0)then
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do j=Pjlo(6),Pjhi(6),PjDir(6)
-                do i=Pilo(6),Pihi(6),PiDir(6)
-                  count=count+1
-                  qp(i,j,kmx+l-1,n) = kmax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        else
-          count=0
-          do n=1,n_var
-            do l=1,layers
-              do i=Pilo(6),Pihi(6),PiDir(6)
-                do j=Pjlo(6),Pjhi(6),PjDir(6)
-                  count=count+1
-                  qp(i,j,kmx+l-1,n) = kmax_recv_buf(count)
-                end do
-              end do
-            end do
-          end do
-        end if
-      end if
-      call apply_periodic_bc(delQstar, 1)
-    end subroutine apply_interface
-
-    subroutine apply_periodic_bc(qp, layers)
-      !< Apply periodic boundary condition
-      implicit none
-      integer, intent(in) :: layers
-      real, dimension(0:imx,0:jmx,0:kmx,1:n_var), intent(inout) :: qp
-      integer:: i,j,k,n,l
-      integer:: status(MPI_STATUS_SIZE)
-      integer:: ierr
-      integer:: tag=1
-      integer:: count=0
-
-      call dmsg(1, 'interface', 'apply_periodic_boundary_condition')
-      if(PbcId(1)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                imin_send_buf(count) = qp(l,j,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(imin_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(1),tag,&
-                          imin_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(1),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                qp(1-l,j,k,n) = imin_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-      if(PbcId(2)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                imax_send_buf(count) = qp(imx-l,j,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(imax_send_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(2),tag,&
-                          imax_recv_buf,ibuf_size, MPI_DOUBLE_PRECISION, PbcId(2),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do j=1,jmx-1
-                count=count+1
-                 qp(imx+l-1,j,k,n) = imax_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-      !--- JMIN ---!
-      if(PbcId(3)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                jmin_send_buf(count) = qp(i,l,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(jmin_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(3),tag,&
-                          jmin_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(3),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                qp(i,1-l,k,n) = jmin_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-      !--- JMAX ---!
-      if(PbcId(4)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                jmax_send_buf(count) = qp(i,jmx-l,k,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(jmax_send_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(4),tag,&
-                          jmax_recv_buf,jbuf_size, MPI_DOUBLE_PRECISION, PbcId(4),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do k=1,kmx-1
-              do i=1,imx-1
-                count=count+1
-                qp(i,jmx+l-1,k,n) = jmax_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-      !--- KMIN ---!
-      if(PbcId(5)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                kmin_send_buf(count) = qp(i,j,l,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(kmin_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(5),tag,&
-                          kmin_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(5),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                qp(i,j,1-l,n) = kmin_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-      !--- KMAX ---!
-      if(PbcId(6)>=0)then
-        !collect data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                kmax_send_buf(count) = qp(i,j,kmx-l,n)
-              end do
-            end do
-          end do
-        end do
-        call MPI_SENDRECV(kmax_send_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(6),tag,&
-                          kmax_recv_buf,kbuf_size, MPI_DOUBLE_PRECISION, PbcId(6),tag,&
-                          MPI_COMM_WORLD,status,ierr)
-        ! redistribute data
-        count=0
-        do n=1,n_var
-          do l=1,layers
-            do j=1,jmx-1
-              do i=1,imx-1
-                count=count+1
-                qp(i,j,kmx+l-1,n) = kmax_recv_buf(count)
-              end do
-            end do
-          end do
-        end do
-      end if
-
-
-    end subroutine apply_periodic_bc
 end module plusgs
