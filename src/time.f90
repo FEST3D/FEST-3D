@@ -2,6 +2,7 @@
 module time
   !< Calculate the time step for the current iteration
   use vartypes
+  use mpi
   use viscosity, only : mu
   use viscosity, only : mu_t
   use utils, only: alloc
@@ -13,7 +14,6 @@ module time
 
 #include "debug.h"
 #include "error.h"
-#include "mpi.inc"
 
     private
     integer :: &
@@ -79,7 +79,6 @@ module time
             call alloc(total_time, 1, control%total_process)
             CALL CPU_TIME(t2)
             CALL SYSTEM_CLOCK(COUNT=nb_ticks_final)
-            !call dealloc(delta_t)
 
             nb_ticks = nb_ticks_final - nb_ticks_initial
             IF (nb_ticks_final < nb_ticks_initial) &
@@ -97,7 +96,6 @@ module time
             call MPI_GATHER(cpu_time_elapsed, 1, MPI_DOUBLE_PRECISION, &
             total_time, 1, MPI_DOUBLE_PRECISION, 0,MPI_COMM_WORLD, ierr)
             if(control%process_id==0) print*, "Total CPU time    : ", trim(write_time(sum(total_time)))
-            !call dealloc(total_time)
 
         end subroutine destroy_time
 

@@ -4,7 +4,7 @@ module geometry
     !< The geometry module calculates various geometrical quantities like 
     !< face-normals, face-areas and cell-volumes to be used in computations. 
     !-------------------------------------------------------------------
-#include "error.inc"
+#include "error.h"
 #include "debug.h"
     use vartypes
     use utils, only: alloc

@@ -58,7 +58,6 @@ module plusgs
 
 #include "debug.h"
 #include "error.h"
-#include "mpi.inc"
 
 
   real(wp), dimension(:,:,:,:), allocatable :: delQ

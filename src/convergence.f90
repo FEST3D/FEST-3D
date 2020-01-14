@@ -4,7 +4,7 @@ module convergence
   use vartypes
   use resnorm    , only: Res_abs
   use resnorm    , only: Res_rel
-#include "error.inc"
+#include "error.h"
   implicit none
   private
   public :: converged

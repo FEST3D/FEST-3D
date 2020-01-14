@@ -5,10 +5,8 @@ module layout
   !< and gets process id and total process 
   !------------------------------
   use vartypes
-#include "error.h"
-#include "debug.h"
-#include "mpi.inc"
-  
+  use mpi
+#include "debug.h"  
   public :: read_layout_file
   public :: get_process_data
 

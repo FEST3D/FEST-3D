@@ -70,23 +70,6 @@ module CC
     end subroutine setupCC
 
 
-!    subroutine destroyCC()
-!      !< Deallocate memory from the cell-center variables
-!      implicit none
-!
-!      DebugCall("Destroy CC")
-!
-!      call dealloc(CCnormalX)
-!      call dealloc(CCnormalY)
-!      call dealloc(CCnormalZ)
-!      call dealloc(CCVn)
-!      call dealloc(DCCVnX)
-!      call dealloc(DCCVnY)
-!      call dealloc(DCCVnZ)
-!
-!    end subroutine destroyCC
-
-
     subroutine find_CCnormal(cells, Ifaces, Jfaces, Kfaces,dims)
       !< Find the cell-center unit normal
       implicit none
@@ -179,9 +162,6 @@ module CC
               end do
             end do
           end do
-          !nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,1)
-          !ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,1)
-          !nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,1)
         case('y')
           do k=0,dims%kmx
             do j=0,dims%jmx
@@ -196,9 +176,6 @@ module CC
               end do
             end do
           end do
-          !nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,2)
-          !ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,2)
-          !nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,2)
         case('z')
           do k=0,dims%kmx
             do j=0,dims%jmx
@@ -213,28 +190,10 @@ module CC
               end do
             end do
           end do
-          !nx(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2) => xn(:,:,:,3)
-          !ny(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2) => yn(:,:,:,3)
-          !nz(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3) => zn(:,:,:,3)
         case DEFAULT
           print*, "ERROR: gradient direction error"
           Fatal_error
       end select
-      grad = 0.0
-
-!      do k=0,dims%kmx
-!        do j=0,dims%jmx
-!          do i=0,dims%imx
-!            grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*nx(i,j,k)*xA(i,j,k) &
-!                          -(var(i  ,j-1,k  )+var(i,j,k))*ny(i,j,k)*yA(i,j,k) &
-!                          -(var(i  ,j  ,k-1)+var(i,j,k))*nz(i,j,k)*zA(i,j,k) &
-!                          +(var(i+1,j  ,k  )+var(i,j,k))*nx(i+1,j  ,k  )*xA(i+1,j  ,k  ) &
-!                          +(var(i  ,j+1,k  )+var(i,j,k))*ny(i  ,j+1,k  )*yA(i  ,j+1,k  ) &
-!                          +(var(i  ,j  ,k+1)+var(i,j,k))*nz(i  ,j  ,k+1)*zA(i  ,j  ,k+1) &
-!                         )/(2*volume(i,j,k))
-!          end do
-!        end do
-!      end do
       if(any(isnan(grad)))then
         Fatal_error
       end if

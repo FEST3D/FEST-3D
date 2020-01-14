@@ -2,7 +2,7 @@
 module bc_primitive
   !< Apply boundary condition at every iteration
   !-------------------------------------------
-#include "../error.inc"
+#include "../error.h"
   use vartypes
   use wall_dist, only: dist
   use global_sst , only: beta1

@@ -34,7 +34,7 @@ module viscosity
   use copy_bc       , only : copy1
   use utils       , only :   alloc
 
-#include "error.inc"
+#include "error.h"
 
   implicit none
   private

@@ -4,7 +4,6 @@ module wall_dist
   !< Calculate the distance from the wall 
   !< for each cell-center in the domain
   use vartypes
-!  use global_vars, only : dist
   use utils, only: alloc
 #include "../debug.h"
 #include "../error.h"
@@ -14,7 +13,6 @@ module wall_dist
 
   integer                                     :: n_surfnodes
   !< Number of surfce node points
-!  real(wp), public, dimension(:,:,:), allocatable :: dist
   real(wp), private,dimension(:)    , allocatable :: wall_x
   !< X component of wall surface node point
   real(wp), private,dimension(:)    , allocatable :: wall_y
@@ -56,22 +54,6 @@ module wall_dist
 
     end subroutine setup_wall_dist
 
-
-!
-!    subroutine destroy_wall_dist()
-!      !< Deallocate the memory of wall_distance variable,
-!      !< wall_x, wall_y, and wall_z
-!
-!      implicit none
-!
-!      DebugCall('destroy_wall_dist')
-!      call dealloc(wall_x)
-!      call dealloc(wall_y)
-!      call dealloc(wall_z)
-!      call dealloc(dist)
-!
-!    end subroutine destroy_wall_dist
-!
 
     subroutine setup_nodefile(files)
       !< Open and read first line of surface_node_point file

@@ -58,7 +58,6 @@ module lusgs
 
 #include "debug.h"
 #include "error.h"
-#include "mpi.inc"
 
 
   real(wp), dimension(:,:,:,:), allocatable :: delQ
@@ -81,7 +80,6 @@ module lusgs
 
   public :: update_with_lusgs
   public :: setup_lusgs
-!  public :: destroy_lusgs
 
   contains
 

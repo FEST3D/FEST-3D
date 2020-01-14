@@ -16,10 +16,10 @@ module resnorm
   !----------------------------------------------------
 
   use vartypes
+  use mpi
   use utils,      only: alloc
 
-#include "error.inc"
-#include "mpi.inc"
+#include "error.h"
   private
 
   real(wp) :: merror

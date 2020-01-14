@@ -112,10 +112,6 @@ module write_output_tec_node
               tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
               te(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
 
-          case ("les")
-            continue
-            ! todo
-
           case DEFAULT
             Fatal_error
       end select
@@ -124,7 +120,6 @@ module write_output_tec_node
       select case(trim(scheme%transition))
         case('lctm2015')
           tgm(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 8)
-!          tgm_inf => qp_inf(n_var)
 
         case('bc', 'none')
           !do nothing

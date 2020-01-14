@@ -146,20 +146,10 @@ module dump_solution
       type(filetype), intent(in) :: files
       type(controltype), intent(in) :: control
       integer :: i
-      !integer, intent(in) :: current_iter, last_iter
       write(files%RESTART_FILE_UNIT, '(I0)')    control%current_iter+control%last_iter
       do i = 1,control%n_var+1
         write(files%RESTART_FILE_UNIT, '(f0.16)')  control%previous_res(i)
       end do
-      !write(files%RESTART_FILE_UNIT, '(f0.16)')    vis_resnorm_0
-      !write(files%RESTART_FILE_UNIT, '(f0.16)')   turb_resnorm_0
-      !write(files%RESTART_FILE_UNIT, '(f0.16)')   cont_resnorm_0
-      !write(files%RESTART_FILE_UNIT, '(f0.16)')  x_mom_resnorm_0
-      !write(files%RESTART_FILE_UNIT, '(f0.16)')  y_mom_resnorm_0
-      !write(files%RESTART_FILE_UNIT, '(f0.16)')  z_mom_resnorm_0
-      !write(files%RESTART_FILE_UNIT, '(f0.16)') energy_resnorm_0
-      !write(files%RESTART_FILE_UNIT, '(f0.16)')    TKE_resnorm_0
-      !write(files%RESTART_FILE_UNIT, '(f0.16)')  omega_resnorm_0
     end subroutine write_initial_resnorm
 
 end module dump_solution

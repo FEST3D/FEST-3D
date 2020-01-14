@@ -3,17 +3,15 @@ module wall
  !< Detect all the grid points on the wall boundary condition
  !< and store them in a single file
   use vartypes
+  use mpi
   use utils, only: alloc
 
 #include "../debug.h"
 #include "../error.h"
-#include "../mpi.inc"
 
   private
   integer :: ierr
   !< Integer to store error 
-!  integer :: BUFSIZE
-!  !< Size of buffer for mpi
   integer :: new_type
   !< Create new type for MPI
   integer :: thisfile
@@ -108,7 +106,6 @@ module wall
       end do
       end if
       call mpi_barrier(MPI_COMM_WORLD,ierr)
-      !call destroy_surface()
       call MPI_FILE_CLOSE(thisfile, ierr)
 
     end subroutine write_surfnode
@@ -154,31 +151,6 @@ module wall
     end subroutine link_aliases
 
 
-
-!    subroutine unlink_aliases()
-!      !< Unlink all the pointer used in this module
-!
-!      implicit none
-!
-!      DebugCall('unlink_aliases')
-!      nullify(wall_x)
-!      nullify(wall_y)
-!      nullify(wall_z)
-!
-!    end subroutine unlink_aliases
-!
-
-
-!    subroutine deallocate_memory()
-!      !< Deallocate memory from the Wallc array
-!
-!      implicit none
-!
-!      DebugCall('dealloate_memory')
-!      call dealloc(wallc)
-!
-!    end subroutine deallocate_memory
-
     
 
     subroutine setup_surface(files, control, bc)
@@ -205,20 +177,6 @@ module wall
       call link_aliases()
 
     end subroutine setup_surface
-
-
-
-!    subroutine destroy_surface()
-!      !< Deallocate memory, unlink pointers, and close MPI_shared file
-!
-!      implicit none
-!
-!      DebugCall('destroy_surface')
-!!      call deallocate_memory()
-!!      call unlink_aliases()
-!!      call MPI_FILE_CLOSE(thisfile, ierr)
-!
-!    end subroutine destroy_surface
 
 
     subroutine find_wall(bc)

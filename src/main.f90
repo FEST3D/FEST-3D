@@ -7,9 +7,6 @@ program main
   use solver, only:  start_run
   use solver, only: finish_run
 
-#include "error.inc"
-#include "mpi.inc"
-
 !--------Start---------!
   call start_run()
 

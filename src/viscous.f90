@@ -2,7 +2,7 @@
 module viscous
   !< The viscous module contains the viscous fluxes calculations
   !-----------------------------------------------------------------
-#include "error.inc"
+#include "error.h"
   use vartypes
   use gradients  , only : gradu_x
   use gradients  , only : gradu_y
@@ -84,11 +84,7 @@ module viscous
 
         call compute_viscous_fluxes_laminar(F, qp, cells, Ifaces, flagsi, scheme, flow, dims)
         call compute_viscous_fluxes_laminar(G, qp, cells, Jfaces, flagsj, scheme, flow, dims)
-        !if(kmx==2)then
-        !  continue
-        !else
-          call compute_viscous_fluxes_laminar(H, qp, cells, Kfaces, flagsk,scheme, flow, dims)
-        !end if
+        call compute_viscous_fluxes_laminar(H, qp, cells, Kfaces, flagsk,scheme, flow, dims)
         
         select case(trim(scheme%turbulence))
           case('none')
@@ -110,11 +106,7 @@ module viscous
           case('kkl')
             call compute_viscous_fluxes_kkl(F, qp,cells, Ifaces, flagsi,dims)
             call compute_viscous_fluxes_kkl(G, qp,cells, Jfaces, flagsj,dims)
-            !if(kmx==2)then
-            !  continue
-            !else
-              call compute_viscous_fluxes_kkl(H, qp,cells, Kfaces, flagsk,dims)
-            !end if
+            call compute_viscous_fluxes_kkl(H, qp,cells, Kfaces, flagsk,dims)
           case DEFAULT
             Fatal_error
         end select

@@ -4,10 +4,10 @@ module grid
     !< grid points) as well as procedures to load these from a file.
     !-------------------------------------------------------------------
     use vartypes
+    use mpi
     use mapping, only : read_interface_map
     
-#include "error.inc"
-#include "mpi.inc"
+#include "error.h"
 #include "debug.h"
     private
 

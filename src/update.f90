@@ -59,7 +59,6 @@ module update
   use lusgs     , only : setup_lusgs
 #include "debug.h"
 #include "error.h"
-#include "mpi.inc"
     private
 
     real(wp), dimension(:,:,:,:), allocatable :: U_store

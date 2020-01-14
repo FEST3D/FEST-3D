@@ -2,7 +2,7 @@
 module read_bc
   !< Get all the fixed values from the bc_**.md file 
   !-----------------------------------------------------
-#include "../error.inc"
+#include "../error.h"
   use vartypes
   implicit none
   private

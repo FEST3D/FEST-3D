@@ -3,16 +3,17 @@ module solver
   !< allocate/deallcoate memory, initialize, iterate
   !-------------------------------------------------
   use vartypes
-  use CC,    only: setupCC
-  use read, only : read_input_and_controls
-  use grid,      only : setup_grid!, destroy_grid
-  use geometry,  only : setup_geometry!, destroy_geometry
-  use state,     only : setup_state!, destroy_state
-  use gradients, only : setup_gradients
-  use Scheme,    only : setup_scheme!, destroy_scheme
-  use wall_dist,     only: setup_wall_dist, find_wall_dist
-  use viscous,       only: compute_viscous_fluxes
-  use layout,        only: get_process_data, read_layout_file
+  use mpi
+  use CC,            only : setupCC
+  use read,          only : read_input_and_controls
+  use grid,          only : setup_grid
+  use geometry,      only : setup_geometry
+  use state,         only : setup_state
+  use gradients,     only : setup_gradients
+  use Scheme,        only : setup_scheme
+  use wall_dist,     only : setup_wall_dist, find_wall_dist
+  use viscous,       only : compute_viscous_fluxes
+  use layout,        only : get_process_data, read_layout_file
   use interface1,    only : setup_interface
   use resnorm,       only : find_resnorm, setup_resnorm!, destroy_resnorm
   use dump_solution, only : checkpoint
@@ -26,7 +27,6 @@ module solver
   use update,        only : setup_update
 #include "debug.h"
 #include "error.h"
-#include "mpi.inc"
     private
 
     type(extent) :: dims
@@ -150,29 +150,7 @@ module solver
             implicit none
             
             DebugCall('destroy_solver')
-!
-!            if(process_id==0)then
-!              close(STOP_FILE_UNIT)
-!            end if
-!            call destroy_update()
-!            call destroy_viscosity()
-!            !call destroy_gradients()
-!            call destroyCC()
-!            if(turbulence /= 'none') then
-!              call destroy_wall_dist()
-!            end if
-!            call destroy_scheme()
-!            !call destroy_source()
-!            call destroy_state()
-!            !call destroy_geometry()
-!            !call destroy_grid()
-!            call destroy_resnorm()
-!            call destroy_interface()
             call destroy_time(control)
-!            call destroy_bc()
-!
-!            if(allocated(r_list)) deallocate(r_list)
-!            if(allocated(w_list)) deallocate(w_list)
 
         end subroutine destroy_solver
 

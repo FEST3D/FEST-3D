@@ -2,6 +2,7 @@
 module interface1
   !< This module handles the MPI Communication calls for interface boundary conditions
   use vartypes
+  use mpi
   use mapping, only : PiDir
   use mapping, only : PjDir
   use mapping, only : PkDir
@@ -18,7 +19,6 @@ module interface1
 
 #include "debug.h"
 #include "error.h"
-#include "mpi.inc"
   private
   integer :: layers = 3
   integer :: ibuf_size
@@ -53,7 +53,6 @@ module interface1
   !< Array to store data to receive data for Kmax face
 
   public :: setup_interface
-!  public :: destroy_interface
   public :: apply_interface
 
   contains

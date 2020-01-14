@@ -78,8 +78,6 @@ module read_output
         print*, "'ASCII' and 'BINARY' "
       end if
 
-      !write(infile,'(a,i4.4,a,i2.2)') 'time_directories/',start_from,'process_',process_id
-
     end subroutine setup_file
 
     subroutine open_file(files, control)
@@ -119,15 +117,6 @@ module read_output
       do i = 1,control%n_var+1
         read(RESTART_FILE_UNIT, *)  control%previous_res(i)
       end do
-      !read(RESTART_FILE_UNIT, *)    vis_resnorm_0
-      !read(RESTART_FILE_UNIT, *)   turb_resnorm_0
-      !read(RESTART_FILE_UNIT, *)   cont_resnorm_0
-      !read(RESTART_FILE_UNIT, *)  x_mom_resnorm_0
-      !read(RESTART_FILE_UNIT, *)  y_mom_resnorm_0
-      !read(RESTART_FILE_UNIT, *)  z_mom_resnorm_0
-      !read(RESTART_FILE_UNIT, *) energy_resnorm_0
-      !read(RESTART_FILE_UNIT, *)    TKE_resnorm_0
-      !read(RESTART_FILE_UNIT, *)  omega_resnorm_0
     end subroutine read_restart_file
 
 end module read_output
