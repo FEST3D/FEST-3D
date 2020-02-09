@@ -29,21 +29,21 @@ affiliations:
 
 # Summary
 
-Academic research in the mechanical- and aerospace-engineering community has been aided in the last couple of decades by the development of open-source softwares like OpenFoam[@weller1998] and SU2[@2013stanford].
+Academic research in the mechanical- and aerospace-engineering communities has been aided in the last couple of decades by the development of open-source software packagess like OpenFoam [@weller1998] and SU2 [@2013stanford].
 
-``FEST-3D`` is a modular CFD solver written in FORTRAN 90 language that has been developed with similar motivation: to help solve problems of academic and engineering interest. This software is designed  to solve  the
+``FEST-3D`` is a modular CFD solver written in FORTRAN 90, developed with a similar motivation: to help solve problems of academic and engineering interest. This software is designed  to solve  the
 [compressible Favre-averaged Navier-Stokes equations](https://turbmodels.larc.nasa.gov/implementrans.html)
-using the finite-volume method on block-structured grids using MPI-based parallelization. The modularity of the code makes it easy to implement any new method for flux reconstruction, or turbulence model, easy.
-It provides a large number of options for higher-order spatial and temporal discretization, along with the latest turbulence and transition models, which are not all available in any other open-source CFD software. To illustrate,
+using the finite-volume method on block-structured grids using MPI-based parallelization. The modularity of the code makes it easy to implement a new method for flux reconstruction, or a turbulence model.
+It provides a large number of options for higher-order spatial and temporal discretization, along with the latest turbulence and transition models, which are not all available in other open-source CFD software. To illustrate,
 FEST-3D provides  the latest one-equation $\gamma$ transition model [@2015Menter]
-and zero-equation BC transition model [@2017Caka]; also, along with standard turbulence models: SA [@SAmodel] and SST [@menter1994],
-it also provides the k-kL [@kkl2015] turbulence model.
-As ``FEST-3D`` uses structured grids to solve fluid flow problems, a higher-order
-method of 3rd [@muscl], 4th [@ppm], and 5th [@weno] order accuracy in space –– for uniform grids ––
-can be employed; this is difficult to achieve for solvers designed for unstructured grids and data-structure.
+and zero-equation BC transition model [@2017Caka]. It also provides standard turbulence models: SA [@SAmodel] and SST [@menter1994],
+and the k-kL [@kkl2015] turbulence model.
+As ``FEST-3D`` uses structured grids to solve fluid flow problems, higher-order
+methods of 3rd [@muscl], 4th [@ppm], and 5th [@weno] order accuracy in space –– for uniform grids ––
+can be employed; this is difficult to achieve with solvers designed for unstructured grids and data-structures.
 
-A python script is provided to make the user interface  with the main FEST-3D code simple.
-Most of the user inputs can easily be specified  in the first few lines of automaton.py script as listed in the table here.
+A Python script is provided to simplify the user interface  with the main FEST-3D code.
+Most of the user inputs can easily be specified  in the first few lines of the `automaton.py` script, as listed in the table below.
 
 | Variable |  Expected Input | Description|
 |:---------|:----------------|:----------------------|
@@ -96,21 +96,21 @@ Most of the user inputs can easily be specified  in the first few lines of autom
 
 
 # Higher-order methods
-Most of the modern CFD softwares are based on unstructured-grid data structure
+Most modern CFD software is based on unstructured-grid data structures
 and are limited  to a maximum of 3rd order of accuracy in space [(Check OpenFoam v6 User Guide: 4.4)](https://cfd.direct/openfoam/user-guide/v6-fvschemes/),
-as it is computationally expensive and difficult to implement such higher-order methods using unstructured data structures.
-However, ``FEST-3D`` uses structured-grid data structure
-and provides higher than second-order methods like MUSCL (3rd order
-accurate in space), PPM (4th order accurate in space)
-and WENO (5th order accurate in space), atleast for uniform grid spacing.
+as it is computationally expensive and difficult to implement higher-order methods in this case.
+``FEST-3D`` uses structured-grid data structures
+and provides higher than second-order methods like MUSCL (3rd-order
+accurate in space), PPM (4th-order accurate in space)
+and WENO (5th-order accurate in space), at least for uniform grid spacing.
 Such higher-order methods can especially be useful in academic research.
 
 
 # Past and current applications
 ``FEST-3D`` is suitable for academic research and can also be used in industrial research.
-It has been used for computing simulations to investigate the effect of slope limiters on the convergence of the solution of smooth turbulent flows
+It has been used for obtaining simulations to investigate the effect of slope limiters on the convergence of the solution of smooth turbulent flows
  while using higher-order methods[@2018jatinder].
-Currently, ``FEST-3D`` is being used for the development of a new local-correlation based
+Currently, ``FEST-3D`` is being used for the development of a new local-correlation-based
 transition model and a 3D immersed-boundary method for compressible flows.
 FEST-3D is also being used for  teaching  in the department of Aerospace Engineering, IIT Madras.
 
@@ -121,7 +121,7 @@ We acknowledge the open source projects which we have used in the FEST-3D code.
 as [cmake_fortran_template](https://github.com/SethMMorton/cmake_fortran_template), has been used to build the code.
 To automatically generate documentation,
 [Fortran FOSS Programmers Group's](https://github.com/Fortran-FOSS-Programmers)
-document generator,  FORD(https://github.com/Fortran-FOSS-Programmers/ford), has been used.
+document generator,  [FORD](https://github.com/Fortran-FOSS-Programmers/ford), has been used.
 
 
 # References
