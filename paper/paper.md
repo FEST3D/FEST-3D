@@ -43,14 +43,13 @@ methods of 3rd [@muscl], 4th [@ppm], and 5th [@weno] order accuracy in space –
 can be employed; this is difficult to achieve with solvers designed for unstructured grids and data-structures.
 
 A Python script is provided to simplify the user interface  with the main FEST-3D code.
-Most of the user inputs can easily be specified  in the first few lines of the `automaton.py` script, as listed in the table below.
+Most of the user inputs can easily be specified  in the first few lines of the `edit-automaton.py` script, as listed in the table below.
 
 | Variable |  Expected Input | Description|
 |:---------|:----------------|:----------------------|
 |RunDir    |String           | Name of the run directory|
 |GridDir   |String (path)    | Directory name having only grid files|
 |NumberOfBlocks| Integer | Total number of blocks|
-|AbsBinaryPath| String (path)| Provides the absolute path to the binary|
 |CFL | Real Number greater than zero | Courant–Friedrichs–Lewy number|
 |LoadLevel | Integer | Restart folder number in the time_directories/ directory |
 |MaxIterations | Integer greater than zero | Maximum number of iteration |
