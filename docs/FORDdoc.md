@@ -60,11 +60,16 @@ Although most of modules and subroutines are named such that its purpose is clea
 ## License
 FEST-3D is an open-source software available under GNU General Public License v3.0
 
-## Reference and Citation
+
+# Citation
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.01555/status.svg)](https://doi.org/10.21105/joss.01555)
+
+User are requested to cite the following JOSS article for any research publications made using the FEST-3D solver.
+
+Jatinder Pal Singh Sandhu, Anant Girdhar, Rakesh Ramakrishnan, R. Teja, Santanu Ghosh, **FEST-3D: Finite-volume Explicit STructured 3-Dimensional solver**, *Journal of Open Source Software*, 5(46), 1555, [https://doi.org/10.21105/joss.01555](https://joss.theoj.org/papers/10.21105/joss.01555).
+
+## Reference
 Details about the governing equations used in the FEST-3D code can be found in the publication by Jatinder Pal Singh Sandhu et al. (_Singh Sandhu, J. P., Girdhar, A., Ramakrishnan, R., Teja, R. D., & Ghosh, S., **A convergence study of solutions using two two-equation RANS turbulence models on a finite volume solver for structured grids**, AIAA 2018-3859_).
-
-User are requested to cite this reference for any research publications made using the FEST-3D solver.
-
 
 @Bug
 
