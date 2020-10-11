@@ -25,6 +25,12 @@ integer function test_gradient() result(r)
    bc%make_F_flux_zero=1
    bc%make_G_flux_zero=1
    bc%make_H_flux_zero=1
+   bc%imin_id = 3
+   bc%imax_id = 3
+   bc%jmin_id = 3
+   bc%jmax_id = 3
+   bc%kmin_id = 3
+   bc%kmax_id = 3
 
    cells%volume = 2.0
    Ifaces%nx=1.0
@@ -51,7 +57,7 @@ integer function test_gradient() result(r)
    r = 1
    call setup_gradients(control, scheme, flow, dims)
    call evaluate_all_gradients(qp, Temp, cells, Ifaces, Jfaces, Kfaces, scheme, bc, dims)
-   if(gradqp_x(0,1,1,1)==2.0 .and. gradqp_x(1,1,1,1)==3.0 .and. gradqp_x(2,1,1,1)==4.0)then
+   if(gradqp_x(0,1,1,1)==1.5 .and. gradqp_x(1,1,1,1)==3.0 .and. gradqp_x(2,1,1,1)==6.0)then
      r = 0
    end if
 
