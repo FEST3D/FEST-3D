@@ -519,7 +519,9 @@ module gradients
       domain%il   = 1; domain%jl = 0; domain%kl = 0
       domain%iu   = 0; domain%ju = 0; domain%ku = 0
       domain%sig  = 1
-      call apply_gradient_bc_face(qp, temp, cells, Ifaces, dims, domain, bc%imin_id, bc%fixed_wall_temperature(1))
+      if(bc%imin_id<0)then
+        call apply_gradient_bc_face(qp, temp, cells, Ifaces, dims, domain, bc%imin_id, bc%fixed_wall_temperature(1))
+      end if
 
       domain%imin = dims%imx
       domain%imax = dims%imx
@@ -530,7 +532,9 @@ module gradients
       domain%il   = 0; domain%jl = 0; domain%kl = 0
       domain%iu   = 1; domain%ju = 0; domain%ku = 0
       domain%sig  = -1
-      call apply_gradient_bc_face(qp, temp, cells, Ifaces, dims, domain, bc%imax_id, bc%fixed_wall_temperature(2))
+      if(bc%imax_id<0)then
+        call apply_gradient_bc_face(qp, temp, cells, Ifaces, dims, domain, bc%imax_id, bc%fixed_wall_temperature(2))
+      end if
 
       domain%imin = 1
       domain%imax = dims%imx-1
@@ -541,7 +545,9 @@ module gradients
       domain%il   = 0; domain%jl = 1; domain%kl = 0
       domain%iu   = 0; domain%ju = 0; domain%ku = 0
       domain%sig  = 1
-      call apply_gradient_bc_face(qp, temp, cells, Jfaces, dims, domain, bc%jmin_id, bc%fixed_wall_temperature(3))
+      if(bc%jmin_id<0)then
+        call apply_gradient_bc_face(qp, temp, cells, Jfaces, dims, domain, bc%jmin_id, bc%fixed_wall_temperature(3))
+      end if
 
       domain%imin = 1
       domain%imax = dims%imx-1
@@ -552,7 +558,9 @@ module gradients
       domain%il   = 0; domain%jl = 0; domain%kl = 0
       domain%iu   = 0; domain%ju = 1; domain%ku = 0
       domain%sig  = -1
-      call apply_gradient_bc_face(qp, temp, cells, Jfaces, dims, domain, bc%jmax_id, bc%fixed_wall_temperature(4))
+      if(bc%jmax_id<0)then
+        call apply_gradient_bc_face(qp, temp, cells, Jfaces, dims, domain, bc%jmax_id, bc%fixed_wall_temperature(4))
+      end if
 
       domain%imin = 1
       domain%imax = dims%imx-1
@@ -563,7 +571,9 @@ module gradients
       domain%il   = 0; domain%jl = 0; domain%kl = 1
       domain%iu   = 0; domain%ju = 0; domain%ku = 0
       domain%sig  = 1
-      call apply_gradient_bc_face(qp, temp, cells, Kfaces, dims, domain, bc%kmin_id, bc%fixed_wall_temperature(5))
+      if(bc%kmin_id<0)then
+        call apply_gradient_bc_face(qp, temp, cells, Kfaces, dims, domain, bc%kmin_id, bc%fixed_wall_temperature(5))
+      end if
 
       domain%imin = 1
       domain%imax = dims%imx-1
@@ -574,7 +584,9 @@ module gradients
       domain%il   = 0; domain%jl = 0; domain%kl = 0
       domain%iu   = 0; domain%ju = 0; domain%ku = 1
       domain%sig  = -1
-      call apply_gradient_bc_face(qp, temp, cells, Kfaces, dims, domain, bc%kmax_id, bc%fixed_wall_temperature(6))
+      if(bc%kmax_id<0)then
+        call apply_gradient_bc_face(qp, temp, cells, Kfaces, dims, domain, bc%kmax_id, bc%fixed_wall_temperature(6))
+      end if
           
     end subroutine apply_gradient_bc
 
