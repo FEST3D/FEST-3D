@@ -434,7 +434,7 @@ module gradients
               do i=0,dims%imx
                 grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*Ifaces(i,j,k)%nx*Ifaces(i,j,k)%A &
                               -(var(i  ,j-1,k  )+var(i,j,k))*Jfaces(i,j,k)%nx*Jfaces(i,j,k)%A &
-                              -(var(i  ,j  ,k-1)+var(i,j,k))*Kfaces(i,j,k)%nx*Jfaces(i,j,k)%A &
+                              -(var(i  ,j  ,k-1)+var(i,j,k))*Kfaces(i,j,k)%nx*Kfaces(i,j,k)%A &
                               +(var(i+1,j  ,k  )+var(i,j,k))*Ifaces(i+1,j  ,k  )%nx*Ifaces(i+1,j  ,k  )%A &
                               +(var(i  ,j+1,k  )+var(i,j,k))*Jfaces(i  ,j+1,k  )%nx*Jfaces(i  ,j+1,k  )%A &
                               +(var(i  ,j  ,k+1)+var(i,j,k))*Kfaces(i  ,j  ,k+1)%nx*Kfaces(i  ,j  ,k+1)%A &
@@ -448,7 +448,7 @@ module gradients
               do i=0,dims%imx
                 grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*Ifaces(i,j,k)%ny*Ifaces(i,j,k)%A &
                               -(var(i  ,j-1,k  )+var(i,j,k))*Jfaces(i,j,k)%ny*Jfaces(i,j,k)%A &
-                              -(var(i  ,j  ,k-1)+var(i,j,k))*Kfaces(i,j,k)%ny*Jfaces(i,j,k)%A &
+                              -(var(i  ,j  ,k-1)+var(i,j,k))*Kfaces(i,j,k)%ny*Kfaces(i,j,k)%A &
                               +(var(i+1,j  ,k  )+var(i,j,k))*Ifaces(i+1,j  ,k  )%ny*Ifaces(i+1,j  ,k  )%A &
                               +(var(i  ,j+1,k  )+var(i,j,k))*Jfaces(i  ,j+1,k  )%ny*Jfaces(i  ,j+1,k  )%A &
                               +(var(i  ,j  ,k+1)+var(i,j,k))*Kfaces(i  ,j  ,k+1)%ny*Kfaces(i  ,j  ,k+1)%A &
@@ -462,7 +462,7 @@ module gradients
               do i=0,dims%imx
                 grad(i,j,k) =(-(var(i-1,j  ,k  )+var(i,j,k))*Ifaces(i,j,k)%nz*Ifaces(i,j,k)%A &
                               -(var(i  ,j-1,k  )+var(i,j,k))*Jfaces(i,j,k)%nz*Jfaces(i,j,k)%A &
-                              -(var(i  ,j  ,k-1)+var(i,j,k))*Kfaces(i,j,k)%nz*Jfaces(i,j,k)%A &
+                              -(var(i  ,j  ,k-1)+var(i,j,k))*Kfaces(i,j,k)%nz*Kfaces(i,j,k)%A &
                               +(var(i+1,j  ,k  )+var(i,j,k))*Ifaces(i+1,j  ,k  )%nz*Ifaces(i+1,j  ,k  )%A &
                               +(var(i  ,j+1,k  )+var(i,j,k))*Jfaces(i  ,j+1,k  )%nz*Jfaces(i  ,j+1,k  )%A &
                               +(var(i  ,j  ,k+1)+var(i,j,k))*Kfaces(i  ,j  ,k+1)%nz*Kfaces(i  ,j  ,k+1)%A &
