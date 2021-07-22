@@ -80,7 +80,7 @@ mkdir -p build
 cd build
 # run cmake; here we assume that the project's
 # top-level CMakeLists.txt is located at '..'
-cmake ..
+FC=mpif90 cmake ..
 # once CMake has done its job we just build using make as usual
  make
 # if the project uses ctest we can run the tests like this
