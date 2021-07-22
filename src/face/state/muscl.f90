@@ -169,13 +169,13 @@ module muscl
                 fd = qp(i+ii, j+jj, k+kk, l) - qp(i, j, k, l)
                 bd = qp(i, j, k, l) - qp(i-ii, j-jj, k-kk, l)
 
-                r = fd / max(bd,1e-10)
+                r = fd / (bd + 1e-14)
                 psi1 = max(0., min(2*r, alpha*(r-1.0) + 1.0, 2.))  !alpha limiter
 !                psi1 = max(0., min(2*r,1.), min(r,2.))    ! superbee
 !                psi1 = ((r*r) + r)/((r*r) + 1.0)          ! Van-Albda 
 !                psi1 = (abs(r) + r)/(abs(r) + 1.0)          ! Van-Leer
 
-                r = bd / max(fd, 1e-10)
+                r = bd / (fd + 1e-14)
                 psi2 = max(0., min(2*r, alpha*(r-1.0) + 1.0, 2.))
 !                psi2 = max(0., min(2*r,1.), min(r,2.))
 !                psi2 = ((r*r) + r)/((r*r) + 1.0)          ! Van-Albda 
