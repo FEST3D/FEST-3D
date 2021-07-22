@@ -1,4 +1,4 @@
-language: minimal
+language: c
 
 dist: trusty
 os:
