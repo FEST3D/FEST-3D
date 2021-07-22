@@ -31,7 +31,7 @@ module wall
   !< Flag to detect wall
   integer, public :: n_wall
   !< Number of points on the wall
-  integer, public :: total_n_wall
+  integer, dimension(1), public :: total_n_wall
   !< Total number of points on the block across all processes
   character(len=maxlen), dimension(:), allocatable :: str
   !< Store all wall corridnate of current process in a string vector
