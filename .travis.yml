@@ -5,5 +5,7 @@ os:
   - linux
   - osx
 
+osx_image: xcode12.5
+
 script:
   - bash install.sh
