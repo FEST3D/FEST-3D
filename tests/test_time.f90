@@ -50,6 +50,7 @@ integer function test_time() result(r)
    cells%volume = 1.0
    call setup_time(delta_t, control, dims)
    call compute_time_step(qp, delta_t, 1.0, cells, Ifaces, Jfaces, Kfaces, scheme, flow, dims)
+   print*, "Time"
    print*, delta_t(1,1,1)
    if(delta_t(1,1,1)>0.135 .and. delta_t(1,1,1)<0.145)then
        r = 0
