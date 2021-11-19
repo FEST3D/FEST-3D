@@ -223,9 +223,9 @@ module vartypes
        !< Turn on/off application of pressure based switching for higher order methods for J direction faces.
       integer                                           :: kPB_switch=0
        !< Turn on/off application of pressure based switching for higher order methods for K direction faces.
-      character(len=8)                                  :: turbulence='none'
+      character(len=16)                                  :: turbulence='none'
        !< Store Turbulence model name
-      character(len=8)                                  :: transition='none'
+      character(len=16)                                  :: transition='none'
        !< Store Transition model name
       integer  :: accur=1                          
       !< Switch for higher order boundary condition
@@ -324,7 +324,7 @@ module vartypes
       real(wp), dimension(6) :: fixed_tk       = 0.
       !< Turbulent kinetic energy value to fix at particular boundary condition
       real(wp), dimension(6) :: fixed_tw       = 0.
-      !< Turbulent kinetic energy dissiaption rate value to fix at particular boundary condition(k-omega and SST model)
+      !< Turbulent kinetic energy dissiaption rate value to fix at particular boundary condition(k-omega and SST  and wilcox2006 model)
       real(wp), dimension(6) :: fixed_te       = 0.
       !< Turbulent kinetic energy dissiaption value to fix at particular boundary condition (K-eplision model)
       real(wp), dimension(6) :: fixed_tv       = 0.

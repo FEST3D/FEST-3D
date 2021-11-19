@@ -111,7 +111,7 @@ module bc_primitive
               !include nothing
               continue
           
-          case ("sst", "sst2003", "bsl", "des-sst", "kw")
+          case ("sst", "sst2003", "bsl", "des-sst", "kw", "wilcox2006")
               tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
               tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
 
@@ -245,7 +245,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call fix(tv, bc%fixed_tv, face)
-          case('sst', 'sst2003')
+          case('sst', 'sst2003', "wilcox2006")
             !call check_if_value_fixed(bc, "sst")
             call fix(tk, bc%fixed_tk, face)
             call fix(tw, bc%fixed_tw, face)
@@ -287,7 +287,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv, "flat", face, bc, dims)
-          case('sst', 'sst2003')
+          case('sst', 'sst2003', 'wilcox2006')
             call copy3(tk, "flat", face, bc, dims)
             call copy3(tw, "flat", face, bc, dims)
           case('kkl')
@@ -326,7 +326,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call fix(tv, bc%fixed_tv, face)
-          case('sst', 'sst2003')
+          case('sst', 'sst2003', 'wilcox2006')
             !call check_if_value_fixed(bc, "sst")
             call fix(tk, bc%fixed_tk, face)
             call fix(tw, bc%fixed_tw, face)
@@ -372,7 +372,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv, "flat", face, bc, dims)
-          case('sst', 'sst2003')
+          case('sst', 'sst2003', 'wilcox2006')
             call copy3(tk, "flat", face, bc, dims)
             call copy3(tw, "flat", face, bc, dims)
           case('kkl')
@@ -424,7 +424,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv, "symm", face, bc, dims)
-          case('sst', 'sst2003')
+          case('sst', 'sst2003', 'wilcox2006')
             call copy3(tk, "symm", face, bc, dims)
             call copy3(tw, "symm", face, bc, dims)
           case('kkl')
@@ -462,7 +462,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv, "flat", face, bc, dims) 
-          case('sst', 'sst2003')
+          case('sst', 'sst2003', 'wilcox2006')
             call copy3(tk, "flat", face, bc, dims)
             call copy3(tw, "flat", face, bc, dims)
           case('kkl')
@@ -542,7 +542,7 @@ module bc_primitive
             continue
           case('sa', 'saBC')
             call copy3(tv  , "anti", face, bc, dims)
-          case("sst", 'sst2003')
+          case("sst", 'sst2003', 'wilcox2006')
             call copy3(tk  , "anti", face, bc, dims)
             call set_omega_at_wall(face)
           case("kkl")
@@ -703,7 +703,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -735,7 +735,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -796,7 +796,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -828,7 +828,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -889,7 +889,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -921,7 +921,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -982,7 +982,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1014,7 +1014,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -1075,7 +1075,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1107,7 +1107,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -1168,7 +1168,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1200,7 +1200,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -1290,7 +1290,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1316,7 +1316,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -1375,7 +1375,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1401,7 +1401,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -1460,7 +1460,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1486,7 +1486,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -1545,7 +1545,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1571,7 +1571,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -1630,7 +1630,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1656,7 +1656,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)
@@ -1715,7 +1715,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call copy3(tv, "flat", face, bc, dims)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       call copy3(tk, "flat", face, bc, dims)
                       call copy3(tw, "flat", face, bc, dims)
                     case('kkl')
@@ -1741,7 +1741,7 @@ module bc_primitive
                       continue
                     case('sa', 'saBC')
                       call fix(tv, bc%fixed_tv, face)
-                    case('sst', 'sst2003')
+                    case('sst', 'sst2003', 'wilcox2006')
                       !call check_if_value_fixed(bc, "sst")
                       call fix(tk, bc%fixed_tk, face)
                       call fix(tw, bc%fixed_tw, face)

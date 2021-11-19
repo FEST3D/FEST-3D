@@ -20,6 +20,7 @@ state.f90
 global/global_sa.f90 
 global/global_kkl.f90 
 global/global_sst.f90 
+global/global_wilcox2006.f90 
 boundary/copy_bc.f90 
 boundary/FT_bc.f90 
 boundary/read_bc.f90 

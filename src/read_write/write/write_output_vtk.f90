@@ -94,7 +94,7 @@ module write_output_vtk
               !include nothing
               continue
           
-          case ("sst", "sst2003", "bsl", "des-sst", "kw")
+          case ("sst", "sst2003", "bsl", "des-sst", "kw", "wilcox2006")
               tk(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 6)
               tw(-2:imx+2, -2:jmx+2, -2:kmx+2) => state(:, :, :, 7)
 

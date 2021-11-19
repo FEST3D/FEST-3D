@@ -94,7 +94,7 @@ module state
                 case ("none")
                     continue
 
-                case ("sst", "sst2003", "bsl")
+                case ("sst", "sst2003", "bsl", "wilcox2006")
                     flow%tk_inf = 1.5*((flow%Vel_mag*flow%Turb_Intensity_inf)**2)
                     flow%tw_inf = flow%density_inf*flow%tk_inf/(flow%mu_ref*flow%mu_ratio_inf)
 
@@ -225,7 +225,7 @@ module state
                     !include nothing
                     continue
                 
-                case ("sst", "sst2003", "bsl", "des-sst", "kw")
+                case ("sst", "sst2003", "bsl", "des-sst", "kw", "wilcox2006")
                     !tk = tk_inf
                     qp(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 6) = flow%tk_inf
                     !tw = tw_inf
@@ -295,7 +295,7 @@ module state
             case('sa', 'saBC')
               n_var=6
               
-            case('sst', "sst2003", 'bsl', 'kw', 'ke', 'kkl', 'Des-kw')
+            case('sst', "sst2003", 'bsl', 'kw', 'ke', 'kkl', 'Des-kw', 'wilcox2006')
               n_var=7
 
             case DEFAULT

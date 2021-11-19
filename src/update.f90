@@ -320,6 +320,14 @@ module update
                              +(1./(1.+bstar*u1(6)*delta_t(i,j,k)))*TKE_residue/u1(1)
                       R(7) = -(u1(7)/u1(1))*mass_residue&
                              +(1./(1.+2.*beta*u1(6)*delta_t(i,j,k)))*omega_residue/u1(1)
+                    case('wilcox2006')
+                      TKE_residue = residue(i,j,k,6)
+                      omega_residue = residue(i,j,k,7)
+                      R(5) = R(5) - (flow%gm-1.)*TKE_residue
+                      R(6) = -(u1(6)/u1(1))*mass_residue&
+                             +(1./(1.+bstar*u1(6)*delta_t(i,j,k)))*TKE_residue/u1(1)
+                      R(7) = -(u1(7)/u1(1))*mass_residue&
+                             +(1./(1.+2.*0.0708*u1(6)*delta_t(i,j,k)))*omega_residue/u1(1)
                     case('kkl')
                       TKE_residue = residue(i,j,k,6)
                       kl_residue  = residue(i,j,k,7)
@@ -352,7 +360,7 @@ module update
                   else !update
                     qp(i,j,k,1:5) = u2(1:5)
                     select case(trim(scheme%turbulence))
-                     case('sst', 'sst2003', 'kkl')
+                     case('sst', 'sst2003', 'kkl', 'wilcox2006')
                        if(u2(6)>0.) qp(i,j,k,6) = u2(6)
                        if(u2(7)>0.) qp(i,j,k,7) = u2(7)
                      case DEFAULT
@@ -376,7 +384,7 @@ module update
                   u1(1)  = Quse(i,j,k,1)
                   u1(2:) = Quse(i,j,k,2:)*u1(1)
                   select case(scheme%turbulence)
-                    case('sst', 'sst2003', 'kkl')
+                    case('sst', 'sst2003', 'kkl', 'wilcox2006')
                       KE = 0.0!u1(6)
                     case('sa','saBC')
                       KE=0.0
@@ -396,6 +404,9 @@ module update
                       beta = beta1*sst_F1(i,j,k) + (1. - sst_F1(i,j,k))*beta2
                       R(6) = R(6)/(1+(beta*qp(i,j,k,7)*delta_t(i,j,k)))
                       R(7) = R(7)/(1+(2*beta*qp(i,j,k,7)*delta_t(i,j,k)))
+                    case('wilcox2006')
+                      R(6) = R(6)/(1+(bstar*qp(i,j,k,7)*delta_t(i,j,k)))
+                      R(7) = R(7)/(1+(2*0.0708*qp(i,j,k,7)*delta_t(i,j,k)))
                     case('kkl')
                       eta  = u1(1)*dist(i,j,k)*(sqrt(0.3*u1(6))/(20*mu(i,j,k)))
                       fphi = (1+cd1*eta)/(1+eta**4)
@@ -434,7 +445,7 @@ module update
                   u2(1)  = u2(1)
                   u2(2:) = u2(2:)/u2(1)
                   select case(scheme%turbulence)
-                    case('sst', 'sst2003', 'kkl')
+                    case('sst', 'sst2003', 'kkl', 'wilcox2006')
                       KE = 0.0!u2(6)
                     case('sa', 'saBC')
                       !u2(6) = u2(6)*u2(1)
@@ -453,7 +464,7 @@ module update
                   else !update
                     qp(i,j,k,1:5) = u2(1:5)
                     select case(trim(scheme%turbulence))
-                     case('sst', 'sst2003', 'kkl')
+                     case('sst', 'sst2003', 'kkl', 'wilcox2006')
                        if(u2(6)>=0.) then
                          qp(i,j,k,6) = u2(6)
                        else

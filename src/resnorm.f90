@@ -145,7 +145,7 @@ module resnorm
         case('none')
           !do nothing
           continue
-        case('sst', 'sst2003')
+        case('sst', 'sst2003', 'wilcox2006')
           Res_scale(6) = flow%density_inf*flow%vel_mag*flow%tk_inf
           Res_scale(7) = flow%density_inf*flow%vel_mag*flow%tw_inf
         case('kkl')
@@ -317,7 +317,10 @@ module resnorm
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(5)
 
           case('TKE_abs')
-            if(trim(scheme%turbulence)=='sst' .or. trim(scheme%turbulence)=='kkl'.or. trim(scheme%turbulence)=='sst2003' )then
+            if(  trim(scheme%turbulence)=='sst'       &
+            .or. trim(scheme%turbulence)=='kkl'       &
+            .or. trim(scheme%turbulence)=='sst2003'   &
+            .or. trim(scheme%turbulence)=='wilcox2006') then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(6)
             end if
 
@@ -332,7 +335,9 @@ module resnorm
             end if
 
           case('Omega_abs')
-            if(trim(scheme%turbulence)=='sst'.or. trim(scheme%turbulence)=='sst2003')then
+            if(  trim(scheme%turbulence)=='sst'    &
+            .or. trim(scheme%turbulence)=='sst2003' &
+            .or. trim(scheme%turbulence)=='wilcox2006')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_abs(7)
             end if
 
@@ -342,7 +347,10 @@ module resnorm
             end if
 
           case('TKE_rel')
-            if(trim(scheme%turbulence)=='sst' .or. trim(scheme%turbulence)=='kkl'.or.  trim(scheme%turbulence)=='sst2003')then
+            if(  trim(scheme%turbulence)=='sst'     &
+            .or. trim(scheme%turbulence)=='kkl'     &
+            .or. trim(scheme%turbulence)=='sst2003' &
+            .or. trim(scheme%turbulence)=='wilcox2006') then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(6)
             end if
 
@@ -357,7 +365,9 @@ module resnorm
             end if
 
           case('Omega_rel')
-            if(trim(scheme%turbulence)=='sst'.or. trim(scheme%turbulence)=='sst2003')then
+            if(  trim(scheme%turbulence)=='sst'      &
+            .or. trim(scheme%turbulence)=='sst2003'  &
+            .or. trim(scheme%turbulence)=='wilcox2006')then
             write(RESNORM_FILE_UNIT, frm, advance='no') Res_rel(7)
             end if
 

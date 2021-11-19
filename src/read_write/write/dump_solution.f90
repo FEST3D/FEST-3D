@@ -129,7 +129,7 @@ module dump_solution
           
         case ('none')
           write(files%RESTART_FILE_UNIT, '(A)') 'viscous'
-        case('sst','sst2003', 'kkl', 'ke', 'kw', 'sa', 'saBC', 'des-sst')
+        case('sst','sst2003', 'kkl', 'ke', 'kw', 'sa', 'saBC', 'des-sst', 'wilcox2006')
           write(files%RESTART_FILE_UNIT, '(A)') trim(scheme%turbulence)
         case DEFAULT
            Fatal_error

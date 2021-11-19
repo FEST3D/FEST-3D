@@ -51,7 +51,7 @@ module check_output_control
             
           case('tke','tk','turbulent_kinetic_enrgy','k')
             select case (trim(scheme%turbulence))
-              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
+              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst','wilcox2006')
                 control%w_list(n) = "TKE"
               case DEFAULT
                 print*, err//trim(control%w_list(n))//" to file"
@@ -60,7 +60,7 @@ module check_output_control
 
           case('omega','tw')
             select case (trim(scheme%turbulence))
-              case('sst', 'sst2003','kw','bsl','des-sst')
+              case('sst', 'sst2003','kw','bsl','des-sst','wilcox2006')
                 control%w_list(n) = "Omega"
               case DEFAULT
                 print*, err//trim(control%w_list(n))//" to file"
@@ -174,7 +174,7 @@ module check_output_control
 
           case('dtkdx')
             select case (trim(scheme%turbulence))
-              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
+              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst','wilcox2006')
                 control%w_list(n) = "Dtkdx"
               case DEFAULT
                 print*, err//trim(control%w_list(n))//" to file"
@@ -183,7 +183,7 @@ module check_output_control
 
           case('dtkdy')
             select case (trim(scheme%turbulence))
-              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst')
+              case('sst', 'sst2003','kw','bsl','kkl','ke','des-sst','wilcox2006')
                 control%w_list(n) = "Dtkdy"
               case DEFAULT
                 print*, err//trim(control%w_list(n))//" to file"
@@ -192,7 +192,7 @@ module check_output_control
 
           case('dtkdz')
             select case (trim(scheme%turbulence))
-              case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
+              case('sst','sst2003','kw','bsl','kkl','ke','des-sst','wilcox2006')
                 control%w_list(n) = "Dtkdz"
               case DEFAULT
                 print*, err//trim(control%w_list(n))//" to file"
@@ -201,7 +201,7 @@ module check_output_control
 
           case('dtwdx')
             select case (trim(scheme%turbulence))
-              case('sst','sst2003','kw','bsl','des-sst')
+              case('sst','sst2003','kw','bsl','des-sst','wilcox2006')
                 control%w_list(n) = "Dtwdx"
               case DEFAULT
                 print*, err//trim(control%w_list(n))//" to file"
@@ -210,7 +210,7 @@ module check_output_control
 
           case('dtwdy')
             select case (trim(scheme%turbulence))
-              case('sst','sst2003','kw','bsl','des-sst')
+              case('sst','sst2003','kw','bsl','des-sst','wilcox2006')
                 control%w_list(n) = "Dtwdy"
               case DEFAULT
                 print*, err//trim(control%w_list(n))//" to file"
@@ -219,7 +219,7 @@ module check_output_control
 
           case('dtwdz')
             select case (trim(scheme%turbulence))
-              case('sst','sst2003','kw','bsl','des-sst')
+              case('sst','sst2003','kw','bsl','des-sst','wilcox2006')
                 control%w_list(n) = "Dtwdz"
               case DEFAULT
                 print*, err//trim(control%w_list(n))//" to file"
@@ -380,9 +380,9 @@ module check_output_control
             
           case('tke','tk','turbulent_kinetic_enrgy','k')
             select case (trim(scheme%turbulence))
-              case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
+              case('sst','sst2003','kw','bsl','kkl','ke','des-sst','wilcox2006')
                 select case (trim(control%previous_flow_type))
-                  case('sst','sst2003','kw','bsl','kkl','ke','des-sst')
+                  case('sst','sst2003','kw','bsl','kkl','ke','des-sst','wilcox2006')
                     control%r_list(n) = "TKE"
                 end select
               case DEFAULT
@@ -392,9 +392,9 @@ module check_output_control
 
           case('omega','tw')
             select case (trim(scheme%turbulence))
-              case('sst','sst2003','kw','bsl','des-sst')
+              case('sst','sst2003','kw','bsl','des-sst','wilcox2006')
                 select case (trim(control%previous_flow_type))
-                  case('sst','sst2003','kw','bsl','des-sst')
+                  case('sst','sst2003','kw','bsl','des-sst','wilcox2006')
                     control%r_list(n) = "Omega"
                   case DEFAULT
                     print*, err//trim(control%w_list(n))//" from file"

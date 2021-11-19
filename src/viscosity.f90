@@ -101,6 +101,11 @@ module viscosity
       real(wp) :: tv
       integer :: imx, jmx, kmx
 
+      !wilcox2006 variable
+      real(wp) :: clim
+      real(wp) :: a
+      real(wp) :: divergence
+
       imx = dims%imx
       jmx = dims%jmx
       kmx = dims%kmx
@@ -532,6 +537,91 @@ module viscosity
             end do
             !--- end of kkl eddy viscosity calculation ---!
 
+
+          case ('wilcox2006')
+            !call calculate_wilcox_mu()
+            clim = 7d0/8.d0
+            a = 0.3
+            do k = 0,kmx
+              do j = 0,jmx
+                do i = 0,imx
+
+                  density = qp(i,j,k,1)
+                  tk = qp(i,j,k,6)
+                  tw = qp(i,j,k,7)
+                  ! calculate strain rate
+                  divergence = (gradu_x(i,j,k) + gradv_y(i,j,k) + gradw_z(i,j,k))/3.d0
+                  strain  = sqrt((((gradw_y(i,j,k) + gradv_z(i,j,k))**2) &
+                                + ((gradu_z(i,j,k) + gradw_x(i,j,k))**2) &
+                                + ((gradv_x(i,j,k) + gradu_y(i,j,k))**2) &
+                                + 2*((gradu_x(i,j,k)-divergence)**2) &
+                                + 2*((gradv_y(i,j,k)-divergence)**2) &
+                                + 2*((gradw_z(i,j,k)-divergence)**2) &
+                                )&
+                              )
+
+                  ! calculate_vorticity(
+                  mu_t(i,j,k) = density*tk/(max(tw,clim*strain/a))
+                  !-- end eddy visocisyt calculation --!
+                end do
+              end do
+            end do
+
+            select case(trim(scheme%transition))
+              case DEFAULT
+                !do nothing
+                continue
+            end select
+
+            ! populating ghost cell
+            do i = 1,6
+              select case(bc%id(i))
+                case(-10,0:)
+                  !interface
+                  continue
+
+                case(-1,-2,-3,-4,-6,-7,-8,-9)
+                  !call copy1(wilcox_mu, "symm", face_names(i))
+                  select case(bc%face_names(i))
+                    case("imin")
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = mu_t(     1, 1:jmx-1, 1:kmx-1)
+                    case("imax")
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = mu_t( imx-1, 1:jmx-1, 1:kmx-1)
+                    case("jmin")
+                        mu_t(1:imx-1,       0, 1:kmx-1) = mu_t(1:imx-1,      1, 1:kmx-1)
+                    case("jmax")
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = mu_t(1:imx-1,  jmx-1, 1:kmx-1)
+                    case("kmin")
+                        mu_t(1:imx-1, 1:jmx-1,       0) = mu_t(1:imx-1, 1:jmx-1,      1)
+                    case("kmax")
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = mu_t(1:imx-1, 1:jmx-1,  kmx-1)
+                    case DEFAULT
+                      print*, "ERROR: wrong face for boundary condition"
+                      Fatal_error
+                  end select
+                case(-5)
+                  !call copy1(sst_mu, "anti", face_names(i))
+                  select case(bc%face_names(i))
+                    case("imin")
+                        mu_t(      0, 1:jmx-1, 1:kmx-1) = -mu_t(     1, 1:jmx-1, 1:kmx-1)
+                    case("imax")
+                        mu_t(  imx  , 1:jmx-1, 1:kmx-1) = -mu_t( imx-1, 1:jmx-1, 1:kmx-1)
+                    case("jmin")
+                        mu_t(1:imx-1,       0, 1:kmx-1) = -mu_t(1:imx-1,      1, 1:kmx-1)
+                    case("jmax")
+                        mu_t(1:imx-1,   jmx  , 1:kmx-1) = -mu_t(1:imx-1,  jmx-1, 1:kmx-1)
+                    case("kmin")
+                        mu_t(1:imx-1, 1:jmx-1,       0) = -mu_t(1:imx-1, 1:jmx-1,      1)
+                    case("kmax")
+                        mu_t(1:imx-1, 1:jmx-1,   kmx  ) = -mu_t(1:imx-1, 1:jmx-1,  kmx-1)
+                    case DEFAULT
+                      print*, "ERROR: wrong face for boundary condition"
+                      Fatal_error
+                  end select
+              end select
+            end do
+            !--- end of wilcox2006 eddy viscosity  and blending fucntion calculation ---!
+
           case DEFAULT 
             Fatal_error
 
@@ -572,7 +662,7 @@ module viscosity
 
         select case (trim(scheme%turbulence))
 
-          case ('none', 'sa', 'saBC', 'kkl')
+          case ('none', 'sa', 'saBC', 'kkl', 'wilcox2006')
             !do nothing
             continue
 

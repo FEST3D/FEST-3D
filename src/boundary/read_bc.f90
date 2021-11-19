@@ -87,7 +87,7 @@ module read_bc
               !do nothing
               continue
 
-            case ("sst", 'tw', 'sst2003')
+            case ("sst", 'tw', 'sst2003', 'wilcox2006')
               select case(buf(3:index(buf(3:), " ")+1))
                 case ("FIX_tk")
                   call set_value(bc%fixed_tk      , fix_val, flow%tk_inf      , count, ios)
@@ -170,7 +170,7 @@ module read_bc
             !do nothing
             continue
 
-          case ("sst", 'tw', 'sst2003')
+          case ("sst", 'tw', 'sst2003', 'wilcox2006')
             !case ("FIX_tk")
               call set_value(bc%fixed_tk      , flow%tk_inf, flow%tk_inf      , count, ios)
             !case ("FIX_tw")

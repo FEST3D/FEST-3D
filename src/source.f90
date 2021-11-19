@@ -21,6 +21,9 @@ module source
   use global_sst   ,only : sigma_k
   use global_sst   ,only : gama
   use global_sst   ,only : sst_F1
+  use global_wilcox2006   ,only : gama_wilcox2006 => gama
+  use global_wilcox2006   ,only : bstar_wilcox2006 => bstar
+  use global_wilcox2006   ,only : beta0_wilcox2006 => beta0
   use viscosity  ,only :   mu
   use wall_dist  ,only :   dist
   use gradients  ,only :   gradu_x
@@ -143,6 +146,20 @@ module source
             case DEFAULT
               Fatal_error
           end select
+
+
+        case ('wilcox2006')
+          select case(trim(scheme%transition))
+            case('none')
+              call add_wilcox2006_source(qp, residue, cells, dims)
+            case('lctm2015')
+              continue
+            case('bc')
+              continue
+            case DEFAULT
+              Fatal_error
+          end select
+
 
         case ('kkl')
           call add_kkl_source(qp, residue, cells, Ifaces,Jfaces,Kfaces, dims)
@@ -268,6 +285,162 @@ module source
       end do
 
     end subroutine add_sst_source
+
+
+    subroutine add_wilcox2006_source(qp, residue, cells, dims)
+      !< Add residual due to source terms of the wilcox2006 turbulence model
+      implicit none
+      type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(inout)  :: residue
+      !< Store residue at each cell-center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      !< Store residue at each cell-center
+      integer :: i,j,k
+
+      real(wp) :: CD
+      !< cross diffusion term
+      real(wp) :: S_k
+      !< Total source term of TKE equation
+      real(wp) :: S_w
+      !< Total source term of omega equation
+      real(wp) :: D_k
+      !< destruction term of TKE equation
+      real(wp) :: D_w
+      !< destruction term of omega equation
+      real(wp) :: P_k
+      !< production term of TKE equation
+      real(wp) :: P_w
+      !< production term of Omega equation
+      integer :: limiter
+      !< production term limiter
+      real(wp) :: density
+      !< single cell density
+      real(wp) :: tk
+      !< single cell TKE
+      real(wp) :: tw
+      !< single cell Omega
+      real(wp), dimension(3,3) :: S
+      !< Strain rate tensor
+      real(wp), dimension(3,3) :: V
+      !< vorticity tensor
+      real :: dudx, dudy, dudz
+      !< gradient of u
+      real :: dvdx, dvdy, dvdz
+      !< gradient of v
+      real :: dwdx, dwdy, dwdz
+      !< gradient of w
+      real :: trace
+      !< trace of strain rate matrix
+      real :: xnum
+      !< numerator of Xiw term
+      real :: Xiw
+      !< Vortex streching term
+      real :: fb
+      !< the vortcity streching blending function
+      real :: strain
+      !< store the magnitude of the strain rate
+      
+      limiter = 20
+
+      !-----------------
+      ! TODO
+      !----------------
+      ! Write strain terms: keep in ming and factor of 2 in s and sbar
+
+      ! initialize S and V tensor to zero
+      S(:,:) = 0
+      V(:,:) = 0
+
+      do k = 1,dims%kmx-1
+        do j = 1,dims%jmx-1
+          do i = 1,dims%imx-1
+
+            density = qp(i,j,k,1)
+            tk      = qp(i,j,k,6)
+            tw      = qp(i,j,k,7)
+
+            dudx = gradu_x(i,j,k)
+            dudy = gradu_y(i,j,k)
+            dudz = gradu_z(i,j,k)
+
+            dvdx = gradv_x(i,j,k)
+            dvdy = gradv_y(i,j,k)
+            dvdz = gradv_z(i,j,k)
+
+            dwdx = gradw_x(i,j,k)
+            dwdy = gradw_y(i,j,k)
+            dwdz = gradw_z(i,j,k)
+
+            ! __ vorticity __
+            V(1,2) = 0.5*(dudy - dvdx)
+            V(1,3) = 0.5*(dudz - dwdx)
+            V(2,3) = 0.5*(dvdz - dwdy)
+            V(2,1) = -V(1,2)
+            V(1,3) = -V(3,1)
+            V(2,3) = -V(3,2)
+
+            ! __ strain rate __
+            S(1,1) = 0.5*(dudx + dudx)
+            S(2,2) = 0.5*(dvdy + dvdy)
+            S(3,3) = 0.5*(dwdz + dwdz)
+            S(1,2) = 0.5*(dudy + dvdx)
+            S(1,3) = 0.5*(dudz + dwdx)
+            S(2,3) = 0.5*(dvdz + dwdy)
+            S(2,1) = S(1,2)
+            S(3,1) = S(1,3)
+            S(3,2) = S(2,3)
+            
+
+            ! ____ cross diffusion term ___
+            CD = density*0.125*(gradtk_x(i,j,k)*gradtw_x(i,j,k)&
+                              + gradtk_y(i,j,k)*gradtw_y(i,j,k)&
+                              + gradtk_z(i,j,k)*gradtw_z(i,j,k)&
+                               )/tw
+            CD = max(CD, 10.0**(-limiter))
+
+            trace = 0.5*(S(1,1) + S(2,2) + S(3,3))
+            xnum = -(V(1,2)*V(1,2)+V(1,3)*V(1,3))*(S(1,1) - trace)&
+                   -(V(1,2)*V(1,2)+V(2,3)*V(2,3))*(S(2,2) - trace)&
+                   -(V(1,3)*V(1,3)+V(2,3)*V(2,3))*(S(3,3) - trace)&
+                   -2*V(1,3)*V(2,3)*S(1,2) &
+                   +2*V(1,2)*V(2,3)*S(1,3) &
+                   -2*V(1,2)*V(1,3)*S(2,3)
+            Xiw = abs(xnum/((bstar_wilcox2006*tw)**3))
+
+            Fb = (1+85*Xiw)/(1+100*Xiw)
+
+            gama        =  gama_wilcox2006     
+            beta        =  beta0_wilcox2006*Fb 
+
+            ! ____ Dissipation term ___
+            D_k = bstar_wilcox2006*density*tw*tk
+            D_w = beta*density*tw**2
+
+            ! ____ PRODUCTION term____ 
+            strain = sqrt(2*sum(S*S))
+            P_k = mu_t(i,j,k)*(strain**2)
+            P_k = min(P_k,limiter*D_k)
+            P_w = (density*gama_wilcox2006/mu_t(i,j,k))*P_k
+
+
+            S_k = P_k - D_k           !Source term TKE
+            S_w = P_w - D_w  + CD   !source term omega
+
+            S_k = S_k * cells(i, j, k)%volume
+            S_w = S_w * cells(i, j, k)%volume
+
+            residue(i, j, k, 6) = residue(i, j, k, 6) - S_k
+            residue(i, j, k, 7) = residue(i, j, k, 7) - S_w
+
+          end do
+        end do
+      end do
+
+    end subroutine add_wilcox2006_source
 
 
     subroutine add_sst_source_lctm2015(qp, residue, cells, Ifaces, Jfaces, Kfaces, scheme, dims)

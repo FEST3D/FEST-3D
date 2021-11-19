@@ -42,6 +42,8 @@ module viscous
   use global_kkl , only : sigma_phi
   use global_sa  , only : sigma_sa
   use global_sa  , only : cb2
+  use global_wilcox2006, only : sigma_k_wilcox2006 => sigma_k
+  use global_wilcox2006, only : sigma_w_wilcox2006 => sigma_w
   use utils      , only : alloc
   implicit none
   private
@@ -102,6 +104,14 @@ module viscous
               continue
             else
               call compute_viscous_fluxes_sst(H, qp,cells, Kfaces, flagsk,dims)
+            end if
+          case('wilcox2006')
+            call compute_viscous_fluxes_wilcox2006(F, qp,cells,  Ifaces, flagsi,dims)
+            call compute_viscous_fluxes_wilcox2006(G, qp,cells,  Jfaces, flagsj,dims)
+            if(kmx==2)then
+              continue
+            else
+              call compute_viscous_fluxes_wilcox2006(H, qp,cells, Kfaces, flagsk,dims)
             end if
           case('kkl')
             call compute_viscous_fluxes_kkl(F, qp,cells, Ifaces, flagsi,dims)
@@ -445,6 +455,126 @@ module viscous
        end do
       end do
     end subroutine compute_viscous_fluxes_sst
+
+
+    subroutine compute_viscous_fluxes_wilcox2006(F, qp, cells, faces, flags, dims)
+      !< Compute viscous fluxes for additianal equations due to wilcox2006 turbulence model
+      implicit none
+      real(wp), dimension(:, :, :, :), intent(inout) :: F 
+      !< flux array
+      type(extent), intent(in) :: dims
+      !< Extent of the domain: imx,jmx,kmx
+      integer, dimension(3), intent(in) :: flags
+      !< flags for direction swithc
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(in) :: qp
+     !< Store primitive variable at cell center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+2+flags(1),-2:dims%jmx+2+flags(2),-2:dims%kmx+2+flags(3)), intent(in) :: faces
+      !< quantities on the face
+      ! local variables
+      real(wp) :: tkface
+      real(wp) :: rhoface
+      real(wp) :: normal_comp
+      real(wp) :: d_LR
+      real(wp) :: mu_f
+      real(wp) :: mut_f
+      real(wp) :: total_mu
+      real(wp) :: delx
+      real(wp) :: dely
+      real(wp) :: delz
+      real(wp) :: deltk
+      real(wp) :: deltw
+      real(wp) :: Tau_xx
+      real(wp) :: Tau_yy
+      real(wp) :: Tau_zz
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: area
+      integer :: i, j, k
+      integer :: ii, jj, kk
+      !--- sst variable requirement ---!
+      real(wp) :: dtkdx, dtkdy, dtkdz, dtwdx, dtwdy, dtwdz
+      real(wp) ::  sigma_kf
+      real(wp) ::  sigma_wf
+
+      ii = flags(1)
+      jj = flags(2)
+      kk = flags(3)
+
+      !---------------------------------------------------------------------
+      ! Calculating the turbulent viscous fluxes at the faces
+      !--------------------------------------------------------------------
+      do k = 1, dims%kmx - 1 + kk
+       do j = 1, dims%jmx - 1 + jj
+        do i = 1, dims%imx - 1 + ii
+
+          !--- FACE Gradients ---!
+          ! Gradients at face as average of gradients at cell centres
+          dtkdx = 0.5 * (gradtk_x(i-ii, j-jj, k-kk) + gradtk_x(i, j, k))
+          dtkdy = 0.5 * (gradtk_y(i-ii, j-jj, k-kk) + gradtk_y(i, j, k))
+          dtkdz = 0.5 * (gradtk_z(i-ii, j-jj, k-kk) + gradtk_z(i, j, k))
+          dtwdx = 0.5 * (gradtw_x(i-ii, j-jj, k-kk) + gradtw_x(i, j, k))
+          dtwdy = 0.5 * (gradtw_y(i-ii, j-jj, k-kk) + gradtw_y(i, j, k))
+          dtwdz = 0.5 * (gradtw_z(i-ii, j-jj, k-kk) + gradtw_z(i, j, k))
+          !--- For ODD-EVEN coupling error ---!
+          ! distance between cell center of adjacent cell for the i,j,k face
+          delx = cells(i, j, k)%centerx - cells(i-ii, j-jj, k-kk)%centerx
+          dely = cells(i, j, k)%centery - cells(i-ii, j-jj, k-kk)%centery
+          delz = cells(i, j, k)%centerz - cells(i-ii, j-jj, k-kk)%centerz
+
+          d_LR = sqrt(delx*delx + dely*dely + delz*delz)
+
+          ! difference in state across face
+          deltk = qp(i, j, k, 6) - qp(i-ii, j-jj, k-kk, 6) !TKE
+          deltw = qp(i, j, k, 7) - qp(i-ii, j-jj, k-kk, 7) !Omega
+
+          !normal_comp   = ( delta(phi) - (grad(phi).dot.delR) )/magnitudeR
+          !new grad(phi) =  grad(phi) + correction(normal_comp.dot.delR/magnitudeR)
+
+          normal_comp = (deltk - (dtkdx*delx + dtkdy*dely + dtkdz*delz))/d_LR
+          dtkdx       =  dtkdx + (normal_comp * delx / d_LR)
+          dtkdy       =  dtkdy + (normal_comp * dely / d_LR)
+          dtkdz       =  dtkdz + (normal_comp * delz / d_LR)
+
+          normal_comp = (deltw - (dtwdx*delx + dtwdy*dely + dtwdz*delz))/d_LR
+          dtwdx       =  dtwdx + (normal_comp * delx / d_LR)
+          dtwdy       =  dtwdy + (normal_comp * dely / d_LR)
+          dtwdz       =  dtwdz + (normal_comp * delz / d_LR)
+          !--- end of ODD-EVEN coupling correction ---!
+
+          mu_f     = 0.5*(  mu(i-ii, j-jj, k-kk) +   mu(i, j, k))
+          mut_f    = 0.5*(mu_t(i-ii, j-jj, k-kk) + mu_t(i, j, k))
+          sigma_kf = sigma_k_wilcox2006
+          sigma_wf = sigma_w_wilcox2006
+
+          total_mu = mu_f + mut_f
+          rhoface  = 0.5 * (qp(i-ii, j-jj, k-kk, 1) + qp(i, j, k, 1)) !Density
+          tkface   = 0.5 * (qp(i-ii, j-jj, k-kk, 6) + qp(i, j, k, 6)) !TKE
+          ! k in reynolds stress
+          Tau_xx = -2.0*rhoface*tkface/3.0
+          Tau_yy = Tau_xx
+          Tau_zz = Tau_xx
+
+          ! calling some element from memory and keep them handy for calculation
+          nx    = faces(i,j,k)%nx
+          ny    = faces(i,j,k)%ny
+          nz    = faces(i,j,k)%nz
+          area  = faces(i,j,k)%A
+
+          ! adding viscous fluxes to stored convective flux
+          F(i, j, k, 2) = F(i, j, k, 2) - (Tau_xx * nx * area)
+          F(i, j, k, 3) = F(i, j, k, 3) - (Tau_yy * ny * area)
+          F(i, j, k, 4) = F(i, j, k, 4) - (Tau_zz * nz * area)
+          F(i, j, k, 5) = F(i, j, k, 5) - (area*((mu_f + sigma_kf*mut_f)*(dtkdx*nx + dtkdy*ny + dtkdz*nz)))
+          F(i, j, k, 6) = F(i, j, k, 6) - (area*((mu_f + sigma_kf*mut_f)*(dtkdx*nx + dtkdy*ny + dtkdz*nz)))
+          F(i, j, k, 7) = F(i, j, k, 7) - (area*((mu_f + sigma_wf*mut_f)*(dtwdx*nx + dtwdy*ny + dtwdz*nz)))
+         
+        end do
+       end do
+      end do
+    end subroutine compute_viscous_fluxes_wilcox2006
 
 
     subroutine compute_viscous_fluxes_kkl(F, qp, cells, faces, flags, dims)

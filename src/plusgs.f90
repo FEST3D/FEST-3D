@@ -18,6 +18,10 @@ module plusgs
   use global_sst , only : beta2
   use global_sst , only : bstar
   use global_sst , only : sst_F1
+  use global_wilcox2006 , only : beta_wilcox2006 => beta0
+  use global_wilcox2006 , only : bstar_wilcox2006 => bstar
+  use global_wilcox2006 , only : sigma_k_wilcox2006 => sigma_k
+  use global_wilcox2006 , only : sigma_w_wilcox2006 => sigma_w
   use global_sa  , only : sigma_sa
   use global_sa , only : cb1
   use global_sa , only : cb2
@@ -168,6 +172,17 @@ module plusgs
               call update_SST_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
             case('lctm2015')
               call update_lctm2015(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
+            case DEFAULT
+              Fatal_error
+          end select
+
+        case('wilcox2006')
+          select case(trim(scheme%transition))
+            case('none', 'bc')
+              call update_wilcox2006_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
+            case('lctm2015')
+              continue
+              !call update_lctm2015(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
             case DEFAULT
               Fatal_error
           end select
@@ -1429,6 +1444,645 @@ module plusgs
       SSTFlux = Flux
 
     end function SSTFlux 
+
+
+    subroutine update_wilcox2006_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
+      !< Update the RANS (Wilcox2006 k-omega) equation with LU-SGS
+      implicit none
+      type(extent), intent(in) :: dims
+      !< Extent of the domain:imx,jmx,kmx
+      real(wp), dimension(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2, 1:dims%n_var), intent(inout) :: qp
+      !< Store primitive variable at cell center
+      real(wp), dimension(:, :, :, :), intent(in)  :: residue
+      !< Store residue at each cell-center
+      real(wp) , dimension(1:dims%imx-1, 1:dims%jmx-1, 1:dims%kmx-1), intent(in) :: delta_t
+      !< Local time increment value at each cell center
+      type(celltype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: cells
+      !< Input cell quantities: volume
+      type(facetype), dimension(-2:dims%imx+3,-2:dims%jmx+2,-2:dims%kmx+2), intent(in) :: Ifaces
+      !< Input varaible which stores I faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+3,-2:dims%kmx+2), intent(in) :: Jfaces
+      !< Input varaible which stores J faces' area and unit normal
+      type(facetype), dimension(-2:dims%imx+2,-2:dims%jmx+2,-2:dims%kmx+3), intent(in) :: Kfaces
+      !< Input varaible which stores K faces' area and unit normal
+      integer :: i,j,k
+        real(wp), dimension(1:7)     :: deltaU
+        real(wp), dimension(1:7)     :: D
+        real(wp), dimension(1:7)     :: conservativeQ
+        real(wp), dimension(1:7)     :: OldIminusFlux
+        real(wp), dimension(1:7)     :: OldJminusFlux
+        real(wp), dimension(1:7)     :: OldKminusFlux
+        real(wp), dimension(1:7)     :: NewIminusFlux
+        real(wp), dimension(1:7)     :: NewJminusFlux
+        real(wp), dimension(1:7)     :: NewKminusFlux
+        real(wp), dimension(1:7)     :: DelIminusFlux
+        real(wp), dimension(1:7)     :: DelJminusFlux
+        real(wp), dimension(1:7)     :: DelKminusFlux
+        real(wp), dimension(1:6)     :: LambdaTimesArea
+        real(wp), dimension(1:7)     :: Q0 ! state at cell
+        real(wp), dimension(1:7)     :: Q1 ! state at neighbours 
+        real(wp), dimension(1:7)     :: Q2
+        real(wp), dimension(1:7)     :: Q3
+        real(wp), dimension(1:7)     :: Q4
+        real(wp), dimension(1:7)     :: Q5
+        real(wp), dimension(1:7)     :: Q6
+        real(wp), dimension(1:7)     :: DQ0! change in state
+        real(wp), dimension(1:7)     :: DQ1
+        real(wp), dimension(1:7)     :: DQ2
+        real(wp), dimension(1:7)     :: DQ3
+        real(wp), dimension(1:7)     :: DQ4
+        real(wp), dimension(1:7)     :: DQ5
+        real(wp), dimension(1:7)     :: DQ6
+        real(wp), dimension(1:7)     :: Flist1
+        real(wp), dimension(1:7)     :: Flist2
+        real(wp), dimension(1:7)     :: Flist3
+        real(wp), dimension(1:7)     :: Flist4
+        real(wp), dimension(1:7)     :: Flist5
+        real(wp), dimension(1:7)     :: Flist6
+        real(wp), dimension(1:3)     :: C0
+        real(wp), dimension(1:3)     :: C1
+        real(wp), dimension(1:3)     :: C2
+        real(wp), dimension(1:3)     :: C3
+        real(wp), dimension(1:3)     :: C4
+        real(wp), dimension(1:3)     :: C5
+        real(wp), dimension(1:3)     :: C6
+        real(wp)                     :: eps
+        real(wp)                     :: M
+        real(wp)                     :: VMag
+        real(wp)                     :: SoundMag
+        real(wp)                     :: u,v,w,r,p,kk,ww,H
+        real(wp)                     :: factor
+        real(wp), dimension(1:7,1:7) :: PrecondInv
+
+        ! intermittency
+        real(wp) :: De, Dp
+
+        De = 0.0
+        Dp = 0.0
+
+
+        !intialize delQ
+        delQstar = 0.0
+
+        !forward sweep
+        do k=1,dims%kmx-1
+          do j=1,dims%jmx-1
+            do i=1,dims%imx-1
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
+
+              Q0  = qp(i  , j  , k  , 1:7)
+              Q1  = qp(i-1, j  , k  , 1:7)
+              Q2  = qp(i  , j-1, k  , 1:7)
+              Q3  = qp(i  , j  , k-1, 1:7)
+              Q4  = qp(i+1, j  , k  , 1:7)
+              Q5  = qp(i  , j+1, k  , 1:7)
+              Q6  = qp(i  , j  , k+1, 1:7)
+
+              DQ0 = 0.0
+              DQ1 = delQstar(i-1, j  , k  , 1:7)
+              DQ2 = delQstar(i  , j-1, k  , 1:7)
+              DQ3 = delQstar(i  , j  , k-1, 1:7)
+
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
+              Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
+              Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
+
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
+              Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
+              Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
+
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
+              Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
+              Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
+
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
+              Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
+              Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
+
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
+              Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
+              Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
+
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
+              Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
+              Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
+
+              NewIminusFlux     = wilcox2006Flux(Q1, Q0, DQ1, Flist1)
+              NewJminusFlux     = wilcox2006Flux(Q2, Q0, DQ2, Flist2)
+              NewKminusFlux     = wilcox2006Flux(Q3, Q0, DQ3, Flist3)
+              OldIminusFlux     = wilcox2006Flux(Q1, Q0, DQ0, Flist1)
+              OldJminusFlux     = wilcox2006Flux(Q2, Q0, DQ0, Flist2)
+              OldKminusFlux     = wilcox2006Flux(Q3, Q0, DQ0, Flist3)
+
+              !---preconditioning---
+              r  = Q0(1)
+              u  = Q0(2)
+              v  = Q0(3)
+              w  = Q0(4)
+              p  = Q0(5)
+              kk = Q0(6)
+              ww = Q0(7)
+              VMag     = sqrt(u*u + v*v + w*w)
+              SoundMag = sqrt(gm*p/r)
+              M        = VMag/SoundMag 
+              H  = (gm*p/(r*(gm-1.0))) + 0.5*(VMag)
+              eps = min(1.0, max(M*M, Minf*Minf))
+              factor = (1.0-eps)*(gm-1.0)/(SoundMag*SoundMag)
+
+              LambdaTimesArea(1)= SpectralRadius(Q1, Q0, Flist1, C1, C0, eps)
+              LambdaTimesArea(2)= SpectralRadius(Q2, Q0, Flist2, C2, C0, eps)
+              LambdaTimesArea(3)= SpectralRadius(Q3, Q0, Flist3, C3, C0, eps)
+              LambdaTimesArea(4)= SpectralRadius(Q4, Q0, Flist4, C4, C0, eps)
+              LambdaTimesArea(5)= SpectralRadius(Q5, Q0, Flist5, C5, C0, eps)
+              LambdaTimesArea(6)= SpectralRadius(Q6, Q0, Flist6, C6, C0, eps)
+
+
+              PrecondInv(1,1) = 1.0 - factor*1*VMag*VMag/2.0
+              PrecondInv(2,1) = 0.0 - factor*u*VMag*VMag/2.0
+              PrecondInv(3,1) = 0.0 - factor*v*VMag*VMag/2.0
+              PrecondInv(4,1) = 0.0 - factor*w*VMag*VMag/2.0
+              PrecondInv(5,1) = 0.0 - factor*H*VMag*VMag/2.0
+              PrecondInv(6,1) = 0.0 - factor*kk*VMag*VMag/2.0
+              PrecondInv(7,1) = 0.0 - factor*ww*VMag*VMag/2.0
+              PrecondInv(1,2) = 0.0 - factor*1*(-u)
+              PrecondInv(2,2) = 1.0 - factor*u*(-u)
+              PrecondInv(3,2) = 0.0 - factor*v*(-u)
+              PrecondInv(4,2) = 0.0 - factor*w*(-u)
+              PrecondInv(5,2) = 0.0 - factor*H*(-u)
+              PrecondInv(6,2) = 0.0 - factor*kk*(-u)
+              PrecondInv(7,2) = 0.0 - factor*ww*(-u)
+              PrecondInv(1,3) = 0.0 - factor*1*(-v)
+              PrecondInv(2,3) = 0.0 - factor*u*(-v)
+              PrecondInv(3,3) = 1.0 - factor*v*(-v)
+              PrecondInv(4,3) = 0.0 - factor*w*(-v)
+              PrecondInv(5,3) = 0.0 - factor*H*(-v)
+              PrecondInv(6,3) = 0.0 - factor*kk*(-v)
+              PrecondInv(7,3) = 0.0 - factor*ww*(-v)
+              PrecondInv(1,4) = 0.0 - factor*1*(-w)
+              PrecondInv(2,4) = 0.0 - factor*u*(-w)
+              PrecondInv(3,4) = 0.0 - factor*v*(-w)
+              PrecondInv(4,4) = 1.0 - factor*w*(-w)
+              PrecondInv(5,4) = 0.0 - factor*H*(-w)
+              PrecondInv(6,4) = 0.0 - factor*kk*(-w)
+              PrecondInv(7,4) = 0.0 - factor*ww*(-w)
+              PrecondInv(1,5) = 0.0 - factor*1*(1.)
+              PrecondInv(2,5) = 0.0 - factor*u*(1.)
+              PrecondInv(3,5) = 0.0 - factor*v*(1.)
+              PrecondInv(4,5) = 0.0 - factor*w*(1.)
+              PrecondInv(5,5) = 1.0 - factor*H*(1.)
+              PrecondInv(6,5) = 0.0 - factor*kk*(1.)
+              PrecondInv(7,5) = 0.0 - factor*ww*(1.)
+              PrecondInv(1,6) = 0.0 - factor*1*(-1.)
+              PrecondInv(2,6) = 0.0 - factor*u*(-1.)
+              PrecondInv(3,6) = 0.0 - factor*v*(-1.)
+              PrecondInv(4,6) = 0.0 - factor*w*(-1.)
+              PrecondInv(5,6) = 0.0 - factor*H*(-1.)
+              PrecondInv(6,6) = 1.0 - factor*kk*(-1.)
+              PrecondInv(7,6) = 0.0 - factor*ww*(-1.)
+              PrecondInv(1,7) = 0.0 - factor*1*(0.)
+              PrecondInv(2,7) = 0.0 - factor*u*(0.)
+              PrecondInv(3,7) = 0.0 - factor*v*(0.)
+              PrecondInv(4,7) = 0.0 - factor*w*(0.)
+              PrecondInv(5,7) = 0.0 - factor*H*(0.)
+              PrecondInv(6,7) = 0.0 - factor*kk*(0.)
+              PrecondInv(7,7) = 1.0 - factor*ww*(0.)
+              !---end preconditioning
+
+
+              ! multiply above flux with area to get correct values
+              DelIminusFlux =  NewIminusFlux - OldIminusFlux
+              DelJminusFlux =  NewJminusFlux - OldJminusFlux
+              DelKminusFlux =  NewKminusFlux - OldKminusFlux
+
+
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D(6) = (D(6) + (bstar_wilcox2006*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta_wilcox2006*qp(i,j,k,7)*cells(i,j,k)%volume)
+              !storing D in Iflux array for backward sweep
+              !F_p(i,j,k,1) = D
+              
+
+              deltaU(1:7) = -matmul(PrecondInv,residue(i,j,k,1:7)) &
+                - 0.5*((matmul(PrecondInv,DelIminusFlux) - LambdaTimesArea(1)*delQstar(i-1,j,k,1:7)) &
+                     + (matmul(PrecondInv,DelJminusFlux) - LambdaTimesArea(2)*delQstar(i,j-1,k,1:7)) &
+                     + (matmul(PrecondInv,DelKminusFlux) - LambdaTimesArea(3)*delQstar(i,j,k-1,1:7)) )
+
+              delQstar(i,j,k,1:7) = deltaU(1:7)/D
+            end do
+          end do
+        end do
+
+        delQ=0.0
+        !backward sweep
+            do i=dims%imx-1,1,-1
+          do j=dims%jmx-1,1,-1
+        do k=dims%kmx-1,1,-1
+              C0  = (/Cells(i  ,j  ,k  )%Centerx,Cells(i  ,j  ,k  )%Centery,Cells(i  ,j  ,k  )%Centerz/)
+              C1  = (/Cells(i-1,j  ,k  )%Centerx,Cells(i-1,j  ,k  )%Centery,Cells(i-1,j  ,k  )%Centerz/)
+              C2  = (/Cells(i  ,j-1,k  )%Centerx,Cells(i  ,j-1,k  )%Centery,Cells(i  ,j-1,k  )%Centerz/)
+              C3  = (/Cells(i  ,j  ,k-1)%Centerx,Cells(i  ,j  ,k-1)%Centery,Cells(i  ,j  ,k-1)%Centerz/)
+              C4  = (/Cells(i+1,j  ,k  )%Centerx,Cells(i+1,j  ,k  )%Centery,Cells(i+1,j  ,k  )%Centerz/)
+              C5  = (/Cells(i  ,j+1,k  )%Centerx,Cells(i  ,j+1,k  )%Centery,Cells(i  ,j+1,k  )%Centerz/)
+              C6  = (/Cells(i  ,j  ,k+1)%Centerx,Cells(i  ,j  ,k+1)%Centery,Cells(i  ,j  ,k+1)%Centerz/)
+
+              Q0  = qp(i  , j  , k  , 1:7)
+              Q1  = qp(i-1, j  , k  , 1:7)
+              Q2  = qp(i  , j-1, k  , 1:7)
+              Q3  = qp(i  , j  , k-1, 1:7)
+              Q4  = qp(i+1, j  , k  , 1:7)
+              Q5  = qp(i  , j+1, k  , 1:7)
+              Q6  = qp(i  , j  , k+1, 1:7)
+
+              DQ0 = 0.0
+              DQ4 = delQ(i+1, j  , k  , 1:7)
+              DQ5 = delQ(i  , j+1, k  , 1:7)
+              DQ6 = delQ(i  , j  , k+1, 1:7)
+
+              Flist1(1) =  Ifaces(i,j,k)%A
+              Flist1(2) = -Ifaces(i,j,k)%nx
+              Flist1(3) = -Ifaces(i,j,k)%ny
+              Flist1(4) = -Ifaces(i,j,k)%nz
+              Flist1(5) = 0.5*(cells(i-1, j  , k  )%volume + cells(i,j,k)%volume)
+              Flist1(6) = 0.5*(   mmu(i-1, j  , k  ) +    mmu(i,j,k))
+              Flist1(7) = 0.5*(   tmu(i-1, j  , k  ) +    tmu(i,j,k))
+
+              Flist2(1) =  Jfaces(i,j,k)%A
+              Flist2(2) = -Jfaces(i,j,k)%nx
+              Flist2(3) = -Jfaces(i,j,k)%ny
+              Flist2(4) = -Jfaces(i,j,k)%nz
+              Flist2(5) = 0.5*(cells(i  , j-1, k  )%volume + cells(i,j,k)%volume)
+              Flist2(6) = 0.5*(   mmu(i  , j-1, k  ) +    mmu(i,j,k))
+              Flist2(7) = 0.5*(   tmu(i  , j-1, k  ) +    tmu(i,j,k))
+
+              Flist3(1) =  Kfaces(i,j,k)%A
+              Flist3(2) = -Kfaces(i,j,k)%nx
+              Flist3(3) = -Kfaces(i,j,k)%ny
+              Flist3(4) = -Kfaces(i,j,k)%nz
+              Flist3(5) = 0.5*(cells(i  , j  , k-1)%volume + cells(i,j,k)%volume)
+              Flist3(6) = 0.5*(   mmu(i  , j  , k-1) +    mmu(i,j,k))
+              Flist3(7) = 0.5*(   tmu(i  , j  , k-1) +    tmu(i,j,k))
+
+              Flist4(1) =  Ifaces(i+1,j,k)%A
+              Flist4(2) = +Ifaces(i+1,j,k)%nx
+              Flist4(3) = +Ifaces(i+1,j,k)%ny
+              Flist4(4) = +Ifaces(i+1,j,k)%nz
+              Flist4(5) = 0.5*(cells(i+1, j  , k  )%volume + cells(i,j,k)%volume)
+              Flist4(6) = 0.5*(   mmu(i+1, j  , k  ) +    mmu(i,j,k))
+              Flist4(7) = 0.5*(   tmu(i+1, j  , k  ) +    tmu(i,j,k))
+
+              Flist5(1) =  Jfaces(i,j+1,k)%A
+              Flist5(2) = +Jfaces(i,j+1,k)%nx
+              Flist5(3) = +Jfaces(i,j+1,k)%ny
+              Flist5(4) = +Jfaces(i,j+1,k)%nz
+              Flist5(5) = 0.5*(cells(i  , j+1, k  )%volume + cells(i,j,k)%volume)
+              Flist5(6) = 0.5*(   mmu(i  , j+1, k  ) +    mmu(i,j,k))
+              Flist5(7) = 0.5*(   tmu(i  , j+1, k  ) +    tmu(i,j,k))
+
+              Flist6(1) =  Kfaces(i,j,k+1)%A
+              Flist6(2) = +Kfaces(i,j,k+1)%nx
+              Flist6(3) = +Kfaces(i,j,k+1)%ny
+              Flist6(4) = +Kfaces(i,j,k+1)%nz
+              Flist6(5) = 0.5*(cells(i  , j  , k+1)%volume + cells(i,j,k)%volume)
+              Flist6(6) = 0.5*(   mmu(i  , j  , k+1) +    mmu(i,j,k))
+              Flist6(7) = 0.5*(   tmu(i  , j  , k+1) +    tmu(i,j,k))
+
+              NewIminusFlux     = wilcox2006Flux(Q4, Q0, DQ4, Flist4)
+              NewJminusFlux     = wilcox2006Flux(Q5, Q0, DQ5, Flist5)
+              NewKminusFlux     = wilcox2006Flux(Q6, Q0, DQ6, Flist6)
+              OldIminusFlux     = wilcox2006Flux(Q4, Q0, DQ0, Flist4)
+              OldJminusFlux     = wilcox2006Flux(Q5, Q0, DQ0, Flist5)
+              OldKminusFlux     = wilcox2006Flux(Q6, Q0, DQ0, Flist6)
+
+              !---preconditioning---
+              r  = Q0(1)
+              u  = Q0(2)
+              v  = Q0(3)
+              w  = Q0(4)
+              p  = Q0(5)
+              kk = Q0(6)
+              ww = Q0(7)
+              VMag     = sqrt(u*u + v*v + w*w)
+              SoundMag = sqrt(gm*p/r)
+              M        = VMag/SoundMag 
+              H  = (gm*p/(r*(gm-1.0))) + 0.5*(VMag)
+              eps = min(1.0, max(M*M, Minf*Minf))
+              factor = (1.0-eps)*(gm-1.0)/(SoundMag*SoundMag)
+
+              LambdaTimesArea(1)= SpectralRadius(Q1, Q0, Flist1, C1, C0, eps)
+              LambdaTimesArea(2)= SpectralRadius(Q2, Q0, Flist2, C2, C0, eps)
+              LambdaTimesArea(3)= SpectralRadius(Q3, Q0, Flist3, C3, C0, eps)
+              LambdaTimesArea(4)= SpectralRadius(Q4, Q0, Flist4, C4, C0, eps)
+              LambdaTimesArea(5)= SpectralRadius(Q5, Q0, Flist5, C5, C0, eps)
+              LambdaTimesArea(6)= SpectralRadius(Q6, Q0, Flist6, C6, C0, eps)
+
+
+              PrecondInv(1,1) = 1.0 - factor*1*VMag*VMag/2.0
+              PrecondInv(2,1) = 0.0 - factor*u*VMag*VMag/2.0
+              PrecondInv(3,1) = 0.0 - factor*v*VMag*VMag/2.0
+              PrecondInv(4,1) = 0.0 - factor*w*VMag*VMag/2.0
+              PrecondInv(5,1) = 0.0 - factor*H*VMag*VMag/2.0
+              PrecondInv(6,1) = 0.0 - factor*kk*VMag*VMag/2.0
+              PrecondInv(7,1) = 0.0 - factor*ww*VMag*VMag/2.0
+              PrecondInv(1,2) = 0.0 - factor*1*(-u)
+              PrecondInv(2,2) = 1.0 - factor*u*(-u)
+              PrecondInv(3,2) = 0.0 - factor*v*(-u)
+              PrecondInv(4,2) = 0.0 - factor*w*(-u)
+              PrecondInv(5,2) = 0.0 - factor*H*(-u)
+              PrecondInv(6,2) = 0.0 - factor*kk*(-u)
+              PrecondInv(7,2) = 0.0 - factor*ww*(-u)
+              PrecondInv(1,3) = 0.0 - factor*1*(-v)
+              PrecondInv(2,3) = 0.0 - factor*u*(-v)
+              PrecondInv(3,3) = 1.0 - factor*v*(-v)
+              PrecondInv(4,3) = 0.0 - factor*w*(-v)
+              PrecondInv(5,3) = 0.0 - factor*H*(-v)
+              PrecondInv(6,3) = 0.0 - factor*kk*(-v)
+              PrecondInv(7,3) = 0.0 - factor*ww*(-v)
+              PrecondInv(1,4) = 0.0 - factor*1*(-w)
+              PrecondInv(2,4) = 0.0 - factor*u*(-w)
+              PrecondInv(3,4) = 0.0 - factor*v*(-w)
+              PrecondInv(4,4) = 1.0 - factor*w*(-w)
+              PrecondInv(5,4) = 0.0 - factor*H*(-w)
+              PrecondInv(6,4) = 0.0 - factor*kk*(-w)
+              PrecondInv(7,4) = 0.0 - factor*ww*(-w)
+              PrecondInv(1,5) = 0.0 - factor*1*(1.)
+              PrecondInv(2,5) = 0.0 - factor*u*(1.)
+              PrecondInv(3,5) = 0.0 - factor*v*(1.)
+              PrecondInv(4,5) = 0.0 - factor*w*(1.)
+              PrecondInv(5,5) = 1.0 - factor*H*(1.)
+              PrecondInv(6,5) = 0.0 - factor*kk*(1.)
+              PrecondInv(7,5) = 0.0 - factor*ww*(1.)
+              PrecondInv(1,6) = 0.0 - factor*1*(-1.)
+              PrecondInv(2,6) = 0.0 - factor*u*(-1.)
+              PrecondInv(3,6) = 0.0 - factor*v*(-1.)
+              PrecondInv(4,6) = 0.0 - factor*w*(-1.)
+              PrecondInv(5,6) = 0.0 - factor*H*(-1.)
+              PrecondInv(6,6) = 1.0 - factor*kk*(-1.)
+              PrecondInv(7,6) = 0.0 - factor*ww*(-1.)
+              PrecondInv(1,7) = 0.0 - factor*1*(0.)
+              PrecondInv(2,7) = 0.0 - factor*u*(0.)
+              PrecondInv(3,7) = 0.0 - factor*v*(0.)
+              PrecondInv(4,7) = 0.0 - factor*w*(0.)
+              PrecondInv(5,7) = 0.0 - factor*H*(0.)
+              PrecondInv(6,7) = 0.0 - factor*kk*(0.)
+              PrecondInv(7,7) = 1.0 - factor*ww*(0.)
+              !---end preconditioning
+
+
+              ! multiply above flux with area to get correct values
+              DelIminusFlux =  NewIminusFlux - OldIminusFlux
+              DelJminusFlux =  NewJminusFlux - OldJminusFlux
+              DelKminusFlux =  NewKminusFlux - OldKminusFlux
+
+              D = (cells(i,j,k)%volume/delta_t(i,j,k)) + 0.5*SUM(LambdaTimesArea)
+              D(6) = (D(6) + (bstar_wilcox2006*qp(i,j,k,7))*cells(i,j,k)%volume)
+              D(7) = (D(7) + 2.0*beta_wilcox2006*qp(i,j,k,7)*cells(i,j,k)%volume)
+
+
+              delQ(i,j,k,1:7) = delQstar(i,j,k,1:7) &
+                - 0.5*((matmul(PrecondInv,DelIminusFlux) - LambdaTimesArea(4)*delQ(i+1,j,k,1:7)) &
+                     + (matmul(PrecondInv,DelJminusFlux) - LambdaTimesArea(5)*delQ(i,j+1,k,1:7)) &
+                     + (matmul(PrecondInv,DelKminusFlux) - LambdaTimesArea(6)*delQ(i,j,k+1,1:7)) )/D
+
+            end do
+          end do
+        end do
+
+        
+        do k=1,dims%kmx-1
+          do j = 1,dims%jmx-1
+            do i = 1,dims%imx-1
+              conservativeQ(1) = qp(i,j,k,1)
+              conservativeQ(2) = qp(i,j,k,1) * qp(i,j,k,2)
+              conservativeQ(3) = qp(i,j,k,1) * qp(i,j,k,3)
+              conservativeQ(4) = qp(i,j,k,1) * qp(i,j,k,4)
+              conservativeQ(5) = (qp(i,j,k,5) / (gm-1.0)) + ( 0.5 * qp(i,j,k,1) * sum( qp(i,j,k,2:4)**2) )
+              conservativeQ(6) = qp(i,j,k,1) * qp(i,j,k,6)
+              conservativeQ(7) = qp(i,j,k,1) * qp(i,j,k,7)
+              
+              ! add new change into conservative solution
+              conservativeQ(1:7) = conservativeQ(1:7) + delQ(i,j,k,1:7)
+
+              ! convert back conservative to primitive
+              qp(i,j,k,1) = conservativeQ(1)
+              qp(i,j,k,2) = conservativeQ(2) / conservativeQ(1)
+              qp(i,j,k,3) = conservativeQ(3) / conservativeQ(1)
+              qp(i,j,k,4) = conservativeQ(4) / conservativeQ(1)
+              qp(i,j,k,5) = (gm-1.0) * ( conservativeQ(5) - (0.5 * sum(conservativeQ(2:4)**2) / conservativeQ(1)) )
+              if(conservativeQ(6)>0)then
+              qp(i,j,k,6) = conservativeQ(6) / conservativeQ(1)
+              end if
+              if(conservativeQ(7)>0)then
+              qp(i,j,k,7) = conservativeQ(7) / conservativeQ(1)
+              end if
+            end do
+          end do
+        end do
+
+    end subroutine update_wilcox2006_variables
+
+
+    function wilcox2006Flux(ql, qr, du, inputs)
+      !< Calculate the total flux through face for turbulent flow (wilcox2006)
+      !--------------------------------------
+      ! calculate the total flux through face
+      !---------------------------------------
+      implicit none
+      real(wp), dimension(1:n_var), intent(in) :: ql !left state
+      real(wp), dimension(1:n_var), intent(in) :: qr !right state
+      !conservative form of updated neighbour
+      real(wp), dimension(1:n_var), intent(in) :: du
+      real(wp), dimension(1:7)    , intent(in) :: inputs
+      real(wp), dimension(1:n_var)             :: Flux
+      real(wp), dimension(1:n_var)             :: wilcox2006Flux
+      real(wp), dimension(1:n_var)             :: U ! conservative variables
+      real(wp), dimension(1:n_var)             :: W ! new primitive variables
+      real(wp), dimension(1:n_var)             :: P ! primitive variables of right cell
+
+      !for extraction of the inputs
+      real(wp) :: area
+      real(wp) :: nx
+      real(wp) :: ny
+      real(wp) :: nz
+      real(wp) :: volume
+      real(wp) :: mmu
+      real(wp) :: tmu
+
+
+      real(wp)    :: dudx
+      real(wp)    :: dudy
+      real(wp)    :: dudz
+      real(wp)    :: dvdx
+      real(wp)    :: dvdy
+      real(wp)    :: dvdz
+      real(wp)    :: dwdx
+      real(wp)    :: dwdy
+      real(wp)    :: dwdz
+      real(wp)    :: dTdx
+      real(wp)    :: dTdy
+      real(wp)    :: dTdz
+      real(wp)    :: dtkdx
+      real(wp)    :: dtkdy
+      real(wp)    :: dtkdz
+      real(wp)    :: dtwdx
+      real(wp)    :: dtwdy
+      real(wp)    :: dtwdz
+      real(wp)    :: T1, T2
+      real(wp)    :: uface
+      real(wp)    :: vface
+      real(wp)    :: wface
+      real(wp)    :: trace
+      real(wp)    :: Tauxx
+      real(wp)    :: Tauyy
+      real(wp)    :: Tauzz
+      real(wp)    :: Tauxy
+      real(wp)    :: Tauxz
+      real(wp)    :: Tauyz
+      real(wp)    :: Qx
+      real(wp)    :: Qy
+      real(wp)    :: Qz
+      real(wp)    :: HalfRhoUsquare
+      real(wp)    :: RhoHt
+      real(wp)    :: K_heat
+      real(wp)    :: FaceNormalVelocity
+      real(wp)    :: mu
+      real(wp)    :: sigma_k
+      real(wp)    :: sigma_w
+
+      area   = inputs(1)
+      nx     = inputs(2)
+      ny     = inputs(3)
+      nz     = inputs(4)
+      volume = inputs(5)
+      mmu    = inputs(6)
+      tmu    = inputs(7)
+
+
+      !save the old stat in P
+      P = qr
+
+      ! find conservative variable
+      U(1)   =   ql(1)
+      U(2)   =   ql(1) * ql(2)
+      U(3)   =   ql(1) * ql(3)
+      U(4)   =   ql(1) * ql(4)
+      U(5)   = ( ql(5) / (gm-1.0) ) + ( 0.5 * ql(1) * sum(ql(2:4)**2) )
+      U(6)   =   ql(1) * ql(6)
+      U(7)   =   ql(1) * ql(7)
+
+      U(1:n_var) = U(1:n_var) + du(1:n_var)
+      
+
+      W(1)   =   U(1)
+      W(2)   =   U(2) / U(1)
+      W(3)   =   U(3) / U(1)
+      W(4)   =   U(4) / U(1)
+      W(5)   = (gm-1.0) * ( U(5) - ( 0.5 * SUM(U(2:4)**2) / U(1) ) )
+      W(6)   =   U(6) / U(1)
+      W(7)   =   U(7) / U(1)
+      W(6)   = W(6) + 0.5*(1.-sign(1.,W(6)))*(ql(6)-W(6))
+      W(7)   = W(7) + 0.5*(1.-sign(1.,W(7)))*(ql(7)-W(7))
+
+      FaceNormalVelocity = (W(2) * nx) + (W(3) * ny) + (W(4) * nz)
+      uface = 0.5 * ( W(2) + P(2) )
+      vface = 0.5 * ( W(3) + P(3) )
+      wface = 0.5 * ( W(4) + P(4) )
+
+
+      Flux(1) =   W(1) * FaceNormalVelocity
+      Flux(2) = ( W(2) * Flux(1) ) + ( W(5) * nx )
+      Flux(3) = ( W(3) * Flux(1) ) + ( W(5) * ny )
+      Flux(4) = ( W(4) * Flux(1) ) + ( W(5) * nz )
+
+      HalfRhoUsquare = 0.5 * W(1) * ( W(2)*W(2) + W(3)*W(3) + W(4)*W(4) )
+      RhoHt          = ( (gm/(gm-1.0)) * W(5) ) + HalfRhoUsquare
+      Flux(5)        = RhoHt * FaceNormalVelocity
+      Flux(6) = ( W(6) * Flux(1) )   
+      Flux(7) = ( W(7) * Flux(1) )   
+
+
+      ! viscous terms
+      mu = mmu + tmu
+      T1     =    W(5) / ( W(1) * R_gas )
+      T2     =    P(5) / ( P(1) * R_gas )
+      dTdx   =  ( T2   - T1   ) * nx * Area / Volume
+      dTdy   =  ( T2   - T1   ) * ny * Area / Volume
+      dTdz   =  ( T2   - T1   ) * nz * Area / Volume
+      dudx   =  ( P(2) - W(2) ) * nx * Area / Volume
+      dudy   =  ( P(2) - W(2) ) * ny * Area / Volume
+      dudz   =  ( P(2) - W(2) ) * nz * Area / Volume
+      dvdx   =  ( P(3) - W(3) ) * nx * Area / Volume
+      dvdy   =  ( P(3) - W(3) ) * ny * Area / Volume
+      dvdz   =  ( P(3) - W(3) ) * nz * Area / Volume
+      dwdx   =  ( P(4) - W(4) ) * nx * Area / Volume
+      dwdy   =  ( P(4) - W(4) ) * ny * Area / Volume
+      dwdz   =  ( P(4) - W(4) ) * nz * Area / Volume
+      dtkdx  =  ( P(6) - W(6) ) * nx * Area / Volume
+      dtkdy  =  ( P(6) - W(6) ) * ny * Area / Volume
+      dtkdz  =  ( P(6) - W(6) ) * nz * Area / Volume
+      dtwdx  =  ( P(7) - W(7) ) * nx * Area / Volume
+      dtwdy  =  ( P(7) - W(7) ) * ny * Area / Volume
+      dtwdz  =  ( P(7) - W(7) ) * nz * Area / Volume
+
+      trace = dudx + dvdy + dwdz
+      Tauxx =  2. * mu * (dudx - trace/3.0)
+      Tauyy =  2. * mu * (dvdy - trace/3.0)
+      Tauzz =  2. * mu * (dwdz - trace/3.0)
+      Tauxy = mu * (dvdx + dudy)
+      Tauxz = mu * (dwdx + dudz)
+      Tauyz = mu * (dwdy + dvdz)
+
+      K_heat = ( mmu / Pr  + tmu/tpr) * gm * R_gas / ( gm - 1.0 )
+      Qx = K_heat*dTdx
+      Qy = K_heat*dTdy
+      Qz = K_heat*dTdz
+
+      sigma_k = sigma_k_wilcox2006
+      sigma_w = sigma_w_wilcox2006
+
+      Flux(2) = Flux(2) - ( Tauxx * nx + Tauxy * ny + Tauxz * nz )
+      Flux(3) = Flux(3) - ( Tauxy * nx + Tauyy * ny + Tauyz * nz )
+      Flux(4) = Flux(4) - ( Tauxz * nx + Tauyz * ny + Tauzz * nz )
+      Flux(5) = Flux(5) - ( Tauxx * uface + Tauxy * vface + Tauxz * wface + Qx ) * nx
+      Flux(5) = Flux(5) - ( Tauxy * uface + Tauyy * vface + Tauyz * wface + Qy ) * ny
+      Flux(5) = Flux(5) - ( Tauxz * uface + Tauyz * vface + Tauzz * wface + Qz ) * nz
+      Flux(6) = Flux(6) + (mmu + sigma_k*tmu)*(dtkdx*nx + dtkdy*ny + dtkdz*nz)
+      Flux(7) = Flux(7) + (mmu + sigma_w*tmu)*(dtwdx*nx + dtwdy*ny + dtwdz*nz)
+
+      Flux    = Flux * Area
+      wilcox2006Flux = Flux
+
+    end function wilcox2006Flux 
+
 
     subroutine update_SA_variables(qp, residue, delta_t, cells, Ifaces, Jfaces, Kfaces, dims)
       !< Update the RANS (SA) equation with LU-SGS

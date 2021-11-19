@@ -169,7 +169,7 @@ module gradients
             gradtv_y(0:imx, 0:jmx, 0:kmx) => gradqp_y(:, :, :, 5)
             gradtv_z(0:imx, 0:jmx, 0:kmx) => gradqp_z(:, :, :, 5)
 
-          case('sst', 'sst2003')
+          case('sst', 'sst2003', 'wilcox2006')
             !< Setup Pointer to the main array which stores gradient 
             !< all variables with x, y, z
             DebugCall('setup_sst_grad')
@@ -244,7 +244,7 @@ module gradients
         case ('sa', 'saBC')
           n_grad = 5
 
-        case('sst', 'sst2003')
+        case('sst', 'sst2003', 'wilcox2006')
           n_grad = 6
 
         case('kkl')
@@ -349,7 +349,7 @@ module gradients
           call compute_gradient_G(gradtv_z, tv, cells, Ifaces, Jfaces, Kfaces, dims, 'z')
           end if
 
-        case ('sst', 'sst2003')
+        case ('sst', 'sst2003', 'wilcox2006')
           tk(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2) => qp(:, :, :, 6)
           tw(-2:dims%imx+2, -2:dims%jmx+2, -2:dims%kmx+2) => qp(:, :, :, 7)
           call compute_gradient_G(gradtk_x, tk, cells, Ifaces, Jfaces, Kfaces, dims, 'x')
