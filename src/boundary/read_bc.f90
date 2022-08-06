@@ -112,13 +112,32 @@ module read_bc
             case ("sa", "saBC")
               select case(buf(3:index(buf(3:), " ")+1))
                 case ("FIX_tv")
-                  call set_value(bc%fixed_tk      , fix_val, flow%tv_inf      , count, ios)
+                  call set_value(bc%fixed_tv      , fix_val, flow%tv_inf      , count, ios)
                 case DEFAULT
                   ! no a value to fix
                   continue
               end select
 
           end select
+
+          ! Transition modeling
+          select case(trim(scheme%transition))
+
+            case('lctm2015')
+              select case(buf(3:index(buf(3:), " ")+1))
+                case ("FIX_tgm")
+                  call set_value(bc%fixed_tgm      , fix_val, flow%tgm_inf      , count, ios)
+                case DEFAULT
+                  ! no a value to fix
+                  continue
+              end select
+            case('bc', 'none')
+              !do nothing
+               continue
+            case DEFAULT
+              Fatal_error
+
+          end Select
 
         else
           exit
@@ -190,6 +209,21 @@ module read_bc
             Fatal_error
 
         end select
+
+        ! Transition modeling
+         select case(trim(scheme%transition))
+
+           case('lctm2015')
+             call set_value(bc%fixed_tgm      , flow%tgm_inf, flow%tgm_inf      , count, ios)
+
+           case('bc', 'none')
+             !do nothing
+              continue
+
+           case DEFAULT
+             Fatal_error
+
+         end Select
       end do
 
     end subroutine fill_fixed_values
