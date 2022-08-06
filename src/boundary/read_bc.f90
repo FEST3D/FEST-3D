@@ -203,7 +203,7 @@ module read_bc
 
           case ("sa", "saBC")
             !case ("FIX_tv")
-              call set_value(bc%fixed_tk      , flow%tv_inf, flow%tv_inf      , count, ios)
+              call set_value(bc%fixed_tv      , flow%tv_inf, flow%tv_inf      , count, ios)
 
           case DEFAULT
             Fatal_error
