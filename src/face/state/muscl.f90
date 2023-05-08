@@ -142,6 +142,8 @@ module muscl
             !< backward difference
             real(wp) :: r
             !< ratio of differences
+            real(wp) :: eps
+            !< Machine error for regularization
 
             DebugCall('compute_face_state')
 
@@ -150,6 +152,7 @@ module muscl
             phi = 1.0
             kappa = 1./3.
             switch_L=lam_switch
+            eps = 1e-14
 
             ii = flags(1)
             jj = flags(2)
@@ -169,13 +172,13 @@ module muscl
                 fd = qp(i+ii, j+jj, k+kk, l) - qp(i, j, k, l)
                 bd = qp(i, j, k, l) - qp(i-ii, j-jj, k-kk, l)
 
-                r = fd / (bd + 1e-14)
+                r = fd / (bd + sign(eps,bd))
                 psi1 = max(0., min(2*r, alpha*(r-1.0) + 1.0, 2.))  !alpha limiter
 !                psi1 = max(0., min(2*r,1.), min(r,2.))    ! superbee
 !                psi1 = ((r*r) + r)/((r*r) + 1.0)          ! Van-Albda 
 !                psi1 = (abs(r) + r)/(abs(r) + 1.0)          ! Van-Leer
 
-                r = bd / (fd + 1e-14)
+                r = bd / (fd + sign(eps,fd))
                 psi2 = max(0., min(2*r, alpha*(r-1.0) + 1.0, 2.))
 !                psi2 = max(0., min(2*r,1.), min(r,2.))
 !                psi2 = ((r*r) + r)/((r*r) + 1.0)          ! Van-Albda 
