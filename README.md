@@ -92,9 +92,8 @@ Details about the algorithms used in the FEST-3D code can be found in the public
 
 ### Code contributors:
 - [Jatinder Pal Singh Sandhu](https://github.com/jayten)   
-  Ph.D. Student (Current)  
-  Department of Aerospace Engineering  
-  Indian Institute of Technology Madras
+  Independent Consultant, [ZeroDynamix](https://zerodynamix.com/)
+  Book: [Computational Design and Optimization of Supersonic Intakes](https://cdosi-book.github.io/)
 
 - Anant Girdhar  
   B.Tech Student (2015)  
